@@ -4,7 +4,6 @@ package sortedchat;
 
 option go_package = "sortedstartup.com/chatservice/proto";
 
-// ------------------ TRANSACTION ------------------
 
 service SortedChat {
     rpc Chat(ChatRequest) returns (ChatResponse);

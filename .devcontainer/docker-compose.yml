@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   dev:
-    image: ghcr.io/sortedstartup/docker-images/dev-go-npm-grpc:jan-26-2025-2
+    image: ghcr.io/sortedstartup/docker-images/dev-go-npm-grpc:may-15-2025-1
     volumes:
       - ../..:/workspaces:cached
     # ports:

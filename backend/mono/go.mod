@@ -1,6 +1,6 @@
 module sortedstartup.com/chat/mono
 
-go 1.24.1
+go 1.24.3
 
 require github.com/improbable-eng/grpc-web v0.15.0
 

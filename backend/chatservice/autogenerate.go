@@ -11,7 +11,7 @@ package main
 
 // This is a hack to avoid using grpc-js which is not needed in the browser
 // If we can move to connect RPC auto generation this is not needed
-// go:generate sh -c "sed -i  's|@grpc/grpc-js|grpc-web|g' ../../frontend/sortedchat/proto/chatservice.ts"
+//go:generate sh -c "sed -i  's|@grpc/grpc-js|grpc-web|g' ../../frontend/sortedchat/proto/chatservice.ts"
 
 // This to avoid any errors during `npm run build`
 // go:generate sh -c "sed -i '1i\\// @ts-nocheck' ../../frontend/sortedchat/proto/chatservice.ts"

@@ -12,7 +12,7 @@ async function doChat(msg: string) {
     return response.text
 }
 
-
+export { doChat }
 
 
 

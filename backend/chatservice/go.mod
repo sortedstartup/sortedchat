@@ -1,6 +1,6 @@
 module sortedstartup.com/chatservice
 
-go 1.24.1
+go 1.24.3
 
 require (
 	google.golang.org/grpc v1.72.1

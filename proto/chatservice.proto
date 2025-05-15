@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package sortedchat;
+
+option go_package = "sortedstartup.com/chatservice/proto";
+
+
+service SortedChat {
+    rpc Chat(ChatRequest) returns (ChatResponse);
+}
+
+message ChatRequest {
+    string text = 1;
+}
+
+message ChatResponse {
+    string text = 1;
+}

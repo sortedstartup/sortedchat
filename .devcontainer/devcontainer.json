@@ -1,0 +1,55 @@
+// The universal codespace image has some interesting code
+// 1. It uses local features, i.e there a folder called local-features, which has all init.sh script to install feature 
+// url: https://github.com/devcontainers/images/tree/main/src/universal
+{
+	"name": "sortedchat",
+	
+	"dockerComposeFile": "./docker-compose.yml",
+	"service": "dev",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"shutdownAction": "stopCompose",
+    
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "uname -a",
+
+	// Configure tool-specific properties.
+	"customizations": {
+			"service": "app",	
+			"vscode":{
+				"extensions": [
+					"golang.Go",
+					"astro-build.astro-vscode",
+					"ms-vscode.vscode-typescript-next",
+					"dsznajder.es7-react-js-snippets",
+					"zxh404.vscode-proto3",
+					"ms-azuretools.vscode-docker",
+					"inferrinizzard.prettier-sql-vscode",
+					"cweijan.vscode-postgresql-client2",
+					"mtxr.sqltools",
+					"premparihar.gotestexplorer",
+					"Ionic.ionic",
+					"yzhang.markdown-all-in-one",
+					"pomdtr.excalidraw-editor",
+					"bierner.markdown-mermaid",
+					"dancheg97.grpc-clicker",
+					"GitHub.vscode-pull-request-github",
+					"yy0931.vscode-sqlite3-editor"
+				],
+			
+				"settings": {
+					"terminal.integrated.defaultProfile.linux": "bash", 
+					"terminal.integrated.profiles.linux": {
+						"zsh": {
+							"path": "/bin/bash"
+						}
+					}
+				}
+			}
+		},
+     "remoteEnv": {
+	},
+	 "forwardPorts": [8080, 5173]
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root",
+	
+}

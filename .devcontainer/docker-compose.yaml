@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  dev:
+    image: ghcr.io/sortedstartup/docker-images/dev-go-npm-grpc:jan-26-2025-2
+    volumes:
+      - ../..:/workspaces:cached
+    # ports:
+    #   - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@database:5432/devdb
+    command: sleep infinity
+    depends_on:
+      - database
+
+  database:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: devdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    # ports:
+    #   - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

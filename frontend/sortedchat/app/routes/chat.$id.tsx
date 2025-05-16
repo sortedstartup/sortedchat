@@ -10,24 +10,24 @@ export default function Chat() {
   const { id } = useParams();
   const navigate = useNavigate();
   const chatId = Number(id);
-  
+
   const [chats, setChats] = useState(chatStore.getAllChats().map(chat => ({
     ...chat,
     selected: Number(chat.id) === chatId,
   })));
-  
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     try {
       setIsLoading(true);
-      
+
       // Get the chat from store
       const chat = chatStore.getChat(chatId);
-      
+
       if (chat) {
         // Chat exists, load its messages
         setMessages([...chat.messages]);
@@ -35,14 +35,14 @@ export default function Chat() {
       } else {
         // Initialize a new chat if it doesn't exist
         const newChat = chatStore.createChat(
-          chatId, 
-          `New Chat ${chatId}`, 
+          chatId,
+          `New Chat ${chatId}`,
           "How can I help you today?"
         );
         setMessages([...newChat.messages]);
         setError(null);
       }
-      
+
       // Update chats list
       setChats(chatStore.getAllChats().map(chat => ({
         ...chat,
@@ -55,75 +55,59 @@ export default function Chat() {
       setIsLoading(false);
     }
   }, [chatId]);
-  
+
   const handleSend = () => {
     if (inputValue.trim()) {
       try {
-        // Create the new message
-        const newMessage: Message = { 
-          id: messages.length + 1, 
-          sender: "user", 
-          content: inputValue 
+        const newMessage: Message = {
+          id: messages.length + 1,
+          sender: "user",
+          content: inputValue,
         };
-        
-        // Save user's input before clearing it
+
         const userInput = inputValue;
-        
-        // Add message to chat store
+
         chatStore.addMessage(chatId, newMessage);
-        
-        // Update local state
-        const updatedMessages = [...messages, newMessage];
-        setMessages(updatedMessages);
+        setMessages((prev) => [...prev, newMessage]);
         setInputValue("");
-        
-        // Add a loading message
-        setMessages(prev => [...prev, { 
-          id: updatedMessages.length + 1,
-          sender: "ai", 
-          content: "..." 
-        }]);
-        
-        // Call the server API
-        doChat(userInput).then(response => {
-          // Remove loading message and add actual response
-          setMessages(prev => {
-            // Remove the last message (loading indicator)
-            const messagesWithoutLoading = prev.slice(0, -1);
-            
-            // Create new AI message with response text
-            const aiResponse: Message = { 
-              id: updatedMessages.length + 1,
-              sender: "ai", 
-              content: response || "I'm sorry, I couldn't process your request."
-            };
-            
-            // Add AI response to store
-            chatStore.addMessage(chatId, aiResponse);
-            
-            return [...messagesWithoutLoading, aiResponse];
-          });
-        }).catch(err => {
-          console.error("Error getting chat response:", err);
-          
-          // Remove loading message and add error message
-          setMessages(prev => {
-            // Remove the last message (loading indicator)
-            const messagesWithoutLoading = prev.slice(0, -1);
-            
-            // Create error message
-            const errorResponse: Message = { 
-              id: updatedMessages.length + 1,
-              sender: "ai", 
-              content: "Sorry, I encountered an error processing your request."
-            };
-            
-            // Add error response to store
-            chatStore.addMessage(chatId, errorResponse);
-            
-            return [...messagesWithoutLoading, errorResponse];
-          });
-        });
+
+        const streamPlaceholder: Message = {
+          id: messages.length + 2,
+          sender: "ai",
+          content: "",
+        };
+
+        setMessages((prev) => [...prev, streamPlaceholder]);
+
+        doChat(
+          userInput,
+          (textChunk) => {
+            setMessages((prev) => {
+              const updated = [...prev];
+              const lastIndex = updated.length - 1;
+
+              const lastMessage = updated[lastIndex];
+              const updatedLastMessage: Message = {
+                ...lastMessage,
+                content: (lastMessage.content ? lastMessage.content + " " : "") + textChunk,
+              };
+
+              updated[lastIndex] = updatedLastMessage;
+              return updated;
+            });
+          },
+          () => {
+            console.log("Streaming complete.");
+          },
+          (err) => {
+            console.error("Streaming error:", err);
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1].content = "Error receiving stream.";
+              return updated;
+            });
+          }
+        );
       } catch (err) {
         console.error("Error sending message:", err);
         setError("Failed to send message. Please try again.");
@@ -137,11 +121,11 @@ export default function Chat() {
       handleSend();
     }
   };
-  
+
   const handleChatSelect = (selectedChatId: number) => {
     navigate(`/chat/${selectedChatId}`);
   };
-  
+
   const handleNewChat = () => {
     const existingIds = chatStore.getAllChats().map(chat => chat.id);
     const newChatId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
@@ -154,8 +138,8 @@ export default function Chat() {
         <div className="text-center p-6">
           <h1 className="text-2xl font-bold mb-4 text-red-500">Error</h1>
           <p className="mb-6">{error}</p>
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
           >
             Return to Home
@@ -187,7 +171,7 @@ export default function Chat() {
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="p-3">
-            <button 
+            <button
               onClick={handleNewChat}
               className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
@@ -199,8 +183,8 @@ export default function Chat() {
           </div>
           <ul className="mt-2">
             {chats.map((chat) => (
-              <li 
-                key={chat.id} 
+              <li
+                key={chat.id}
                 onClick={() => handleChatSelect(chat.id)}
                 className={`px-3 py-2 mx-2 rounded-md cursor-pointer ${chat.id === chatId ? "bg-gray-200 dark:bg-gray-700" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}
               >
@@ -224,7 +208,7 @@ export default function Chat() {
             {chatStore.getChat(chatId)?.name || `Chat ${chatId}`}
           </h1>
         </div>
-        
+
         {/* Chat messages */}
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
@@ -238,11 +222,10 @@ export default function Chat() {
           ) : (
             messages.map((message) => (
               <div key={message.id} className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-3 rounded-lg ${
-                  message.sender === 'user' 
-                    ? 'bg-blue-500 text-white rounded-br-none' 
-                    : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'
-                }`}>
+                <div className={`max-w-[80%] p-3 rounded-lg ${message.sender === 'user'
+                  ? 'bg-blue-500 text-white rounded-br-none'
+                  : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'
+                  }`}>
                   {message.content}
                 </div>
               </div>
@@ -267,11 +250,10 @@ export default function Chat() {
             <button
               onClick={handleSend}
               disabled={!inputValue.trim() || isLoading}
-              className={`ml-2 p-2 rounded-full ${
-                inputValue.trim() && !isLoading
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-              }`}
+              className={`ml-2 p-2 rounded-full ${inputValue.trim() && !isLoading
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />

@@ -140,6 +140,140 @@ export class ChatResponse extends pb_1.Message {
         return ChatResponse.deserialize(bytes);
     }
 }
+export class HelloRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        text?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("text" in data && data.text != undefined) {
+                this.text = data.text;
+            }
+        }
+    }
+    get text() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set text(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        text?: string;
+    }): HelloRequest {
+        const message = new HelloRequest({});
+        if (data.text != null) {
+            message.text = data.text;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            text?: string;
+        } = {};
+        if (this.text != null) {
+            data.text = this.text;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.text.length)
+            writer.writeString(1, this.text);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): HelloRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new HelloRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.text = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): HelloRequest {
+        return HelloRequest.deserialize(bytes);
+    }
+}
+export class HelloResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        text?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("text" in data && data.text != undefined) {
+                this.text = data.text;
+            }
+        }
+    }
+    get text() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set text(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        text?: string;
+    }): HelloResponse {
+        const message = new HelloResponse({});
+        if (data.text != null) {
+            message.text = data.text;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            text?: string;
+        } = {};
+        if (this.text != null) {
+            data.text = this.text;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.text.length)
+            writer.writeString(1, this.text);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): HelloResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new HelloResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.text = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): HelloResponse {
+        return HelloResponse.deserialize(bytes);
+    }
+}
 export abstract class UnimplementedSortedChatService {
     static definition = {
         Chat: {
@@ -150,10 +284,20 @@ export abstract class UnimplementedSortedChatService {
             requestDeserialize: (bytes: Buffer) => ChatRequest.deserialize(new Uint8Array(bytes)),
             responseSerialize: (message: ChatResponse) => Buffer.from(message.serialize()),
             responseDeserialize: (bytes: Buffer) => ChatResponse.deserialize(new Uint8Array(bytes))
+        },
+        LotsOfReplies: {
+            path: "/sortedchat.SortedChat/LotsOfReplies",
+            requestStream: false,
+            responseStream: true,
+            requestSerialize: (message: HelloRequest) => Buffer.from(message.serialize()),
+            requestDeserialize: (bytes: Buffer) => HelloRequest.deserialize(new Uint8Array(bytes)),
+            responseSerialize: (message: HelloResponse) => Buffer.from(message.serialize()),
+            responseDeserialize: (bytes: Buffer) => HelloResponse.deserialize(new Uint8Array(bytes))
         }
     };
     [method: string]: grpc_1.UntypedHandleCall;
     abstract Chat(call: grpc_1.ServerUnaryCall<ChatRequest, ChatResponse>, callback: grpc_1.sendUnaryData<ChatResponse>): void;
+    abstract LotsOfReplies(call: grpc_1.ServerWritableStream<HelloRequest, HelloResponse>): void;
 }
 export class SortedChatClient {
     private _address: string;
@@ -168,5 +312,9 @@ export class SortedChatClient {
     private static Chat = new grpc_web_1.MethodDescriptor<ChatRequest, ChatResponse>("/sortedchat.SortedChat/Chat", grpc_web_1.MethodType.UNARY, ChatRequest, ChatResponse, (message: ChatRequest) => message.serialize(), ChatResponse.deserialize);
     Chat(message: ChatRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<ChatRequest, ChatResponse>(this._address + "/sortedchat.SortedChat/Chat", message, metadata || {}, SortedChatClient.Chat);
+    }
+    private static LotsOfReplies = new grpc_web_1.MethodDescriptor<HelloRequest, HelloResponse>("/sortedchat.SortedChat/LotsOfReplies", grpc_web_1.MethodType.SERVER_STREAMING, HelloRequest, HelloResponse, (message: HelloRequest) => message.serialize(), HelloResponse.deserialize);
+    LotsOfReplies(message: HelloRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.serverStreaming(this._address + "/sortedchat.SortedChat/LotsOfReplies", message, metadata || {}, SortedChatClient.LotsOfReplies);
     }
 }

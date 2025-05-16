@@ -1,6 +1,6 @@
 import { ChatRequest, SortedChatClient } from "../../proto/chatservice"
 
-var chat = new SortedChatClient("http://localhost:8080")
+var chat = new SortedChatClient(import.meta.env.VITE_API_URL)
 
 async function doChat(msg: string) {
     const response = await chat.Chat(

@@ -59,71 +59,55 @@ export default function Chat() {
   const handleSend = () => {
     if (inputValue.trim()) {
       try {
-        // Create the new message
-        const newMessage: Message = { 
-          id: messages.length + 1, 
-          sender: "user", 
-          content: inputValue 
+        const newMessage: Message = {
+          id: messages.length + 1,
+          sender: "user",
+          content: inputValue,
         };
 
-        // Save user's input before clearing it
         const userInput = inputValue;
 
-        // Add message to chat store
         chatStore.addMessage(chatId, newMessage);
-
-        // Update local state
-        const updatedMessages = [...messages, newMessage];
-        setMessages(updatedMessages);
+        setMessages((prev) => [...prev, newMessage]);
         setInputValue("");
 
-        // Add a loading message
-        setMessages(prev => [...prev, { 
-          id: updatedMessages.length + 1,
-          sender: "ai", 
-          content: "..." 
-        }]);
+        const streamPlaceholder: Message = {
+          id: messages.length + 2,
+          sender: "ai",
+          content: "",
+        };
 
-        // Call the server API
-        doChat(userInput).then(response => {
-          // Remove loading message and add actual response
-          setMessages(prev => {
-            // Remove the last message (loading indicator)
-            const messagesWithoutLoading = prev.slice(0, -1);
+        setMessages((prev) => [...prev, streamPlaceholder]);
 
-            // Create new AI message with response text
-            const aiResponse: Message = { 
-              id: updatedMessages.length + 1,
-              sender: "ai", 
-              content: response || "I'm sorry, I couldn't process your request."
-            };
+        doChat(
+          userInput,
+          (textChunk) => {
+            setMessages((prev) => {
+              const updated = [...prev];
+              const lastIndex = updated.length - 1;
 
-            // Add AI response to store
-            chatStore.addMessage(chatId, aiResponse);
+              const lastMessage = updated[lastIndex];
+              const updatedLastMessage: Message = {
+                ...lastMessage,
+                content: (lastMessage.content ? lastMessage.content + " " : "") + textChunk,
+              };
 
-            return [...messagesWithoutLoading, aiResponse];
-          });
-        }).catch(err => {
-          console.error("Error getting chat response:", err);
-
-          // Remove loading message and add error message
-          setMessages(prev => {
-            // Remove the last message (loading indicator)
-            const messagesWithoutLoading = prev.slice(0, -1);
-
-            // Create error message
-            const errorResponse: Message = { 
-              id: updatedMessages.length + 1,
-              sender: "ai", 
-              content: "Sorry, I encountered an error processing your request."
-            };
-
-            // Add error response to store
-            chatStore.addMessage(chatId, errorResponse);
-
-            return [...messagesWithoutLoading, errorResponse];
-          });
-        });
+              updated[lastIndex] = updatedLastMessage;
+              return updated;
+            });
+          },
+          () => {
+            console.log("Streaming complete.");
+          },
+          (err) => {
+            console.error("Streaming error:", err);
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1].content = "Error receiving stream.";
+              return updated;
+            });
+          }
+        );
       } catch (err) {
         console.error("Error sending message:", err);
         setError("Failed to send message. Please try again.");
@@ -238,10 +222,9 @@ export default function Chat() {
           ) : (
             messages.map((message) => (
               <div key={message.id} className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-3 rounded-lg ${
-                  message.sender === 'user' 
-                    ? 'bg-blue-500 text-white rounded-br-none'
-                    : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'
+                <div className={`max-w-[80%] p-3 rounded-lg ${message.sender === 'user'
+                  ? 'bg-blue-500 text-white rounded-br-none'
+                  : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'
                   }`}>
                   {message.content}
                 </div>
@@ -267,10 +250,9 @@ export default function Chat() {
             <button
               onClick={handleSend}
               disabled={!inputValue.trim() || isLoading}
-              className={`ml-2 p-2 rounded-full ${
-                inputValue.trim() && !isLoading
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              className={`ml-2 p-2 rounded-full ${inputValue.trim() && !isLoading
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                 }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

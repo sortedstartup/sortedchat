@@ -7,7 +7,7 @@ function doChat(
   onMessage: (chunk: string) => void,
   onComplete?: () => void,
   onError?: (err: any) => void
-) {
+) {  
   const req = HelloRequest.fromObject({ text: message });
 
   const stream = chat.LotsOfReplies(req, {});

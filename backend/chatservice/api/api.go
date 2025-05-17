@@ -1,9 +1,15 @@
 package api
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"time"
+	"log"
+	"net/http"
+	"os"
+	"strings"
 
 	pb "sortedstartup.com/chatservice/proto"
 )
@@ -20,26 +26,78 @@ func (s *Server) Chat(ctx context.Context, req *pb.ChatRequest) (*pb.ChatRespons
 }
 
 func (s *Server) LotsOfReplies(req *pb.HelloRequest, stream pb.SortedChat_LotsOfRepliesServer) error {
-	words := []string{
-		"hello", "this", "is", "a", "test", "of", "streaming", "responses", "over", "gRPC",
-		"each", "word", "is", "sent", "with", "a", "delay", "to", "simulate", "live",
-		"data", "coming", "in", "real", "time", "we", "hope", "this", "makes", "sense",
-		"and", "shows", "how", "server", "side", "streaming", "works", "in", "practice",
-		"thank", "you", "for", "trying", "this", "example", "with", "your", "project", "Sanskar",
+
+	// apiKey := ""
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return fmt.Errorf("OpenAI API key not set")
 	}
 
-	for _, word := range words {
-		resp := &pb.HelloResponse{
-			Text: word,
-		}
+	requestBody := map[string]interface{}{
+		"model":        "gpt-4.1",
+		"instructions": "You are a Marine Engineer",
+		"input":        req.Text,
+		"stream":       true,
+	}
 
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %v", err)
+	}
 
-		time.Sleep(500 * time.Millisecond)
+	httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/responses", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("OpenAI request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	bufferSize := 15
+	tokenBuffer := ""
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		line = strings.TrimSpace(line)
+
+		if strings.HasPrefix(line, "data: ") {
+			data := strings.TrimPrefix(line, "data: ")
+
+			var chunk map[string]interface{}
+			if err := json.Unmarshal([]byte(data), &chunk); err != nil {
+				log.Printf("Failed to parse chunk: %v", err)
+				log.Println("Offending line:", data)
+				continue
+			}
+
+			if chunk["type"] == "response.output_text.delta" {
+				delta, ok := chunk["delta"].(string)
+				if ok {
+					log.Println("Received token:", delta)
+
+					tokenBuffer += delta
+
+					if len(tokenBuffer) >= bufferSize {
+						if err := stream.Send(&pb.HelloResponse{Text: tokenBuffer}); err != nil {
+							return fmt.Errorf("failed to send stream response: %v", err)
+						}
+						tokenBuffer = ""
+					}
+				}
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading stream: %v", err)
 	}
 
 	return nil
-
 }

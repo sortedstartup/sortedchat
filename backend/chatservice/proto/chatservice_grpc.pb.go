@@ -19,16 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SortedChat_Chat_FullMethodName          = "/sortedchat.SortedChat/Chat"
-	SortedChat_LotsOfReplies_FullMethodName = "/sortedchat.SortedChat/LotsOfReplies"
+	SortedChat_Chat_FullMethodName = "/sortedchat.SortedChat/Chat"
 )
 
 // SortedChatClient is the client API for SortedChat service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SortedChatClient interface {
-	Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (*ChatResponse, error)
-	LotsOfReplies(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[HelloResponse], error)
+	Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error)
 }
 
 type sortedChatClient struct {
@@ -39,23 +37,13 @@ func NewSortedChatClient(cc grpc.ClientConnInterface) SortedChatClient {
 	return &sortedChatClient{cc}
 }
 
-func (c *sortedChatClient) Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (*ChatResponse, error) {
+func (c *sortedChatClient) Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ChatResponse)
-	err := c.cc.Invoke(ctx, SortedChat_Chat_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SortedChat_ServiceDesc.Streams[0], SortedChat_Chat_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
-}
-
-func (c *sortedChatClient) LotsOfReplies(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[HelloResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SortedChat_ServiceDesc.Streams[0], SortedChat_LotsOfReplies_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[HelloRequest, HelloResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[ChatRequest, ChatResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -66,14 +54,13 @@ func (c *sortedChatClient) LotsOfReplies(ctx context.Context, in *HelloRequest, 
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SortedChat_LotsOfRepliesClient = grpc.ServerStreamingClient[HelloResponse]
+type SortedChat_ChatClient = grpc.ServerStreamingClient[ChatResponse]
 
 // SortedChatServer is the server API for SortedChat service.
 // All implementations must embed UnimplementedSortedChatServer
 // for forward compatibility.
 type SortedChatServer interface {
-	Chat(context.Context, *ChatRequest) (*ChatResponse, error)
-	LotsOfReplies(*HelloRequest, grpc.ServerStreamingServer[HelloResponse]) error
+	Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -84,11 +71,8 @@ type SortedChatServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSortedChatServer struct{}
 
-func (UnimplementedSortedChatServer) Chat(context.Context, *ChatRequest) (*ChatResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Chat not implemented")
-}
-func (UnimplementedSortedChatServer) LotsOfReplies(*HelloRequest, grpc.ServerStreamingServer[HelloResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method LotsOfReplies not implemented")
+func (UnimplementedSortedChatServer) Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}
 func (UnimplementedSortedChatServer) testEmbeddedByValue()                    {}
@@ -111,34 +95,16 @@ func RegisterSortedChatServer(s grpc.ServiceRegistrar, srv SortedChatServer) {
 	s.RegisterService(&SortedChat_ServiceDesc, srv)
 }
 
-func _SortedChat_Chat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChatRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SortedChatServer).Chat(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SortedChat_Chat_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SortedChatServer).Chat(ctx, req.(*ChatRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SortedChat_LotsOfReplies_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(HelloRequest)
+func _SortedChat_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ChatRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(SortedChatServer).LotsOfReplies(m, &grpc.GenericServerStream[HelloRequest, HelloResponse]{ServerStream: stream})
+	return srv.(SortedChatServer).Chat(m, &grpc.GenericServerStream[ChatRequest, ChatResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SortedChat_LotsOfRepliesServer = grpc.ServerStreamingServer[HelloResponse]
+type SortedChat_ChatServer = grpc.ServerStreamingServer[ChatResponse]
 
 // SortedChat_ServiceDesc is the grpc.ServiceDesc for SortedChat service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -146,16 +112,11 @@ type SortedChat_LotsOfRepliesServer = grpc.ServerStreamingServer[HelloResponse]
 var SortedChat_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "sortedchat.SortedChat",
 	HandlerType: (*SortedChatServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Chat",
-			Handler:    _SortedChat_Chat_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "LotsOfReplies",
-			Handler:       _SortedChat_LotsOfReplies_Handler,
+			StreamName:    "Chat",
+			Handler:       _SortedChat_Chat_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"sortedstartup.com/chat/mono/util"
@@ -20,6 +21,12 @@ const (
 )
 
 func main() {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Warning: .env file not found, using system env")
+	}
+
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)

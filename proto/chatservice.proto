@@ -6,8 +6,7 @@ option go_package = "sortedstartup.com/chatservice/proto";
 
 
 service SortedChat {
-    rpc Chat(ChatRequest) returns (ChatResponse);
-    rpc LotsOfReplies(HelloRequest) returns (stream HelloResponse);
+    rpc Chat(ChatRequest) returns (stream ChatResponse);
 }
 
 message ChatRequest {
@@ -18,10 +17,3 @@ message ChatResponse {
     string text = 1;
 }
 
-message HelloRequest {
-    string text = 1;
-}
-
-message HelloResponse {
-    string text = 1;
-}

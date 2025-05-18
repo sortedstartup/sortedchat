@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	db "sortedstartup.com/chatservice/dao"
 	pb "sortedstartup.com/chatservice/proto"
 )
 
@@ -22,20 +23,24 @@ type ChatMessage struct {
 	Content string `json:"content"`
 }
 
-var chatHistory = make(map[string][]ChatMessage)
-
 func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) error {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		return fmt.Errorf("OpenAI API key not set")
 	}
-	threadID := req.ThreadId
 
+	threadID := req.ThreadId
 	if threadID == "" {
 		return fmt.Errorf(" Thread ID is required to maintain context")
 	}
 
-	history := chatHistory[threadID]
+	var history []ChatMessage
+	err := db.DB.Select(&history, `
+        SELECT role, content FROM chat_messages 
+        WHERE thread_id = ? ORDER BY id`, threadID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch history: %v", err)
+	}
 
 	if len(history) == 0 {
 		history = append(history, ChatMessage{
@@ -44,12 +49,14 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 		})
 	}
 
-	//adding user message to history
-	history = append(history, ChatMessage{
-		Role:    "user",
-		Content: req.Text,
-	})
-	chatHistory[threadID] = history
+	_, err = db.DB.Exec(`
+        INSERT INTO chat_messages (thread_id, role, content) 
+        VALUES (?, ?, ?)`, threadID, "user", req.Text)
+	if err != nil {
+		return fmt.Errorf("failed to insert user message: %v", err)
+	}
+
+	history = append(history, ChatMessage{Role: "user", Content: req.Text})
 
 	requestBody := map[string]interface{}{
 		"model":        "gpt-4.1",
@@ -70,8 +77,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
 
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return fmt.Errorf("OpenAI request failed: %v", err)
 	}
@@ -118,11 +124,12 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 				continue
 			}
 
-			history = append(history, ChatMessage{
-				Role:    "assistant",
-				Content: text,
-			})
-			chatHistory[threadID] = history
+			_, err := db.DB.Exec(`
+                INSERT INTO chat_messages (thread_id, role, content) 
+                VALUES (?, ?, ?)`, threadID, "assistant", text)
+			if err != nil {
+				log.Printf("failed to insert assistant message: %v", err)
+			}
 		}
 	}
 

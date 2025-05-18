@@ -44,6 +44,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 		})
 	}
 
+	//adding user message to history
 	history = append(history, ChatMessage{
 		Role:    "user",
 		Content: req.Text,

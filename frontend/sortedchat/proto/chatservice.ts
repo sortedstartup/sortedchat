@@ -10,7 +10,7 @@ export class ChatRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         text?: string;
-        ThreadId?: string;
+        threadId?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -18,8 +18,8 @@ export class ChatRequest extends pb_1.Message {
             if ("text" in data && data.text != undefined) {
                 this.text = data.text;
             }
-            if ("ThreadId" in data && data.ThreadId != undefined) {
-                this.ThreadId = data.ThreadId;
+            if ("threadId" in data && data.threadId != undefined) {
+                this.threadId = data.threadId;
             }
         }
     }
@@ -29,35 +29,35 @@ export class ChatRequest extends pb_1.Message {
     set text(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
-    get ThreadId() {
+    get threadId() {
         return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
     }
-    set ThreadId(value: string) {
+    set threadId(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
     static fromObject(data: {
         text?: string;
-        ThreadId?: string;
+        threadId?: string;
     }): ChatRequest {
         const message = new ChatRequest({});
         if (data.text != null) {
             message.text = data.text;
         }
-        if (data.ThreadId != null) {
-            message.ThreadId = data.ThreadId;
+        if (data.threadId != null) {
+            message.threadId = data.threadId;
         }
         return message;
     }
     toObject() {
         const data: {
             text?: string;
-            ThreadId?: string;
+            threadId?: string;
         } = {};
         if (this.text != null) {
             data.text = this.text;
         }
-        if (this.ThreadId != null) {
-            data.ThreadId = this.ThreadId;
+        if (this.threadId != null) {
+            data.threadId = this.threadId;
         }
         return data;
     }
@@ -67,8 +67,8 @@ export class ChatRequest extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.text.length)
             writer.writeString(1, this.text);
-        if (this.ThreadId.length)
-            writer.writeString(2, this.ThreadId);
+        if (this.threadId.length)
+            writer.writeString(2, this.threadId);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -82,7 +82,7 @@ export class ChatRequest extends pb_1.Message {
                     message.text = reader.readString();
                     break;
                 case 2:
-                    message.ThreadId = reader.readString();
+                    message.threadId = reader.readString();
                     break;
                 default: reader.skipField();
             }

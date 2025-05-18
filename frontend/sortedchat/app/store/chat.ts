@@ -9,7 +9,7 @@ function doChat(
   onComplete?: () => void,
   onError?: (err: any) => void
 ) {  
-  const req = ChatRequest.fromObject({ text: message, ThreadId: threadId });
+  const req = ChatRequest.fromObject({ text: message, threadId: threadId });
 
   const stream = chat.Chat(req, {});
 

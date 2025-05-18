@@ -24,7 +24,7 @@ const (
 type ChatRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
-	ThreadId      string                 `protobuf:"bytes,2,opt,name=ThreadId,proto3" json:"ThreadId,omitempty"`
+	ThreadId      string                 `protobuf:"bytes,2,opt,name=threadId,proto3" json:"threadId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -125,7 +125,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"sortedchat\"=\n" +
 	"\vChatRequest\x12\x12\n" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12\x1a\n" +
-	"\bThreadId\x18\x02 \x01(\tR\bThreadId\"\"\n" +
+	"\bthreadId\x18\x02 \x01(\tR\bthreadId\"\"\n" +
 	"\fChatResponse\x12\x12\n" +
 	"\x04text\x18\x01 \x01(\tR\x04text2I\n" +
 	"\n" +

@@ -10,12 +10,16 @@ export class ChatRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         text?: string;
+        ThreadId?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("text" in data && data.text != undefined) {
                 this.text = data.text;
+            }
+            if ("ThreadId" in data && data.ThreadId != undefined) {
+                this.ThreadId = data.ThreadId;
             }
         }
     }
@@ -25,21 +29,35 @@ export class ChatRequest extends pb_1.Message {
     set text(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
+    get ThreadId() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set ThreadId(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
     static fromObject(data: {
         text?: string;
+        ThreadId?: string;
     }): ChatRequest {
         const message = new ChatRequest({});
         if (data.text != null) {
             message.text = data.text;
+        }
+        if (data.ThreadId != null) {
+            message.ThreadId = data.ThreadId;
         }
         return message;
     }
     toObject() {
         const data: {
             text?: string;
+            ThreadId?: string;
         } = {};
         if (this.text != null) {
             data.text = this.text;
+        }
+        if (this.ThreadId != null) {
+            data.ThreadId = this.ThreadId;
         }
         return data;
     }
@@ -49,6 +67,8 @@ export class ChatRequest extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.text.length)
             writer.writeString(1, this.text);
+        if (this.ThreadId.length)
+            writer.writeString(2, this.ThreadId);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -60,6 +80,9 @@ export class ChatRequest extends pb_1.Message {
             switch (reader.getFieldNumber()) {
                 case 1:
                     message.text = reader.readString();
+                    break;
+                case 2:
+                    message.ThreadId = reader.readString();
                     break;
                 default: reader.skipField();
             }

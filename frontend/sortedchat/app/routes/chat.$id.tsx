@@ -83,6 +83,7 @@ export default function Chat() {
 
         doChat(
           userInput,
+          String(chatId),
           (textChunk) => {
             setMessages((prev) => {
               const updated = [...prev];

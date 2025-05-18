@@ -24,6 +24,7 @@ const (
 type ChatRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	ThreadId      string                 `protobuf:"bytes,2,opt,name=ThreadId,proto3" json:"ThreadId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -61,6 +62,13 @@ func (*ChatRequest) Descriptor() ([]byte, []int) {
 func (x *ChatRequest) GetText() string {
 	if x != nil {
 		return x.Text
+	}
+	return ""
+}
+
+func (x *ChatRequest) GetThreadId() string {
+	if x != nil {
+		return x.ThreadId
 	}
 	return ""
 }
@@ -114,9 +122,10 @@ var File_chatservice_proto protoreflect.FileDescriptor
 const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"\x11chatservice.proto\x12\n" +
-	"sortedchat\"!\n" +
+	"sortedchat\"=\n" +
 	"\vChatRequest\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text\"\"\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\x12\x1a\n" +
+	"\bThreadId\x18\x02 \x01(\tR\bThreadId\"\"\n" +
 	"\fChatResponse\x12\x12\n" +
 	"\x04text\x18\x01 \x01(\tR\x04text2I\n" +
 	"\n" +

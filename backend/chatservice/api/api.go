@@ -17,18 +17,43 @@ type Server struct {
 	pb.UnimplementedSortedChatServer
 }
 
-func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) error {
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
 
-	// apiKey := ""
+var chatHistory = make(map[string][]ChatMessage)
+
+func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) error {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		return fmt.Errorf("OpenAI API key not set")
 	}
+	threadID := req.ThreadId
+
+	if threadID == "" {
+		return fmt.Errorf(" Thread ID is required to maintain context")
+	}
+
+	history := chatHistory[threadID]
+
+	if len(history) == 0 {
+		history = append(history, ChatMessage{
+			Role:    "system",
+			Content: "You are a Marine Engineer.",
+		})
+	}
+
+	history = append(history, ChatMessage{
+		Role:    "user",
+		Content: req.Text,
+	})
+	chatHistory[threadID] = history
 
 	requestBody := map[string]interface{}{
 		"model":        "gpt-4.1",
 		"instructions": "You are a Marine Engineer",
-		"input":        req.Text,
+		"input":        history,
 		"stream":       true,
 	}
 
@@ -52,7 +77,6 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 	defer resp.Body.Close()
 
 	scanner := bufio.NewScanner(resp.Body)
-
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if !strings.HasPrefix(line, "data: ") {
@@ -67,16 +91,43 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 			continue
 		}
 
-		if chunk["type"] == "response.output_text.delta" {
+		switch chunk["type"] {
+		case "response.output_text.delta":
 			if text, ok := chunk["delta"].(string); ok {
-				fmt.Println("Text Delta:", text)
 				stream.Send(&pb.ChatResponse{Text: text})
 			}
+		case "response.output_item.done":
+			item, ok := chunk["item"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			contentArr, ok := item["content"].([]interface{})
+			if !ok || len(contentArr) == 0 {
+				continue
+			}
+
+			contentObj, ok := contentArr[0].(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			text, ok := contentObj["text"].(string)
+			if !ok {
+				continue
+			}
+
+			history = append(history, ChatMessage{
+				Role:    "assistant",
+				Content: text,
+			})
+			chatHistory[threadID] = history
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("error reading stream: %v", err)
 	}
+
 	return nil
 }

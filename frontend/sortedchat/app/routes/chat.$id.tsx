@@ -5,6 +5,8 @@ import logoLight from "../welcome/logo-light.svg";
 import { chatStore } from "../utils/chatStore";
 import type { Message } from "../utils/chatStore";
 import { doChat } from "~/store/chat";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from 'remark-gfm'
 
 export default function Chat() {
   const { id } = useParams();
@@ -81,6 +83,7 @@ export default function Chat() {
 
         doChat(
           userInput,
+          String(chatId),
           (textChunk) => {
             setMessages((prev) => {
               const updated = [...prev];
@@ -226,7 +229,7 @@ export default function Chat() {
                   ? 'bg-blue-500 text-white rounded-br-none'
                   : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'
                   }`}>
-                  {message.content}
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
                 </div>
               </div>
             ))

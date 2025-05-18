@@ -24,6 +24,7 @@ const (
 type ChatRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	ThreadId      string                 `protobuf:"bytes,2,opt,name=threadId,proto3" json:"threadId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -61,6 +62,13 @@ func (*ChatRequest) Descriptor() ([]byte, []int) {
 func (x *ChatRequest) GetText() string {
 	if x != nil {
 		return x.Text
+	}
+	return ""
+}
+
+func (x *ChatRequest) GetThreadId() string {
+	if x != nil {
+		return x.ThreadId
 	}
 	return ""
 }
@@ -109,112 +117,20 @@ func (x *ChatResponse) GetText() string {
 	return ""
 }
 
-type HelloRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *HelloRequest) Reset() {
-	*x = HelloRequest{}
-	mi := &file_chatservice_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *HelloRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HelloRequest) ProtoMessage() {}
-
-func (x *HelloRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HelloRequest.ProtoReflect.Descriptor instead.
-func (*HelloRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *HelloRequest) GetText() string {
-	if x != nil {
-		return x.Text
-	}
-	return ""
-}
-
-type HelloResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *HelloResponse) Reset() {
-	*x = HelloResponse{}
-	mi := &file_chatservice_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *HelloResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HelloResponse) ProtoMessage() {}
-
-func (x *HelloResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HelloResponse.ProtoReflect.Descriptor instead.
-func (*HelloResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *HelloResponse) GetText() string {
-	if x != nil {
-		return x.Text
-	}
-	return ""
-}
-
 var File_chatservice_proto protoreflect.FileDescriptor
 
 const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"\x11chatservice.proto\x12\n" +
-	"sortedchat\"!\n" +
+	"sortedchat\"=\n" +
 	"\vChatRequest\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text\"\"\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\x12\x1a\n" +
+	"\bthreadId\x18\x02 \x01(\tR\bthreadId\"\"\n" +
 	"\fChatResponse\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text\"\"\n" +
-	"\fHelloRequest\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text\"#\n" +
-	"\rHelloResponse\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text2\x8f\x01\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text2I\n" +
 	"\n" +
-	"SortedChat\x129\n" +
-	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse\x12F\n" +
-	"\rLotsOfReplies\x12\x18.sortedchat.HelloRequest\x1a\x19.sortedchat.HelloResponse0\x01B%Z#sortedstartup.com/chatservice/protob\x06proto3"
+	"SortedChat\x12;\n" +
+	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01B%Z#sortedstartup.com/chatservice/protob\x06proto3"
 
 var (
 	file_chatservice_proto_rawDescOnce sync.Once
@@ -228,20 +144,16 @@ func file_chatservice_proto_rawDescGZIP() []byte {
 	return file_chatservice_proto_rawDescData
 }
 
-var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_chatservice_proto_goTypes = []any{
-	(*ChatRequest)(nil),   // 0: sortedchat.ChatRequest
-	(*ChatResponse)(nil),  // 1: sortedchat.ChatResponse
-	(*HelloRequest)(nil),  // 2: sortedchat.HelloRequest
-	(*HelloResponse)(nil), // 3: sortedchat.HelloResponse
+	(*ChatRequest)(nil),  // 0: sortedchat.ChatRequest
+	(*ChatResponse)(nil), // 1: sortedchat.ChatResponse
 }
 var file_chatservice_proto_depIdxs = []int32{
 	0, // 0: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	2, // 1: sortedchat.SortedChat.LotsOfReplies:input_type -> sortedchat.HelloRequest
-	1, // 2: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	3, // 3: sortedchat.SortedChat.LotsOfReplies:output_type -> sortedchat.HelloResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	1, // 1: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	1, // [1:2] is the sub-list for method output_type
+	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -258,7 +170,7 @@ func file_chatservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chatservice_proto_rawDesc), len(file_chatservice_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

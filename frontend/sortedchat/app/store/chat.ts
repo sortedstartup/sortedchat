@@ -1,18 +1,19 @@
-import { ChatRequest, HelloRequest, HelloResponse, SortedChatClient } from "../../proto/chatservice"
+import { ChatRequest, ChatResponse, SortedChatClient } from "../../proto/chatservice"
 
 var chat = new SortedChatClient(import.meta.env.VITE_API_URL)
 
 function doChat(
   message: string,
+  threadId: string,
   onMessage: (chunk: string) => void,
   onComplete?: () => void,
   onError?: (err: any) => void
 ) {  
-  const req = HelloRequest.fromObject({ text: message });
+  const req = ChatRequest.fromObject({ text: message, threadId: threadId });
 
-  const stream = chat.LotsOfReplies(req, {});
+  const stream = chat.Chat(req, {});
 
-  stream.on("data", (res: HelloResponse) => {
+  stream.on("data", (res: ChatResponse) => {
     onMessage(res.text);
   });
 

@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"sortedstartup.com/chat/mono/util"
 	"sortedstartup.com/chatservice/api"
+	db "sortedstartup.com/chatservice/dao"
 
 	pb "sortedstartup.com/chatservice/proto"
 )
@@ -31,6 +32,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
+
+	db.InitDB()
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterSortedChatServer(grpcServer, &api.Server{})

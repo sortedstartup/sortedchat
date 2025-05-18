@@ -7,14 +7,39 @@ option go_package = "sortedstartup.com/chatservice/proto";
 
 service SortedChat {
     rpc Chat(ChatRequest) returns (stream ChatResponse);
+    rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
+    rpc GetChatList(GetChatListRequest) returns (GetChatListResponse);
 }
 
 message ChatRequest {
     string text = 1;
-    string threadId = 2;
+    string chatId = 2;
 }
 
 message ChatResponse {
     string text = 1;
 }
 
+message GetHistoryRequest {
+  string chatId = 1;
+}
+
+message GetHistoryResponse {
+  repeated ChatMessage history = 1;
+}
+
+message ChatMessage {
+  string role = 1;
+  string content = 2;
+}
+
+message GetChatListRequest {}
+
+message GetChatListResponse {
+  repeated ChatInfo chats = 1;
+}
+
+message ChatInfo {
+  string chatId = 1;
+  string name = 2;
+}

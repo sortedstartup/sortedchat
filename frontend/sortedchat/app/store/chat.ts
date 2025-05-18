@@ -4,12 +4,12 @@ var chat = new SortedChatClient(import.meta.env.VITE_API_URL)
 
 function doChat(
   message: string,
-  threadId: string,
+  chatId: string,
   onMessage: (chunk: string) => void,
   onComplete?: () => void,
   onError?: (err: any) => void
 ) {  
-  const req = ChatRequest.fromObject({ text: message, threadId: threadId });
+  const req = ChatRequest.fromObject({ text: message, chatId: chatId });
 
   const stream = chat.Chat(req, {});
 

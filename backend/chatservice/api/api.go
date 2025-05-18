@@ -3,6 +3,7 @@ package api
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -29,15 +30,15 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 		return fmt.Errorf("OpenAI API key not set")
 	}
 
-	threadID := req.ThreadId
-	if threadID == "" {
-		return fmt.Errorf(" Thread ID is required to maintain context")
+	chatId := req.ChatId
+	if chatId == "" {
+		return fmt.Errorf(" Chat ID is required to maintain context")
 	}
 
 	var history []ChatMessage
 	err := db.DB.Select(&history, `
         SELECT role, content FROM chat_messages 
-        WHERE thread_id = ? ORDER BY id`, threadID)
+        WHERE thread_id = ? ORDER BY id`, chatId)
 	if err != nil {
 		return fmt.Errorf("failed to fetch history: %v", err)
 	}
@@ -51,7 +52,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 
 	_, err = db.DB.Exec(`
         INSERT INTO chat_messages (thread_id, role, content) 
-        VALUES (?, ?, ?)`, threadID, "user", req.Text)
+        VALUES (?, ?, ?)`, chatId, "user", req.Text)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
 	}
@@ -126,7 +127,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 
 			_, err := db.DB.Exec(`
                 INSERT INTO chat_messages (thread_id, role, content) 
-                VALUES (?, ?, ?)`, threadID, "assistant", text)
+                VALUES (?, ?, ?)`, chatId, "assistant", text)
 			if err != nil {
 				log.Printf("failed to insert assistant message: %v", err)
 			}
@@ -138,4 +139,48 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 	}
 
 	return nil
+}
+
+func (s *Server) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
+	chatId := req.ChatId
+	if chatId == "" {
+		return nil, fmt.Errorf("chat ID is required")
+	}
+
+	var messages []struct {
+		Role    string `db:"role"`
+		Content string `db:"content"`
+	}
+
+	err := db.DB.Select(&messages, `
+		SELECT role, content FROM chat_messages
+		WHERE thread_id = ? ORDER BY id`, chatId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch history: %v", err)
+	}
+
+	var pbMessages []*pb.ChatMessage
+	for _, m := range messages {
+		pbMessages = append(pbMessages, &pb.ChatMessage{
+			Role:    m.Role,
+			Content: m.Content,
+		})
+	}
+
+	return &pb.GetHistoryResponse{
+		History: pbMessages,
+	}, nil
+}
+
+func (s *Server) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
+	var chats []*pb.ChatInfo
+
+	err := db.DB.Select(&chats, `
+		SELECT chat_id, name FROM chat_list ORDER BY id
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch chat list: %v", err)
+	}
+
+	return &pb.GetChatListResponse{Chats: chats}, nil
 }

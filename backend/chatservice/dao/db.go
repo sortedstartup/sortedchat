@@ -27,7 +27,7 @@ func InitDB() {
 
 	CREATE TABLE IF NOT EXISTS chat_list (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		chat_id TEXT UNIQUE NOT NULL,
+		chat_id TEXT NOT NULL,
 		name TEXT NOT NULL
 	);
     `

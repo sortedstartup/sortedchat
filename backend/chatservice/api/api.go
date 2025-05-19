@@ -38,7 +38,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 	var history []ChatMessage
 	err := db.DB.Select(&history, `
         SELECT role, content FROM chat_messages 
-        WHERE thread_id = ? ORDER BY id`, chatId)
+        WHERE chat_id = ? ORDER BY id`, chatId)
 	if err != nil {
 		return fmt.Errorf("failed to fetch history: %v", err)
 	}
@@ -51,7 +51,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 	}
 
 	_, err = db.DB.Exec(`
-        INSERT INTO chat_messages (thread_id, role, content) 
+        INSERT INTO chat_messages (chat_id, role, content) 
         VALUES (?, ?, ?)`, chatId, "user", req.Text)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
@@ -126,7 +126,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 			}
 
 			_, err := db.DB.Exec(`
-                INSERT INTO chat_messages (thread_id, role, content) 
+                INSERT INTO chat_messages (chat_id, role, content) 
                 VALUES (?, ?, ?)`, chatId, "assistant", text)
 			if err != nil {
 				log.Printf("failed to insert assistant message: %v", err)
@@ -154,7 +154,7 @@ func (s *Server) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb
 
 	err := db.DB.Select(&messages, `
 		SELECT role, content FROM chat_messages
-		WHERE thread_id = ? ORDER BY id`, chatId)
+		WHERE chat_id = ? ORDER BY id`, chatId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch history: %v", err)
 	}
@@ -172,15 +172,51 @@ func (s *Server) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb
 	}, nil
 }
 
-func (s *Server) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
-	var chats []*pb.ChatInfo
+type ChatRow struct {
+	ChatID string `db:"chat_id"`
+	Name   string `db:"name"`
+}
 
-	err := db.DB.Select(&chats, `
-		SELECT chat_id, name FROM chat_list ORDER BY id
+func (s *Server) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
+	var rows []ChatRow
+
+	err := db.DB.Select(&rows, `
+		SELECT chat_id, name FROM chat_list ORDER BY chat_id
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch chat list: %v", err)
 	}
 
+	var chats []*pb.ChatInfo
+	for _, row := range rows {
+		chats = append(chats, &pb.ChatInfo{
+			ChatId: row.ChatID,
+			Name:   row.Name,
+		})
+	}
+
 	return &pb.GetChatListResponse{Chats: chats}, nil
+}
+
+func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
+	chatId := req.ChatId
+	if chatId == "" {
+		return nil, fmt.Errorf("chat ID is required")
+	}
+	name := req.Name
+	if name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+
+	_, err := db.DB.Exec(`
+        INSERT INTO chat_list (chat_id, name) 
+        VALUES (?, ?)`, chatId, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert user message: %w", err)
+	}
+
+	return &pb.CreateChatResponse{
+		Message: "Chat created successfully",
+	}, nil
+
 }

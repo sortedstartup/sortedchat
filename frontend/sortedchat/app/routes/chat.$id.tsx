@@ -13,10 +13,13 @@ export default function Chat() {
   const navigate = useNavigate();
   const chatId = Number(id);
 
-  const [chats, setChats] = useState(chatStore.getAllChats().map(chat => ({
-    ...chat,
-    selected: Number(chat.id) === chatId,
-  })));
+  // const [chats, setChats] = useState(chatStore.getAllChats().map(chat => ({
+  //   ...chat,
+  //   selected: Number(chat.id) === chatId,
+  // })));
+
+  const [chats, setChats] = useState<Array<{ id: number; name: string; selected: boolean }>>([]);
+
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -39,17 +42,27 @@ export default function Chat() {
         const newChat = chatStore.createChat(
           chatId,
           `New Chat ${chatId}`,
-          "How can I help you today?"
         );
-        setMessages([...newChat.messages]);
+        setMessages([]);
         setError(null);
       }
 
       // Update chats list
-      setChats(chatStore.getAllChats().map(chat => ({
-        ...chat,
-        selected: Number(chat.id) === chatId,
-      })));
+      // setChats(chatStore.getAllChats().map(chat => ({
+      //   ...chat,
+      //   selected: Number(chat.id) === chatId,
+      // })));
+
+      chatStore.getAllChats().then(fetchedChats => {
+        setChats(
+          fetchedChats.map(chat => ({
+            ...chat,
+            selected: Number(chat.id) === chatId,
+          }))
+        );
+      }).catch(err => {
+        console.error("Failed to load chats:", err);
+      });
     } catch (err) {
       console.error("Error loading chat:", err);
       setError("Failed to load chat. Please try again.");
@@ -128,12 +141,17 @@ export default function Chat() {
   const handleChatSelect = (selectedChatId: number) => {
     navigate(`/chat/${selectedChatId}`);
   };
-
-  const handleNewChat = () => {
-    const existingIds = chatStore.getAllChats().map(chat => chat.id);
+  
+  const handleNewChat = async () => {
+  try {
+    const existingChats = await chatStore.getAllChats();
+    const existingIds = existingChats.map(chat => chat.id);
     const newChatId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
     navigate(`/chat/${newChatId}`);
-  };
+  } catch (err) {
+    console.error("Failed to create new chat:", err);
+  }
+};
 
   if (error) {
     return (

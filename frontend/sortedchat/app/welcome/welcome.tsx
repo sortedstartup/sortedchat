@@ -10,17 +10,26 @@ export function Welcome() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [chats, setChats] = useState(chatStore.getAllChats().map(chat => ({
-    ...chat,
-    selected: false,
-  })));
+  // const [chats, setChats] = useState(chatStore.getAllChats().map(chat => ({
+  //   ...chat,
+  //   selected: false,
+  // })));
+
+  const [chats, setChats] = useState<Array<{ id: number; name: string; selected: boolean }>>([]);
+
 
   // Refresh chats from store when component mounts
   useEffect(() => {
-    setChats(chatStore.getAllChats().map(chat => ({
-      ...chat,
-      selected: false,
-    })));
+    chatStore.getAllChats().then(fetchedChats => {
+        setChats(
+          fetchedChats.map(chat => ({
+            ...chat,
+            selected: Number(chat.id) === 1,
+          }))
+        );
+      }).catch(err => {
+        console.error("Failed to load chats:", err);
+      });
   }, []);
 
   const handleChatSelect = (chatId: number) => {

@@ -9,6 +9,16 @@ service SortedChat {
     rpc Chat(ChatRequest) returns (stream ChatResponse);
     rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
     rpc GetChatList(GetChatListRequest) returns (GetChatListResponse);
+    rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
+}
+
+message CreateChatRequest {
+  string chatId = 1;
+  string name = 2;
+}
+
+message CreateChatResponse {
+  string message = 1;
 }
 
 message ChatRequest {

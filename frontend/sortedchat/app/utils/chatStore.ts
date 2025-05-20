@@ -1,4 +1,8 @@
-// Define the types for our chat data
+
+import { ChatMessage, GetChatListRequest, GetHistoryRequest, GetHistoryResponse, SortedChatClient } from "../../proto/chatservice";
+import { CreateChatRequest } from "../../proto/chatservice";
+// import { grpc } from "@improbable-eng/grpc-web";
+
 export interface Message {
   id: number;
   sender: string;
@@ -14,37 +18,13 @@ export interface ChatDataStore {
   [key: number]: ChatInfo;
 }
 
-// Create a singleton store that can be imported across components
 class ChatStore {
   private static instance: ChatStore;
-  private chatData: ChatDataStore = {
-    1: {
-      name: "Chat about AI",
-      messages: [
-        { id: 1, sender: "ai", content: "Hello! How can I help you today?" },
-        { id: 2, sender: "user", content: "I'm looking to learn more about AI." },
-        { id: 3, sender: "ai", content: "Great! What specific aspect of AI are you interested in?" },
-      ],
-    },
-    2: {
-      name: "Project planning",
-      messages: [
-        { id: 1, sender: "ai", content: "Let's plan your project. What are you working on?" },
-        { id: 2, sender: "user", content: "I'm building a new e-commerce website." },
-        { id: 3, sender: "ai", content: "Excellent! What features do you need for your e-commerce site?" },
-      ],
-    },
-    3: {
-      name: "Brainstorming session",
-      messages: [
-        { id: 1, sender: "ai", content: "Ready to brainstorm! What topic are we exploring today?" },
-        { id: 2, sender: "user", content: "I need ideas for a marketing campaign." },
-        { id: 3, sender: "ai", content: "Let's generate some marketing campaign ideas. What's your target audience?" },
-      ],
-    },
-  };
+  private chatData: ChatDataStore = {};
+  private client = new SortedChatClient(import.meta.env.VITE_API_URL);
 
-  private constructor() {}
+
+  private constructor() { }
 
   public static getInstance(): ChatStore {
     if (!ChatStore.instance) {
@@ -57,37 +37,80 @@ class ChatStore {
     return this.chatData;
   }
 
-  public getChat(id: number): ChatInfo | undefined {
-    return this.chatData[id];
+  public getChat(id: number): Promise<ChatInfo | undefined> {
+    const cached = this.chatData[id];
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+
+    const chatId = id.toString();
+    const request = new GetHistoryRequest();
+    request.chatId = chatId;
+
+    // Call the gRPC method and return a Promise
+    return this.client.GetHistory(request, null)  // note: second argument is metadata, can be `null` or `{}`.
+      .then((response: GetHistoryResponse) => {
+        const history = response.history.map((msg: ChatMessage, index: number) => ({
+          id: index,
+          sender: msg.role,
+          content: msg.content,
+        }));
+
+        const chatInfo: ChatInfo = {
+          name: `Chat ${chatId}`, // or get from another backend endpoint later
+          messages: history,
+        };
+
+        this.chatData[id] = chatInfo;
+        return chatInfo;
+      })
+      .catch((err) => {
+        console.error("gRPC GetHistory error:", err);
+        return undefined;
+      });
   }
 
-  public createChat(id: number, name: string, initialMessage: string): ChatInfo {
-    const newChat: ChatInfo = {
-      name,
-      messages: [
-        { id: 1, sender: "user", content: initialMessage }
-      ]
-    };
-    
-    this.chatData[id] = newChat;
-    return newChat;
+  public async createChat(id: number, name: string): Promise<string> {
+    const request = new CreateChatRequest({ chatId: id.toString(), name: name });
+
+    try {
+      const response = await this.client.CreateChat(request, {});
+      return response.message;
+    } catch (err: any) {
+      console.error("CreateChat RPC failed:", err.message);
+      throw err;
+    }
   }
 
   public addMessage(chatId: number, message: Message): void {
     if (!this.chatData[chatId]) {
-      this.createChat(chatId, `Chat ${chatId}`, "");
+      this.chatData[chatId] = {
+        name: `Chat ${chatId}`,
+        messages: []
+      };
     }
-    
+
     this.chatData[chatId].messages.push(message);
   }
 
-  public getAllChats(): Array<{id: number, name: string}> {
-    return Object.entries(this.chatData).map(([id, data]) => ({
-      id: Number(id),
-      name: data.name
-    }));
+  public async getAllChats(): Promise<Array<{ id: number; name: string }>> {
+    const request = new GetChatListRequest();
+
+    try {
+      const response = await this.client.GetChatList(request, {});
+      const chats = response.chats;
+      console.log(chats)
+
+      return chats.map(chat => ({
+        id: parseInt(chat.chatId),
+        name: chat.name
+      }));
+    } catch (err: any) {
+      console.error("Failed to fetch chat list:", err.message);
+      throw err;
+    }
   }
+
 }
 
-// Export a singleton instance
-export const chatStore = ChatStore.getInstance(); 
+export const chatStore = ChatStore.getInstance();

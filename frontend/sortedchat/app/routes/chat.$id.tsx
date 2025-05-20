@@ -13,50 +13,55 @@ export default function Chat() {
   const navigate = useNavigate();
   const chatId = Number(id);
 
-  const [chats, setChats] = useState(chatStore.getAllChats().map(chat => ({
-    ...chat,
-    selected: Number(chat.id) === chatId,
-  })));
+  // const [chats, setChats] = useState(chatStore.getAllChats().map(chat => ({
+  //   ...chat,
+  //   selected: Number(chat.id) === chatId,
+  // })));
+
+  const [chats, setChats] = useState<Array<{ id: number; name: string; selected: boolean }>>([]);
+
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+useEffect(() => {
+  const loadChat = async () => {
     try {
       setIsLoading(true);
 
-      // Get the chat from store
-      const chat = chatStore.getChat(chatId);
+      let chat = await chatStore.getChat(chatId);
+      console.log("Initial chat load:", chat);
 
-      if (chat) {
-        // Chat exists, load its messages
-        setMessages([...chat.messages]);
-        setError(null);
-      } else {
-        // Initialize a new chat if it doesn't exist
-        const newChat = chatStore.createChat(
-          chatId,
-          `New Chat ${chatId}`,
-          "How can I help you today?"
-        );
-        setMessages([...newChat.messages]);
-        setError(null);
+      if (!chat) {
+        console.log("Chat not found, will create:", chatId);
+        await chatStore.createChat(chatId, `New Chat ${chatId}`);
+        chat = await chatStore.getChat(chatId);
+        console.log("Chat after creation:", chat);
       }
 
-      // Update chats list
-      setChats(chatStore.getAllChats().map(chat => ({
-        ...chat,
-        selected: Number(chat.id) === chatId,
-      })));
+      setMessages(chat?.messages || []);
+      setError(null);
+
+      const fetchedChats = await chatStore.getAllChats();
+      console.log("All chats after loading:", fetchedChats);
+      setChats(
+        fetchedChats.map(chat => ({
+          ...chat,
+          selected: Number(chat.id) === chatId,
+        }))
+      );
     } catch (err) {
       console.error("Error loading chat:", err);
       setError("Failed to load chat. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [chatId]);
+  };
+
+  loadChat();
+}, [chatId]);
 
   const handleSend = () => {
     if (inputValue.trim()) {
@@ -129,11 +134,25 @@ export default function Chat() {
     navigate(`/chat/${selectedChatId}`);
   };
 
-  const handleNewChat = () => {
-    const existingIds = chatStore.getAllChats().map(chat => chat.id);
+  const handleNewChat = async () => {
+  try {
+    const existingChats = await chatStore.getAllChats();
+    console.log(existingChats);
+    
+    const existingIds = existingChats.map(chat => chat.id);
+    console.log(existingIds);
+    
     const newChatId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
+    console.log( newChatId);
+    
+    await chatStore.createChat(newChatId, `New Chat ${newChatId}`);
+    console.log( newChatId);
+    
     navigate(`/chat/${newChatId}`);
-  };
+  } catch (err) {
+    console.error("Failed to create new chat:", err);
+  }
+};
 
   if (error) {
     return (

@@ -47,7 +47,7 @@ onMount($chatList, () => {
 export const [createFetcherStore, createMutatorStore] = nanoquery({
   fetcher: (...keys) => chat.GetHistory(GetHistoryRequest.fromObject({
     chatId:keys.join('')
-  }),{})
+  }),{}).then(r=>r.history)
 });
 
 const $currentChatMessages = createFetcherStore<ChatMessage[]>([$currentChatId]);

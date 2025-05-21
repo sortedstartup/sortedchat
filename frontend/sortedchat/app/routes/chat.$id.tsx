@@ -4,7 +4,7 @@ import logoDark from "../welcome/logo-dark.svg";
 import logoLight from "../welcome/logo-light.svg";
 import { chatStore } from "../utils/chatStore";
 import type { Message } from "../utils/chatStore";
-import { $chatList, doChat } from "~/store/chat";
+import { $chatList, $currentChatId, $currentChatMessages, doChat } from "~/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import { useStore } from "@nanostores/react";
@@ -16,39 +16,16 @@ export default function Chat() {
 
   const chatList = useStore($chatList)
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { data, loading } = useStore($currentChatMessages)
+
+  // const [messages, setMessages] = useState<Message[]>([]);
 
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
 useEffect(() => {
-  const loadChat = async () => {
-    try {
-      setIsLoading(true);
-
-      let chat = await chatStore.getChat(chatId);
-      console.log("Initial chat load:", chat);
-
-      if (!chat) {
-        console.log("Chat not found, will create:", chatId);
-        await chatStore.createChat(chatId, `New Chat ${chatId}`);
-        chat = await chatStore.getChat(chatId);
-        console.log("Chat after creation:", chat);
-      }
-
-      setMessages(chat?.messages || []);
-      setError(null);
-     
-    } catch (err) {
-      console.error("Error loading chat:", err);
-      setError("Failed to load chat. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  loadChat();
+  $currentChatId.set(chatId+"")
 }, [chatId]);
 
   const handleSend = () => {
@@ -221,18 +198,24 @@ useEffect(() => {
 
         {/* Chat messages */}
         <div className="flex-1 overflow-y-auto p-4">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="flex flex-col justify-center items-center h-full text-gray-400">
-              <p>No messages yet. Start the conversation!</p>
-            </div>
-          ) : (
-            messages.map((message) => (
-              <div key={message.id} className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-3 rounded-lg ${message.sender === 'user'
+          {
+          // loading ? (
+          //   <div className="flex justify-center items-center h-full">
+          //     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+          //   </div>
+          // ) : data?.length === 0 ? (
+          //   <div className="flex flex-col justify-center items-center h-full text-gray-400">
+          //     <p>No messages yet. Start the conversation!</p>
+          //   </div>
+          // ) : (
+          (data===undefined)?
+            <></>
+          :<>
+          {/* {JSON.stringify(data)} */}
+           {data?.map((message) => (
+               //chatMessages
+               <div  className={`mb-4 flex ${message.role=== 'user' ? 'justify-end' : 'justify-start'}`}>
+                 <div className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user'
                   ? 'bg-blue-500 text-white rounded-br-none'
                   : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'
                   }`}>
@@ -240,7 +223,10 @@ useEffect(() => {
                 </div>
               </div>
             ))
-          )}
+            }
+             </>
+          
+          }
         </div>
 
         {/* Input area */}

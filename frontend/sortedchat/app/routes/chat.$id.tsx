@@ -4,24 +4,20 @@ import logoDark from "../welcome/logo-dark.svg";
 import logoLight from "../welcome/logo-light.svg";
 import { chatStore } from "../utils/chatStore";
 import type { Message } from "../utils/chatStore";
-import { doChat } from "~/store/chat";
+import { $chatList, doChat } from "~/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
+import { useStore } from "@nanostores/react";
 
 export default function Chat() {
   const { id } = useParams();
   const navigate = useNavigate();
   const chatId = Number(id);
 
-  // const [chats, setChats] = useState(chatStore.getAllChats().map(chat => ({
-  //   ...chat,
-  //   selected: Number(chat.id) === chatId,
-  // })));
-
-  const [chats, setChats] = useState<Array<{ id: number; name: string; selected: boolean }>>([]);
-
+  const chatList = useStore($chatList)
 
   const [messages, setMessages] = useState<Message[]>([]);
+
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,15 +39,7 @@ useEffect(() => {
 
       setMessages(chat?.messages || []);
       setError(null);
-
-      const fetchedChats = await chatStore.getAllChats();
-      console.log("All chats after loading:", fetchedChats);
-      setChats(
-        fetchedChats.map(chat => ({
-          ...chat,
-          selected: Number(chat.id) === chatId,
-        }))
-      );
+     
     } catch (err) {
       console.error("Error loading chat:", err);
       setError("Failed to load chat. Please try again.");
@@ -130,7 +118,7 @@ useEffect(() => {
     }
   };
 
-  const handleChatSelect = (selectedChatId: number) => {
+  const handleChatSelect = (selectedChatId: string) => {
     navigate(`/chat/${selectedChatId}`);
   };
 
@@ -204,11 +192,11 @@ useEffect(() => {
             </button>
           </div>
           <ul className="mt-2">
-            {chats.map((chat) => (
+            {chatList.map((chat) => (
               <li
-                key={chat.id}
-                onClick={() => handleChatSelect(chat.id)}
-                className={`px-3 py-2 mx-2 rounded-md cursor-pointer ${chat.id === chatId ? "bg-gray-200 dark:bg-gray-700" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}
+                key={chat.chatId}
+                onClick={() => handleChatSelect(chat.chatId)}
+                className={`px-3 py-2 mx-2 rounded-md cursor-pointer ${chat.chatId === ""+chatId ? "bg-gray-200 dark:bg-gray-700" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}
               >
                 <div className="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

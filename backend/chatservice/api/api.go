@@ -46,7 +46,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 	if len(history) == 0 {
 		history = append(history, ChatMessage{
 			Role:    "system",
-			Content: "You are a Marine Engineer.",
+			Content: "You are a helpful assistant",
 		})
 	}
 
@@ -61,7 +61,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 
 	requestBody := map[string]interface{}{
 		"model":        "gpt-4.1",
-		"instructions": "You are a Marine Engineer",
+		"instructions": "You are a helpful assistant",
 		"input":        history,
 		"stream":       true,
 	}

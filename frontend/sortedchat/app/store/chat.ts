@@ -1,4 +1,5 @@
-import { ChatRequest, ChatResponse, SortedChatClient } from "../../proto/chatservice"
+import { ChatInfo, ChatRequest, ChatResponse, GetChatListRequest, GetHistoryRequest, SortedChatClient } from "../../proto/chatservice"
+import { atom, onMount } from 'nanostores'
 
 var chat = new SortedChatClient(import.meta.env.VITE_API_URL)
 
@@ -26,7 +27,22 @@ function doChat(
   });
 }
 
-export { doChat }
+const $chatList = atom<ChatInfo[]>([])
+
+onMount($chatList, () => {
+
+  chat.GetChatList(GetChatListRequest.fromObject({}), {})
+  .then(value=>{
+    $chatList.set(value.chats)
+  })
+
+  return () => {
+    // Disabled mode
+  }
+})
+
+
+export { doChat, $chatList }
 
 
 

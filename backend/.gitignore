@@ -1,2 +1,3 @@
 .env
 /mono/chat_history.db
+**/*.db

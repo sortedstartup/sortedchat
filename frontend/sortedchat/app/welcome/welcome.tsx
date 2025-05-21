@@ -3,7 +3,8 @@ import { useNavigate } from "react-router";
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
 import { chatStore } from "../utils/chatStore";
-import { doChat } from "~/store/chat";
+import { $chatList, doChat } from "~/store/chat";
+import { useStore } from "@nanostores/react";
 
 export function Welcome() {
   const navigate = useNavigate();
@@ -13,29 +14,12 @@ export function Welcome() {
   const [chats, setChats] = useState<Array<{ id: number; name: string; selected: boolean }>>([]);
   const [isLoadingChats, setIsLoadingChats] = useState(true); // Add loading state for chats
 
+  const chatList = useStore($chatList)
+
   useEffect(() => {
-    setIsLoadingChats(true); // Set loading state to true before fetching
-    
-    chatStore.getAllChats()
-      .then(fetchedChats => {
-        console.log("Fetched chats:", fetchedChats); // Debug logging
-        setChats(
-          fetchedChats.map(chat => ({
-            ...chat,
-            selected: Number(chat.id) === 1,
-          }))
-        );
-      })
-      .catch(err => {
-        console.error("Failed to load chats:", err);
-        setError("Failed to load chats. Please refresh the page.");
-      })
-      .finally(() => {
-        setIsLoadingChats(false); 
-      });
   }, []);
 
-  const handleChatSelect = (chatId: number) => {
+  const handleChatSelect = (chatId: string) => {
     navigate(`/chat/${chatId}`);
   };
 
@@ -140,10 +124,10 @@ export function Welcome() {
               </li>
             ) : chats.length > 0 ? (
               // Display chats when available
-              chats.map((chat) => (
+              chatList.map((chat) => (
                 <li 
-                  key={chat.id} 
-                  onClick={() => handleChatSelect(chat.id)}
+                  key={chat.chatId} 
+                  onClick={() => handleChatSelect(chat.chatId)}
                   className={`px-3 py-2 mx-2 rounded-md cursor-pointer ${chat.selected ? "bg-gray-200 dark:bg-gray-700" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}
                 >
                   <div className="flex items-center">

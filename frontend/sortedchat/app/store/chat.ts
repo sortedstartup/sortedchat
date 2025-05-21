@@ -1,4 +1,5 @@
-import { ChatInfo, ChatRequest, ChatResponse, GetChatListRequest, GetHistoryRequest, SortedChatClient } from "../../proto/chatservice"
+import { nanoquery } from "@nanostores/query";
+import { ChatInfo, ChatMessage, ChatRequest, ChatResponse, GetChatListRequest, GetHistoryRequest, SortedChatClient } from "../../proto/chatservice"
 import { atom, onMount } from 'nanostores'
 
 var chat = new SortedChatClient(import.meta.env.VITE_API_URL)
@@ -28,6 +29,7 @@ function doChat(
 }
 
 const $chatList = atom<ChatInfo[]>([])
+const $currentChatId = atom<string>("")
 
 onMount($chatList, () => {
 
@@ -42,7 +44,30 @@ onMount($chatList, () => {
 })
 
 
-export { doChat, $chatList }
+export const [createFetcherStore, createMutatorStore] = nanoquery({
+  fetcher: (...keys) => chat.GetHistory(GetHistoryRequest.fromObject({
+    chatId:keys.join('')
+  }),{})
+});
+
+const $currentChatMessages = createFetcherStore<ChatMessage[]>([$currentChatId]);
+
+const $addMessage = createMutatorStore<ChatMessage>(async ({ data: message, revalidate, getCacheUpdater }) => {
+    // You can either revalidate the author…
+    // revalidate(`/api/users/${message}`);
+
+    // …or you can optimistically update current cache.
+    const [updateCache, post] = getCacheUpdater(`/api/post/${message}`);
+    
+    updateCache({ ...post, comments: [...post.comments, message] });
+
+    // Even though `fetch` is called after calling `revalidate`, we will only
+    // revalidate the keys after `fetch` resolves
+    return fetch('…')
+  })
+
+export { doChat, $chatList, $currentChatMessages, $currentChatId }
+
 
 
 

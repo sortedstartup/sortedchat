@@ -9,6 +9,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@nanostores/query": "^0.3.4",
     "@nanostores/react": "github:nanostores/react",
     "@react-router/node": "^7.5.3",
     "@react-router/serve": "^7.5.3",

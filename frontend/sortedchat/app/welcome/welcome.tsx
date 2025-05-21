@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
 import { chatStore } from "../utils/chatStore";
-import { $chatList, doChat } from "~/store/chat";
+import { $chatList, $currentChatId, doChat } from "~/store/chat";
 import { useStore } from "@nanostores/react";
 
 export function Welcome() {
@@ -12,14 +12,10 @@ export function Welcome() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chats, setChats] = useState<Array<{ id: number; name: string; selected: boolean }>>([]);
-  const [isLoadingChats, setIsLoadingChats] = useState(true); // Add loading state for chats
-
   const chatList = useStore($chatList)
 
-  useEffect(() => {
-  }, []);
-
   const handleChatSelect = (chatId: string) => {
+    $currentChatId.set(chatId)
     navigate(`/chat/${chatId}`);
   };
 
@@ -117,14 +113,7 @@ export function Welcome() {
             </button>
           </div>
           <ul className="mt-2">
-            {isLoadingChats ? (
-              // Loading state for chats
-              <li className="px-3 py-2 mx-2 text-center text-sm text-gray-500">
-                Loading chats...
-              </li>
-            ) : chats.length > 0 ? (
-              // Display chats when available
-              chatList.map((chat) => (
+            {chatList.map((chat) => (
                 <li 
                   key={chat.chatId} 
                   onClick={() => handleChatSelect(chat.chatId)}
@@ -138,12 +127,7 @@ export function Welcome() {
                   </div>
                 </li>
               ))
-            ) : (
-              // No chats available message
-              <li className="px-3 py-2 mx-2 text-center text-sm text-gray-500">
-                No chats yet. Start a new conversation!
-              </li>
-            )}
+             }
           </ul>
         </div>
       </div>

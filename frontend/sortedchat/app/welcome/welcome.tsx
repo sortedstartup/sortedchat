@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
-import { chatStore } from "../utils/chatStore";
 import { $chatList, $currentChatId, doChat } from "~/store/chat";
 import { useStore } from "@nanostores/react";
 
@@ -25,54 +24,6 @@ export function Welcome() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputValue.trim()) {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Create a new chat with this initial message
-        const newChatId = Math.max(...chats.map(chat => chat.id), 0) + 1;
-        
-        // Get a short name for the chat
-        const chatName = inputValue.length > 20 ? inputValue.substring(0, 20) + "..." : inputValue;
-        
-        // Save the user's input
-        const userMessage = inputValue;
-        
-        // Initialize the chat with just the user's message for now
-        await chatStore.createChat(newChatId, chatName, userMessage);
-        
-        // Call the server for a response
-        try {
-          const serverResponse = await doChat(userMessage);
-          
-          // Add the server's response to the chat
-          await chatStore.addMessage(newChatId, {
-            id: 2,
-            sender: "ai",
-            content: serverResponse || "Sorry, I couldn't process your request."
-          });
-        } catch (err) {
-          console.error("Error getting response from server:", err);
-          
-          // Add an error message to the chat
-          await chatStore.addMessage(newChatId, {
-            id: 2,
-            sender: "ai",
-            content: "Sorry, I encountered an error processing your request."
-          });
-        }
-        
-        // Navigate to the new chat
-        navigate(`/chat/${newChatId}`);
-      } catch (err) {
-        console.error("Error creating chat:", err);
-        setError("Failed to create chat. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

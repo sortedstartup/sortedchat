@@ -4,6 +4,39 @@ import { atom, onMount } from 'nanostores'
 
 var chat = new SortedChatClient(import.meta.env.VITE_API_URL)
 
+const $chatList = atom<ChatInfo[]>([])
+const $currentChatId = atom<string>("")
+export const $currentChatMessage = atom<string>("")
+export const $streamingMessage=atom<string>("")
+
+export const doChatNano=(msg:string)=>{
+  $currentChatMessage.set(msg)
+  $streamingMessage.set("")
+  doChat(msg,$currentChatId.get(),(chunk:string)=>{
+    $streamingMessage.set($streamingMessage.get()+chunk)
+  })
+}
+
+// when current chat id changes
+// when a user clicks on a different chat
+$currentChatId.listen((newValue, oldValue)=>{
+  $streamingMessage.set("")
+  $currentChatMessage.set("")
+})
+
+onMount($chatList, () => {
+
+  chat.GetChatList(GetChatListRequest.fromObject({}), {})
+  .then(value=>{
+    $chatList.set(value.chats)
+  })
+
+  return () => {
+    // Disabled mode
+  }
+})
+
+
 function doChat(
   message: string,
   chatId: string,
@@ -27,21 +60,6 @@ function doChat(
     onError?.(err);
   });
 }
-
-const $chatList = atom<ChatInfo[]>([])
-const $currentChatId = atom<string>("")
-
-onMount($chatList, () => {
-
-  chat.GetChatList(GetChatListRequest.fromObject({}), {})
-  .then(value=>{
-    $chatList.set(value.chats)
-  })
-
-  return () => {
-    // Disabled mode
-  }
-})
 
 
 export const [createFetcherStore, createMutatorStore] = nanoquery({

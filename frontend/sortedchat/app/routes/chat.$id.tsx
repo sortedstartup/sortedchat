@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import logoDark from "../welcome/logo-dark.svg";
 import logoLight from "../welcome/logo-light.svg";
-import { chatStore } from "../utils/chatStore";
-import type { Message } from "../utils/chatStore";
-import { $chatList, $currentChatId, $currentChatMessages, doChat } from "~/store/chat";
+import { $chatList, $currentChatId, $currentChatMessage, $currentChatMessages, $streamingMessage, doChat, doChatNano } from "~/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import { useStore } from "@nanostores/react";
@@ -12,80 +10,25 @@ import { useStore } from "@nanostores/react";
 export default function Chat() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const chatId = Number(id);
+  const chatId = id;
 
   const chatList = useStore($chatList)
 
   const { data, loading } = useStore($currentChatMessages)
-
-  // const [messages, setMessages] = useState<Message[]>([]);
+  const streamingMessage = useStore($streamingMessage)
+  const currentChatMessage = useStore($currentChatMessage)
 
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-useEffect(() => {
-  $currentChatId.set(chatId+"")
-}, [chatId]);
+  useEffect(() => {
+    $currentChatId.set(chatId || "")
+  }, [chatId]);
 
   const handleSend = () => {
-    if (inputValue.trim()) {
-      try {
-        const newMessage: Message = {
-          id: messages.length + 1,
-          sender: "user",
-          content: inputValue,
-        };
-
-        const userInput = inputValue;
-
-        chatStore.addMessage(chatId, newMessage);
-        setMessages((prev) => [...prev, newMessage]);
-        setInputValue("");
-
-        const streamPlaceholder: Message = {
-          id: messages.length + 2,
-          sender: "ai",
-          content: "",
-        };
-
-        setMessages((prev) => [...prev, streamPlaceholder]);
-
-        doChat(
-          userInput,
-          String(chatId),
-          (textChunk) => {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const lastIndex = updated.length - 1;
-
-              const lastMessage = updated[lastIndex];
-              const updatedLastMessage: Message = {
-                ...lastMessage,
-                content: (lastMessage.content ? lastMessage.content + " " : "") + textChunk,
-              };
-
-              updated[lastIndex] = updatedLastMessage;
-              return updated;
-            });
-          },
-          () => {
-            console.log("Streaming complete.");
-          },
-          (err) => {
-            console.error("Streaming error:", err);
-            setMessages((prev) => {
-              const updated = [...prev];
-              updated[updated.length - 1].content = "Error receiving stream.";
-              return updated;
-            });
-          }
-        );
-      } catch (err) {
-        console.error("Error sending message:", err);
-        setError("Failed to send message. Please try again.");
-      }
-    }
+    console.log("handleSend called with "+inputValue)
+    doChatNano(inputValue)
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -101,19 +44,19 @@ useEffect(() => {
 
   const handleNewChat = async () => {
   try {
-    const existingChats = await chatStore.getAllChats();
-    console.log(existingChats);
+    // const existingChats = await chatStore.getAllChats();
+    // console.log(existingChats);
     
-    const existingIds = existingChats.map(chat => chat.id);
-    console.log(existingIds);
+    // const existingIds = existingChats.map(chat => chat.id);
+    // console.log(existingIds);
     
-    const newChatId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
-    console.log( newChatId);
+    // const newChatId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
+    // console.log( newChatId);
     
-    await chatStore.createChat(newChatId, `New Chat ${newChatId}`);
-    console.log( newChatId);
+    // await chatStore.createChat(newChatId, `New Chat ${newChatId}`);
+    // console.log( newChatId);
     
-    navigate(`/chat/${newChatId}`);
+    // navigate(`/chat/${newChatId}`);
   } catch (err) {
     console.error("Failed to create new chat:", err);
   }
@@ -192,28 +135,20 @@ useEffect(() => {
         {/* Chat header */}
         <div className="border-b border-gray-200 dark:border-gray-700 p-4">
           <h1 className="text-lg font-semibold">
-            {chatStore.getChat(chatId)?.name || `Chat ${chatId}`}
+            {/* chatStore.getChat(chatId)?.name || `Chat ${chatId}` */}
           </h1>
         </div>
 
         {/* Chat messages */}
         <div className="flex-1 overflow-y-auto p-4">
           {
-          // loading ? (
-          //   <div className="flex justify-center items-center h-full">
-          //     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-          //   </div>
-          // ) : data?.length === 0 ? (
-          //   <div className="flex flex-col justify-center items-center h-full text-gray-400">
-          //     <p>No messages yet. Start the conversation!</p>
-          //   </div>
-          // ) : (
           (data===undefined)?
             <></>
           :<>
-          {/* {JSON.stringify(data)} */}
+
+          <>
            {data?.map((message) => (
-               //chatMessages
+               //chat history
                <div  className={`mb-4 flex ${message.role=== 'user' ? 'justify-end' : 'justify-start'}`}>
                  <div className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user'
                   ? 'bg-blue-500 text-white rounded-br-none'
@@ -223,9 +158,24 @@ useEffect(() => {
                 </div>
               </div>
             ))
-            }
+            }</>
+            
+            <>
+              {/* current message user is typing */}
+              <div  className={`mb-4 flex justify-end}`}>
+                 <div className={`max-w-[80%] p-3 rounded-lg bg-blue-500 text-white rounded-br-none}`}>
+                  <ReactMarkdown>{currentChatMessage}</ReactMarkdown>
+                </div>
+              </div>
+
+              {/* Streaming message */}
+              <div  className={`mb-4 flex justify-start'}`}>
+                 <div className={`max-w-[80%] p-3 rounded-lg bg-gray-200 dark:bg-gray-700 rounded-bl-none}`}>
+                  <ReactMarkdown>{streamingMessage}</ReactMarkdown>
+                </div>
+              </div>
              </>
-          
+             </>
           }
         </div>
 
@@ -239,13 +189,11 @@ useEffect(() => {
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
                 className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-lg px-4 py-2 pr-10 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={1}
-                disabled={isLoading}
+                rows={1}                
               />
             </div>
             <button
-              onClick={handleSend}
-              disabled={!inputValue.trim() || isLoading}
+              onClick={handleSend}              
               className={`ml-2 p-2 rounded-full ${inputValue.trim() && !isLoading
                 ? 'bg-blue-500 text-white hover:bg-blue-600'
                 : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'

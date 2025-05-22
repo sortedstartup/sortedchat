@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import logoDark from "../welcome/logo-dark.svg";
 import logoLight from "../welcome/logo-light.svg";
-import { $chatList, $currentChatId, $currentChatMessage, $currentChatMessages, $streamingMessage, doChat, doChatNano } from "~/store/chat";
+import { $chatList, $currentChatId, $currentChatMessage, $currentChatMessages, $streamingMessage, createNewChat, doChat } from "~/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import { useStore } from "@nanostores/react";
@@ -28,7 +28,7 @@ export default function Chat() {
 
   const handleSend = () => {
     console.log("handleSend called with "+inputValue)
-    doChatNano(inputValue)
+    doChat(inputValue)
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -44,19 +44,12 @@ export default function Chat() {
 
   const handleNewChat = async () => {
   try {
-    // const existingChats = await chatStore.getAllChats();
-    // console.log(existingChats);
+    const {uuid, promise} = createNewChat()
+
+    promise.then(r=> {
+      navigate(`/chat/${uuid}`);
+    })
     
-    // const existingIds = existingChats.map(chat => chat.id);
-    // console.log(existingIds);
-    
-    // const newChatId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
-    // console.log( newChatId);
-    
-    // await chatStore.createChat(newChatId, `New Chat ${newChatId}`);
-    // console.log( newChatId);
-    
-    // navigate(`/chat/${newChatId}`);
   } catch (err) {
     console.error("Failed to create new chat:", err);
   }

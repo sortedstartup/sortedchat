@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
-import { $chatList, $currentChatId, doChat } from "~/store/chat";
+import { $chatList, $currentChatId, createNewChat, doChat } from "~/store/chat";
 import { useStore } from "@nanostores/react";
 
 export function Welcome() {
@@ -19,8 +19,11 @@ export function Welcome() {
   };
 
   const handleNewChat = () => {
-    const newChatId = Math.max(...chats.map(chat => chat.id), 0) + 1;
-    navigate(`/chat/${newChatId}`);
+    const {uuid, promise} = createNewChat()
+
+    promise.then(r=> {
+      navigate(`/chat/${uuid}`);
+    })
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

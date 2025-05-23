@@ -9,40 +9,26 @@ import * as grpc_web_1 from "grpc-web";
 export class CreateChatRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        chatId?: string;
         name?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
-            if ("chatId" in data && data.chatId != undefined) {
-                this.chatId = data.chatId;
-            }
             if ("name" in data && data.name != undefined) {
                 this.name = data.name;
             }
         }
     }
-    get chatId() {
+    get name() {
         return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
     }
-    set chatId(value: string) {
+    set name(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
-    get name() {
-        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
-    }
-    set name(value: string) {
-        pb_1.Message.setField(this, 2, value);
-    }
     static fromObject(data: {
-        chatId?: string;
         name?: string;
     }): CreateChatRequest {
         const message = new CreateChatRequest({});
-        if (data.chatId != null) {
-            message.chatId = data.chatId;
-        }
         if (data.name != null) {
             message.name = data.name;
         }
@@ -50,12 +36,8 @@ export class CreateChatRequest extends pb_1.Message {
     }
     toObject() {
         const data: {
-            chatId?: string;
             name?: string;
         } = {};
-        if (this.chatId != null) {
-            data.chatId = this.chatId;
-        }
         if (this.name != null) {
             data.name = this.name;
         }
@@ -65,10 +47,8 @@ export class CreateChatRequest extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.chatId.length)
-            writer.writeString(1, this.chatId);
         if (this.name.length)
-            writer.writeString(2, this.name);
+            writer.writeString(1, this.name);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -79,9 +59,6 @@ export class CreateChatRequest extends pb_1.Message {
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
-                    message.chatId = reader.readString();
-                    break;
-                case 2:
                     message.name = reader.readString();
                     break;
                 default: reader.skipField();
@@ -100,12 +77,16 @@ export class CreateChatResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         message?: string;
+        chat_id?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("message" in data && data.message != undefined) {
                 this.message = data.message;
+            }
+            if ("chat_id" in data && data.chat_id != undefined) {
+                this.chat_id = data.chat_id;
             }
         }
     }
@@ -115,21 +96,35 @@ export class CreateChatResponse extends pb_1.Message {
     set message(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
+    get chat_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set chat_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
     static fromObject(data: {
         message?: string;
+        chat_id?: string;
     }): CreateChatResponse {
         const message = new CreateChatResponse({});
         if (data.message != null) {
             message.message = data.message;
+        }
+        if (data.chat_id != null) {
+            message.chat_id = data.chat_id;
         }
         return message;
     }
     toObject() {
         const data: {
             message?: string;
+            chat_id?: string;
         } = {};
         if (this.message != null) {
             data.message = this.message;
+        }
+        if (this.chat_id != null) {
+            data.chat_id = this.chat_id;
         }
         return data;
     }
@@ -139,6 +134,8 @@ export class CreateChatResponse extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.message.length)
             writer.writeString(1, this.message);
+        if (this.chat_id.length)
+            writer.writeString(2, this.chat_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -150,6 +147,9 @@ export class CreateChatResponse extends pb_1.Message {
             switch (reader.getFieldNumber()) {
                 case 1:
                     message.message = reader.readString();
+                    break;
+                case 2:
+                    message.chat_id = reader.readString();
                     break;
                 default: reader.skipField();
             }

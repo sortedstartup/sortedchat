@@ -14,7 +14,8 @@ export default function Chat() {
 
   const chatList = useStore($chatList)
 
-  const { data, loading } = useStore($currentChatMessages)
+  const { data, loading, error: fetchError } = useStore($currentChatMessages);
+
   const streamingMessage = useStore($streamingMessage)
   const currentChatMessage = useStore($currentChatMessage)
 
@@ -27,8 +28,11 @@ export default function Chat() {
   }, [chatId]);
 
   const handleSend = () => {
-    console.log("handleSend called with "+inputValue)
-    doChat(inputValue)
+    console.log(inputValue)
+    if (inputValue.trim()) {
+      doChat(inputValue)
+      setInputValue("");
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -39,21 +43,22 @@ export default function Chat() {
   };
 
   const handleChatSelect = (selectedChatId: string) => {
+    $currentChatId.set(selectedChatId)
     navigate(`/chat/${selectedChatId}`);
   };
 
   const handleNewChat = async () => {
-  try {
-    const {uuid, promise} = createNewChat()
-
-    promise.then(r=> {
-      navigate(`/chat/${uuid}`);
-    })
-    
-  } catch (err) {
-    console.error("Failed to create new chat:", err);
-  }
-};
+    try {
+      const chatId = await createNewChat();
+      if (chatId) {
+        navigate(`/chat/${chatId}`);
+      } else {
+        console.error("No chatId returned from server");
+      }
+    } catch (err) {
+      console.error("Failed to create new chat:", err);
+    }
+  };
 
   if (error) {
     return (
@@ -109,11 +114,11 @@ export default function Chat() {
               <li
                 key={chat.chatId}
                 onClick={() => handleChatSelect(chat.chatId)}
-                className={`px-3 py-2 mx-2 rounded-md cursor-pointer ${chat.chatId === ""+chatId ? "bg-gray-200 dark:bg-gray-700" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}
+                className={`px-3 py-2 mx-2 rounded-md cursor-pointer ${chat.chatId === "" + chatId ? "bg-gray-200 dark:bg-gray-700" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}
               >
                 <div className="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                   </svg>
                   <span className="text-sm truncate">{chat.name}</span>
                 </div>
@@ -128,48 +133,54 @@ export default function Chat() {
         {/* Chat header */}
         <div className="border-b border-gray-200 dark:border-gray-700 p-4">
           <h1 className="text-lg font-semibold">
-            {/* chatStore.getChat(chatId)?.name || `Chat ${chatId}` */}
+            {chatList.find(chat => chat.chatId === chatId)?.name || `Chat ${chatId}`}
           </h1>
         </div>
 
         {/* Chat messages */}
         <div className="flex-1 overflow-y-auto p-4">
-          {
-          (data===undefined)?
-            <></>
-          :<>
-
-          <>
-           {data?.map((message) => (
-               //chat history
-               <div  className={`mb-4 flex ${message.role=== 'user' ? 'justify-end' : 'justify-start'}`}>
-                 <div className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user'
-                  ? 'bg-blue-500 text-white rounded-br-none'
-                  : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'
-                  }`}>
-                  <ReactMarkdown>{message.content}</ReactMarkdown>
-                </div>
-              </div>
-            ))
-            }</>
-            
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Loading messages...
+            </div>
+          ) : data === undefined || data === null ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              No messages yet
+            </div>
+          ) : (
             <>
-              {/* current message user is typing */}
-              <div  className={`mb-4 flex justify-end}`}>
-                 <div className={`max-w-[80%] p-3 rounded-lg bg-blue-500 text-white rounded-br-none}`}>
-                  <ReactMarkdown>{currentChatMessage}</ReactMarkdown>
+              {/* Chat history */}
+              {data?.map((message, index) => (
+                <div key={index} className={`mb-4 flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] p-3 rounded-lg ${
+                    message.role === 'user'
+                      ? 'bg-blue-500 text-white rounded-br-none'
+                      : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'
+                  }`}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                  </div>
                 </div>
-              </div>
+              ))}
 
-              {/* Streaming message */}
-              <div  className={`mb-4 flex justify-start'}`}>
-                 <div className={`max-w-[80%] p-3 rounded-lg bg-gray-200 dark:bg-gray-700 rounded-bl-none}`}>
-                  <ReactMarkdown>{streamingMessage}</ReactMarkdown>
+              {/* Current message user is typing (only show if there's content) */}
+              {currentChatMessage && currentChatMessage.trim() && (
+                <div className="mb-4 flex justify-end">
+                  <div className="max-w-[80%] p-3 rounded-lg bg-blue-500 text-white rounded-br-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentChatMessage}</ReactMarkdown>
+                  </div>
                 </div>
-              </div>
-             </>
-             </>
-          }
+              )}
+
+              {/* Streaming message (only show if there's content) */}
+              {streamingMessage && streamingMessage.trim() && (
+                <div className="mb-4 flex justify-start">
+                  <div className="max-w-[80%] p-3 rounded-lg bg-gray-200 dark:bg-gray-700 rounded-bl-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingMessage}</ReactMarkdown>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Input area */}
@@ -182,15 +193,17 @@ export default function Chat() {
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
                 className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-lg px-4 py-2 pr-10 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={1}                
+                rows={1}
               />
             </div>
             <button
-              onClick={handleSend}              
-              className={`ml-2 p-2 rounded-full ${inputValue.trim() && !isLoading
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                }`}
+              onClick={handleSend}
+              disabled={!inputValue.trim() || isLoading}
+              className={`ml-2 p-2 rounded-full ${
+                inputValue.trim() && !isLoading
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
@@ -201,4 +214,4 @@ export default function Chat() {
       </div>
     </div>
   );
-} 
+}

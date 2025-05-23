@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/google/uuid"
 	db "sortedstartup.com/chatservice/dao"
 	pb "sortedstartup.com/chatservice/proto"
 )
@@ -199,24 +200,22 @@ func (s *Server) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*
 }
 
 func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
-	chatId := req.ChatId
-	if chatId == "" {
-		return nil, fmt.Errorf("chat ID is required")
-	}
 	name := req.Name
 	if name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
 
+	chatId := uuid.New().String()
+
 	_, err := db.DB.Exec(`
         INSERT INTO chat_list (chat_id, name) 
         VALUES (?, ?)`, chatId, name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert user message: %w", err)
+		return nil, fmt.Errorf("failed to insert chat record: %w", err)
 	}
 
 	return &pb.CreateChatResponse{
 		Message: "Chat created successfully",
+		ChatId:  chatId, // return chatId so the frontend can use it for messages
 	}, nil
-
 }

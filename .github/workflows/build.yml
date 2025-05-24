@@ -30,17 +30,26 @@ jobs:
         run: pnpm run build
 
   build-go:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     continue-on-error: true
     strategy:
       matrix:
         include:
           - os: linux
             arch: amd64
+            runner: ubuntu-latest
           - os: linux
             arch: arm64
+            runner: ubuntu-latest
           - os: windows
             arch: amd64
+            runner: ubuntu-latest
+          - os: darwin
+            arch: arm64
+            runner: macos-latest
+          - os: darwin
+            arch: amd64
+            runner: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -82,11 +91,15 @@ jobs:
             export CC=x86_64-w64-mingw32-gcc
           fi
 
-          #Linux
+          # Linux ARM64
           if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then 
-            export CC=aarch64-linux-gnu-gcc; 
+            export CC=aarch64-linux-gnu-gcc
           fi
-          
+
+          # macOS builds don't need special CC settings
+          if [ "${{ matrix.os }}" = "darwin" ]; then
+            export CGO_ENABLED=1
+          fi
 
           go env
           go build -o $OUT ./mono

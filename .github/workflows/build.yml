@@ -1,4 +1,4 @@
-anname: Build UI and Go App
+name: Build UI and Go App
 
 on:
   push:

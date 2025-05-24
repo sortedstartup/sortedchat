@@ -75,9 +75,18 @@ jobs:
           export GOARCH=${{ matrix.arch }}
           export CGO_ENABLED=1
 
+          # Windows
           export OUT=sortedchat-${{ matrix.os }}-${{ matrix.arch }}
-          if [ "${{ matrix.os }}" = "windows" ]; then OUT="$OUT.exe"; fi
-          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then export CC=aarch64-linux-gnu-gcc; fi
+          if [ "${{ matrix.os }}" = "windows" ]; then 
+            export OUT="$OUT.exe";
+            export CC=x86_64-w64-mingw32-gcc
+          fi
+
+          #Linux
+          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then 
+            export CC=aarch64-linux-gnu-gcc; 
+          fi
+          
 
           go env
           go build -o $OUT ./mono

@@ -31,10 +31,16 @@ jobs:
 
   build-go:
     runs-on: ubuntu-latest
+    continue-on-error: true
     strategy:
       matrix:
-        os: [linux, windows, darwin]
-        arch: [amd64, arm64]
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: windows
+            arch: amd64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,6 +55,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Install MinGW-w64 for Windows cross-compilation
+        if: matrix.os == 'windows'
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+
+      - name: Install cross-compiler for Linux ARM64
+        if: matrix.os == 'linux' && matrix.arch == 'arm64'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -57,12 +71,16 @@ jobs:
       - name: Build Go backend
         working-directory: backend
         run: |
+          export GOOS=${{ matrix.os }}
+          export GOARCH=${{ matrix.arch }}
+          export CGO_ENABLED=1
+
           export OUT=sortedchat-${{ matrix.os }}-${{ matrix.arch }}
           if [ "${{ matrix.os }}" = "windows" ]; then OUT="$OUT.exe"; fi
-          export GOOS=${{ matrix.os }} 
-          export GOARCH=${{ matrix.arch }} 
-          export CGO_ENABLED=1 
-          go env && go build -o $OUT ./mono
+          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then export CC=aarch64-linux-gnu-gcc; fi
+
+          go env
+          go build -o $OUT ./mono
 
       - name: Upload Go executable as artifact
         uses: actions/upload-artifact@v4

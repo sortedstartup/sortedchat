@@ -1,10 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import logoDark from "../welcome/logo-dark.svg";
 import logoLight from "../welcome/logo-light.svg";
-import { $chatList, $currentChatId, $currentChatMessage, $currentChatMessages, $streamingMessage, createNewChat, doChat } from "~/store/chat";
+import {
+  $chatList,
+  $currentChatId,
+  $currentChatMessage,
+  $currentChatMessages,
+  $streamingMessage,
+  createNewChat,
+  doChat,
+} from "~/store/chat";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from 'remark-gfm'
+import remarkGfm from "remark-gfm";
 import { useStore } from "@nanostores/react";
 
 export default function Chat() {
@@ -12,38 +20,50 @@ export default function Chat() {
   const navigate = useNavigate();
   const chatId = id;
 
-  const chatList = useStore($chatList)
+  const chatList = useStore($chatList);
 
   const { data, loading, error: fetchError } = useStore($currentChatMessages);
 
-  const streamingMessage = useStore($streamingMessage)
-  const currentChatMessage = useStore($currentChatMessage)
+  const streamingMessage = useStore($streamingMessage);
+  const currentChatMessage = useStore($currentChatMessage);
 
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll function
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    $currentChatId.set(chatId || "")
+    $currentChatId.set(chatId || "");
   }, [chatId]);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [data, streamingMessage, currentChatMessage]);
+
   const handleSend = () => {
-    console.log(inputValue)
+    console.log(inputValue);
     if (inputValue.trim()) {
-      doChat(inputValue)
+      doChat(inputValue);
       setInputValue("");
+      setTimeout(scrollToBottom, 100);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
   const handleChatSelect = (selectedChatId: string) => {
-    $currentChatId.set(selectedChatId)
+    $currentChatId.set(selectedChatId);
     navigate(`/chat/${selectedChatId}`);
   };
 
@@ -103,8 +123,19 @@ export default function Chat() {
               onClick={handleNewChat}
               className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
               New Chat
             </button>
@@ -114,11 +145,26 @@ export default function Chat() {
               <li
                 key={chat.chatId}
                 onClick={() => handleChatSelect(chat.chatId)}
-                className={`px-3 py-2 mx-2 rounded-md cursor-pointer ${chat.chatId === "" + chatId ? "bg-gray-200 dark:bg-gray-700" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}
+                className={`px-3 py-2 mx-2 rounded-md cursor-pointer ${
+                  chat.chatId === "" + chatId
+                    ? "bg-gray-200 dark:bg-gray-700"
+                    : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
               >
                 <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                    />
                   </svg>
                   <span className="text-sm truncate">{chat.name}</span>
                 </div>
@@ -133,7 +179,8 @@ export default function Chat() {
         {/* Chat header */}
         <div className="border-b border-gray-200 dark:border-gray-700 p-4">
           <h1 className="text-lg font-semibold">
-            {chatList.find(chat => chat.chatId === chatId)?.name || `Chat ${chatId}`}
+            {chatList.find((chat) => chat.chatId === chatId)?.name ||
+              `Chat ${chatId}`}
           </h1>
         </div>
 
@@ -151,13 +198,22 @@ export default function Chat() {
             <>
               {/* Chat history */}
               {data?.map((message, index) => (
-                <div key={index} className={`mb-4 flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] p-3 rounded-lg ${
-                    message.role === 'user'
-                      ? 'bg-blue-500 text-white rounded-br-none'
-                      : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'
-                  }`}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                <div
+                  key={index}
+                  className={`mb-4 flex ${
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      message.role === "user"
+                        ? "bg-blue-500 text-white rounded-br-none"
+                        : "bg-gray-200 dark:bg-gray-700 rounded-bl-none"
+                    }`}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
                   </div>
                 </div>
               ))}
@@ -166,7 +222,9 @@ export default function Chat() {
               {currentChatMessage && currentChatMessage.trim() && (
                 <div className="mb-4 flex justify-end">
                   <div className="max-w-[80%] p-3 rounded-lg bg-blue-500 text-white rounded-br-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentChatMessage}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {currentChatMessage}
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}
@@ -175,10 +233,13 @@ export default function Chat() {
               {streamingMessage && streamingMessage.trim() && (
                 <div className="mb-4 flex justify-start">
                   <div className="max-w-[80%] p-3 rounded-lg bg-gray-200 dark:bg-gray-700 rounded-bl-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingMessage}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {streamingMessage}
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </>
           )}
         </div>
@@ -201,12 +262,21 @@ export default function Chat() {
               disabled={!inputValue.trim() || isLoading}
               className={`ml-2 p-2 rounded-full ${
                 inputValue.trim() && !isLoading
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  ? "bg-blue-500 text-white hover:bg-blue-600"
+                  : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
               }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z"
+                  clipRule="evenodd"
+                />
               </svg>
             </button>
           </div>

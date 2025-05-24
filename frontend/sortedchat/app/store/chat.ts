@@ -78,9 +78,10 @@ export const $streamingMessage = atom<string>("");
 const addMessageToHistory = (message: ChatMessage) => {
   const currentState = $currentChatMessages.get();
   if (currentState.data) {
+    // const messageCopy = structuredClone(message);  // will check this later
     $currentChatMessages.set({
       ...currentState,
-      data: [...currentState.data, message]
+      data: [...currentState.data, message ]
     });
   }
 };

@@ -50,7 +50,7 @@ jobs:
       - name: Download Go modules and vendor
         working-directory: backend/mono
         run: |
-          go mod vendor
+          go work vendor
       - name: Upload vendor as artifact
         uses: actions/upload-artifact@v4
         with:

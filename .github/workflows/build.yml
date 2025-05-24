@@ -1,0 +1,111 @@
+name: Build UI and Go App
+
+on:
+  push:
+    branches: [ main, github-actions-to-build ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install frontend dependencies
+        working-directory: frontend/sortedchat
+        run: pnpm install
+
+      - name: Build frontend
+        working-directory: frontend/sortedchat
+        run: pnpm run build
+
+  build-go:
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: true
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            runner: ubuntu-latest
+          - os: linux
+            arch: arm64
+            runner: ubuntu-latest
+          - os: windows
+            arch: amd64
+            runner: ubuntu-latest
+          - os: darwin
+            arch: arm64
+            runner: macos-latest
+          - os: darwin
+            arch: amd64
+            runner: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install MinGW-w64 for Windows cross-compilation
+        if: matrix.os == 'windows'
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+
+      - name: Install cross-compiler for Linux ARM64
+        if: matrix.os == 'linux' && matrix.arch == 'arm64'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.3'
+
+      - name: Build Go backend
+        working-directory: backend
+        run: |
+          export GOOS=${{ matrix.os }}
+          export GOARCH=${{ matrix.arch }}
+          export CGO_ENABLED=1
+
+          # Windows
+          export OUT=sortedchat-${{ matrix.os }}-${{ matrix.arch }}
+          if [ "${{ matrix.os }}" = "windows" ]; then 
+            export OUT="$OUT.exe";
+            export CC=x86_64-w64-mingw32-gcc
+          fi
+
+          # Linux ARM64
+          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then 
+            export CC=aarch64-linux-gnu-gcc
+          fi
+
+          # macOS builds don't need special CC settings
+          if [ "${{ matrix.os }}" = "darwin" ]; then
+            export CGO_ENABLED=1
+          fi
+
+          go env
+          go build -o $OUT ./mono
+
+      - name: Upload Go executable as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sortedchat-${{ matrix.os }}-${{ matrix.arch }}
+          path: backend/sortedchat-${{ matrix.os }}-${{ matrix.arch }}*

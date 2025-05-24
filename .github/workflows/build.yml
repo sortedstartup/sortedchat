@@ -36,4 +36,4 @@ jobs:
 
       - name: Build Go backend
         working-directory: backend
-        run: go build -o sortedchat ./...
+        run: go build -o sortedchat ./mono

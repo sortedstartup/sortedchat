@@ -1,4 +1,3 @@
-import { nanoquery } from "@nanostores/query";
 import {
   ChatInfo,
   ChatMessage,
@@ -9,7 +8,7 @@ import {
   GetHistoryRequest,
   SortedChatClient,
 } from "../../proto/chatservice";
-import { atom, onMount } from "nanostores";
+import { atom, onMount, computed } from "nanostores";
 
 var chat = new SortedChatClient(import.meta.env.VITE_API_URL);
 
@@ -76,7 +75,15 @@ $currentChatId.listen((newChatId) => {
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
 
-// --- stores ----
+const addMessageToHistory = (message: ChatMessage) => {
+  const currentState = $currentChatMessages.get();
+  if (currentState.data) {
+    $currentChatMessages.set({
+      ...currentState,
+      data: [...currentState.data, message]
+    });
+  }
+};
 
 // --- state management ---
 export const createNewChat = async () => {
@@ -89,10 +96,14 @@ export const createNewChat = async () => {
   getChatList();
   return response.chat_id;
 };
+
 export const doChat = (msg: string) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
 
+  let assistantResponse = "";
+
+  // grpc call
   const stream = chat.Chat(
     ChatRequest.fromObject({
       text: msg,
@@ -102,12 +113,32 @@ export const doChat = (msg: string) => {
   );
 
   stream.on("data", (res: ChatResponse) => {
-    $streamingMessage.set($streamingMessage.get() + res.text);
+    assistantResponse += res.text;
+    $streamingMessage.set(assistantResponse);
   });
 
-  stream.on("end", () => {});
+  stream.on("end", () => {
+    const userMessage = ChatMessage.fromObject({
+      role: 'user',
+      content: msg
+    });
+    const assistantMessage = ChatMessage.fromObject({
+      role: 'assistant',
+      content: assistantResponse
+    });
+    
+    addMessageToHistory(userMessage);
+    addMessageToHistory(assistantMessage);
+    
+    $streamingMessage.set("");
+    $currentChatMessage.set("");
+  });
 
-  stream.on("error", (err) => {});
+  stream.on("error", (err) => {
+    console.error("Stream error:", err);
+    $streamingMessage.set("");
+    $currentChatMessage.set("");
+  });
 };
 
 $currentChatId.listen((newValue, oldValue) => {

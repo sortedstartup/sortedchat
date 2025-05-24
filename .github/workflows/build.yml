@@ -57,9 +57,12 @@ jobs:
       - name: Build Go backend
         working-directory: backend
         run: |
-          OUT=sortedchat-${{ matrix.os }}-${{ matrix.arch }}
+          export OUT=sortedchat-${{ matrix.os }}-${{ matrix.arch }}
           if [ "${{ matrix.os }}" = "windows" ]; then OUT="$OUT.exe"; fi
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} CGO_ENABLED=1 go env && go build -o $OUT ./mono
+          export GOOS=${{ matrix.os }} 
+          export GOARCH=${{ matrix.arch }} 
+          export CGO_ENABLED=1 
+          go env && go build -o $OUT ./mono
 
       - name: Upload Go executable as artifact
         uses: actions/upload-artifact@v4

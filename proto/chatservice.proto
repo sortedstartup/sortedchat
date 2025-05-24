@@ -13,12 +13,12 @@ service SortedChat {
 }
 
 message CreateChatRequest {
-  string chatId = 1;
-  string name = 2;
+  string name = 1;
 }
 
 message CreateChatResponse {
   string message = 1;
+  string chat_id = 2;
 }
 
 message ChatRequest {

@@ -1,75 +1,162 @@
-import { nanoquery } from "@nanostores/query";
-import { ChatInfo, ChatMessage, ChatRequest, ChatResponse, GetChatListRequest, GetHistoryRequest, SortedChatClient } from "../../proto/chatservice"
-import { atom, onMount } from 'nanostores'
+import {
+  ChatInfo,
+  ChatMessage,
+  ChatRequest,
+  ChatResponse,
+  CreateChatRequest,
+  GetChatListRequest,
+  GetHistoryRequest,
+  SortedChatClient,
+} from "../../proto/chatservice";
+import { atom, onMount, computed } from "nanostores";
 
-var chat = new SortedChatClient(import.meta.env.VITE_API_URL)
+var chat = new SortedChatClient(import.meta.env.VITE_API_URL);
 
-function doChat(
-  message: string,
-  chatId: string,
-  onMessage: (chunk: string) => void,
-  onComplete?: () => void,
-  onError?: (err: any) => void
-) {  
-  const req = ChatRequest.fromObject({ text: message, chatId: chatId });
+// --- stores ---
+export const $chatList = atom<ChatInfo[]>([]);
 
-  const stream = chat.Chat(req, {});
+export const $currentChatId = atom<string>("");
+
+export const $currentChatMessages = atom<{
+  data: ChatMessage[] | undefined;
+  loading: boolean;
+  error: string | null;
+}>({
+  data: undefined,
+  loading: false,
+  error: null,
+});
+
+export const fetchChatMessages = async (chatId: string) => {
+  if (!chatId) return;
+  
+  $currentChatMessages.set({
+    data: undefined,
+    loading: true,
+    error: null,
+  });
+  
+  try {
+    const res = await chat.GetHistory(
+      GetHistoryRequest.fromObject({ chatId }),
+      {}
+    );
+    console.log(chatId, ":", res);
+    
+    $currentChatMessages.set({
+      data: res.history || [],
+      loading: false,
+      error: null,
+    });
+  } catch (error) {
+    console.error("Failed to fetch chat messages:", error);
+    $currentChatMessages.set({
+      data: undefined,
+      loading: false,
+      error: error as string || "Failed to fetch messages",
+    });
+  }
+};
+
+// Auto-fetch when chat ID changes
+$currentChatId.listen((newChatId) => {
+  console.log("Chat ID changed to:", newChatId);
+  if (newChatId) {
+    fetchChatMessages(newChatId);
+  } else {
+    $currentChatMessages.set({
+      data: undefined,
+      loading: false,
+      error: null,
+    });
+  }
+});
+
+export const $currentChatMessage = atom<string>("");
+export const $streamingMessage = atom<string>("");
+
+const addMessageToHistory = (message: ChatMessage) => {
+  const currentState = $currentChatMessages.get();
+  if (currentState.data) {
+    // const messageCopy = structuredClone(message);  // will check this later
+    $currentChatMessages.set({
+      ...currentState,
+      data: [...currentState.data, message ]
+    });
+  }
+};
+
+// --- state management ---
+export const createNewChat = async () => {
+  const response = await chat.CreateChat(
+    CreateChatRequest.fromObject({
+      name: "New Chat",
+    }),
+    {}
+  );
+  getChatList();
+  return response.chat_id;
+};
+
+export const doChat = (msg: string) => {
+  $currentChatMessage.set(msg);
+  $streamingMessage.set("");
+
+  let assistantResponse = "";
+
+  // grpc call
+  const stream = chat.Chat(
+    ChatRequest.fromObject({
+      text: msg,
+      chatId: $currentChatId.get(),
+    }),
+    {}
+  );
 
   stream.on("data", (res: ChatResponse) => {
-    onMessage(res.text);
+    assistantResponse += res.text;
+    $streamingMessage.set(assistantResponse);
   });
 
   stream.on("end", () => {
-    onComplete?.();
+    const userMessage = ChatMessage.fromObject({
+      role: 'user',
+      content: msg
+    });
+    const assistantMessage = ChatMessage.fromObject({
+      role: 'assistant',
+      content: assistantResponse
+    });
+    
+    addMessageToHistory(userMessage);
+    addMessageToHistory(assistantMessage);
+    
+    $streamingMessage.set("");
+    $currentChatMessage.set("");
   });
 
   stream.on("error", (err) => {
-    onError?.(err);
+    console.error("Stream error:", err);
+    $streamingMessage.set("");
+    $currentChatMessage.set("");
   });
-}
+};
 
-const $chatList = atom<ChatInfo[]>([])
-const $currentChatId = atom<string>("")
-
-onMount($chatList, () => {
-
-  chat.GetChatList(GetChatListRequest.fromObject({}), {})
-  .then(value=>{
-    $chatList.set(value.chats)
-  })
-
-  return () => {
-    // Disabled mode
-  }
-})
-
-
-export const [createFetcherStore, createMutatorStore] = nanoquery({
-  fetcher: (...keys) => chat.GetHistory(GetHistoryRequest.fromObject({
-    chatId:keys.join('')
-  }),{})
+$currentChatId.listen((newValue, oldValue) => {
+  $streamingMessage.set("");
+  $currentChatMessage.set("");
 });
 
-const $currentChatMessages = createFetcherStore<ChatMessage[]>([$currentChatId]);
+const getChatList = () => {
+  chat.GetChatList(GetChatListRequest.fromObject({}), {}).then((value) => {
+    $chatList.set(value.chats);
+  });
+};
 
-const $addMessage = createMutatorStore<ChatMessage>(async ({ data: message, revalidate, getCacheUpdater }) => {
-    // You can either revalidate the author…
-    // revalidate(`/api/users/${message}`);
-
-    // …or you can optimistically update current cache.
-    const [updateCache, post] = getCacheUpdater(`/api/post/${message}`);
-    
-    updateCache({ ...post, comments: [...post.comments, message] });
-
-    // Even though `fetch` is called after calling `revalidate`, we will only
-    // revalidate the keys after `fetch` resolves
-    return fetch('…')
-  })
-
-export { doChat, $chatList, $currentChatMessages, $currentChatId }
-
-
-
-
-
-
+// load chat history of first use
+onMount($chatList, () => {
+  getChatList();
+  return () => {
+    // Disabled mode
+  };
+});

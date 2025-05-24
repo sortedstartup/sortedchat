@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
-import { chatStore } from "../utils/chatStore";
-import { $chatList, $currentChatId, doChat } from "~/store/chat";
+import { $chatList, $currentChatId, createNewChat, doChat } from "~/store/chat";
 import { useStore } from "@nanostores/react";
 
 export function Welcome() {
@@ -11,67 +10,52 @@ export function Welcome() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [chats, setChats] = useState<Array<{ id: number; name: string; selected: boolean }>>([]);
-  const chatList = useStore($chatList)
+  const chatList = useStore($chatList);
 
   const handleChatSelect = (chatId: string) => {
-    $currentChatId.set(chatId)
+    $currentChatId.set(chatId);
     navigate(`/chat/${chatId}`);
   };
 
-  const handleNewChat = () => {
-    const newChatId = Math.max(...chats.map(chat => chat.id), 0) + 1;
-    navigate(`/chat/${newChatId}`);
+  const handleNewChat = async () => {
+    try {
+      setIsLoading(true);
+      const chatId = await createNewChat();
+      if (chatId) {
+        navigate(`/chat/${chatId}`);
+      } else {
+        setError("Failed to create new chat");
+      }
+    } catch (err) {
+      console.error("Failed to create new chat:", err);
+      setError("Failed to create new chat");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim()) {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Create a new chat with this initial message
-        const newChatId = Math.max(...chats.map(chat => chat.id), 0) + 1;
-        
-        // Get a short name for the chat
-        const chatName = inputValue.length > 20 ? inputValue.substring(0, 20) + "..." : inputValue;
-        
-        // Save the user's input
-        const userMessage = inputValue;
-        
-        // Initialize the chat with just the user's message for now
-        await chatStore.createChat(newChatId, chatName, userMessage);
-        
-        // Call the server for a response
-        try {
-          const serverResponse = await doChat(userMessage);
-          
-          // Add the server's response to the chat
-          await chatStore.addMessage(newChatId, {
-            id: 2,
-            sender: "ai",
-            content: serverResponse || "Sorry, I couldn't process your request."
-          });
-        } catch (err) {
-          console.error("Error getting response from server:", err);
-          
-          // Add an error message to the chat
-          await chatStore.addMessage(newChatId, {
-            id: 2,
-            sender: "ai",
-            content: "Sorry, I encountered an error processing your request."
-          });
-        }
-        
-        // Navigate to the new chat
-        navigate(`/chat/${newChatId}`);
-      } catch (err) {
-        console.error("Error creating chat:", err);
-        setError("Failed to create chat. Please try again.");
-      } finally {
-        setIsLoading(false);
+    if (!inputValue.trim()) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const chatId = await createNewChat();
+    
+      if (chatId) {
+        $currentChatId.set(chatId);    
+        doChat(inputValue);
+        navigate(`/chat/${chatId}`);
+      } else {
+        setError("Failed to create new chat");
       }
+    } catch (err) {
+      console.error("Failed to start chat:", err);
+      setError("Failed to start chat");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -80,6 +64,10 @@ export function Welcome() {
       e.preventDefault();
       handleSubmit(e as unknown as React.FormEvent);
     }
+  };
+
+  const handleExampleClick = (exampleText: string) => {
+    setInputValue(exampleText);
   };
 
   return (
@@ -104,7 +92,8 @@ export function Welcome() {
           <div className="p-3">
             <button 
               onClick={handleNewChat}
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -117,7 +106,7 @@ export function Welcome() {
                 <li 
                   key={chat.chatId} 
                   onClick={() => handleChatSelect(chat.chatId)}
-                  className={`px-3 py-2 mx-2 rounded-md cursor-pointer ${chat.selected ? "bg-gray-200 dark:bg-gray-700" : "hover:bg-gray-100 dark:hover:bg-gray-800"}`}
+                  className="px-3 py-2 mx-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   <div className="flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -181,13 +170,22 @@ export function Welcome() {
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Examples</h3>
               <ul className="space-y-2 text-sm">
-                <li className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
+                <li 
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                  onClick={() => handleExampleClick("Explain quantum computing in simple terms")}
+                >
                   "Explain quantum computing in simple terms"
                 </li>
-                <li className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
+                <li 
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                  onClick={() => handleExampleClick("How do I make a HTTP request in JavaScript?")}
+                >
                   "How do I make a HTTP request in JavaScript?"
                 </li>
-                <li className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
+                <li 
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                  onClick={() => handleExampleClick("Write a poem about programming")}
+                >
                   "Write a poem about programming"
                 </li>
               </ul>

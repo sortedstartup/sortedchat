@@ -29,6 +29,16 @@ jobs:
         working-directory: frontend/sortedchat
         run: pnpm run build
 
+  build-go:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, windows, darwin]
+        arch: [amd64, arm64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -36,4 +46,13 @@ jobs:
 
       - name: Build Go backend
         working-directory: backend
-        run: go build -o sortedchat ./mono
+        run: |
+          OUT=sortedchat-${{ matrix.os }}-${{ matrix.arch }}
+          if [ "${{ matrix.os }}" = "windows" ]; then OUT="$OUT.exe"; fi
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o $OUT ./mono
+
+      - name: Upload Go executable as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sortedchat-${{ matrix.os }}-${{ matrix.arch }}
+          path: backend/sortedchat-${{ matrix.os }}-${{ matrix.arch }}*

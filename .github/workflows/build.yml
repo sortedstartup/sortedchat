@@ -2,7 +2,7 @@ name: Build UI and Go App
 
 on:
   push:
-    branches: [ main, github-actions-to-build ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -25,11 +25,19 @@ jobs:
         working-directory: frontend/sortedchat
         run: pnpm install
 
-      - name: Build frontend
+      - name: Build frontend in standalone mode
         working-directory: frontend/sortedchat
-        run: pnpm run build
+        run: pnpm run build --mode standalone
+
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/sortedchat/build/client
+          if-no-files-found: error
 
   build-go:
+    needs: build
     runs-on: ${{ matrix.runner }}
     continue-on-error: true
     strategy:
@@ -53,6 +61,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: backend/mono/public
+
+      - name: Ensure public directory exists
+        run: mkdir -p backend/mono/public
 
       - name: Cache Go modules
         uses: actions/cache@v4

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"log"
 	"net"
 	"net/http"
@@ -20,6 +22,9 @@ const (
 	grpcPort = ":8000"
 	httpPort = ":8080"
 )
+
+//go:embed public
+var staticUIFS embed.FS
 
 func main() {
 
@@ -45,6 +50,10 @@ func main() {
 	wrappedGrpc := grpcweb.WrapServer(grpcServer)
 	mux := http.NewServeMux()
 
+	// serve static UI
+	publicFS, err := fs.Sub(staticUIFS, "public")
+	staticUI := http.FileServer(http.FS(publicFS))
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if wrappedGrpc.IsGrpcWebRequest(r) || wrappedGrpc.IsAcceptableGrpcCorsRequest(r) {
 			util.EnableCORS(wrappedGrpc).ServeHTTP(w, r)
@@ -52,7 +61,7 @@ func main() {
 			return
 		}
 		// For non-matched requests, serve static UI as fallback
-		// staticUI.ServeHTTP(w, r)
+		staticUI.ServeHTTP(w, r)
 	})
 
 	httpServer := &http.Server{

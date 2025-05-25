@@ -37,6 +37,7 @@ jobs:
           name: frontend-build
           path: frontend/sortedchat/build/client
           if-no-files-found: error
+          retention-days: 10
 
   build-go:
     needs: build
@@ -128,6 +129,7 @@ jobs:
         with:
           name: sortedchat-${{ matrix.os }}-${{ matrix.arch }}
           path: backend/sortedchat-${{ matrix.os }}-${{ matrix.arch }}*
+          retention-days: 10
 
   create-release:
     needs: build-go

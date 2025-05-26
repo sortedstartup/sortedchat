@@ -34,7 +34,7 @@ type SortedChatClient interface {
 	GetHistory(ctx context.Context, in *GetHistoryRequest, opts ...grpc.CallOption) (*GetHistoryResponse, error)
 	GetChatList(ctx context.Context, in *GetChatListRequest, opts ...grpc.CallOption) (*GetChatListResponse, error)
 	CreateChat(ctx context.Context, in *CreateChatRequest, opts ...grpc.CallOption) (*CreateChatResponse, error)
-	ListModel(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelResponse, error)
+	ListModel(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error)
 }
 
 type sortedChatClient struct {
@@ -94,9 +94,9 @@ func (c *sortedChatClient) CreateChat(ctx context.Context, in *CreateChatRequest
 	return out, nil
 }
 
-func (c *sortedChatClient) ListModel(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelResponse, error) {
+func (c *sortedChatClient) ListModel(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListModelResponse)
+	out := new(ListModelsResponse)
 	err := c.cc.Invoke(ctx, SortedChat_ListModel_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ type SortedChatServer interface {
 	GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error)
 	GetChatList(context.Context, *GetChatListRequest) (*GetChatListResponse, error)
 	CreateChat(context.Context, *CreateChatRequest) (*CreateChatResponse, error)
-	ListModel(context.Context, *ListModelsRequest) (*ListModelResponse, error)
+	ListModel(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -135,7 +135,7 @@ func (UnimplementedSortedChatServer) GetChatList(context.Context, *GetChatListRe
 func (UnimplementedSortedChatServer) CreateChat(context.Context, *CreateChatRequest) (*CreateChatResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateChat not implemented")
 }
-func (UnimplementedSortedChatServer) ListModel(context.Context, *ListModelsRequest) (*ListModelResponse, error) {
+func (UnimplementedSortedChatServer) ListModel(context.Context, *ListModelsRequest) (*ListModelsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListModel not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}

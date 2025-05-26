@@ -3,10 +3,12 @@ import { useParams, useNavigate, Link } from "react-router";
 import logoDark from "../welcome/logo-dark.svg";
 import logoLight from "../welcome/logo-light.svg";
 import {
+  $availableModels,
   $chatList,
   $currentChatId,
   $currentChatMessage,
   $currentChatMessages,
+  $selectedModel,
   $streamingMessage,
   createNewChat,
   doChat,
@@ -26,10 +28,13 @@ export default function Chat() {
 
   const streamingMessage = useStore($streamingMessage);
   const currentChatMessage = useStore($currentChatMessage);
+  const availableModels = useStore($availableModels);
+  const selectedModel = useStore($selectedModel);
 
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // const [selectedModel, setSelectedModel] = useState("gpt-4.1");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +83,11 @@ export default function Chat() {
     } catch (err) {
       console.error("Failed to create new chat:", err);
     }
+  };
+
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    $selectedModel.set(e.target.value);
+    console.log($selectedModel);
   };
 
   if (error) {
@@ -246,7 +256,20 @@ export default function Chat() {
 
         {/* Input area */}
         <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-end">
+          <div className="flex items-center justify-center">
+            <div className="pr-3">
+              <select
+                value={selectedModel}
+                onChange={handleModelChange}
+                className="border border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {availableModels.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex-1 relative">
               <textarea
                 value={inputValue}

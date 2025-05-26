@@ -573,27 +573,27 @@ func (*ListModelsRequest) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{11}
 }
 
-type ListModelResponse struct {
+type ListModelsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Models        []*ModelListInfo       `protobuf:"bytes,1,rep,name=models,proto3" json:"models,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListModelResponse) Reset() {
-	*x = ListModelResponse{}
+func (x *ListModelsResponse) Reset() {
+	*x = ListModelsResponse{}
 	mi := &file_chatservice_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListModelResponse) String() string {
+func (x *ListModelsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListModelResponse) ProtoMessage() {}
+func (*ListModelsResponse) ProtoMessage() {}
 
-func (x *ListModelResponse) ProtoReflect() protoreflect.Message {
+func (x *ListModelsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -605,12 +605,12 @@ func (x *ListModelResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListModelResponse.ProtoReflect.Descriptor instead.
-func (*ListModelResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListModelsResponse.ProtoReflect.Descriptor instead.
+func (*ListModelsResponse) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *ListModelResponse) GetModels() []*ModelListInfo {
+func (x *ListModelsResponse) GetModels() []*ModelListInfo {
 	if x != nil {
 		return x.Models
 	}
@@ -649,9 +649,9 @@ const file_chatservice_proto_rawDesc = "" +
 	"\rModelListInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\"\x13\n" +
-	"\x11ListModelsRequest\"F\n" +
-	"\x11ListModelResponse\x121\n" +
-	"\x06models\x18\x01 \x03(\v2\x19.sortedchat.ModelListInfoR\x06models2\xfe\x02\n" +
+	"\x11ListModelsRequest\"G\n" +
+	"\x12ListModelsResponse\x121\n" +
+	"\x06models\x18\x01 \x03(\v2\x19.sortedchat.ModelListInfoR\x06models2\xff\x02\n" +
 	"\n" +
 	"SortedChat\x12;\n" +
 	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12K\n" +
@@ -659,8 +659,8 @@ const file_chatservice_proto_rawDesc = "" +
 	"GetHistory\x12\x1d.sortedchat.GetHistoryRequest\x1a\x1e.sortedchat.GetHistoryResponse\x12N\n" +
 	"\vGetChatList\x12\x1e.sortedchat.GetChatListRequest\x1a\x1f.sortedchat.GetChatListResponse\x12K\n" +
 	"\n" +
-	"CreateChat\x12\x1d.sortedchat.CreateChatRequest\x1a\x1e.sortedchat.CreateChatResponse\x12I\n" +
-	"\tListModel\x12\x1d.sortedchat.ListModelsRequest\x1a\x1d.sortedchat.ListModelResponseB%Z#sortedstartup.com/chatservice/protob\x06proto3"
+	"CreateChat\x12\x1d.sortedchat.CreateChatRequest\x1a\x1e.sortedchat.CreateChatResponse\x12J\n" +
+	"\tListModel\x12\x1d.sortedchat.ListModelsRequest\x1a\x1e.sortedchat.ListModelsResponseB%Z#sortedstartup.com/chatservice/protob\x06proto3"
 
 var (
 	file_chatservice_proto_rawDescOnce sync.Once
@@ -688,12 +688,12 @@ var file_chatservice_proto_goTypes = []any{
 	(*ChatInfo)(nil),            // 9: sortedchat.ChatInfo
 	(*ModelListInfo)(nil),       // 10: sortedchat.ModelListInfo
 	(*ListModelsRequest)(nil),   // 11: sortedchat.ListModelsRequest
-	(*ListModelResponse)(nil),   // 12: sortedchat.ListModelResponse
+	(*ListModelsResponse)(nil),  // 12: sortedchat.ListModelsResponse
 }
 var file_chatservice_proto_depIdxs = []int32{
 	6,  // 0: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
 	9,  // 1: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
-	10, // 2: sortedchat.ListModelResponse.models:type_name -> sortedchat.ModelListInfo
+	10, // 2: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
 	2,  // 3: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
 	4,  // 4: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
 	7,  // 5: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
@@ -703,7 +703,7 @@ var file_chatservice_proto_depIdxs = []int32{
 	5,  // 9: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
 	8,  // 10: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
 	1,  // 11: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	12, // 12: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelResponse
+	12, // 12: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
 	8,  // [8:13] is the sub-list for method output_type
 	3,  // [3:8] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name

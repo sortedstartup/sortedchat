@@ -6,6 +6,8 @@ import {
   CreateChatRequest,
   GetChatListRequest,
   GetHistoryRequest,
+  ListModelsRequest,
+  ModelListInfo,
   SortedChatClient,
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
@@ -29,20 +31,20 @@ export const $currentChatMessages = atom<{
 
 export const fetchChatMessages = async (chatId: string) => {
   if (!chatId) return;
-  
+
   $currentChatMessages.set({
     data: undefined,
     loading: true,
     error: null,
   });
-  
+
   try {
     const res = await chat.GetHistory(
       GetHistoryRequest.fromObject({ chatId }),
       {}
     );
     console.log(chatId, ":", res);
-    
+
     $currentChatMessages.set({
       data: res.history || [],
       loading: false,
@@ -53,7 +55,7 @@ export const fetchChatMessages = async (chatId: string) => {
     $currentChatMessages.set({
       data: undefined,
       loading: false,
-      error: error as string || "Failed to fetch messages",
+      error: (error as string) || "Failed to fetch messages",
     });
   }
 };
@@ -81,7 +83,7 @@ const addMessageToHistory = (message: ChatMessage) => {
     // const messageCopy = structuredClone(message);  // will check this later
     $currentChatMessages.set({
       ...currentState,
-      data: [...currentState.data, message ]
+      data: [...currentState.data, message],
     });
   }
 };
@@ -120,17 +122,17 @@ export const doChat = (msg: string) => {
 
   stream.on("end", () => {
     const userMessage = ChatMessage.fromObject({
-      role: 'user',
-      content: msg
+      role: "user",
+      content: msg,
     });
     const assistantMessage = ChatMessage.fromObject({
-      role: 'assistant',
-      content: assistantResponse
+      role: "assistant",
+      content: assistantResponse,
     });
-    
+
     addMessageToHistory(userMessage);
     addMessageToHistory(assistantMessage);
-    
+
     $streamingMessage.set("");
     $currentChatMessage.set("");
   });
@@ -156,7 +158,20 @@ const getChatList = () => {
 // load chat history of first use
 onMount($chatList, () => {
   getChatList();
+  fetchAvailableModels();
   return () => {
     // Disabled mode
   };
 });
+
+export const $availableModels = atom<ModelListInfo[]>([]);
+export const $selectedModel = atom<string>("gpt-4.1");
+
+export const fetchAvailableModels = async () => {
+  try {
+    const response = await chat.ListModel(ListModelsRequest.fromObject({}), {});
+    $availableModels.set(response.models);
+  } catch (err) {
+    console.error("Failed to fetch models:", err);
+  }
+};

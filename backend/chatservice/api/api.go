@@ -220,13 +220,15 @@ func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb
 	}, nil
 }
 
-func (s *Server) ListModels(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelResponse, error) {
+func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
 	models := []*pb.ModelListInfo{
-		{Id: "gpt-4o", Label: "GPT-4 Omni (Most Capable)"},
+		{Id: "chatgpt-4o-latest", Label: "ChatGPT-4o (Latest)"},
 		{Id: "gpt-4-turbo", Label: "GPT-4 Turbo"},
-		{Id: "gpt-4", Label: "GPT-4 (Legacy)"},
-		{Id: "gpt-3.5-turbo", Label: "GPT-3.5 Turbo"},
-		{Id: "gpt-3.5-turbo-16k", Label: "GPT-3.5 Turbo 16k"},
+		{Id: "gpt-4.1", Label: "GPT-4.1"},
+		{Id: "gpt-4o", Label: "GPT-4o"},
+		{Id: "gpt-4o-mini", Label: "GPT-4o Mini"},
+		{Id: "o3-mini", Label: "o3-mini"},
+		{Id: "o4-mini", Label: "o4-mini"},
 	}
-	return &pb.ListModelResponse{Models: models}, nil
+	return &pb.ListModelsResponse{Models: models}, nil
 }

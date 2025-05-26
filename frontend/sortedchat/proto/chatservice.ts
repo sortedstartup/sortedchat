@@ -871,7 +871,7 @@ export class ListModelsRequest extends pb_1.Message {
         return ListModelsRequest.deserialize(bytes);
     }
 }
-export class ListModelResponse extends pb_1.Message {
+export class ListModelsResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         models?: ModelListInfo[];
@@ -892,8 +892,8 @@ export class ListModelResponse extends pb_1.Message {
     }
     static fromObject(data: {
         models?: ReturnType<typeof ModelListInfo.prototype.toObject>[];
-    }): ListModelResponse {
-        const message = new ListModelResponse({});
+    }): ListModelsResponse {
+        const message = new ListModelsResponse({});
         if (data.models != null) {
             message.models = data.models.map(item => ModelListInfo.fromObject(item));
         }
@@ -917,8 +917,8 @@ export class ListModelResponse extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelResponse();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelsResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelsResponse();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -934,8 +934,8 @@ export class ListModelResponse extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): ListModelResponse {
-        return ListModelResponse.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ListModelsResponse {
+        return ListModelsResponse.deserialize(bytes);
     }
 }
 export abstract class UnimplementedSortedChatService {
@@ -982,8 +982,8 @@ export abstract class UnimplementedSortedChatService {
             responseStream: false,
             requestSerialize: (message: ListModelsRequest) => Buffer.from(message.serialize()),
             requestDeserialize: (bytes: Buffer) => ListModelsRequest.deserialize(new Uint8Array(bytes)),
-            responseSerialize: (message: ListModelResponse) => Buffer.from(message.serialize()),
-            responseDeserialize: (bytes: Buffer) => ListModelResponse.deserialize(new Uint8Array(bytes))
+            responseSerialize: (message: ListModelsResponse) => Buffer.from(message.serialize()),
+            responseDeserialize: (bytes: Buffer) => ListModelsResponse.deserialize(new Uint8Array(bytes))
         }
     };
     [method: string]: grpc_1.UntypedHandleCall;
@@ -991,7 +991,7 @@ export abstract class UnimplementedSortedChatService {
     abstract GetHistory(call: grpc_1.ServerUnaryCall<GetHistoryRequest, GetHistoryResponse>, callback: grpc_1.sendUnaryData<GetHistoryResponse>): void;
     abstract GetChatList(call: grpc_1.ServerUnaryCall<GetChatListRequest, GetChatListResponse>, callback: grpc_1.sendUnaryData<GetChatListResponse>): void;
     abstract CreateChat(call: grpc_1.ServerUnaryCall<CreateChatRequest, CreateChatResponse>, callback: grpc_1.sendUnaryData<CreateChatResponse>): void;
-    abstract ListModel(call: grpc_1.ServerUnaryCall<ListModelsRequest, ListModelResponse>, callback: grpc_1.sendUnaryData<ListModelResponse>): void;
+    abstract ListModel(call: grpc_1.ServerUnaryCall<ListModelsRequest, ListModelsResponse>, callback: grpc_1.sendUnaryData<ListModelsResponse>): void;
 }
 export class SortedChatClient {
     private _address: string;
@@ -1019,8 +1019,8 @@ export class SortedChatClient {
     CreateChat(message: CreateChatRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<CreateChatRequest, CreateChatResponse>(this._address + "/sortedchat.SortedChat/CreateChat", message, metadata || {}, SortedChatClient.CreateChat);
     }
-    private static ListModel = new grpc_web_1.MethodDescriptor<ListModelsRequest, ListModelResponse>("/sortedchat.SortedChat/ListModel", grpc_web_1.MethodType.UNARY, ListModelsRequest, ListModelResponse, (message: ListModelsRequest) => message.serialize(), ListModelResponse.deserialize);
+    private static ListModel = new grpc_web_1.MethodDescriptor<ListModelsRequest, ListModelsResponse>("/sortedchat.SortedChat/ListModel", grpc_web_1.MethodType.UNARY, ListModelsRequest, ListModelsResponse, (message: ListModelsRequest) => message.serialize(), ListModelsResponse.deserialize);
     ListModel(message: ListModelsRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.thenableCall<ListModelsRequest, ListModelResponse>(this._address + "/sortedchat.SortedChat/ListModel", message, metadata || {}, SortedChatClient.ListModel);
+        return this._client.thenableCall<ListModelsRequest, ListModelsResponse>(this._address + "/sortedchat.SortedChat/ListModel", message, metadata || {}, SortedChatClient.ListModel);
     }
 }

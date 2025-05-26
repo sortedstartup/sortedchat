@@ -219,3 +219,14 @@ func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb
 		ChatId:  chatId, // return chatId so the frontend can use it for messages
 	}, nil
 }
+
+func (s *Server) ListModels(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelResponse, error) {
+	models := []*pb.ModelListInfo{
+		{Id: "gpt-4o", Label: "GPT-4 Omni (Most Capable)"},
+		{Id: "gpt-4-turbo", Label: "GPT-4 Turbo"},
+		{Id: "gpt-4", Label: "GPT-4 (Legacy)"},
+		{Id: "gpt-3.5-turbo", Label: "GPT-3.5 Turbo"},
+		{Id: "gpt-3.5-turbo-16k", Label: "GPT-3.5 Turbo 16k"},
+	}
+	return &pb.ListModelResponse{Models: models}, nil
+}

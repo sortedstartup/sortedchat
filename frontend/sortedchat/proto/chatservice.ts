@@ -741,6 +741,203 @@ export class ChatInfo extends pb_1.Message {
         return ChatInfo.deserialize(bytes);
     }
 }
+export class ModelListInfo extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        id?: string;
+        label?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("id" in data && data.id != undefined) {
+                this.id = data.id;
+            }
+            if ("label" in data && data.label != undefined) {
+                this.label = data.label;
+            }
+        }
+    }
+    get id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get label() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set label(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        id?: string;
+        label?: string;
+    }): ModelListInfo {
+        const message = new ModelListInfo({});
+        if (data.id != null) {
+            message.id = data.id;
+        }
+        if (data.label != null) {
+            message.label = data.label;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            id?: string;
+            label?: string;
+        } = {};
+        if (this.id != null) {
+            data.id = this.id;
+        }
+        if (this.label != null) {
+            data.label = this.label;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.id.length)
+            writer.writeString(1, this.id);
+        if (this.label.length)
+            writer.writeString(2, this.label);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ModelListInfo {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ModelListInfo();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.id = reader.readString();
+                    break;
+                case 2:
+                    message.label = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ModelListInfo {
+        return ModelListInfo.deserialize(bytes);
+    }
+}
+export class ListModelsRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {}) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") { }
+    }
+    static fromObject(data: {}): ListModelsRequest {
+        const message = new ListModelsRequest({});
+        return message;
+    }
+    toObject() {
+        const data: {} = {};
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelsRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelsRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListModelsRequest {
+        return ListModelsRequest.deserialize(bytes);
+    }
+}
+export class ListModelResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        models?: ModelListInfo[];
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("models" in data && data.models != undefined) {
+                this.models = data.models;
+            }
+        }
+    }
+    get models() {
+        return pb_1.Message.getRepeatedWrapperField(this, ModelListInfo, 1) as ModelListInfo[];
+    }
+    set models(value: ModelListInfo[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 1, value);
+    }
+    static fromObject(data: {
+        models?: ReturnType<typeof ModelListInfo.prototype.toObject>[];
+    }): ListModelResponse {
+        const message = new ListModelResponse({});
+        if (data.models != null) {
+            message.models = data.models.map(item => ModelListInfo.fromObject(item));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            models?: ReturnType<typeof ModelListInfo.prototype.toObject>[];
+        } = {};
+        if (this.models != null) {
+            data.models = this.models.map((item: ModelListInfo) => item.toObject());
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.models.length)
+            writer.writeRepeatedMessage(1, this.models, (item: ModelListInfo) => item.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.models, () => pb_1.Message.addToRepeatedWrapperField(message, 1, ModelListInfo.deserialize(reader), ModelListInfo));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListModelResponse {
+        return ListModelResponse.deserialize(bytes);
+    }
+}
 export abstract class UnimplementedSortedChatService {
     static definition = {
         Chat: {
@@ -778,6 +975,15 @@ export abstract class UnimplementedSortedChatService {
             requestDeserialize: (bytes: Buffer) => CreateChatRequest.deserialize(new Uint8Array(bytes)),
             responseSerialize: (message: CreateChatResponse) => Buffer.from(message.serialize()),
             responseDeserialize: (bytes: Buffer) => CreateChatResponse.deserialize(new Uint8Array(bytes))
+        },
+        ListModel: {
+            path: "/sortedchat.SortedChat/ListModel",
+            requestStream: false,
+            responseStream: false,
+            requestSerialize: (message: ListModelsRequest) => Buffer.from(message.serialize()),
+            requestDeserialize: (bytes: Buffer) => ListModelsRequest.deserialize(new Uint8Array(bytes)),
+            responseSerialize: (message: ListModelResponse) => Buffer.from(message.serialize()),
+            responseDeserialize: (bytes: Buffer) => ListModelResponse.deserialize(new Uint8Array(bytes))
         }
     };
     [method: string]: grpc_1.UntypedHandleCall;
@@ -785,6 +991,7 @@ export abstract class UnimplementedSortedChatService {
     abstract GetHistory(call: grpc_1.ServerUnaryCall<GetHistoryRequest, GetHistoryResponse>, callback: grpc_1.sendUnaryData<GetHistoryResponse>): void;
     abstract GetChatList(call: grpc_1.ServerUnaryCall<GetChatListRequest, GetChatListResponse>, callback: grpc_1.sendUnaryData<GetChatListResponse>): void;
     abstract CreateChat(call: grpc_1.ServerUnaryCall<CreateChatRequest, CreateChatResponse>, callback: grpc_1.sendUnaryData<CreateChatResponse>): void;
+    abstract ListModel(call: grpc_1.ServerUnaryCall<ListModelsRequest, ListModelResponse>, callback: grpc_1.sendUnaryData<ListModelResponse>): void;
 }
 export class SortedChatClient {
     private _address: string;
@@ -811,5 +1018,9 @@ export class SortedChatClient {
     private static CreateChat = new grpc_web_1.MethodDescriptor<CreateChatRequest, CreateChatResponse>("/sortedchat.SortedChat/CreateChat", grpc_web_1.MethodType.UNARY, CreateChatRequest, CreateChatResponse, (message: CreateChatRequest) => message.serialize(), CreateChatResponse.deserialize);
     CreateChat(message: CreateChatRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<CreateChatRequest, CreateChatResponse>(this._address + "/sortedchat.SortedChat/CreateChat", message, metadata || {}, SortedChatClient.CreateChat);
+    }
+    private static ListModel = new grpc_web_1.MethodDescriptor<ListModelsRequest, ListModelResponse>("/sortedchat.SortedChat/ListModel", grpc_web_1.MethodType.UNARY, ListModelsRequest, ListModelResponse, (message: ListModelsRequest) => message.serialize(), ListModelResponse.deserialize);
+    ListModel(message: ListModelsRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<ListModelsRequest, ListModelResponse>(this._address + "/sortedchat.SortedChat/ListModel", message, metadata || {}, SortedChatClient.ListModel);
     }
 }

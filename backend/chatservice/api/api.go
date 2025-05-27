@@ -41,6 +41,8 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 		return fmt.Errorf(" Chat ID is required to maintain context")
 	}
 
+	fmt.Println(model)
+
 	var history []ChatMessage
 	err := db.DB.Select(&history, `
         SELECT role, content FROM chat_messages 
@@ -57,8 +59,8 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 	}
 
 	_, err = db.DB.Exec(`
-        INSERT INTO chat_messages (chat_id, role, content) 
-        VALUES (?, ?, ?)`, chatId, "user", req.Text)
+        INSERT INTO chat_messages (chat_id, role, content,model) 
+        VALUES (?, ?, ?, ?)`, chatId, "user", req.Text, req.Model)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
 	}
@@ -66,7 +68,8 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 	history = append(history, ChatMessage{Role: "user", Content: req.Text})
 
 	requestBody := map[string]interface{}{
-		"model":        "gpt-4.1",
+		// "model":        "gpt-4.1",
+		"model":        model,
 		"instructions": "You are a helpful assistant",
 		"input":        history,
 		"stream":       true,
@@ -132,8 +135,8 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 			}
 
 			_, err := db.DB.Exec(`
-                INSERT INTO chat_messages (chat_id, role, content) 
-                VALUES (?, ?, ?)`, chatId, "assistant", text)
+                INSERT INTO chat_messages (chat_id, role, content,model) 
+                VALUES (?, ?, ?, ?)`, chatId, "assistant", text, req.Model)
 			if err != nil {
 				log.Printf("failed to insert assistant message: %v", err)
 			}
@@ -224,19 +227,6 @@ func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb
 		ChatId:  chatId, // return chatId so the frontend can use it for messages
 	}, nil
 }
-
-// func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
-// 	models := []*pb.ModelListInfo{
-// 		{Id: "chatgpt-4o-latest", Label: "ChatGPT-4o (Latest)"},
-// 		{Id: "gpt-4-turbo", Label: "GPT-4 Turbo"},
-// 		{Id: "gpt-4.1", Label: "GPT-4.1"},
-// 		{Id: "gpt-4o", Label: "GPT-4o"},
-// 		{Id: "gpt-4o-mini", Label: "GPT-4o Mini"},
-// 		{Id: "o3-mini", Label: "o3-mini"},
-// 		{Id: "o4-mini", Label: "o4-mini"},
-// 	}
-// 	return &pb.ListModelsResponse{Models: models}, nil
-// }
 
 func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
 	type Model struct {

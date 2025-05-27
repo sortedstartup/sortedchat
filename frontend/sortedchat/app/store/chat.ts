@@ -111,6 +111,7 @@ export const doChat = (msg: string) => {
     ChatRequest.fromObject({
       text: msg,
       chatId: $currentChatId.get(),
+      model: $selectedModel.get()
     }),
     {}
   );

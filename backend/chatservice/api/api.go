@@ -36,6 +36,11 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 		return fmt.Errorf(" Chat ID is required to maintain context")
 	}
 
+	model := req.Model
+	if model == "" {
+		return fmt.Errorf(" Chat ID is required to maintain context")
+	}
+
 	var history []ChatMessage
 	err := db.DB.Select(&history, `
         SELECT role, content FROM chat_messages 
@@ -220,15 +225,38 @@ func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb
 	}, nil
 }
 
+// func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
+// 	models := []*pb.ModelListInfo{
+// 		{Id: "chatgpt-4o-latest", Label: "ChatGPT-4o (Latest)"},
+// 		{Id: "gpt-4-turbo", Label: "GPT-4 Turbo"},
+// 		{Id: "gpt-4.1", Label: "GPT-4.1"},
+// 		{Id: "gpt-4o", Label: "GPT-4o"},
+// 		{Id: "gpt-4o-mini", Label: "GPT-4o Mini"},
+// 		{Id: "o3-mini", Label: "o3-mini"},
+// 		{Id: "o4-mini", Label: "o4-mini"},
+// 	}
+// 	return &pb.ListModelsResponse{Models: models}, nil
+// }
+
 func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
-	models := []*pb.ModelListInfo{
-		{Id: "chatgpt-4o-latest", Label: "ChatGPT-4o (Latest)"},
-		{Id: "gpt-4-turbo", Label: "GPT-4 Turbo"},
-		{Id: "gpt-4.1", Label: "GPT-4.1"},
-		{Id: "gpt-4o", Label: "GPT-4o"},
-		{Id: "gpt-4o-mini", Label: "GPT-4o Mini"},
-		{Id: "o3-mini", Label: "o3-mini"},
-		{Id: "o4-mini", Label: "o4-mini"},
+	type Model struct {
+		ID   string `db:"id"`
+		Name string `db:"name"`
 	}
-	return &pb.ListModelsResponse{Models: models}, nil
+
+	var models []Model
+	err := db.DB.Select(&models, "SELECT id, name FROM model_metadata")
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch models: %v", err)
+	}
+
+	pbModels := make([]*pb.ModelListInfo, 0, len(models))
+	for _, m := range models {
+		pbModels = append(pbModels, &pb.ModelListInfo{
+			Id:    m.ID,
+			Label: m.Name,
+		})
+	}
+
+	return &pb.ListModelsResponse{Models: pbModels}, nil
 }

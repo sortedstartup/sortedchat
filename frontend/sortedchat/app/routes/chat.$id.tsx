@@ -32,7 +32,7 @@ export default function Chat() {
   const selectedModel = useStore($selectedModel);
 
   const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // const [selectedModel, setSelectedModel] = useState("gpt-4.1");
 

@@ -769,6 +769,10 @@ export class ModelListInfo extends pb_1.Message {
     constructor(data?: any[] | {
         id?: string;
         label?: string;
+        provider?: string;
+        url?: string;
+        input_token_cost?: number;
+        output_token_cost?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -778,6 +782,18 @@ export class ModelListInfo extends pb_1.Message {
             }
             if ("label" in data && data.label != undefined) {
                 this.label = data.label;
+            }
+            if ("provider" in data && data.provider != undefined) {
+                this.provider = data.provider;
+            }
+            if ("url" in data && data.url != undefined) {
+                this.url = data.url;
+            }
+            if ("input_token_cost" in data && data.input_token_cost != undefined) {
+                this.input_token_cost = data.input_token_cost;
+            }
+            if ("output_token_cost" in data && data.output_token_cost != undefined) {
+                this.output_token_cost = data.output_token_cost;
             }
         }
     }
@@ -793,9 +809,37 @@ export class ModelListInfo extends pb_1.Message {
     set label(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
+    get provider() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set provider(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get url() {
+        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+    }
+    set url(value: string) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    get input_token_cost() {
+        return pb_1.Message.getFieldWithDefault(this, 5, 0) as number;
+    }
+    set input_token_cost(value: number) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    get output_token_cost() {
+        return pb_1.Message.getFieldWithDefault(this, 6, 0) as number;
+    }
+    set output_token_cost(value: number) {
+        pb_1.Message.setField(this, 6, value);
+    }
     static fromObject(data: {
         id?: string;
         label?: string;
+        provider?: string;
+        url?: string;
+        input_token_cost?: number;
+        output_token_cost?: number;
     }): ModelListInfo {
         const message = new ModelListInfo({});
         if (data.id != null) {
@@ -804,18 +848,46 @@ export class ModelListInfo extends pb_1.Message {
         if (data.label != null) {
             message.label = data.label;
         }
+        if (data.provider != null) {
+            message.provider = data.provider;
+        }
+        if (data.url != null) {
+            message.url = data.url;
+        }
+        if (data.input_token_cost != null) {
+            message.input_token_cost = data.input_token_cost;
+        }
+        if (data.output_token_cost != null) {
+            message.output_token_cost = data.output_token_cost;
+        }
         return message;
     }
     toObject() {
         const data: {
             id?: string;
             label?: string;
+            provider?: string;
+            url?: string;
+            input_token_cost?: number;
+            output_token_cost?: number;
         } = {};
         if (this.id != null) {
             data.id = this.id;
         }
         if (this.label != null) {
             data.label = this.label;
+        }
+        if (this.provider != null) {
+            data.provider = this.provider;
+        }
+        if (this.url != null) {
+            data.url = this.url;
+        }
+        if (this.input_token_cost != null) {
+            data.input_token_cost = this.input_token_cost;
+        }
+        if (this.output_token_cost != null) {
+            data.output_token_cost = this.output_token_cost;
         }
         return data;
     }
@@ -827,6 +899,14 @@ export class ModelListInfo extends pb_1.Message {
             writer.writeString(1, this.id);
         if (this.label.length)
             writer.writeString(2, this.label);
+        if (this.provider.length)
+            writer.writeString(3, this.provider);
+        if (this.url.length)
+            writer.writeString(4, this.url);
+        if (this.input_token_cost != 0)
+            writer.writeFloat(5, this.input_token_cost);
+        if (this.output_token_cost != 0)
+            writer.writeFloat(6, this.output_token_cost);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -841,6 +921,18 @@ export class ModelListInfo extends pb_1.Message {
                     break;
                 case 2:
                     message.label = reader.readString();
+                    break;
+                case 3:
+                    message.provider = reader.readString();
+                    break;
+                case 4:
+                    message.url = reader.readString();
+                    break;
+                case 5:
+                    message.input_token_cost = reader.readFloat();
+                    break;
+                case 6:
+                    message.output_token_cost = reader.readFloat();
                     break;
                 default: reader.skipField();
             }

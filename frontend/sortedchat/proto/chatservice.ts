@@ -168,6 +168,7 @@ export class ChatRequest extends pb_1.Message {
     constructor(data?: any[] | {
         text?: string;
         chatId?: string;
+        model?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -177,6 +178,9 @@ export class ChatRequest extends pb_1.Message {
             }
             if ("chatId" in data && data.chatId != undefined) {
                 this.chatId = data.chatId;
+            }
+            if ("model" in data && data.model != undefined) {
+                this.model = data.model;
             }
         }
     }
@@ -192,9 +196,16 @@ export class ChatRequest extends pb_1.Message {
     set chatId(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
+    get model() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set model(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
     static fromObject(data: {
         text?: string;
         chatId?: string;
+        model?: string;
     }): ChatRequest {
         const message = new ChatRequest({});
         if (data.text != null) {
@@ -203,18 +214,25 @@ export class ChatRequest extends pb_1.Message {
         if (data.chatId != null) {
             message.chatId = data.chatId;
         }
+        if (data.model != null) {
+            message.model = data.model;
+        }
         return message;
     }
     toObject() {
         const data: {
             text?: string;
             chatId?: string;
+            model?: string;
         } = {};
         if (this.text != null) {
             data.text = this.text;
         }
         if (this.chatId != null) {
             data.chatId = this.chatId;
+        }
+        if (this.model != null) {
+            data.model = this.model;
         }
         return data;
     }
@@ -226,6 +244,8 @@ export class ChatRequest extends pb_1.Message {
             writer.writeString(1, this.text);
         if (this.chatId.length)
             writer.writeString(2, this.chatId);
+        if (this.model.length)
+            writer.writeString(3, this.model);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -240,6 +260,9 @@ export class ChatRequest extends pb_1.Message {
                     break;
                 case 2:
                     message.chatId = reader.readString();
+                    break;
+                case 3:
+                    message.model = reader.readString();
                     break;
                 default: reader.skipField();
             }
@@ -741,6 +764,295 @@ export class ChatInfo extends pb_1.Message {
         return ChatInfo.deserialize(bytes);
     }
 }
+export class ModelListInfo extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        id?: string;
+        label?: string;
+        provider?: string;
+        url?: string;
+        input_token_cost?: number;
+        output_token_cost?: number;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("id" in data && data.id != undefined) {
+                this.id = data.id;
+            }
+            if ("label" in data && data.label != undefined) {
+                this.label = data.label;
+            }
+            if ("provider" in data && data.provider != undefined) {
+                this.provider = data.provider;
+            }
+            if ("url" in data && data.url != undefined) {
+                this.url = data.url;
+            }
+            if ("input_token_cost" in data && data.input_token_cost != undefined) {
+                this.input_token_cost = data.input_token_cost;
+            }
+            if ("output_token_cost" in data && data.output_token_cost != undefined) {
+                this.output_token_cost = data.output_token_cost;
+            }
+        }
+    }
+    get id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get label() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set label(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get provider() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set provider(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get url() {
+        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+    }
+    set url(value: string) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    get input_token_cost() {
+        return pb_1.Message.getFieldWithDefault(this, 5, 0) as number;
+    }
+    set input_token_cost(value: number) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    get output_token_cost() {
+        return pb_1.Message.getFieldWithDefault(this, 6, 0) as number;
+    }
+    set output_token_cost(value: number) {
+        pb_1.Message.setField(this, 6, value);
+    }
+    static fromObject(data: {
+        id?: string;
+        label?: string;
+        provider?: string;
+        url?: string;
+        input_token_cost?: number;
+        output_token_cost?: number;
+    }): ModelListInfo {
+        const message = new ModelListInfo({});
+        if (data.id != null) {
+            message.id = data.id;
+        }
+        if (data.label != null) {
+            message.label = data.label;
+        }
+        if (data.provider != null) {
+            message.provider = data.provider;
+        }
+        if (data.url != null) {
+            message.url = data.url;
+        }
+        if (data.input_token_cost != null) {
+            message.input_token_cost = data.input_token_cost;
+        }
+        if (data.output_token_cost != null) {
+            message.output_token_cost = data.output_token_cost;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            id?: string;
+            label?: string;
+            provider?: string;
+            url?: string;
+            input_token_cost?: number;
+            output_token_cost?: number;
+        } = {};
+        if (this.id != null) {
+            data.id = this.id;
+        }
+        if (this.label != null) {
+            data.label = this.label;
+        }
+        if (this.provider != null) {
+            data.provider = this.provider;
+        }
+        if (this.url != null) {
+            data.url = this.url;
+        }
+        if (this.input_token_cost != null) {
+            data.input_token_cost = this.input_token_cost;
+        }
+        if (this.output_token_cost != null) {
+            data.output_token_cost = this.output_token_cost;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.id.length)
+            writer.writeString(1, this.id);
+        if (this.label.length)
+            writer.writeString(2, this.label);
+        if (this.provider.length)
+            writer.writeString(3, this.provider);
+        if (this.url.length)
+            writer.writeString(4, this.url);
+        if (this.input_token_cost != 0)
+            writer.writeFloat(5, this.input_token_cost);
+        if (this.output_token_cost != 0)
+            writer.writeFloat(6, this.output_token_cost);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ModelListInfo {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ModelListInfo();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.id = reader.readString();
+                    break;
+                case 2:
+                    message.label = reader.readString();
+                    break;
+                case 3:
+                    message.provider = reader.readString();
+                    break;
+                case 4:
+                    message.url = reader.readString();
+                    break;
+                case 5:
+                    message.input_token_cost = reader.readFloat();
+                    break;
+                case 6:
+                    message.output_token_cost = reader.readFloat();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ModelListInfo {
+        return ModelListInfo.deserialize(bytes);
+    }
+}
+export class ListModelsRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {}) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") { }
+    }
+    static fromObject(data: {}): ListModelsRequest {
+        const message = new ListModelsRequest({});
+        return message;
+    }
+    toObject() {
+        const data: {} = {};
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelsRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelsRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListModelsRequest {
+        return ListModelsRequest.deserialize(bytes);
+    }
+}
+export class ListModelsResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        models?: ModelListInfo[];
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("models" in data && data.models != undefined) {
+                this.models = data.models;
+            }
+        }
+    }
+    get models() {
+        return pb_1.Message.getRepeatedWrapperField(this, ModelListInfo, 1) as ModelListInfo[];
+    }
+    set models(value: ModelListInfo[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 1, value);
+    }
+    static fromObject(data: {
+        models?: ReturnType<typeof ModelListInfo.prototype.toObject>[];
+    }): ListModelsResponse {
+        const message = new ListModelsResponse({});
+        if (data.models != null) {
+            message.models = data.models.map(item => ModelListInfo.fromObject(item));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            models?: ReturnType<typeof ModelListInfo.prototype.toObject>[];
+        } = {};
+        if (this.models != null) {
+            data.models = this.models.map((item: ModelListInfo) => item.toObject());
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.models.length)
+            writer.writeRepeatedMessage(1, this.models, (item: ModelListInfo) => item.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelsResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelsResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.models, () => pb_1.Message.addToRepeatedWrapperField(message, 1, ModelListInfo.deserialize(reader), ModelListInfo));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListModelsResponse {
+        return ListModelsResponse.deserialize(bytes);
+    }
+}
 export abstract class UnimplementedSortedChatService {
     static definition = {
         Chat: {
@@ -778,6 +1090,15 @@ export abstract class UnimplementedSortedChatService {
             requestDeserialize: (bytes: Buffer) => CreateChatRequest.deserialize(new Uint8Array(bytes)),
             responseSerialize: (message: CreateChatResponse) => Buffer.from(message.serialize()),
             responseDeserialize: (bytes: Buffer) => CreateChatResponse.deserialize(new Uint8Array(bytes))
+        },
+        ListModel: {
+            path: "/sortedchat.SortedChat/ListModel",
+            requestStream: false,
+            responseStream: false,
+            requestSerialize: (message: ListModelsRequest) => Buffer.from(message.serialize()),
+            requestDeserialize: (bytes: Buffer) => ListModelsRequest.deserialize(new Uint8Array(bytes)),
+            responseSerialize: (message: ListModelsResponse) => Buffer.from(message.serialize()),
+            responseDeserialize: (bytes: Buffer) => ListModelsResponse.deserialize(new Uint8Array(bytes))
         }
     };
     [method: string]: grpc_1.UntypedHandleCall;
@@ -785,6 +1106,7 @@ export abstract class UnimplementedSortedChatService {
     abstract GetHistory(call: grpc_1.ServerUnaryCall<GetHistoryRequest, GetHistoryResponse>, callback: grpc_1.sendUnaryData<GetHistoryResponse>): void;
     abstract GetChatList(call: grpc_1.ServerUnaryCall<GetChatListRequest, GetChatListResponse>, callback: grpc_1.sendUnaryData<GetChatListResponse>): void;
     abstract CreateChat(call: grpc_1.ServerUnaryCall<CreateChatRequest, CreateChatResponse>, callback: grpc_1.sendUnaryData<CreateChatResponse>): void;
+    abstract ListModel(call: grpc_1.ServerUnaryCall<ListModelsRequest, ListModelsResponse>, callback: grpc_1.sendUnaryData<ListModelsResponse>): void;
 }
 export class SortedChatClient {
     private _address: string;
@@ -811,5 +1133,9 @@ export class SortedChatClient {
     private static CreateChat = new grpc_web_1.MethodDescriptor<CreateChatRequest, CreateChatResponse>("/sortedchat.SortedChat/CreateChat", grpc_web_1.MethodType.UNARY, CreateChatRequest, CreateChatResponse, (message: CreateChatRequest) => message.serialize(), CreateChatResponse.deserialize);
     CreateChat(message: CreateChatRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<CreateChatRequest, CreateChatResponse>(this._address + "/sortedchat.SortedChat/CreateChat", message, metadata || {}, SortedChatClient.CreateChat);
+    }
+    private static ListModel = new grpc_web_1.MethodDescriptor<ListModelsRequest, ListModelsResponse>("/sortedchat.SortedChat/ListModel", grpc_web_1.MethodType.UNARY, ListModelsRequest, ListModelsResponse, (message: ListModelsRequest) => message.serialize(), ListModelsResponse.deserialize);
+    ListModel(message: ListModelsRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<ListModelsRequest, ListModelsResponse>(this._address + "/sortedchat.SortedChat/ListModel", message, metadata || {}, SortedChatClient.ListModel);
     }
 }

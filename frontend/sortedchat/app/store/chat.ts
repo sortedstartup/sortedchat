@@ -158,7 +158,6 @@ const getChatList = () => {
 // load chat history of first use
 onMount($chatList, () => {
   getChatList();
-  fetchAvailableModels();
   return () => {
     // Disabled mode
   };
@@ -175,3 +174,7 @@ export const fetchAvailableModels = async () => {
     console.error("Failed to fetch models:", err);
   }
 };
+
+onMount($availableModels, () => {
+  fetchAvailableModels();
+})

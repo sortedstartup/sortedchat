@@ -168,6 +168,7 @@ export class ChatRequest extends pb_1.Message {
     constructor(data?: any[] | {
         text?: string;
         chatId?: string;
+        model?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -177,6 +178,9 @@ export class ChatRequest extends pb_1.Message {
             }
             if ("chatId" in data && data.chatId != undefined) {
                 this.chatId = data.chatId;
+            }
+            if ("model" in data && data.model != undefined) {
+                this.model = data.model;
             }
         }
     }
@@ -192,9 +196,16 @@ export class ChatRequest extends pb_1.Message {
     set chatId(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
+    get model() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set model(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
     static fromObject(data: {
         text?: string;
         chatId?: string;
+        model?: string;
     }): ChatRequest {
         const message = new ChatRequest({});
         if (data.text != null) {
@@ -203,18 +214,25 @@ export class ChatRequest extends pb_1.Message {
         if (data.chatId != null) {
             message.chatId = data.chatId;
         }
+        if (data.model != null) {
+            message.model = data.model;
+        }
         return message;
     }
     toObject() {
         const data: {
             text?: string;
             chatId?: string;
+            model?: string;
         } = {};
         if (this.text != null) {
             data.text = this.text;
         }
         if (this.chatId != null) {
             data.chatId = this.chatId;
+        }
+        if (this.model != null) {
+            data.model = this.model;
         }
         return data;
     }
@@ -226,6 +244,8 @@ export class ChatRequest extends pb_1.Message {
             writer.writeString(1, this.text);
         if (this.chatId.length)
             writer.writeString(2, this.chatId);
+        if (this.model.length)
+            writer.writeString(3, this.model);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -240,6 +260,9 @@ export class ChatRequest extends pb_1.Message {
                     break;
                 case 2:
                     message.chatId = reader.readString();
+                    break;
+                case 3:
+                    message.model = reader.readString();
                     break;
                 default: reader.skipField();
             }

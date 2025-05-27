@@ -10,7 +10,7 @@ service SortedChat {
     rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
     rpc GetChatList(GetChatListRequest) returns (GetChatListResponse);
     rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
-    rpc ListModel(ListModelsRequest) returns (ListModelResponse);
+    rpc ListModel(ListModelsRequest) returns (ListModelsResponse);
 }
 
 message CreateChatRequest {
@@ -25,6 +25,7 @@ message CreateChatResponse {
 message ChatRequest {
     string text = 1;
     string chatId = 2;
+    string model = 3;
 }
 
 message ChatResponse {
@@ -58,10 +59,14 @@ message ChatInfo {
 message ModelListInfo {
   string id = 1;
   string label = 2;
+  string provider = 3;
+  string url = 4;
+  float input_token_cost = 5;
+  float output_token_cost = 6;
 }
 
 message ListModelsRequest {}
 
-message ListModelResponse {
+message ListModelsResponse {
   repeated ModelListInfo models = 1;
 }

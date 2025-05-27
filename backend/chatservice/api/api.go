@@ -41,8 +41,6 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 		return fmt.Errorf(" Chat ID is required to maintain context")
 	}
 
-	fmt.Println(model)
-
 	var history []ChatMessage
 	err := db.DB.Select(&history, `
         SELECT role, content FROM chat_messages 
@@ -113,33 +111,47 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 			if text, ok := chunk["delta"].(string); ok {
 				stream.Send(&pb.ChatResponse{Text: text})
 			}
-		case "response.output_item.done":
-			item, ok := chunk["item"].(map[string]interface{})
+		case "response.completed":
+			response, ok := chunk["response"].(map[string]interface{})
 			if !ok {
 				continue
 			}
 
-			contentArr, ok := item["content"].([]interface{})
-			if !ok || len(contentArr) == 0 {
-				continue
+			modelStr, _ := response["model"].(string)
+			fmt.Println(modelStr)
+
+			var assistantText string
+			if outputArr, ok := response["output"].([]interface{}); ok && len(outputArr) > 0 {
+				if outputObj, ok := outputArr[0].(map[string]interface{}); ok {
+					if contentArr, ok := outputObj["content"].([]interface{}); ok && len(contentArr) > 0 {
+						if contentObj, ok := contentArr[0].(map[string]interface{}); ok {
+							assistantText, _ = contentObj["text"].(string)
+						}
+					}
+				}
 			}
 
-			contentObj, ok := contentArr[0].(map[string]interface{})
-			if !ok {
-				continue
+			inputTokens := 0
+			outputTokens := 0
+			if usage, ok := response["usage"].(map[string]interface{}); ok {
+				if val, ok := usage["input_tokens"].(float64); ok {
+					inputTokens = int(val)
+				}
+				if val, ok := usage["output_tokens"].(float64); ok {
+					outputTokens = int(val)
+				}
 			}
 
-			text, ok := contentObj["text"].(string)
-			if !ok {
-				continue
-			}
-
+			// Final DB insert
 			_, err := db.DB.Exec(`
-                INSERT INTO chat_messages (chat_id, role, content,model) 
-                VALUES (?, ?, ?, ?)`, chatId, "assistant", text, req.Model)
+		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+				chatId, "assistant", assistantText, model, inputTokens, outputTokens,
+			)
 			if err != nil {
-				log.Printf("failed to insert assistant message: %v", err)
+				log.Printf("Failed to insert assistant message: %v", err)
 			}
+
 		}
 	}
 

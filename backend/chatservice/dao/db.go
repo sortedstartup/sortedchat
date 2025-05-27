@@ -24,6 +24,8 @@ func InitDB() {
         content TEXT NOT NULL,
 		model TEXT ,
 		error BOOLEAN,
+		input_token_count INTEGER,
+		output_token_count INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 

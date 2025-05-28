@@ -277,11 +277,28 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 	fmt.Println(query)
 
 	const searchSQL = `
-	SELECT cl.chat_id, cl.name, cm.content
-	FROM chat_messages_fts fts
-	JOIN chat_messages cm ON cm.id = fts.rowid
-	JOIN chat_list cl ON cl.chat_id = cm.chat_id
-	WHERE fts.message_content MATCH 'bill';
+			SELECT
+				cm.chat_id,
+				cl.name AS chat_name,
+				GROUP_CONCAT(
+					CASE
+						WHEN LENGTH(cm.content) > 100 THEN SUBSTR(cm.content, 1, 100) || '...'
+						ELSE cm.content
+					END,
+					'\n-----\n'
+				) AS aggregated_snippets
+			FROM
+				chat_messages_fts AS fts
+			JOIN
+				chat_messages AS cm ON fts.rowid = cm.id
+			JOIN
+				chat_list AS cl ON cm.chat_id = cl.chat_id
+			WHERE
+				fts.chat_messages_fts MATCH 'bill'  -- Search term directly here for testing
+			GROUP BY
+				cm.chat_id, cl.name
+			ORDER BY
+				cm.chat_id;
 	`
 
 	var rows []ChatSearchRow

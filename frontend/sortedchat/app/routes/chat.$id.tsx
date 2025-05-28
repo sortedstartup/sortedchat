@@ -16,6 +16,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useStore } from "@nanostores/react";
+import SearchModal from "~/components/modal";
 
 export default function Chat() {
   const { id } = useParams();
@@ -34,6 +35,8 @@ export default function Chat() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // const [selectedModel, setSelectedModel] = useState("gpt-4.1");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -187,11 +190,20 @@ export default function Chat() {
       {/* Main chat area */}
       <div className="flex-1 flex flex-col">
         {/* Chat header */}
-        <div className="border-b border-gray-200 dark:border-gray-700 p-4">
-          <h1 className="text-lg font-semibold">
-            {chatList.find((chat) => chat.chatId === chatId)?.name ||
-              `Chat ${chatId}`}
-          </h1>
+        <div className="flex justify-between item-center text-center border-b border-gray-200 dark:border-gray-700 p-4">
+          <div className="p-4">
+            <h1 className="text-lg font-semibold">
+              {chatList.find((chat) => chat.chatId === chatId)?.name ||
+                `Chat ${chatId}`}
+            </h1>
+          </div>
+          <button
+            className="border border-gray-200 dark:border-gray-700 p-4 rounded-xl"
+            onClick={() => setIsModalOpen(true)}
+          >
+            Search
+          </button>
+           <SearchModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>
 
         {/* Chat messages */}

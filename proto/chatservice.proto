@@ -11,6 +11,7 @@ service SortedChat {
     rpc GetChatList(GetChatListRequest) returns (GetChatListResponse);
     rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
     rpc ListModel(ListModelsRequest) returns (ListModelsResponse);
+    rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
 }
 
 message CreateChatRequest {
@@ -69,4 +70,18 @@ message ListModelsRequest {}
 
 message ListModelsResponse {
   repeated ModelListInfo models = 1;
+}
+
+message ChatSearchRequest {
+  string query = 1;
+}
+
+message SearchResult {
+  string chat_name = 1;
+  string chat_id = 2;
+  string matched_text = 3;
+}
+
+message ChatSearchResponse {
+  repeated SearchResult results = 1;
 }

@@ -24,6 +24,7 @@ const (
 	SortedChat_GetChatList_FullMethodName = "/sortedchat.SortedChat/GetChatList"
 	SortedChat_CreateChat_FullMethodName  = "/sortedchat.SortedChat/CreateChat"
 	SortedChat_ListModel_FullMethodName   = "/sortedchat.SortedChat/ListModel"
+	SortedChat_SearchChat_FullMethodName  = "/sortedchat.SortedChat/SearchChat"
 )
 
 // SortedChatClient is the client API for SortedChat service.
@@ -35,6 +36,7 @@ type SortedChatClient interface {
 	GetChatList(ctx context.Context, in *GetChatListRequest, opts ...grpc.CallOption) (*GetChatListResponse, error)
 	CreateChat(ctx context.Context, in *CreateChatRequest, opts ...grpc.CallOption) (*CreateChatResponse, error)
 	ListModel(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error)
+	SearchChat(ctx context.Context, in *ChatSearchRequest, opts ...grpc.CallOption) (*ChatSearchResponse, error)
 }
 
 type sortedChatClient struct {
@@ -104,6 +106,16 @@ func (c *sortedChatClient) ListModel(ctx context.Context, in *ListModelsRequest,
 	return out, nil
 }
 
+func (c *sortedChatClient) SearchChat(ctx context.Context, in *ChatSearchRequest, opts ...grpc.CallOption) (*ChatSearchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChatSearchResponse)
+	err := c.cc.Invoke(ctx, SortedChat_SearchChat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SortedChatServer is the server API for SortedChat service.
 // All implementations must embed UnimplementedSortedChatServer
 // for forward compatibility.
@@ -113,6 +125,7 @@ type SortedChatServer interface {
 	GetChatList(context.Context, *GetChatListRequest) (*GetChatListResponse, error)
 	CreateChat(context.Context, *CreateChatRequest) (*CreateChatResponse, error)
 	ListModel(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
+	SearchChat(context.Context, *ChatSearchRequest) (*ChatSearchResponse, error)
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -137,6 +150,9 @@ func (UnimplementedSortedChatServer) CreateChat(context.Context, *CreateChatRequ
 }
 func (UnimplementedSortedChatServer) ListModel(context.Context, *ListModelsRequest) (*ListModelsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListModel not implemented")
+}
+func (UnimplementedSortedChatServer) SearchChat(context.Context, *ChatSearchRequest) (*ChatSearchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchChat not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}
 func (UnimplementedSortedChatServer) testEmbeddedByValue()                    {}
@@ -242,6 +258,24 @@ func _SortedChat_ListModel_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SortedChat_SearchChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChatSearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).SearchChat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_SearchChat_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).SearchChat(ctx, req.(*ChatSearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SortedChat_ServiceDesc is the grpc.ServiceDesc for SortedChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -264,6 +298,10 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListModel",
 			Handler:    _SortedChat_ListModel_Handler,
+		},
+		{
+			MethodName: "SearchChat",
+			Handler:    _SortedChat_SearchChat_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

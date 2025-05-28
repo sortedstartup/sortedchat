@@ -3,11 +3,13 @@ import {
   ChatMessage,
   ChatRequest,
   ChatResponse,
+  ChatSearchRequest,
   CreateChatRequest,
   GetChatListRequest,
   GetHistoryRequest,
   ListModelsRequest,
   ModelListInfo,
+  SearchResult,
   SortedChatClient,
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
@@ -159,6 +161,7 @@ const getChatList = () => {
 // load chat history of first use
 onMount($chatList, () => {
   getChatList();
+  getSearchResults()
   return () => {
     // Disabled mode
   };
@@ -179,3 +182,20 @@ export const fetchAvailableModels = async () => {
 onMount($availableModels, () => {
   fetchAvailableModels();
 })
+
+export const $searchResults = atom<SearchResult[]>([]);
+export const $searchText = atom<string>("elon");
+
+export const getSearchResults = async() => {
+  try {
+    const response = await chat.SearchChat(ChatSearchRequest.fromObject({
+      query:"bill"
+    }),{})
+    console.log(response.results);
+    
+    $searchResults.set(response.results)
+  }
+  catch(err) {
+    console.error('failed',err)
+  }
+}

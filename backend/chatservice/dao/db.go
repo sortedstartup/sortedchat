@@ -43,6 +43,31 @@ func InitDB() {
 		input_token_cost REAL,
 		output_token_cost REAL
 	);
+	CREATE VIRTUAL TABLE IF NOT EXISTS chat_messages_fts USING fts5(
+		message_content,
+		content='chat_messages',
+		content_rowid='id',
+		tokenize='porter unicode61'
+	);
+
+	CREATE TRIGGER IF NOT EXISTS chat_messages_ai_fts 
+	AFTER INSERT ON chat_messages 
+	BEGIN
+	INSERT INTO chat_messages_fts (rowid, message_content) VALUES (new.id, new.content);
+	END;
+
+	CREATE TRIGGER IF NOT EXISTS chat_messages_ad_fts 
+	AFTER DELETE ON chat_messages
+	BEGIN
+	INSERT INTO chat_messages_fts (chat_messages_fts, rowid, message_content) VALUES ('delete', old.id, old.content);
+	END;
+
+	CREATE TRIGGER IF NOT EXISTS chat_messages_au_fts 
+	AFTER UPDATE OF content ON chat_messages 
+	BEGIN
+	INSERT INTO chat_messages_fts (chat_messages_fts, rowid, message_content) VALUES ('delete', old.id, old.content);
+	INSERT INTO chat_messages_fts (rowid, message_content) VALUES (new.id, new.content);
+	END;
     `
 
 	_, err = DB.Exec(schema)

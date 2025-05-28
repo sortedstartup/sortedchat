@@ -262,3 +262,43 @@ func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.
 
 	return &pb.ListModelsResponse{Models: pbModels}, nil
 }
+
+type ChatSearchRow struct {
+	ChatID      string `db:"chat_id"`
+	ChatName    string `db:"name"`
+	MatchedText string `db:"content"`
+}
+
+func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
+	query := req.Query
+	if query == "" {
+		return nil, fmt.Errorf("query is required")
+	}
+	fmt.Println(query)
+
+	const searchSQL = `
+	SELECT cl.chat_id, cl.name, cm.content
+	FROM chat_messages_fts fts
+	JOIN chat_messages cm ON cm.id = fts.rowid
+	JOIN chat_list cl ON cl.chat_id = cm.chat_id
+	WHERE fts.message_content MATCH 'bill';
+	`
+
+	var rows []ChatSearchRow
+	if err := db.DB.Select(&rows, searchSQL, query); err != nil {
+		return nil, fmt.Errorf("search failed: %w", err)
+	}
+
+	var results []*pb.SearchResult
+	for _, row := range rows {
+		results = append(results, &pb.SearchResult{
+			ChatId:      row.ChatID,
+			ChatName:    row.ChatName,
+			MatchedText: row.MatchedText,
+		})
+	}
+
+	return &pb.ChatSearchResponse{
+		Results: results,
+	}, nil
+}

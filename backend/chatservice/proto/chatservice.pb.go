@@ -657,6 +657,154 @@ func (x *ListModelsResponse) GetModels() []*ModelListInfo {
 	return nil
 }
 
+type ChatSearchRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChatSearchRequest) Reset() {
+	*x = ChatSearchRequest{}
+	mi := &file_chatservice_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatSearchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatSearchRequest) ProtoMessage() {}
+
+func (x *ChatSearchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatSearchRequest.ProtoReflect.Descriptor instead.
+func (*ChatSearchRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ChatSearchRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+type SearchResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChatName      string                 `protobuf:"bytes,1,opt,name=chat_name,json=chatName,proto3" json:"chat_name,omitempty"`
+	ChatId        string                 `protobuf:"bytes,2,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
+	MatchedText   string                 `protobuf:"bytes,3,opt,name=matched_text,json=matchedText,proto3" json:"matched_text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchResult) Reset() {
+	*x = SearchResult{}
+	mi := &file_chatservice_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchResult) ProtoMessage() {}
+
+func (x *SearchResult) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchResult.ProtoReflect.Descriptor instead.
+func (*SearchResult) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *SearchResult) GetChatName() string {
+	if x != nil {
+		return x.ChatName
+	}
+	return ""
+}
+
+func (x *SearchResult) GetChatId() string {
+	if x != nil {
+		return x.ChatId
+	}
+	return ""
+}
+
+func (x *SearchResult) GetMatchedText() string {
+	if x != nil {
+		return x.MatchedText
+	}
+	return ""
+}
+
+type ChatSearchResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*SearchResult        `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChatSearchResponse) Reset() {
+	*x = ChatSearchResponse{}
+	mi := &file_chatservice_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatSearchResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatSearchResponse) ProtoMessage() {}
+
+func (x *ChatSearchResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatSearchResponse.ProtoReflect.Descriptor instead.
+func (*ChatSearchResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ChatSearchResponse) GetResults() []*SearchResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
 var File_chatservice_proto protoreflect.FileDescriptor
 
 const file_chatservice_proto_rawDesc = "" +
@@ -696,7 +844,15 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x11output_token_cost\x18\x06 \x01(\x02R\x0foutputTokenCost\"\x13\n" +
 	"\x11ListModelsRequest\"G\n" +
 	"\x12ListModelsResponse\x121\n" +
-	"\x06models\x18\x01 \x03(\v2\x19.sortedchat.ModelListInfoR\x06models2\xff\x02\n" +
+	"\x06models\x18\x01 \x03(\v2\x19.sortedchat.ModelListInfoR\x06models\")\n" +
+	"\x11ChatSearchRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\"g\n" +
+	"\fSearchResult\x12\x1b\n" +
+	"\tchat_name\x18\x01 \x01(\tR\bchatName\x12\x17\n" +
+	"\achat_id\x18\x02 \x01(\tR\x06chatId\x12!\n" +
+	"\fmatched_text\x18\x03 \x01(\tR\vmatchedText\"H\n" +
+	"\x12ChatSearchResponse\x122\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.sortedchat.SearchResultR\aresults2\xcc\x03\n" +
 	"\n" +
 	"SortedChat\x12;\n" +
 	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12K\n" +
@@ -705,7 +861,9 @@ const file_chatservice_proto_rawDesc = "" +
 	"\vGetChatList\x12\x1e.sortedchat.GetChatListRequest\x1a\x1f.sortedchat.GetChatListResponse\x12K\n" +
 	"\n" +
 	"CreateChat\x12\x1d.sortedchat.CreateChatRequest\x1a\x1e.sortedchat.CreateChatResponse\x12J\n" +
-	"\tListModel\x12\x1d.sortedchat.ListModelsRequest\x1a\x1e.sortedchat.ListModelsResponseB%Z#sortedstartup.com/chatservice/protob\x06proto3"
+	"\tListModel\x12\x1d.sortedchat.ListModelsRequest\x1a\x1e.sortedchat.ListModelsResponse\x12K\n" +
+	"\n" +
+	"SearchChat\x12\x1d.sortedchat.ChatSearchRequest\x1a\x1e.sortedchat.ChatSearchResponseB%Z#sortedstartup.com/chatservice/protob\x06proto3"
 
 var (
 	file_chatservice_proto_rawDescOnce sync.Once
@@ -719,7 +877,7 @@ func file_chatservice_proto_rawDescGZIP() []byte {
 	return file_chatservice_proto_rawDescData
 }
 
-var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_chatservice_proto_goTypes = []any{
 	(*CreateChatRequest)(nil),   // 0: sortedchat.CreateChatRequest
 	(*CreateChatResponse)(nil),  // 1: sortedchat.CreateChatResponse
@@ -734,26 +892,32 @@ var file_chatservice_proto_goTypes = []any{
 	(*ModelListInfo)(nil),       // 10: sortedchat.ModelListInfo
 	(*ListModelsRequest)(nil),   // 11: sortedchat.ListModelsRequest
 	(*ListModelsResponse)(nil),  // 12: sortedchat.ListModelsResponse
+	(*ChatSearchRequest)(nil),   // 13: sortedchat.ChatSearchRequest
+	(*SearchResult)(nil),        // 14: sortedchat.SearchResult
+	(*ChatSearchResponse)(nil),  // 15: sortedchat.ChatSearchResponse
 }
 var file_chatservice_proto_depIdxs = []int32{
 	6,  // 0: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
 	9,  // 1: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
 	10, // 2: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
-	2,  // 3: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	4,  // 4: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
-	7,  // 5: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
-	0,  // 6: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
-	11, // 7: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
-	3,  // 8: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	5,  // 9: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
-	8,  // 10: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
-	1,  // 11: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	12, // 12: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
-	8,  // [8:13] is the sub-list for method output_type
-	3,  // [3:8] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	14, // 3: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
+	2,  // 4: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
+	4,  // 5: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
+	7,  // 6: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
+	0,  // 7: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
+	11, // 8: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
+	13, // 9: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
+	3,  // 10: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	5,  // 11: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
+	8,  // 12: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
+	1,  // 13: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
+	12, // 14: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
+	15, // 15: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
+	10, // [10:16] is the sub-list for method output_type
+	4,  // [4:10] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_chatservice_proto_init() }
@@ -767,7 +931,7 @@ func file_chatservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chatservice_proto_rawDesc), len(file_chatservice_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

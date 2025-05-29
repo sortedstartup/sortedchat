@@ -3,11 +3,13 @@ import {
   ChatMessage,
   ChatRequest,
   ChatResponse,
+  ChatSearchRequest,
   CreateChatRequest,
   GetChatListRequest,
   GetHistoryRequest,
   ListModelsRequest,
   ModelListInfo,
+  SearchResult,
   SortedChatClient,
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
@@ -43,7 +45,6 @@ export const fetchChatMessages = async (chatId: string) => {
       GetHistoryRequest.fromObject({ chatId }),
       {}
     );
-    console.log(chatId, ":", res);
 
     $currentChatMessages.set({
       data: res.history || [],
@@ -62,7 +63,6 @@ export const fetchChatMessages = async (chatId: string) => {
 
 // Auto-fetch when chat ID changes
 $currentChatId.listen((newChatId) => {
-  console.log("Chat ID changed to:", newChatId);
   if (newChatId) {
     fetchChatMessages(newChatId);
   } else {
@@ -158,7 +158,9 @@ const getChatList = () => {
 
 // load chat history of first use
 onMount($chatList, () => {
+
   getChatList();
+
   return () => {
     // Disabled mode
   };
@@ -179,3 +181,26 @@ export const fetchAvailableModels = async () => {
 onMount($availableModels, () => {
   fetchAvailableModels();
 })
+
+// -- search --
+export const $searchResults = atom<SearchResult[]>([]);
+export const $searchText = atom<string>("elon");
+
+$searchText.listen((newValue, oldValue) => {
+  if(newValue !== oldValue) {
+    getSearchResults()
+  }
+})
+
+export const getSearchResults = async() => {
+  try {
+    const response = await chat.SearchChat(ChatSearchRequest.fromObject({
+      query: $searchText.get()
+    }),{})
+    $searchResults.set(response.results)
+  }
+  catch(err) {
+    console.error('failed',err)
+  }
+}
+// -- search --

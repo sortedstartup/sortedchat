@@ -1053,6 +1053,276 @@ export class ListModelsResponse extends pb_1.Message {
         return ListModelsResponse.deserialize(bytes);
     }
 }
+export class ChatSearchRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        query?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("query" in data && data.query != undefined) {
+                this.query = data.query;
+            }
+        }
+    }
+    get query() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set query(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        query?: string;
+    }): ChatSearchRequest {
+        const message = new ChatSearchRequest({});
+        if (data.query != null) {
+            message.query = data.query;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            query?: string;
+        } = {};
+        if (this.query != null) {
+            data.query = this.query;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.query.length)
+            writer.writeString(1, this.query);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ChatSearchRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ChatSearchRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.query = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ChatSearchRequest {
+        return ChatSearchRequest.deserialize(bytes);
+    }
+}
+export class SearchResult extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        chat_name?: string;
+        chat_id?: string;
+        matched_text?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("chat_name" in data && data.chat_name != undefined) {
+                this.chat_name = data.chat_name;
+            }
+            if ("chat_id" in data && data.chat_id != undefined) {
+                this.chat_id = data.chat_id;
+            }
+            if ("matched_text" in data && data.matched_text != undefined) {
+                this.matched_text = data.matched_text;
+            }
+        }
+    }
+    get chat_name() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set chat_name(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get chat_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set chat_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get matched_text() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set matched_text(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    static fromObject(data: {
+        chat_name?: string;
+        chat_id?: string;
+        matched_text?: string;
+    }): SearchResult {
+        const message = new SearchResult({});
+        if (data.chat_name != null) {
+            message.chat_name = data.chat_name;
+        }
+        if (data.chat_id != null) {
+            message.chat_id = data.chat_id;
+        }
+        if (data.matched_text != null) {
+            message.matched_text = data.matched_text;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            chat_name?: string;
+            chat_id?: string;
+            matched_text?: string;
+        } = {};
+        if (this.chat_name != null) {
+            data.chat_name = this.chat_name;
+        }
+        if (this.chat_id != null) {
+            data.chat_id = this.chat_id;
+        }
+        if (this.matched_text != null) {
+            data.matched_text = this.matched_text;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.chat_name.length)
+            writer.writeString(1, this.chat_name);
+        if (this.chat_id.length)
+            writer.writeString(2, this.chat_id);
+        if (this.matched_text.length)
+            writer.writeString(3, this.matched_text);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): SearchResult {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new SearchResult();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.chat_name = reader.readString();
+                    break;
+                case 2:
+                    message.chat_id = reader.readString();
+                    break;
+                case 3:
+                    message.matched_text = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): SearchResult {
+        return SearchResult.deserialize(bytes);
+    }
+}
+export class ChatSearchResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        query?: string;
+        results?: SearchResult[];
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [2], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("query" in data && data.query != undefined) {
+                this.query = data.query;
+            }
+            if ("results" in data && data.results != undefined) {
+                this.results = data.results;
+            }
+        }
+    }
+    get query() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set query(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get results() {
+        return pb_1.Message.getRepeatedWrapperField(this, SearchResult, 2) as SearchResult[];
+    }
+    set results(value: SearchResult[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 2, value);
+    }
+    static fromObject(data: {
+        query?: string;
+        results?: ReturnType<typeof SearchResult.prototype.toObject>[];
+    }): ChatSearchResponse {
+        const message = new ChatSearchResponse({});
+        if (data.query != null) {
+            message.query = data.query;
+        }
+        if (data.results != null) {
+            message.results = data.results.map(item => SearchResult.fromObject(item));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            query?: string;
+            results?: ReturnType<typeof SearchResult.prototype.toObject>[];
+        } = {};
+        if (this.query != null) {
+            data.query = this.query;
+        }
+        if (this.results != null) {
+            data.results = this.results.map((item: SearchResult) => item.toObject());
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.query.length)
+            writer.writeString(1, this.query);
+        if (this.results.length)
+            writer.writeRepeatedMessage(2, this.results, (item: SearchResult) => item.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ChatSearchResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ChatSearchResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.query = reader.readString();
+                    break;
+                case 2:
+                    reader.readMessage(message.results, () => pb_1.Message.addToRepeatedWrapperField(message, 2, SearchResult.deserialize(reader), SearchResult));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ChatSearchResponse {
+        return ChatSearchResponse.deserialize(bytes);
+    }
+}
 export abstract class UnimplementedSortedChatService {
     static definition = {
         Chat: {
@@ -1099,6 +1369,15 @@ export abstract class UnimplementedSortedChatService {
             requestDeserialize: (bytes: Buffer) => ListModelsRequest.deserialize(new Uint8Array(bytes)),
             responseSerialize: (message: ListModelsResponse) => Buffer.from(message.serialize()),
             responseDeserialize: (bytes: Buffer) => ListModelsResponse.deserialize(new Uint8Array(bytes))
+        },
+        SearchChat: {
+            path: "/sortedchat.SortedChat/SearchChat",
+            requestStream: false,
+            responseStream: false,
+            requestSerialize: (message: ChatSearchRequest) => Buffer.from(message.serialize()),
+            requestDeserialize: (bytes: Buffer) => ChatSearchRequest.deserialize(new Uint8Array(bytes)),
+            responseSerialize: (message: ChatSearchResponse) => Buffer.from(message.serialize()),
+            responseDeserialize: (bytes: Buffer) => ChatSearchResponse.deserialize(new Uint8Array(bytes))
         }
     };
     [method: string]: grpc_1.UntypedHandleCall;
@@ -1107,6 +1386,7 @@ export abstract class UnimplementedSortedChatService {
     abstract GetChatList(call: grpc_1.ServerUnaryCall<GetChatListRequest, GetChatListResponse>, callback: grpc_1.sendUnaryData<GetChatListResponse>): void;
     abstract CreateChat(call: grpc_1.ServerUnaryCall<CreateChatRequest, CreateChatResponse>, callback: grpc_1.sendUnaryData<CreateChatResponse>): void;
     abstract ListModel(call: grpc_1.ServerUnaryCall<ListModelsRequest, ListModelsResponse>, callback: grpc_1.sendUnaryData<ListModelsResponse>): void;
+    abstract SearchChat(call: grpc_1.ServerUnaryCall<ChatSearchRequest, ChatSearchResponse>, callback: grpc_1.sendUnaryData<ChatSearchResponse>): void;
 }
 export class SortedChatClient {
     private _address: string;
@@ -1137,5 +1417,9 @@ export class SortedChatClient {
     private static ListModel = new grpc_web_1.MethodDescriptor<ListModelsRequest, ListModelsResponse>("/sortedchat.SortedChat/ListModel", grpc_web_1.MethodType.UNARY, ListModelsRequest, ListModelsResponse, (message: ListModelsRequest) => message.serialize(), ListModelsResponse.deserialize);
     ListModel(message: ListModelsRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<ListModelsRequest, ListModelsResponse>(this._address + "/sortedchat.SortedChat/ListModel", message, metadata || {}, SortedChatClient.ListModel);
+    }
+    private static SearchChat = new grpc_web_1.MethodDescriptor<ChatSearchRequest, ChatSearchResponse>("/sortedchat.SortedChat/SearchChat", grpc_web_1.MethodType.UNARY, ChatSearchRequest, ChatSearchResponse, (message: ChatSearchRequest) => message.serialize(), ChatSearchResponse.deserialize);
+    SearchChat(message: ChatSearchRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<ChatSearchRequest, ChatSearchResponse>(this._address + "/sortedchat.SortedChat/SearchChat", message, metadata || {}, SortedChatClient.SearchChat);
     }
 }

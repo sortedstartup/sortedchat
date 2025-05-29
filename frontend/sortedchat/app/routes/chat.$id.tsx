@@ -16,6 +16,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useStore } from "@nanostores/react";
+import SearchModal from "~/components/modal";
 
 export default function Chat() {
   const { id } = useParams();
@@ -34,6 +35,8 @@ export default function Chat() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // const [selectedModel, setSelectedModel] = useState("gpt-4.1");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -52,7 +55,6 @@ export default function Chat() {
   }, [data, streamingMessage, currentChatMessage]);
 
   const handleSend = () => {
-    console.log(inputValue);
     if (inputValue.trim()) {
       doChat(inputValue);
       setInputValue("");
@@ -87,7 +89,6 @@ export default function Chat() {
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     $selectedModel.set(e.target.value);
-    console.log($selectedModel);
   };
 
   if (error) {
@@ -128,7 +129,7 @@ export default function Chat() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <div className="p-3">
+          <div className="p-3 space-y-2">
             <button
               onClick={handleNewChat}
               className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -148,6 +149,27 @@ export default function Chat() {
                 />
               </svg>
               New Chat
+            </button>
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              Search
             </button>
           </div>
           <ul className="mt-2">
@@ -182,16 +204,24 @@ export default function Chat() {
             ))}
           </ul>
         </div>
+
       </div>
 
       {/* Main chat area */}
       <div className="flex-1 flex flex-col">
         {/* Chat header */}
-        <div className="border-b border-gray-200 dark:border-gray-700 p-4">
-          <h1 className="text-lg font-semibold">
-            {chatList.find((chat) => chat.chatId === chatId)?.name ||
-              `Chat ${chatId}`}
-          </h1>
+        <div className="flex justify-between item-center text-center border-b border-gray-200 dark:border-gray-700 p-4">
+          <div className="p-4">
+            <h1 className="text-lg font-semibold">
+              {chatList.find((chat) => chat.chatId === chatId)?.name ||
+                `Chat ${chatId}`}
+            </h1>
+          </div>
+          
+          <SearchModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+          />
         </div>
 
         {/* Chat messages */}

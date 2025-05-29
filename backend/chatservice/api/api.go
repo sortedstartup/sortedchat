@@ -117,9 +117,6 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 				continue
 			}
 
-			modelStr, _ := response["model"].(string)
-			fmt.Println(modelStr)
-
 			var assistantText string
 			if outputArr, ok := response["output"].([]interface{}); ok && len(outputArr) > 0 {
 				if outputObj, ok := outputArr[0].(map[string]interface{}); ok {
@@ -261,4 +258,61 @@ func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.
 	}
 
 	return &pb.ListModelsResponse{Models: pbModels}, nil
+}
+
+type ChatSearchRow struct {
+	ChatID      string `db:"chat_id"`
+	ChatName    string `db:"chat_name"`
+	MatchedText string `db:"aggregated_snippets"`
+}
+
+func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
+	query := req.Query
+	if query == "" {
+		return nil, fmt.Errorf("query is required")
+	}
+
+	const searchSQL = `
+			SELECT
+				cm.chat_id as chat_id,
+				cl.name AS chat_name,
+				GROUP_CONCAT(
+					CASE
+						WHEN LENGTH(cm.content) > 100 THEN SUBSTR(cm.content, 1, 100) || '...'
+						ELSE cm.content
+					END,
+					'\n-----\n'
+				) AS aggregated_snippets
+			FROM
+				chat_messages_fts AS fts
+			JOIN
+				chat_messages AS cm ON fts.rowid = cm.id
+			JOIN
+				chat_list AS cl ON cm.chat_id = cl.chat_id
+			WHERE
+				fts.chat_messages_fts MATCH ?  -- Search term directly here for testing
+			GROUP BY
+				cm.chat_id, cl.name
+			ORDER BY
+				cm.chat_id;
+	`
+
+	var rows []ChatSearchRow
+	if err := db.DB.Select(&rows, searchSQL, query); err != nil {
+		return nil, fmt.Errorf("search failed: %w", err)
+	}
+
+	var results []*pb.SearchResult
+	for _, row := range rows {
+		results = append(results, &pb.SearchResult{
+			ChatId:      row.ChatID,
+			ChatName:    row.ChatName,
+			MatchedText: row.MatchedText,
+		})
+	}
+
+	return &pb.ChatSearchResponse{
+		Query:   query,
+		Results: results,
+	}, nil
 }

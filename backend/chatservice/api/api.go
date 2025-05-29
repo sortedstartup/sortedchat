@@ -6,10 +6,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	db "sortedstartup.com/chatservice/dao"
@@ -36,127 +39,225 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 		return fmt.Errorf(" Chat ID is required to maintain context")
 	}
 
-	model := req.Model
+	// model := req.Model
+	model := "dall-e-3"
 	if model == "" {
 		return fmt.Errorf(" Chat ID is required to maintain context")
 	}
 
-	var history []ChatMessage
-	err := db.DB.Select(&history, `
+	if model == "dall-e-3" {
+		_, err := db.DB.Exec(`
+        INSERT INTO chat_messages (chat_id, role, content, model) 
+        VALUES (?, ?, ?, ?)`, chatId, "user", req.Text, req.Model)
+		if err != nil {
+			return fmt.Errorf("failed to insert user message: %v", err)
+		}
+
+		requestBody := map[string]interface{}{
+			"model":  model,
+			"prompt": req.Text,
+			"n":      1,
+			"size":   "1024x1024",
+		}
+
+		jsonData, err := json.Marshal(requestBody)
+		if err != nil {
+			return fmt.Errorf("failed request: %v", err)
+		}
+
+		httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/images/generations", bytes.NewBuffer(jsonData))
+		if err != nil {
+			return fmt.Errorf("failedrequest: %v", err)
+		}
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+		resp, err := http.DefaultClient.Do(httpReq)
+		if err != nil {
+			return fmt.Errorf("DALL-E request failed: %v", err)
+		}
+		defer resp.Body.Close()
+
+		var dalleResp struct {
+			Data []struct {
+				URL string `json:"url"`
+			} `json:"data"`
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&dalleResp); err != nil {
+			return fmt.Errorf("failed %v", err)
+		}
+
+		imageURL := dalleResp.Data[0].URL
+
+		fileName, err := s.downloadAndSaveImage(imageURL, chatId)
+		fmt.Println(fileName)
+		if err != nil {
+			return fmt.Errorf("failed to save image: %v", err)
+		}
+
+		responseText := fmt.Sprintf("Image generated %s", imageURL)
+		stream.Send(&pb.ChatResponse{Text: responseText})
+
+		_, err = db.DB.Exec(`
+        INSERT INTO chat_messages (chat_id, role, content, model)
+        VALUES (?, ?, ?, ?)`,
+			chatId, "assistant", responseText, model)
+		if err != nil {
+			log.Printf("Failed to insert assistant message: %v", err)
+		}
+
+		return nil
+
+	} else {
+		var history []ChatMessage
+		err := db.DB.Select(&history, `
         SELECT role, content FROM chat_messages 
         WHERE chat_id = ? ORDER BY id`, chatId)
-	if err != nil {
-		return fmt.Errorf("failed to fetch history: %v", err)
-	}
+		if err != nil {
+			return fmt.Errorf("failed to fetch history: %v", err)
+		}
 
-	if len(history) == 0 {
-		history = append(history, ChatMessage{
-			Role:    "system",
-			Content: "You are a helpful assistant",
-		})
-	}
+		if len(history) == 0 {
+			history = append(history, ChatMessage{
+				Role:    "system",
+				Content: "You are a helpful assistant",
+			})
+		}
 
-	_, err = db.DB.Exec(`
+		_, err = db.DB.Exec(`
         INSERT INTO chat_messages (chat_id, role, content,model) 
         VALUES (?, ?, ?, ?)`, chatId, "user", req.Text, req.Model)
-	if err != nil {
-		return fmt.Errorf("failed to insert user message: %v", err)
-	}
-
-	history = append(history, ChatMessage{Role: "user", Content: req.Text})
-
-	requestBody := map[string]interface{}{
-		// "model":        "gpt-4.1",
-		"model":        model,
-		"instructions": "You are a helpful assistant",
-		"input":        history,
-		"stream":       true,
-	}
-
-	jsonData, err := json.Marshal(requestBody)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %v", err)
-	}
-
-	httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/responses", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %v", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
-
-	resp, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		return fmt.Errorf("OpenAI request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if !strings.HasPrefix(line, "data: ") {
-			continue
+		if err != nil {
+			return fmt.Errorf("failed to insert user message: %v", err)
 		}
 
-		data := strings.TrimPrefix(line, "data: ")
+		history = append(history, ChatMessage{Role: "user", Content: req.Text})
 
-		var chunk map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
-			log.Printf("Failed to parse chunk: %v", err)
-			continue
+		requestBody := map[string]interface{}{
+			// "model":        "gpt-4.1",
+			"model":        model,
+			"instructions": "You are a helpful assistant",
+			"input":        history,
+			"stream":       true,
 		}
 
-		switch chunk["type"] {
-		case "response.output_text.delta":
-			if text, ok := chunk["delta"].(string); ok {
-				stream.Send(&pb.ChatResponse{Text: text})
-			}
-		case "response.completed":
-			response, ok := chunk["response"].(map[string]interface{})
-			if !ok {
+		jsonData, err := json.Marshal(requestBody)
+		if err != nil {
+			return fmt.Errorf("failed to marshal request: %v", err)
+		}
+
+		httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/responses", bytes.NewBuffer(jsonData))
+		if err != nil {
+			return fmt.Errorf("failed to create request: %v", err)
+		}
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+		resp, err := http.DefaultClient.Do(httpReq)
+		if err != nil {
+			return fmt.Errorf("OpenAI request failed: %v", err)
+		}
+		defer resp.Body.Close()
+
+		scanner := bufio.NewScanner(resp.Body)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if !strings.HasPrefix(line, "data: ") {
 				continue
 			}
 
-			var assistantText string
-			if outputArr, ok := response["output"].([]interface{}); ok && len(outputArr) > 0 {
-				if outputObj, ok := outputArr[0].(map[string]interface{}); ok {
-					if contentArr, ok := outputObj["content"].([]interface{}); ok && len(contentArr) > 0 {
-						if contentObj, ok := contentArr[0].(map[string]interface{}); ok {
-							assistantText, _ = contentObj["text"].(string)
+			data := strings.TrimPrefix(line, "data: ")
+
+			var chunk map[string]interface{}
+			if err := json.Unmarshal([]byte(data), &chunk); err != nil {
+				log.Printf("Failed to parse chunk: %v", err)
+				continue
+			}
+
+			switch chunk["type"] {
+			case "response.output_text.delta":
+				if text, ok := chunk["delta"].(string); ok {
+					stream.Send(&pb.ChatResponse{Text: text})
+				}
+			case "response.completed":
+				response, ok := chunk["response"].(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				var assistantText string
+				if outputArr, ok := response["output"].([]interface{}); ok && len(outputArr) > 0 {
+					if outputObj, ok := outputArr[0].(map[string]interface{}); ok {
+						if contentArr, ok := outputObj["content"].([]interface{}); ok && len(contentArr) > 0 {
+							if contentObj, ok := contentArr[0].(map[string]interface{}); ok {
+								assistantText, _ = contentObj["text"].(string)
+							}
 						}
 					}
 				}
-			}
 
-			inputTokens := 0
-			outputTokens := 0
-			if usage, ok := response["usage"].(map[string]interface{}); ok {
-				if val, ok := usage["input_tokens"].(float64); ok {
-					inputTokens = int(val)
+				inputTokens := 0
+				outputTokens := 0
+				if usage, ok := response["usage"].(map[string]interface{}); ok {
+					if val, ok := usage["input_tokens"].(float64); ok {
+						inputTokens = int(val)
+					}
+					if val, ok := usage["output_tokens"].(float64); ok {
+						outputTokens = int(val)
+					}
 				}
-				if val, ok := usage["output_tokens"].(float64); ok {
-					outputTokens = int(val)
-				}
-			}
 
-			// Final DB insert
-			_, err := db.DB.Exec(`
+				// Final DB insert
+				_, err := db.DB.Exec(`
 		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count)
 		VALUES (?, ?, ?, ?, ?, ?)`,
-				chatId, "assistant", assistantText, model, inputTokens, outputTokens,
-			)
-			if err != nil {
-				log.Printf("Failed to insert assistant message: %v", err)
+					chatId, "assistant", assistantText, model, inputTokens, outputTokens,
+				)
+				if err != nil {
+					log.Printf("Failed to insert assistant message: %v", err)
+				}
+
 			}
-
 		}
+
+		if err := scanner.Err(); err != nil {
+			return fmt.Errorf("error reading stream: %v", err)
+		}
+
+		return nil
 	}
 
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading stream: %v", err)
+}
+
+func (s *Server) downloadAndSaveImage(imageURL, chatId string) (string, error) {
+	imagesDir := "images"
+	if err := os.MkdirAll(imagesDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create images directory: %v", err)
 	}
 
-	return nil
+	resp, err := http.Get(imageURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to download image: %v", err)
+	}
+	defer resp.Body.Close()
+
+	timestamp := time.Now().Unix()
+	fileName := fmt.Sprintf("dalle_%s_%d.png", chatId, timestamp)
+	filePath := filepath.Join(imagesDir, fileName)
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create image file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to save image data: %v", err)
+	}
+
+	return filePath, nil
 }
 
 func (s *Server) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
 import { $searchText, $searchResults } from "../store/chat";
+import { useNavigate } from "react-router";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface SearchModalProps {
 const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const [localSearchText, setLocalSearchText] = useState("");
   const searchResults = useStore($searchResults);
+   const navigate = useNavigate();
 
   // Debounced effect to update $searchText when user stops typing
   useEffect(() => {
@@ -29,32 +31,37 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
+  const handleClose = () => {
+    onClose();
+    $searchText.set("");
+    $searchResults.set([]);
+  };
+
   // Close modal on Escape key press
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
+      if (event.key === "Escape") {
+        handleClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscapeKey);
+      document.addEventListener("keydown", handleEscapeKey);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener("keydown", handleEscapeKey);
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-black/60 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-3/4 max-w-2xl max-h-[80vh] overflow-hidden flex flex-col relative">
-        
         {/* Close X button */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-xl font-bold transition-colors"
         >
           ×
@@ -78,7 +85,8 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
                 className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                 onClick={() => {
                   // Handle result selection here if needed
-                  console.log("Selected result:", result);
+                  navigate(`/chat/${result.chat_id}`);
+                  handleClose()
                 }}
               >
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">

@@ -274,7 +274,6 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 	if query == "" {
 		return nil, fmt.Errorf("query is required")
 	}
-	fmt.Println(query)
 
 	const searchSQL = `
 			SELECT

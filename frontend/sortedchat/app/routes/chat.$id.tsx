@@ -131,7 +131,7 @@ export default function Chat() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <div className="p-3">
+          <div className="p-3 space-y-2">
             <button
               onClick={handleNewChat}
               className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -151,6 +151,27 @@ export default function Chat() {
                 />
               </svg>
               New Chat
+            </button>
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5h2m-1 0v14m-7-7h14"
+                />
+              </svg>
+              Search
             </button>
           </div>
           <ul className="mt-2">
@@ -185,6 +206,7 @@ export default function Chat() {
             ))}
           </ul>
         </div>
+
       </div>
 
       {/* Main chat area */}
@@ -197,13 +219,11 @@ export default function Chat() {
                 `Chat ${chatId}`}
             </h1>
           </div>
-          <button
-            className="border border-gray-200 dark:border-gray-700 p-4 rounded-xl"
-            onClick={() => setIsModalOpen(true)}
-          >
-            Search
-          </button>
-           <SearchModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+          
+          <SearchModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+          />
         </div>
 
         {/* Chat messages */}

@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useStore } from "@nanostores/react";
+import { $searchText, $searchResults } from "../store/chat";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -6,25 +8,96 @@ interface SearchModalProps {
 }
 
 const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
+  const [localSearchText, setLocalSearchText] = useState("");
+  const searchResults = useStore($searchResults);
+
+  // Debounced effect to update $searchText when user stops typing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (localSearchText.trim()) {
+        $searchText.set(localSearchText.trim());
+      }
+    }, 500); // 500ms delay after user stops typing
+
+    return () => clearTimeout(timeoutId);
+  }, [localSearchText]);
+
+  // Reset local state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setLocalSearchText("");
+    }
+  }, [isOpen]);
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-1/2 max-w-md">
+    <div className="fixed inset-0 bg-black bg-black/60 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-3/4 max-w-2xl max-h-[80vh] overflow-hidden flex flex-col relative">
+        
+        {/* Close X button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-xl font-bold transition-colors"
+        >
+          ×
+        </button>
+
         <input
           type="text"
-          placeholder="Search..."
-          className="w-full p-2 border-b border-gray-300  "
+          placeholder="Search conversations..."
+          className="w-full p-3 border-b border-gray-300 dark:border-gray-600 bg-transparent focus:outline-none focus:border-blue-500 text-gray-900 dark:text-white"
+          value={localSearchText}
+          onChange={(e) => setLocalSearchText(e.target.value)}
+          autoFocus
         />
 
-        <div>
-          <button
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded mr-2"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          
+        {/* Search Results */}
+        <div className="flex-1 overflow-y-auto mt-4 space-y-2">
+          {searchResults.length > 0 ? (
+            searchResults.map((result, index) => (
+              <div
+                key={index}
+                className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                onClick={() => {
+                  // Handle result selection here if needed
+                  console.log("Selected result:", result);
+                }}
+              >
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  Chat: {result.chat_name || "Unnamed Chat"}
+                </div>
+                <div className="text-gray-900 dark:text-white line-clamp-2">
+                  {result.matched_text}
+                </div>
+              </div>
+            ))
+          ) : localSearchText.trim() ? (
+            <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+              No results found for "{localSearchText}"
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+              Start typing to search your conversations...
+            </div>
+          )}
         </div>
       </div>
     </div>

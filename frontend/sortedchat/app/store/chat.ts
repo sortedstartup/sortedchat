@@ -160,8 +160,9 @@ const getChatList = () => {
 
 // load chat history of first use
 onMount($chatList, () => {
+
   getChatList();
-  getSearchResults()
+
   return () => {
     // Disabled mode
   };
@@ -183,19 +184,26 @@ onMount($availableModels, () => {
   fetchAvailableModels();
 })
 
+// -- search --
 export const $searchResults = atom<SearchResult[]>([]);
 export const $searchText = atom<string>("elon");
+
+$searchText.listen((newValue, oldValue) => {
+  if(newValue !== oldValue) {
+    getSearchResults()
+  }
+})
 
 export const getSearchResults = async() => {
   try {
     const response = await chat.SearchChat(ChatSearchRequest.fromObject({
-      query:"bill"
+      query: $searchText.get()
     }),{})
     console.log(response.results);
-    
     $searchResults.set(response.results)
   }
   catch(err) {
     console.error('failed',err)
   }
 }
+// -- search --

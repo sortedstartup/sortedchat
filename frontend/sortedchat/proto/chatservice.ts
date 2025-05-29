@@ -1236,26 +1236,40 @@ export class SearchResult extends pb_1.Message {
 export class ChatSearchResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
+        query?: string;
         results?: SearchResult[];
     }) {
         super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [2], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
+            if ("query" in data && data.query != undefined) {
+                this.query = data.query;
+            }
             if ("results" in data && data.results != undefined) {
                 this.results = data.results;
             }
         }
     }
+    get query() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set query(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
     get results() {
-        return pb_1.Message.getRepeatedWrapperField(this, SearchResult, 1) as SearchResult[];
+        return pb_1.Message.getRepeatedWrapperField(this, SearchResult, 2) as SearchResult[];
     }
     set results(value: SearchResult[]) {
-        pb_1.Message.setRepeatedWrapperField(this, 1, value);
+        pb_1.Message.setRepeatedWrapperField(this, 2, value);
     }
     static fromObject(data: {
+        query?: string;
         results?: ReturnType<typeof SearchResult.prototype.toObject>[];
     }): ChatSearchResponse {
         const message = new ChatSearchResponse({});
+        if (data.query != null) {
+            message.query = data.query;
+        }
         if (data.results != null) {
             message.results = data.results.map(item => SearchResult.fromObject(item));
         }
@@ -1263,8 +1277,12 @@ export class ChatSearchResponse extends pb_1.Message {
     }
     toObject() {
         const data: {
+            query?: string;
             results?: ReturnType<typeof SearchResult.prototype.toObject>[];
         } = {};
+        if (this.query != null) {
+            data.query = this.query;
+        }
         if (this.results != null) {
             data.results = this.results.map((item: SearchResult) => item.toObject());
         }
@@ -1274,8 +1292,10 @@ export class ChatSearchResponse extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
+        if (this.query.length)
+            writer.writeString(1, this.query);
         if (this.results.length)
-            writer.writeRepeatedMessage(1, this.results, (item: SearchResult) => item.serialize(writer));
+            writer.writeRepeatedMessage(2, this.results, (item: SearchResult) => item.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1286,7 +1306,10 @@ export class ChatSearchResponse extends pb_1.Message {
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
-                    reader.readMessage(message.results, () => pb_1.Message.addToRepeatedWrapperField(message, 1, SearchResult.deserialize(reader), SearchResult));
+                    message.query = reader.readString();
+                    break;
+                case 2:
+                    reader.readMessage(message.results, () => pb_1.Message.addToRepeatedWrapperField(message, 2, SearchResult.deserialize(reader), SearchResult));
                     break;
                 default: reader.skipField();
             }

@@ -265,8 +265,8 @@ func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.
 
 type ChatSearchRow struct {
 	ChatID      string `db:"chat_id"`
-	ChatName    string `db:"name"`
-	MatchedText string `db:"content"`
+	ChatName    string `db:"chat_name"`
+	MatchedText string `db:"aggregated_snippets"`
 }
 
 func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
@@ -278,7 +278,7 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 
 	const searchSQL = `
 			SELECT
-				cm.chat_id,
+				cm.chat_id as chat_id,
 				cl.name AS chat_name,
 				GROUP_CONCAT(
 					CASE
@@ -294,7 +294,7 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 			JOIN
 				chat_list AS cl ON cm.chat_id = cl.chat_id
 			WHERE
-				fts.chat_messages_fts MATCH 'bill'  -- Search term directly here for testing
+				fts.chat_messages_fts MATCH ?  -- Search term directly here for testing
 			GROUP BY
 				cm.chat_id, cl.name
 			ORDER BY
@@ -316,6 +316,7 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 	}
 
 	return &pb.ChatSearchResponse{
+		Query:   query,
 		Results: results,
 	}, nil
 }

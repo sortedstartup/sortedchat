@@ -763,7 +763,8 @@ func (x *SearchResult) GetMatchedText() string {
 
 type ChatSearchResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Results       []*SearchResult        `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Results       []*SearchResult        `protobuf:"bytes,2,rep,name=results,proto3" json:"results,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -796,6 +797,13 @@ func (x *ChatSearchResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ChatSearchResponse.ProtoReflect.Descriptor instead.
 func (*ChatSearchResponse) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ChatSearchResponse) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
 }
 
 func (x *ChatSearchResponse) GetResults() []*SearchResult {
@@ -850,9 +858,10 @@ const file_chatservice_proto_rawDesc = "" +
 	"\fSearchResult\x12\x1b\n" +
 	"\tchat_name\x18\x01 \x01(\tR\bchatName\x12\x17\n" +
 	"\achat_id\x18\x02 \x01(\tR\x06chatId\x12!\n" +
-	"\fmatched_text\x18\x03 \x01(\tR\vmatchedText\"H\n" +
-	"\x12ChatSearchResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.sortedchat.SearchResultR\aresults2\xcc\x03\n" +
+	"\fmatched_text\x18\x03 \x01(\tR\vmatchedText\"^\n" +
+	"\x12ChatSearchResponse\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x122\n" +
+	"\aresults\x18\x02 \x03(\v2\x18.sortedchat.SearchResultR\aresults2\xcc\x03\n" +
 	"\n" +
 	"SortedChat\x12;\n" +
 	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12K\n" +

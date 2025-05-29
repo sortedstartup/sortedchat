@@ -83,5 +83,6 @@ message SearchResult {
 }
 
 message ChatSearchResponse {
-  repeated SearchResult results = 1;
+  string query = 1;
+  repeated SearchResult results = 2;
 }

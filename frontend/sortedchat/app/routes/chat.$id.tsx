@@ -55,7 +55,6 @@ export default function Chat() {
   }, [data, streamingMessage, currentChatMessage]);
 
   const handleSend = () => {
-    console.log(inputValue);
     if (inputValue.trim()) {
       doChat(inputValue);
       setInputValue("");
@@ -90,7 +89,6 @@ export default function Chat() {
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     $selectedModel.set(e.target.value);
-    console.log($selectedModel);
   };
 
   if (error) {
@@ -168,7 +166,7 @@ export default function Chat() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M11 5h2m-1 0v14m-7-7h14"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
               </svg>
               Search

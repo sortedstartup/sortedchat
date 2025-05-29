@@ -117,9 +117,6 @@ func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) erro
 				continue
 			}
 
-			modelStr, _ := response["model"].(string)
-			fmt.Println(modelStr)
-
 			var assistantText string
 			if outputArr, ok := response["output"].([]interface{}); ok && len(outputArr) > 0 {
 				if outputObj, ok := outputArr[0].(map[string]interface{}); ok {

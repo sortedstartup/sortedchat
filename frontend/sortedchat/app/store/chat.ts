@@ -45,7 +45,6 @@ export const fetchChatMessages = async (chatId: string) => {
       GetHistoryRequest.fromObject({ chatId }),
       {}
     );
-    console.log(chatId, ":", res);
 
     $currentChatMessages.set({
       data: res.history || [],
@@ -64,7 +63,6 @@ export const fetchChatMessages = async (chatId: string) => {
 
 // Auto-fetch when chat ID changes
 $currentChatId.listen((newChatId) => {
-  console.log("Chat ID changed to:", newChatId);
   if (newChatId) {
     fetchChatMessages(newChatId);
   } else {
@@ -199,7 +197,6 @@ export const getSearchResults = async() => {
     const response = await chat.SearchChat(ChatSearchRequest.fromObject({
       query: $searchText.get()
     }),{})
-    console.log(response.results);
     $searchResults.set(response.results)
   }
   catch(err) {

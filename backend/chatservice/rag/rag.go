@@ -1,7 +1,11 @@
 package rag
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -68,5 +72,50 @@ func splitText(text string, part int) []string {
 	}
 
 	return result
+}
+
+func GenerateEmbeddings(text string) {
+
+	payload := map[string]string{
+		"model":  "nomic-embed-text:v1.5",
+		"prompt": text,
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Println("Error marshaling payload:", err)
+		return
+	}
+
+	httpReq, error := http.NewRequest("POST", "http://localhost:11434/api/embeddings", bytes.NewBuffer(jsonData))
+	if error != nil {
+		fmt.Println("Error creating HTTP request:", err)
+		return
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	type Response struct {
+		Embedding []float64 `json:"embedding"`
+	}
+
+	var result Response
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(result.Embedding)
+	fmt.Println(len(result.Embedding))
 
 }

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"sortedstartup.com/chatservice/rag"
 )
 
@@ -12,7 +10,10 @@ func main() {
 		panic(err)
 	}
 
-	for _, chunk := range chunks {
-		fmt.Printf("[%s]\n%s\n\n", chunk.ID, chunk.Content)
-	}
+	// for _, chunk := range chunks {
+	// 	fmt.Printf("[%s]\n%s\n\n", chunk.ID, chunk.Content)
+	// }
+
+	rag.GenerateEmbeddings(chunks[0].Content)
+
 }

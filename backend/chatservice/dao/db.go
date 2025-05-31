@@ -14,7 +14,7 @@ func InitDB() {
 	sqlite_vec.Auto()
 	var err error
 
-	DB, err = sqlx.Open("sqlite3", "./chat_history.db?_foreign_keys=on")
+	DB, err = sqlx.Open("sqlite3", "./chat_history.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -89,10 +89,16 @@ func InitDB() {
 	END;
 
 	CREATE TABLE IF NOT EXISTS rag_chunks (
-    id TEXT PRIMARY KEY,
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chunk_id TEXT,
     source TEXT NOT NULL,
     start_byte INTEGER,
     end_byte INTEGER
+);
+
+	CREATE VIRTUAL TABLE IF NOT EXISTS rag_chunks_vec USING vec0(
+	id INTEGER,
+    embedding FLOAT[768]
 );
     `
 

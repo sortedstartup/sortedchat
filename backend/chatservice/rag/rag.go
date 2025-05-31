@@ -7,13 +7,14 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 )
 
 type DocumentChunk struct {
-	ID      string
-	Content string
-	Source  string
+	ID         string
+	Content    string
+	Source     string
+	StartBytes int
+	EndBytes   int
 }
 
 func LoadAndSplitDocs(directory string) ([]DocumentChunk, error) {
@@ -36,9 +37,11 @@ func LoadAndSplitDocs(directory string) ([]DocumentChunk, error) {
 
 		for i, part := range parts {
 			chunks = append(chunks, DocumentChunk{
-				ID:      fmt.Sprintf("%s_%d", file.Name(), i),
-				Content: part,
-				Source:  file.Name(),
+				ID:         fmt.Sprintf("%s_%d", file.Name(), i),
+				Content:    part.Content,
+				StartBytes: part.StartBytes,
+				EndBytes:   part.EndBytes,
+				Source:     file.Name(),
 			})
 		}
 
@@ -47,8 +50,14 @@ func LoadAndSplitDocs(directory string) ([]DocumentChunk, error) {
 	return chunks, nil
 }
 
-func splitText(text string, part int) []string {
-	var result []string
+type SplittedChunk struct {
+	Content    string
+	StartBytes int
+	EndBytes   int
+}
+
+func splitText(text string, part int) []SplittedChunk {
+	var result []SplittedChunk
 	length := len(text)
 
 	if length == 0 || part <= 0 {
@@ -65,9 +74,13 @@ func splitText(text string, part int) []string {
 			end = length
 		}
 
-		chunk := strings.TrimSpace(text[start:end])
+		chunk := text[start:end]
 		if chunk != "" {
-			result = append(result, chunk)
+			result = append(result, SplittedChunk{
+				Content:    chunk,
+				StartBytes: start,
+				EndBytes:   end,
+			})
 		}
 	}
 
@@ -116,7 +129,6 @@ func GenerateEmbeddings(text string) ([]float64, error) {
 	}
 
 	fmt.Println(result.Embedding)
-	fmt.Println(len(result.Embedding))
 
 	return result.Embedding, nil
 }

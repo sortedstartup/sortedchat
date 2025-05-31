@@ -74,7 +74,7 @@ func splitText(text string, part int) []string {
 	return result
 }
 
-func GenerateEmbeddings(text string) {
+func GenerateEmbeddings(text string) ([]float64, error) {
 
 	payload := map[string]string{
 		"model":  "nomic-embed-text:v1.5",
@@ -84,13 +84,13 @@ func GenerateEmbeddings(text string) {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling payload:", err)
-		return
+		return nil, fmt.Errorf("failed %w", err)
 	}
 
 	httpReq, error := http.NewRequest("POST", "http://localhost:11434/api/embeddings", bytes.NewBuffer(jsonData))
 	if error != nil {
 		fmt.Println("Error creating HTTP request:", err)
-		return
+		return nil, fmt.Errorf("failed %w", error)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(httpReq)
@@ -101,7 +101,7 @@ func GenerateEmbeddings(text string) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
+		return nil, fmt.Errorf("failed %w", err)
 	}
 
 	type Response struct {
@@ -112,10 +112,11 @@ func GenerateEmbeddings(text string) {
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil, fmt.Errorf("failed  %w", err)
 	}
 
 	fmt.Println(result.Embedding)
 	fmt.Println(len(result.Embedding))
 
+	return result.Embedding, nil
 }

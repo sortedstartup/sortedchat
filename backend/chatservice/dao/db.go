@@ -3,6 +3,7 @@ package db
 import (
 	"log"
 
+	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -10,10 +11,28 @@ import (
 var DB *sqlx.DB
 
 func InitDB() {
+	sqlite_vec.Auto()
 	var err error
-	DB, err = sqlx.Open("sqlite3", "./chat_history.db")
+
+	DB, err = sqlx.Open("sqlite3", "./chat_history.db?_foreign_keys=on")
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	var vecVersion string
+	err = DB.QueryRow("SELECT vec_version()").Scan(&vecVersion)
+	if err != nil {
+		log.Printf("Warning: Failed to initialize sqlite-vec: %v", err)
+	} else {
+		log.Printf("sqlite-vec initialized successfully. vec_version=%s", vecVersion)
+	}
+
+	_, err = DB.Exec("SELECT load_extension('vec0')")
+	if err != nil {
+		log.Printf("Warning: Failed to load sqlite_vec extension: %v", err)
+		log.Printf("Vector search will not be available. Install sqlite_vec for enhanced functionality.")
+	} else {
+		log.Println("sqlite_vec extension loaded successfully")
 	}
 
 	schema := `
@@ -68,6 +87,13 @@ func InitDB() {
 	INSERT INTO chat_messages_fts (chat_messages_fts, rowid, message_content) VALUES ('delete', old.id, old.content);
 	INSERT INTO chat_messages_fts (rowid, message_content) VALUES (new.id, new.content);
 	END;
+
+	CREATE TABLE IF NOT EXISTS rag_chunks (
+    id TEXT PRIMARY KEY,
+    source TEXT NOT NULL,
+    start_byte INTEGER,
+    end_byte INTEGER
+);
     `
 
 	_, err = DB.Exec(schema)

@@ -8,6 +8,8 @@ require (
 )
 
 require (
+	github.com/asg017/sqlite-vec v0.1.6 // indirect
+	github.com/asg017/sqlite-vec-go-bindings v0.1.6 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect

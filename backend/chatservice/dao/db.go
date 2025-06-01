@@ -3,6 +3,7 @@ package db
 import (
 	"log"
 
+	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -10,7 +11,9 @@ import (
 var DB *sqlx.DB
 
 func InitDB() {
+	sqlite_vec.Auto()
 	var err error
+
 	DB, err = sqlx.Open("sqlite3", "./chat_history.db")
 	if err != nil {
 		log.Fatal(err)
@@ -68,6 +71,19 @@ func InitDB() {
 	INSERT INTO chat_messages_fts (chat_messages_fts, rowid, message_content) VALUES ('delete', old.id, old.content);
 	INSERT INTO chat_messages_fts (rowid, message_content) VALUES (new.id, new.content);
 	END;
+
+	CREATE TABLE IF NOT EXISTS rag_chunks (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chunk_id TEXT,
+    source TEXT NOT NULL,
+    start_byte INTEGER,
+    end_byte INTEGER
+);
+
+	CREATE VIRTUAL TABLE IF NOT EXISTS rag_chunks_vec USING vec0(
+	id INTEGER,
+    embedding FLOAT[768]
+);
     `
 
 	_, err = DB.Exec(schema)

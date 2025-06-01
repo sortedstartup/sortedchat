@@ -19,22 +19,6 @@ func InitDB() {
 		log.Fatal(err)
 	}
 
-	var vecVersion string
-	err = DB.QueryRow("SELECT vec_version()").Scan(&vecVersion)
-	if err != nil {
-		log.Printf("Warning: Failed to initialize sqlite-vec: %v", err)
-	} else {
-		log.Printf("sqlite-vec initialized successfully. vec_version=%s", vecVersion)
-	}
-
-	_, err = DB.Exec("SELECT load_extension('vec0')")
-	if err != nil {
-		log.Printf("Warning: Failed to load sqlite_vec extension: %v", err)
-		log.Printf("Vector search will not be available. Install sqlite_vec for enhanced functionality.")
-	} else {
-		log.Println("sqlite_vec extension loaded successfully")
-	}
-
 	schema := `
     CREATE TABLE IF NOT EXISTS chat_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

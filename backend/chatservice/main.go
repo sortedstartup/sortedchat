@@ -51,4 +51,42 @@ func main() {
 		}
 	}
 
+	userInput := "gandhi"
+	userEmbedding, err := rag.GenerateEmbeddings(userInput)
+	if err != nil {
+		log.Fatalf("Failed to generate embedding: %v", err)
+	}
+
+	json, err := json.Marshal(userEmbedding)
+	if err != nil {
+		log.Fatalf("Failed %v", err)
+	}
+
+	rows, err := db.DB.Query(`
+	SELECT *
+	FROM rag_chunks
+	WHERE id IN (
+  		SELECT id
+  		FROM rag_chunks_vec
+  		WHERE embedding MATCH ?
+  		ORDER BY distance
+  		LIMIT 2
+	)
+`, string(json))
+
+	for rows.Next() {
+		var id int
+		var chunkID string
+		var source string
+		var startByte int
+		var endByte int
+
+		if err := rows.Scan(&id, &chunkID, &source, &startByte, &endByte); err != nil {
+			log.Printf("Failed to scan row: %v", err)
+		}
+
+		fmt.Printf("Chunk ID: %s | Source: %s | Bytes: %d-%d\n",
+			chunkID, source, startByte, endByte)
+	}
+
 }

@@ -128,7 +128,5 @@ func GenerateEmbeddings(text string) ([]float64, error) {
 		return nil, fmt.Errorf("failed  %w", err)
 	}
 
-	fmt.Println(result.Embedding)
-
 	return result.Embedding, nil
 }

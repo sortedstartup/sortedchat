@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 
+	"sortedstartup/chatservice/dao"
 	db "sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
 
@@ -20,11 +22,7 @@ import (
 
 type Server struct {
 	pb.UnimplementedSortedChatServer
-}
-
-type ChatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	dao db.DAO
 }
 
 func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
@@ -43,32 +41,29 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 		return fmt.Errorf(" Chat ID is required to maintain context")
 	}
 
-	var history []ChatMessage
-	err := db.DB.Select(&history, `
-        SELECT role, content FROM chat_messages 
-        WHERE chat_id = ? ORDER BY id`, chatId)
+	// Get chat history using DAO
+	history, err := s.dao.GetChatMessages(chatId)
 	if err != nil {
-		return fmt.Errorf("failed to fetch history: %v", err)
+		slog.Error("failed to fetch message history", "error", err)
+		return fmt.Errorf("failed to fetch message history: %v", err)
 	}
 
 	if len(history) == 0 {
-		history = append(history, ChatMessage{
+		history = append(history, dao.ChatMessageRow{
 			Role:    "system",
 			Content: "You are a helpful assistant",
 		})
 	}
 
-	_, err = db.DB.Exec(`
-        INSERT INTO chat_messages (chat_id, role, content,model) 
-        VALUES (?, ?, ?, ?)`, chatId, "user", req.Text, req.Model)
+	// Add user message using DAO
+	err = s.dao.AddChatMessage(chatId, "user", req.Text)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
 	}
 
-	history = append(history, ChatMessage{Role: "user", Content: req.Text})
+	history = append(history, dao.ChatMessageRow{Role: "user", Content: req.Text})
 
 	requestBody := map[string]interface{}{
-		// "model":        "gpt-4.1",
 		"model":        model,
 		"instructions": "You are a helpful assistant",
 		"input":        history,
@@ -142,11 +137,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 			}
 
 			// Final DB insert
-			_, err := db.DB.Exec(`
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count)
-		VALUES (?, ?, ?, ?, ?, ?)`,
-				chatId, "assistant", assistantText, model, inputTokens, outputTokens,
-			)
+			err := s.dao.AddChatMessageWithTokens(chatId, "assistant", assistantText, model, inputTokens, outputTokens)
 			if err != nil {
 				log.Printf("Failed to insert assistant message: %v", err)
 			}
@@ -167,14 +158,7 @@ func (s *Server) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb
 		return nil, fmt.Errorf("chat ID is required")
 	}
 
-	var messages []struct {
-		Role    string `db:"role"`
-		Content string `db:"content"`
-	}
-
-	err := db.DB.Select(&messages, `
-		SELECT role, content FROM chat_messages
-		WHERE chat_id = ? ORDER BY id`, chatId)
+	messages, err := s.dao.GetChatMessages(chatId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch history: %v", err)
 	}
@@ -198,21 +182,10 @@ type ChatRow struct {
 }
 
 func (s *Server) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
-	var rows []ChatRow
-
-	err := db.DB.Select(&rows, `
-		SELECT chat_id, name FROM chat_list ORDER BY chat_id
-	`)
+	chats, err := s.dao.GetChatList()
 	if err != nil {
+		slog.Error("failed to fetch chat list", "error", err)
 		return nil, fmt.Errorf("failed to fetch chat list: %v", err)
-	}
-
-	var chats []*pb.ChatInfo
-	for _, row := range rows {
-		chats = append(chats, &pb.ChatInfo{
-			ChatId: row.ChatID,
-			Name:   row.Name,
-		})
 	}
 
 	return &pb.GetChatListResponse{Chats: chats}, nil
@@ -226,9 +199,7 @@ func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb
 
 	chatId := uuid.New().String()
 
-	_, err := db.DB.Exec(`
-        INSERT INTO chat_list (chat_id, name) 
-        VALUES (?, ?)`, chatId, name)
+	err := s.dao.CreateChat(chatId, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert chat record: %w", err)
 	}
@@ -240,13 +211,7 @@ func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb
 }
 
 func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
-	type Model struct {
-		ID   string `db:"id"`
-		Name string `db:"name"`
-	}
-
-	var models []Model
-	err := db.DB.Select(&models, "SELECT id, name FROM model_metadata")
+	models, err := s.dao.GetModels()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch models: %v", err)
 	}
@@ -254,8 +219,8 @@ func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.
 	pbModels := make([]*pb.ModelListInfo, 0, len(models))
 	for _, m := range models {
 		pbModels = append(pbModels, &pb.ModelListInfo{
-			Id:    m.ID,
-			Label: m.Name,
+			Id:    m.Id,
+			Label: m.Label,
 		})
 	}
 
@@ -274,52 +239,33 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 		return nil, fmt.Errorf("query is required")
 	}
 
-	const searchSQL = `
-			SELECT
-				cm.chat_id as chat_id,
-				cl.name AS chat_name,
-				GROUP_CONCAT(
-					CASE
-						WHEN LENGTH(cm.content) > 100 THEN SUBSTR(cm.content, 1, 100) || '...'
-						ELSE cm.content
-					END,
-					'\n-----\n'
-				) AS aggregated_snippets
-			FROM
-				chat_messages_fts AS fts
-			JOIN
-				chat_messages AS cm ON fts.rowid = cm.id
-			JOIN
-				chat_list AS cl ON cm.chat_id = cl.chat_id
-			WHERE
-				fts.chat_messages_fts MATCH ?  -- Search term directly here for testing
-			GROUP BY
-				cm.chat_id, cl.name
-			ORDER BY
-				cm.chat_id;
-	`
-
-	var rows []ChatSearchRow
-	if err := db.DB.Select(&rows, searchSQL, query); err != nil {
+	results, err := s.dao.SearchChatMessages(query)
+	if err != nil {
 		return nil, fmt.Errorf("search failed: %w", err)
 	}
 
-	var results []*pb.SearchResult
-	for _, row := range rows {
-		results = append(results, &pb.SearchResult{
-			ChatId:      row.ChatID,
-			ChatName:    row.ChatName,
-			MatchedText: row.MatchedText,
+	var pbResults []*pb.SearchResult
+	for _, result := range results {
+		pbResults = append(pbResults, &pb.SearchResult{
+			ChatId:      result.ChatId,
+			ChatName:    result.ChatName,
+			MatchedText: result.MatchedText,
 		})
 	}
 
 	return &pb.ChatSearchResponse{
 		Query:   query,
-		Results: results,
+		Results: pbResults,
 	}, nil
 }
 
 func (s *Server) Init() {
+	// Initialize DAO
+	sqliteDAO, err := db.NewSQLiteDAO("chatservice.db")
+	if err != nil {
+		log.Fatalf("Failed to initialize DAO: %v", err)
+	}
+	s.dao = sqliteDAO
 
 	//db.InitDB()
 	// TODO: handle migration for postgres also

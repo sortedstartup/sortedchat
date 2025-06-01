@@ -4,7 +4,7 @@ package main
 // This generates the go code from .proto files
 // For simple cases like this it avoids the need to have a Makefile
 
-//go:generate protoc --go_opt=module=sortedstartup.com/chatservice/proto --go-grpc_opt=module=sortedstartup.com/chatservice/proto --go_out=./proto/ --go-grpc_out=./proto/ --proto_path=../../proto chatservice.proto
+//go:generate protoc --go_opt=module=sortedstartup/chatservice/proto --go-grpc_opt=module=sortedstartup/chatservice/proto --go_out=./proto/ --go-grpc_out=./proto/ --proto_path=../../proto chatservice.proto
 
 // This generates JS code from .proto files
 //go:generate protoc --ts_opt=no_namespace --ts_opt=unary_rpc_promise=true --ts_opt=target=web --ts_out=../../frontend/sortedchat/proto/ --proto_path=../../proto chatservice.proto

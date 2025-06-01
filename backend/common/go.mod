@@ -1,3 +1,3 @@
-module sortedstartup.com/common
+module sortedstartup/common
 
 go 1.24.3

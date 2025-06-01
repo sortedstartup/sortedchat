@@ -187,7 +187,7 @@ export const $searchResults = atom<SearchResult[]>([]);
 export const $searchText = atom<string>("elon");
 
 $searchText.listen((newValue, oldValue) => {
-  if(newValue !== oldValue) {
+  if(newValue !== oldValue && newValue !== "") {
     getSearchResults()
   }
 })

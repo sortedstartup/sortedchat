@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package sortedchat;
 
-option go_package = "sortedstartup.com/chatservice/proto";
+option go_package = "sortedstartup/chatservice/proto";
 
 
 service SortedChat {

@@ -7,15 +7,16 @@ import (
 	"net"
 	"net/http"
 
+	"sortedstartup/chatservice/api"
+
+	"sortedstartup/chat/mono/util"
+
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"sortedstartup.com/chat/mono/util"
-	"sortedstartup.com/chatservice/api"
-	db "sortedstartup.com/chatservice/dao"
 
-	pb "sortedstartup.com/chatservice/proto"
+	pb "sortedstartup/chatservice/proto"
 )
 
 const (
@@ -38,10 +39,13 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	db.InitDB()
+	// db.InitDB()
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterSortedChatServer(grpcServer, &api.Server{})
+	apiServer := api.Server{}
+
+	apiServer.Init()
+	pb.RegisterSortedChatServer(grpcServer, &apiServer)
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)

@@ -11,9 +11,11 @@ import (
 	"os"
 	"strings"
 
+	db "sortedstartup/chatservice/dao"
+	pb "sortedstartup/chatservice/proto"
+
 	"github.com/google/uuid"
-	db "sortedstartup.com/chatservice/dao"
-	pb "sortedstartup.com/chatservice/proto"
+	"google.golang.org/grpc"
 )
 
 type Server struct {
@@ -25,7 +27,7 @@ type ChatMessage struct {
 	Content string `json:"content"`
 }
 
-func (s *Server) Chat(req *pb.ChatRequest, stream pb.SortedChat_ChatServer) error {
+func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		return fmt.Errorf("OpenAI API key not set")
@@ -315,4 +317,12 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 		Query:   query,
 		Results: results,
 	}, nil
+}
+
+func (s *Server) Init() {
+
+	//db.InitDB()
+	// TODO: handle migration for postgres also
+	db.MigrateSQLite("chatservice.db")
+	db.SeedSqlite("chatservice.db")
 }

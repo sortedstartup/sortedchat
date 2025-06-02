@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"os"
 
 	db "sortedstartup.com/chatservice/dao"
 	"sortedstartup.com/chatservice/rag"
@@ -51,13 +55,13 @@ func main() {
 		}
 	}
 
-	userInput := "gandhi"
+	userInput := "when do we broadcasts the block to all nodes ?"
 	userEmbedding, err := rag.GenerateEmbeddings(userInput)
 	if err != nil {
 		log.Fatalf("Failed to generate embedding: %v", err)
 	}
 
-	json, err := json.Marshal(userEmbedding)
+	embed, err := json.Marshal(userEmbedding)
 	if err != nil {
 		log.Fatalf("Failed %v", err)
 	}
@@ -72,8 +76,9 @@ func main() {
   		ORDER BY distance
   		LIMIT 2
 	)
-`, string(json))
+	`, string(embed))
 
+	var context string
 	for rows.Next() {
 		var id int
 		var chunkID string
@@ -87,6 +92,67 @@ func main() {
 
 		fmt.Printf("Chunk ID: %s | Source: %s | Bytes: %d-%d\n",
 			chunkID, source, startByte, endByte)
+
+		daata, err := os.ReadFile(fmt.Sprintf("./rag/directory/%s", source))
+		if err != nil {
+			log.Printf("Failed to read file %v", err)
+		}
+
+		chunk := string(daata[startByte:endByte])
+		context += chunk
 	}
 
+	prompt := fmt.Sprintf(`Use the following context to answer the following question: Context: %s, Question : %s`, context, userInput)
+	fmt.Println(prompt)
+
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		fmt.Errorf("OpenAI API key not set")
+	}
+
+	reqBody := map[string]interface{}{
+		"model": "gpt-4.1",
+		"input": prompt,
+	}
+
+	bodyJSON, err := json.Marshal(reqBody)
+	if err != nil {
+		log.Fatalf("Failed  %v", err)
+	}
+
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/responses", bytes.NewBuffer(bodyJSON))
+	if err != nil {
+		log.Fatalf("Failed  %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatalf("Failed %v", err)
+	}
+	defer resp.Body.Close()
+
+	responseData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Failed  %v", err)
+	}
+
+	// fmt.Println(string(responseData))
+
+	type ResponseStructure struct {
+		Output []struct {
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"output"`
+	}
+
+	var apiResp ResponseStructure
+	if err := json.Unmarshal(responseData, &apiResp); err != nil {
+		log.Fatalf("Failed %v", err)
+	}
+
+	fmt.Println(apiResp.Output[0].Content[0].Text)
 }

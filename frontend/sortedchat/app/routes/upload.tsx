@@ -1,0 +1,114 @@
+import React, { useState, useRef } from "react";
+
+type FileItem = {
+  id: string;
+  file: File;
+  path: string;
+  status: "success" | "failed";
+  error?: string;
+};
+
+export default function FileUploader() {
+  const [fileList, setFileList] = useState<FileItem[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
+
+  const updateStatus = (
+    id: string,
+    status: "success" | "failed",
+    error?: string
+  ) => {
+    setFileList((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, status, error } : f))
+    );
+  };
+
+  const uploadFile = async (fileItem: FileItem) => {
+    const formData = new FormData();
+    formData.append("file", fileItem.file, fileItem.path);
+
+    const res = await fetch("http://localhost:4000/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (res.ok) {
+      updateStatus(fileItem.id, "success");
+    } else {
+      updateStatus(fileItem.id, "failed", `Server error ${res.status}`);
+    }
+  };
+
+  const addFiles = (files: FileList) => {
+    const newItems: FileItem[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      newItems.push({
+        id: crypto.randomUUID(),
+        file: f,
+        path: (f as any).webkitRelativePath || f.name,
+        status: "failed",
+      });
+    }
+    setFileList((prev) => {
+      const updatedList = [...prev, ...newItems];
+      newItems.forEach(uploadFile);
+      return updatedList;
+    });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    addFiles(e.target.files);
+    e.target.value = "";
+  };
+
+  return (
+    <div>
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="border-2 p-4 m-2"
+      >
+        Select Files
+      </button>
+      <button
+        onClick={() => folderInputRef.current?.click()}
+        className="border-2 p-4 m-2"
+      >
+        Select Folder
+      </button>
+
+      <input
+        type="file"
+        multiple
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+
+      <input
+        type="file"
+        webkitdirectory=""
+        ref={folderInputRef}
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+
+      {fileList.length > 0 && (
+        <ul>
+          {fileList.map((f) => (
+            <li key={f.id}>
+              {f.path} - {f.status}
+              {f.status === "failed" && (
+                <>
+                  <span> ({f.error}) </span>
+                  <button onClick={() => uploadFile(f)}>Retry</button>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

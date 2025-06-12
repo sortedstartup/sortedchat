@@ -163,7 +163,7 @@ func (s *SQLiteDAO) CreateProject(name string, description string, additionalDat
 }
 
 // GetProjectList retrieves all projects
-func (s *SQLiteDAO) GetProjectList() ([]ProjectRow, error) {
+func (s *SQLiteDAO) GetProjects() ([]ProjectRow, error) {
 	var projects []ProjectRow
 	err := s.db.Select(&projects, `SELECT id, name, description, additional_data, created_at, updated_at FROM project`)
 	return projects, err

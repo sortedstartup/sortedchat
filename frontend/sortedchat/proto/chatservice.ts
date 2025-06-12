@@ -1526,15 +1526,15 @@ export class CreateProjectResponse extends pb_1.Message {
         return CreateProjectResponse.deserialize(bytes);
     }
 }
-export class GetProjectListRequest extends pb_1.Message {
+export class GetProjectsRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {}) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") { }
     }
-    static fromObject(data: {}): GetProjectListRequest {
-        const message = new GetProjectListRequest({});
+    static fromObject(data: {}): GetProjectsRequest {
+        const message = new GetProjectsRequest({});
         return message;
     }
     toObject() {
@@ -1548,8 +1548,8 @@ export class GetProjectListRequest extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetProjectListRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetProjectListRequest();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetProjectsRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetProjectsRequest();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -1562,11 +1562,11 @@ export class GetProjectListRequest extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): GetProjectListRequest {
-        return GetProjectListRequest.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): GetProjectsRequest {
+        return GetProjectsRequest.deserialize(bytes);
     }
 }
-export class GetProjectListResponse extends pb_1.Message {
+export class GetProjectsResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         projects?: Project[];
@@ -1587,8 +1587,8 @@ export class GetProjectListResponse extends pb_1.Message {
     }
     static fromObject(data: {
         projects?: ReturnType<typeof Project.prototype.toObject>[];
-    }): GetProjectListResponse {
-        const message = new GetProjectListResponse({});
+    }): GetProjectsResponse {
+        const message = new GetProjectsResponse({});
         if (data.projects != null) {
             message.projects = data.projects.map(item => Project.fromObject(item));
         }
@@ -1612,8 +1612,8 @@ export class GetProjectListResponse extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetProjectListResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetProjectListResponse();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetProjectsResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetProjectsResponse();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -1629,8 +1629,8 @@ export class GetProjectListResponse extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): GetProjectListResponse {
-        return GetProjectListResponse.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): GetProjectsResponse {
+        return GetProjectsResponse.deserialize(bytes);
     }
 }
 export class Project extends pb_1.Message {
@@ -1880,14 +1880,14 @@ export abstract class UnimplementedSortedChatService {
             responseSerialize: (message: CreateProjectResponse) => Buffer.from(message.serialize()),
             responseDeserialize: (bytes: Buffer) => CreateProjectResponse.deserialize(new Uint8Array(bytes))
         },
-        GetProjectList: {
-            path: "/sortedchat.SortedChat/GetProjectList",
+        GetProjects: {
+            path: "/sortedchat.SortedChat/GetProjects",
             requestStream: false,
             responseStream: false,
-            requestSerialize: (message: GetProjectListRequest) => Buffer.from(message.serialize()),
-            requestDeserialize: (bytes: Buffer) => GetProjectListRequest.deserialize(new Uint8Array(bytes)),
-            responseSerialize: (message: GetProjectListResponse) => Buffer.from(message.serialize()),
-            responseDeserialize: (bytes: Buffer) => GetProjectListResponse.deserialize(new Uint8Array(bytes))
+            requestSerialize: (message: GetProjectsRequest) => Buffer.from(message.serialize()),
+            requestDeserialize: (bytes: Buffer) => GetProjectsRequest.deserialize(new Uint8Array(bytes)),
+            responseSerialize: (message: GetProjectsResponse) => Buffer.from(message.serialize()),
+            responseDeserialize: (bytes: Buffer) => GetProjectsResponse.deserialize(new Uint8Array(bytes))
         }
     };
     [method: string]: grpc_1.UntypedHandleCall;
@@ -1898,7 +1898,7 @@ export abstract class UnimplementedSortedChatService {
     abstract ListModel(call: grpc_1.ServerUnaryCall<ListModelsRequest, ListModelsResponse>, callback: grpc_1.sendUnaryData<ListModelsResponse>): void;
     abstract SearchChat(call: grpc_1.ServerUnaryCall<ChatSearchRequest, ChatSearchResponse>, callback: grpc_1.sendUnaryData<ChatSearchResponse>): void;
     abstract CreateProject(call: grpc_1.ServerUnaryCall<CreateProjectRequest, CreateProjectResponse>, callback: grpc_1.sendUnaryData<CreateProjectResponse>): void;
-    abstract GetProjectList(call: grpc_1.ServerUnaryCall<GetProjectListRequest, GetProjectListResponse>, callback: grpc_1.sendUnaryData<GetProjectListResponse>): void;
+    abstract GetProjects(call: grpc_1.ServerUnaryCall<GetProjectsRequest, GetProjectsResponse>, callback: grpc_1.sendUnaryData<GetProjectsResponse>): void;
 }
 export class SortedChatClient {
     private _address: string;
@@ -1938,8 +1938,8 @@ export class SortedChatClient {
     CreateProject(message: CreateProjectRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<CreateProjectRequest, CreateProjectResponse>(this._address + "/sortedchat.SortedChat/CreateProject", message, metadata || {}, SortedChatClient.CreateProject);
     }
-    private static GetProjectList = new grpc_web_1.MethodDescriptor<GetProjectListRequest, GetProjectListResponse>("/sortedchat.SortedChat/GetProjectList", grpc_web_1.MethodType.UNARY, GetProjectListRequest, GetProjectListResponse, (message: GetProjectListRequest) => message.serialize(), GetProjectListResponse.deserialize);
-    GetProjectList(message: GetProjectListRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.thenableCall<GetProjectListRequest, GetProjectListResponse>(this._address + "/sortedchat.SortedChat/GetProjectList", message, metadata || {}, SortedChatClient.GetProjectList);
+    private static GetProjects = new grpc_web_1.MethodDescriptor<GetProjectsRequest, GetProjectsResponse>("/sortedchat.SortedChat/GetProjects", grpc_web_1.MethodType.UNARY, GetProjectsRequest, GetProjectsResponse, (message: GetProjectsRequest) => message.serialize(), GetProjectsResponse.deserialize);
+    GetProjects(message: GetProjectsRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<GetProjectsRequest, GetProjectsResponse>(this._address + "/sortedchat.SortedChat/GetProjects", message, metadata || {}, SortedChatClient.GetProjects);
     }
 }

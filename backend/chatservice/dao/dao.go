@@ -22,5 +22,5 @@ type DAO interface {
 
 	//Project Operations
 	CreateProject(name string, description string, additionalData string) (int64, error)
-	GetProjectList() ([]ProjectRow, error)
+	GetProjects() ([]ProjectRow, error)
 }

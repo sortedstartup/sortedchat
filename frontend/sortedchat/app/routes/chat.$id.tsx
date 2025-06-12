@@ -8,6 +8,7 @@ import {
   $currentChatId,
   $currentChatMessage,
   $currentChatMessages,
+  $projectList,
   $selectedModel,
   $streamingMessage,
   createNewChat,
@@ -33,6 +34,9 @@ export default function Chat() {
   const currentChatMessage = useStore($currentChatMessage);
   const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
+  const projectsList = useStore($projectList)
+  console.log(projectsList);
+  
 
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -55,11 +59,7 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [data, streamingMessage, currentChatMessage]);
-
-  useEffect(() => {
-    getProjectList()
-  },[])
-
+  
   const handleSend = () => {
     if (inputValue.trim()) {
       doChat(inputValue);

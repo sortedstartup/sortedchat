@@ -13,7 +13,7 @@ service SortedChat {
     rpc ListModel(ListModelsRequest) returns (ListModelsResponse);
     rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
     rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
-    rpc GetProjectList(GetProjectListRequest) returns (GetProjectListResponse);
+    rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
 }
 
 message CreateChatRequest {
@@ -100,9 +100,9 @@ message CreateProjectResponse {
   int64 project_id = 2;
 }
 
-message GetProjectListRequest {}
+message GetProjectsRequest {}
 
-message GetProjectListResponse {
+message GetProjectsResponse {
   repeated Project projects = 1;
 }
 

@@ -279,8 +279,8 @@ func (s *Server) CreateProject(ctx context.Context, req *pb.CreateProjectRequest
 	}, nil
 }
 
-func (s *Server) GetProjectList(ctx context.Context, req *pb.GetProjectListRequest) (*pb.GetProjectListResponse, error) {
-	projects, err := s.dao.GetProjectList()
+func (s *Server) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
+	projects, err := s.dao.GetProjects()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch project list: %w", err)
 	}
@@ -297,7 +297,7 @@ func (s *Server) GetProjectList(ctx context.Context, req *pb.GetProjectListReque
 		})
 	}
 
-	return &pb.GetProjectListResponse{Projects: pbProjects}, nil
+	return &pb.GetProjectsResponse{Projects: pbProjects}, nil
 }
 
 func (s *Server) Init() {

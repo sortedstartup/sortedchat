@@ -12,7 +12,8 @@ import {
   ModelListInfo,
   SearchResult,
   SortedChatClient,
-  GetProjectListRequest
+  Project,
+  GetProjectsRequest
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
 
@@ -210,7 +211,7 @@ export const getSearchResults = async () => {
 // -- Project --
 
 export const $currentProject = atom<string>("Project A");
-export const $projectList = atom([]);
+export const $projectList = atom<Project[]>([]);
 
 export const createProject = async (description: string, additionalData: string) => {
   try {
@@ -230,12 +231,21 @@ export const createProject = async (description: string, additionalData: string)
 
 export const getProjectList = async () => {
   try {
-    const response = await chat.GetProjectList(
-      GetProjectListRequest.fromObject({}),
+    const response = await chat.GetProjects(
+      GetProjectsRequest.fromObject({}),
       {}
     );
+    $projectList.set(response.projects || []);
     console.log(response);
   } catch (err) {
     console.error(err);
   }
 };
+
+onMount($projectList, () => {
+  getProjectList();
+
+  return () => {
+    // Disabled mode
+  };
+});

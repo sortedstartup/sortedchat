@@ -145,3 +145,26 @@ func (s *SQLiteDAO) SearchChatMessages(query string) ([]proto.SearchResult, erro
 
 	return results, nil
 }
+
+// Project CRUD
+func (s *SQLiteDAO) CreateProject(name string, description string, additionalData string) (int64, error) {
+	result, err := s.db.Exec(`
+		INSERT INTO project (name, description, additional_data, created_at, updated_at)
+		VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	`, name, description, additionalData)
+	if err != nil {
+		return 0, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+// GetProjectList retrieves all projects
+func (s *SQLiteDAO) GetProjectList() ([]ProjectRow, error) {
+	var projects []ProjectRow
+	err := s.db.Select(&projects, `SELECT id, name, description, additional_data, created_at, updated_at FROM project`)
+	return projects, err
+}

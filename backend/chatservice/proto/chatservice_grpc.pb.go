@@ -19,12 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SortedChat_Chat_FullMethodName        = "/sortedchat.SortedChat/Chat"
-	SortedChat_GetHistory_FullMethodName  = "/sortedchat.SortedChat/GetHistory"
-	SortedChat_GetChatList_FullMethodName = "/sortedchat.SortedChat/GetChatList"
-	SortedChat_CreateChat_FullMethodName  = "/sortedchat.SortedChat/CreateChat"
-	SortedChat_ListModel_FullMethodName   = "/sortedchat.SortedChat/ListModel"
-	SortedChat_SearchChat_FullMethodName  = "/sortedchat.SortedChat/SearchChat"
+	SortedChat_Chat_FullMethodName           = "/sortedchat.SortedChat/Chat"
+	SortedChat_GetHistory_FullMethodName     = "/sortedchat.SortedChat/GetHistory"
+	SortedChat_GetChatList_FullMethodName    = "/sortedchat.SortedChat/GetChatList"
+	SortedChat_CreateChat_FullMethodName     = "/sortedchat.SortedChat/CreateChat"
+	SortedChat_ListModel_FullMethodName      = "/sortedchat.SortedChat/ListModel"
+	SortedChat_SearchChat_FullMethodName     = "/sortedchat.SortedChat/SearchChat"
+	SortedChat_CreateProject_FullMethodName  = "/sortedchat.SortedChat/CreateProject"
+	SortedChat_GetProjectList_FullMethodName = "/sortedchat.SortedChat/GetProjectList"
 )
 
 // SortedChatClient is the client API for SortedChat service.
@@ -37,6 +39,8 @@ type SortedChatClient interface {
 	CreateChat(ctx context.Context, in *CreateChatRequest, opts ...grpc.CallOption) (*CreateChatResponse, error)
 	ListModel(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error)
 	SearchChat(ctx context.Context, in *ChatSearchRequest, opts ...grpc.CallOption) (*ChatSearchResponse, error)
+	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
+	GetProjectList(ctx context.Context, in *GetProjectListRequest, opts ...grpc.CallOption) (*GetProjectListResponse, error)
 }
 
 type sortedChatClient struct {
@@ -116,6 +120,26 @@ func (c *sortedChatClient) SearchChat(ctx context.Context, in *ChatSearchRequest
 	return out, nil
 }
 
+func (c *sortedChatClient) CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateProjectResponse)
+	err := c.cc.Invoke(ctx, SortedChat_CreateProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sortedChatClient) GetProjectList(ctx context.Context, in *GetProjectListRequest, opts ...grpc.CallOption) (*GetProjectListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectListResponse)
+	err := c.cc.Invoke(ctx, SortedChat_GetProjectList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SortedChatServer is the server API for SortedChat service.
 // All implementations must embed UnimplementedSortedChatServer
 // for forward compatibility.
@@ -126,6 +150,8 @@ type SortedChatServer interface {
 	CreateChat(context.Context, *CreateChatRequest) (*CreateChatResponse, error)
 	ListModel(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
 	SearchChat(context.Context, *ChatSearchRequest) (*ChatSearchResponse, error)
+	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
+	GetProjectList(context.Context, *GetProjectListRequest) (*GetProjectListResponse, error)
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -153,6 +179,12 @@ func (UnimplementedSortedChatServer) ListModel(context.Context, *ListModelsReque
 }
 func (UnimplementedSortedChatServer) SearchChat(context.Context, *ChatSearchRequest) (*ChatSearchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchChat not implemented")
+}
+func (UnimplementedSortedChatServer) CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
+}
+func (UnimplementedSortedChatServer) GetProjectList(context.Context, *GetProjectListRequest) (*GetProjectListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectList not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}
 func (UnimplementedSortedChatServer) testEmbeddedByValue()                    {}
@@ -276,6 +308,42 @@ func _SortedChat_SearchChat_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SortedChat_CreateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).CreateProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_CreateProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).CreateProject(ctx, req.(*CreateProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SortedChat_GetProjectList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).GetProjectList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_GetProjectList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).GetProjectList(ctx, req.(*GetProjectListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SortedChat_ServiceDesc is the grpc.ServiceDesc for SortedChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -302,6 +370,14 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchChat",
 			Handler:    _SortedChat_SearchChat_Handler,
+		},
+		{
+			MethodName: "CreateProject",
+			Handler:    _SortedChat_CreateProject_Handler,
+		},
+		{
+			MethodName: "GetProjectList",
+			Handler:    _SortedChat_GetProjectList_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

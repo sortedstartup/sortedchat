@@ -19,4 +19,8 @@ type DAO interface {
 
 	// Search operations
 	SearchChatMessages(query string) ([]proto.SearchResult, error)
+
+	//Project Operations
+	CreateProject(name string, description string, additionalData string) (int64, error)
+	GetProjectList() ([]ProjectRow, error)
 }

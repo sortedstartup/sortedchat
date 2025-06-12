@@ -11,7 +11,9 @@ import {
   $selectedModel,
   $streamingMessage,
   createNewChat,
+  createProject,
   doChat,
+  getProjectList,
 } from "~/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -53,6 +55,10 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [data, streamingMessage, currentChatMessage]);
+
+  useEffect(() => {
+    getProjectList()
+  },[])
 
   const handleSend = () => {
     if (inputValue.trim()) {
@@ -171,6 +177,9 @@ export default function Chat() {
               </svg>
               Search
             </button>
+            <button onClick={() => createProject("My project desc", "{}")}>
+              Create Project
+            </button>
           </div>
           <ul className="mt-2">
             {chatList.map((chat) => (
@@ -204,7 +213,6 @@ export default function Chat() {
             ))}
           </ul>
         </div>
-
       </div>
 
       {/* Main chat area */}
@@ -217,7 +225,7 @@ export default function Chat() {
                 `Chat ${chatId}`}
             </h1>
           </div>
-          
+
           <SearchModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}

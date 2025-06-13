@@ -11,6 +11,7 @@
   "dependencies": {
     "@nanostores/query": "^0.3.4",
     "@nanostores/react": "github:nanostores/react",
+    "@phosphor-icons/react": "^2.1.10",
     "@react-router/node": "^7.5.3",
     "@react-router/serve": "^7.5.3",
     "google-protobuf": "^3.21.4",

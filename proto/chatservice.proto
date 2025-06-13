@@ -12,6 +12,8 @@ service SortedChat {
     rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
     rpc ListModel(ListModelsRequest) returns (ListModelsResponse);
     rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
+    rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+    rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
 }
 
 message CreateChatRequest {
@@ -85,4 +87,30 @@ message SearchResult {
 message ChatSearchResponse {
   string query = 1;
   repeated SearchResult results = 2;
+}
+
+message CreateProjectRequest {
+  string name = 1;
+  string description = 2;
+  string additional_data = 3; 
+}
+
+message CreateProjectResponse {
+  string message = 1;
+  int64 project_id = 2;
+}
+
+message GetProjectsRequest {}
+
+message GetProjectsResponse {
+  repeated Project projects = 1;
+}
+
+message Project {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  string additional_data = 4;
+  string created_at = 5;
+  string updated_at = 6;
 }

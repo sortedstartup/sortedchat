@@ -259,6 +259,47 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 	}, nil
 }
 
+func (s *Server) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
+	name := req.Name
+	if name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+
+	description := req.Description
+	additionalData := req.AdditionalData
+
+	projectID, err := s.dao.CreateProject(name, description, additionalData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create project: %w", err)
+	}
+
+	return &pb.CreateProjectResponse{
+		Message:   "Project created successfully",
+		ProjectId: projectID,
+	}, nil
+}
+
+func (s *Server) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
+	projects, err := s.dao.GetProjects()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch project list: %w", err)
+	}
+
+	var pbProjects []*pb.Project
+	for _, p := range projects {
+		pbProjects = append(pbProjects, &pb.Project{
+			Id:             p.ID,
+			Name:           p.Name,
+			Description:    p.Description,
+			AdditionalData: p.AdditionalData,
+			CreatedAt:      p.CreatedAt,
+			UpdatedAt:      p.UpdatedAt,
+		})
+	}
+
+	return &pb.GetProjectsResponse{Projects: pbProjects}, nil
+}
+
 func (s *Server) Init() {
 	// Initialize DAO
 	sqliteDAO, err := db.NewSQLiteDAO("chatservice.db")

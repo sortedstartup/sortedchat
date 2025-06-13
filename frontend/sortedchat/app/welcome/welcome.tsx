@@ -2,14 +2,25 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
-import { $chatList, $currentChatId, createNewChat, doChat } from "~/store/chat";
+import {
+  $chatList,
+  $currentChatId,
+  createNewChat,
+  createProject,
+  doChat,
+} from "~/store/chat";
 import { useStore } from "@nanostores/react";
+import SearchModal from "~/components/modal";
+import ProjectModal from "~/components/ProjectModal";
 
 export function Welcome() {
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+
   const chatList = useStore($chatList);
 
   const handleChatSelect = (chatId: string) => {
@@ -37,15 +48,15 @@ export function Welcome() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    
+
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const chatId = await createNewChat();
-    
+
       if (chatId) {
-        $currentChatId.set(chatId);    
+        $currentChatId.set(chatId);
         doChat(inputValue);
         navigate(`/chat/${chatId}`);
       } else {
@@ -60,7 +71,7 @@ export function Welcome() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e as unknown as React.FormEvent);
     }
@@ -68,6 +79,14 @@ export function Welcome() {
 
   const handleExampleClick = (exampleText: string) => {
     setInputValue(exampleText);
+  };
+
+  const handleProjectSubmit = async (description: string) => {
+    try {
+      await createProject(description, "{}");
+    } catch (err) {
+      console.error("Failed to create project:", err);
+    }
   };
 
   return (
@@ -89,34 +108,81 @@ export function Welcome() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <div className="p-3">
-            <button 
+          <div className="p-3 space-y-2">
+            <button
               onClick={handleNewChat}
               disabled={isLoading}
               className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
               New Chat
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              Search
+            </button>
+            <button
+              onClick={() => setIsProjectModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Create Project
             </button>
           </div>
           <ul className="mt-2">
             {chatList.map((chat) => (
-                <li 
-                  key={chat.chatId} 
-                  onClick={() => handleChatSelect(chat.chatId)}
-                  className="px-3 py-2 mx-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
-                    <span className="text-sm truncate">{chat.name}</span>
-                  </div>
-                </li>
-              ))
-             }
+              <li
+                key={chat.chatId}
+                onClick={() => handleChatSelect(chat.chatId)}
+                className="px-3 py-2 mx-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <div className="flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                    />
+                  </svg>
+                  <span className="text-sm truncate">{chat.name}</span>
+                </div>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
@@ -130,7 +196,7 @@ export function Welcome() {
               How can I help you today?
             </p>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="w-full">
             <div className="flex items-end">
               <div className="flex-1 relative">
@@ -150,41 +216,60 @@ export function Welcome() {
                 disabled={!inputValue.trim() || isLoading}
                 className={`ml-2 p-3 rounded-full ${
                   inputValue.trim() && !isLoading
-                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                    : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 }`}
               >
                 {isLoading ? (
                   <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 )}
               </button>
             </div>
             {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
           </form>
-          
+
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Examples</h3>
               <ul className="space-y-2 text-sm">
-                <li 
+                <li
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
-                  onClick={() => handleExampleClick("Explain quantum computing in simple terms")}
+                  onClick={() =>
+                    handleExampleClick(
+                      "Explain quantum computing in simple terms"
+                    )
+                  }
                 >
                   "Explain quantum computing in simple terms"
                 </li>
-                <li 
+                <li
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
-                  onClick={() => handleExampleClick("How do I make a HTTP request in JavaScript?")}
+                  onClick={() =>
+                    handleExampleClick(
+                      "How do I make a HTTP request in JavaScript?"
+                    )
+                  }
                 >
                   "How do I make a HTTP request in JavaScript?"
                 </li>
-                <li 
+                <li
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
-                  onClick={() => handleExampleClick("Write a poem about programming")}
+                  onClick={() =>
+                    handleExampleClick("Write a poem about programming")
+                  }
                 >
                   "Write a poem about programming"
                 </li>
@@ -193,12 +278,28 @@ export function Welcome() {
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Capabilities</h3>
               <ul className="space-y-2 text-sm">
-                <li className="p-2">Remembers what was said earlier in the conversation</li>
-                <li className="p-2">Allows you to provide follow-up corrections</li>
-                <li className="p-2">Can assist with creative tasks and problem-solving</li>
+                <li className="p-2">
+                  Remembers what was said earlier in the conversation
+                </li>
+                <li className="p-2">
+                  Allows you to provide follow-up corrections
+                </li>
+                <li className="p-2">
+                  Can assist with creative tasks and problem-solving
+                </li>
               </ul>
             </div>
           </div>
+
+          <SearchModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+          />
+          <ProjectModal
+            isOpen={isProjectModalOpen}
+            onClose={() => setIsProjectModalOpen(false)}
+            onSubmit={handleProjectSubmit}
+          />
         </div>
       </div>
     </div>

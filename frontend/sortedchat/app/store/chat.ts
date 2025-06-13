@@ -5,12 +5,15 @@ import {
   ChatResponse,
   ChatSearchRequest,
   CreateChatRequest,
+  CreateProjectRequest,
   GetChatListRequest,
   GetHistoryRequest,
   ListModelsRequest,
   ModelListInfo,
   SearchResult,
   SortedChatClient,
+  Project,
+  GetProjectsRequest
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
 
@@ -111,7 +114,7 @@ export const doChat = (msg: string) => {
     ChatRequest.fromObject({
       text: msg,
       chatId: $currentChatId.get(),
-      model: $selectedModel.get()
+      model: $selectedModel.get(),
     }),
     {}
   );
@@ -158,7 +161,6 @@ const getChatList = () => {
 
 // load chat history of first use
 onMount($chatList, () => {
-
   getChatList();
 
   return () => {
@@ -180,27 +182,70 @@ export const fetchAvailableModels = async () => {
 
 onMount($availableModels, () => {
   fetchAvailableModels();
-})
+});
 
 // -- search --
 export const $searchResults = atom<SearchResult[]>([]);
 export const $searchText = atom<string>("elon");
 
 $searchText.listen((newValue, oldValue) => {
-  if(newValue !== oldValue && newValue !== "") {
-    getSearchResults()
+  if (newValue !== oldValue && newValue !== "") {
+    getSearchResults();
   }
-})
+});
 
-export const getSearchResults = async() => {
+export const getSearchResults = async () => {
   try {
-    const response = await chat.SearchChat(ChatSearchRequest.fromObject({
-      query: $searchText.get()
-    }),{})
-    $searchResults.set(response.results)
+    const response = await chat.SearchChat(
+      ChatSearchRequest.fromObject({
+        query: $searchText.get(),
+      }),
+      {}
+    );
+    $searchResults.set(response.results);
+  } catch (err) {
+    console.error("failed", err);
   }
-  catch(err) {
-    console.error('failed',err)
-  }
-}
+};
 // -- search --
+// -- Project --
+
+export const $currentProject = atom<string>("");
+export const $projectList = atom<Project[]>([]);
+
+export const createProject = async (description: string, additionalData: string) => {
+  try {
+    const response = await chat.CreateProject(
+      CreateProjectRequest.fromObject({
+        name: $currentProject.get(),
+        description: description,
+        additional_data: additionalData,
+      }),
+      {}
+    );
+    console.log(response.project_id);
+  } catch (error) {
+    console.error("failed", error);
+  }
+};
+
+export const getProjectList = async () => {
+  try {
+    const response = await chat.GetProjects(
+      GetProjectsRequest.fromObject({}),
+      {}
+    );
+    $projectList.set(response.projects || []);
+    console.log(response);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+onMount($projectList, () => {
+  getProjectList();
+
+  return () => {
+    // Disabled mode
+  };
+});

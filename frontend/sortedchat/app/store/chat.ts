@@ -210,7 +210,7 @@ export const getSearchResults = async () => {
 // -- search --
 // -- Project --
 
-export const $currentProject = atom<string>("Project A");
+export const $currentProject = atom<string>("");
 export const $projectList = atom<Project[]>([]);
 
 export const createProject = async (description: string, additionalData: string) => {

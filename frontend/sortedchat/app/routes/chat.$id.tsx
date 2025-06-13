@@ -2,24 +2,26 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import logoDark from "../welcome/logo-dark.svg";
 import logoLight from "../welcome/logo-light.svg";
+import { FolderIcon, ChatIcon } from "@phosphor-icons/react";
 import {
   $availableModels,
   $chatList,
   $currentChatId,
   $currentChatMessage,
   $currentChatMessages,
+  $currentProject,
   $projectList,
   $selectedModel,
   $streamingMessage,
   createNewChat,
   createProject,
   doChat,
-  getProjectList,
 } from "~/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useStore } from "@nanostores/react";
 import SearchModal from "~/components/modal";
+import ProjectModal from "~/components/ProjectModal";
 
 export default function Chat() {
   const { id } = useParams();
@@ -34,14 +36,15 @@ export default function Chat() {
   const currentChatMessage = useStore($currentChatMessage);
   const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
-  const projectsList = useStore($projectList)
+  const projectsList = useStore($projectList);
+  const projectName = useStore($currentProject);
   console.log(projectsList);
-  
 
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   // const [selectedModel, setSelectedModel] = useState("gpt-4.1");
 
@@ -59,7 +62,7 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [data, streamingMessage, currentChatMessage]);
-  
+
   const handleSend = () => {
     if (inputValue.trim()) {
       doChat(inputValue);
@@ -113,6 +116,14 @@ export default function Chat() {
       </div>
     );
   }
+
+  const handleProjectSubmit = async (description: string) => {
+    try {
+      await createProject(description, "{}");
+    } catch (err) {
+      console.error("Failed to create project:", err);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900">
@@ -177,11 +188,25 @@ export default function Chat() {
               </svg>
               Search
             </button>
-            <button onClick={() => createProject("My project desc", "{}")}>
+            <button
+              onClick={() => setIsProjectModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
               Create Project
             </button>
           </div>
           <ul className="mt-2">
+            {projectsList.map((project) => (
+              <li
+                key={project.id}
+                className="px-3 py-2 mx-2 rounded-md cursor-default dark:hover:bg-gray-800 hover:bg-gray-100"
+              >
+                <div className="flex items-center justify-start gap-3 ">
+                  <FolderIcon />
+                  <span className="text-sm truncate">{project.name}</span>
+                </div>
+              </li>
+            ))}
             {chatList.map((chat) => (
               <li
                 key={chat.chatId}
@@ -192,21 +217,8 @@ export default function Chat() {
                     : "hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
               >
-                <div className="flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                    />
-                  </svg>
+                <div className="flex items-center gap-3">
+                  <ChatIcon />
                   <span className="text-sm truncate">{chat.name}</span>
                 </div>
               </li>
@@ -221,14 +233,21 @@ export default function Chat() {
         <div className="flex justify-between item-center text-center border-b border-gray-200 dark:border-gray-700 p-4">
           <div className="p-4">
             <h1 className="text-lg font-semibold">
-              {chatList.find((chat) => chat.chatId === chatId)?.name ||
-                `Chat ${chatId}`}
+              {projectName
+                ? projectName
+                : chatList.find((chat) => chat.chatId === chatId)?.name ||
+                  `Chat ${chatId}`}
             </h1>
           </div>
 
           <SearchModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
+          />
+          <ProjectModal
+            isOpen={isProjectModalOpen}
+            onClose={() => setIsProjectModalOpen(false)}
+            onSubmit={handleProjectSubmit}
           />
         </div>
 

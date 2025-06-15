@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"fmt"
 	proto "sortedstartup/chatservice/proto"
 
 	"github.com/jmoiron/sqlx"
@@ -167,4 +168,21 @@ func (s *SQLiteDAO) GetProjects() ([]ProjectRow, error) {
 	var projects []ProjectRow
 	err := s.db.Select(&projects, `SELECT id, name, description, additional_data, created_at, updated_at FROM project`)
 	return projects, err
+}
+
+func (s *SQLiteDAO) FileSave(project_id int64, docs_id string, file_name string) error {
+	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name) VALUES (?, ?, ?)", project_id, docs_id, file_name)
+	return err
+}
+
+func (s *SQLiteDAO) FilesList(project_id int64) ([]DocumentListRow, error) {
+	var files []DocumentListRow
+	err := s.db.Select(&files, `
+		SELECT id, project_id, docs_id, file_name, created_at, updated_at
+		FROM project_docs
+		WHERE project_id = ?
+	`, project_id)
+	fmt.Println(files)
+	fmt.Println(err)
+	return files, err
 }

@@ -1,3 +1,4 @@
+import { useStore } from "@nanostores/react";
 import {
   ChatInfo,
   ChatMessage,
@@ -13,7 +14,7 @@ import {
   SearchResult,
   SortedChatClient,
   Project,
-  GetProjectsRequest
+  GetProjectsRequest,
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
 
@@ -212,8 +213,12 @@ export const getSearchResults = async () => {
 
 export const $currentProject = atom<string>("");
 export const $projectList = atom<Project[]>([]);
+export const $currentProjectId = atom<Number>(-1);
 
-export const createProject = async (description: string, additionalData: string) => {
+export const createProject = async (
+  description: string,
+  additionalData: string
+) => {
   try {
     const response = await chat.CreateProject(
       CreateProjectRequest.fromObject({
@@ -223,7 +228,7 @@ export const createProject = async (description: string, additionalData: string)
       }),
       {}
     );
-    console.log(response.project_id);
+    $currentProjectId.set(response.project_id);
   } catch (error) {
     console.error("failed", error);
   }
@@ -248,4 +253,40 @@ onMount($projectList, () => {
   return () => {
     // Disabled mode
   };
+});
+
+export const $documents = atom<DocumentListRow[]>([]);
+
+export type DocumentListRow = {
+ ID: number;
+  ProjectID: number;
+  DocsID: string;
+  FileName: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+};
+
+export async function fetchDocuments(projectId: number) {
+  try {
+    const res = await fetch(
+      `http://localhost:8080/documents?project_id=${projectId}`
+    );
+    console.log(res);
+
+    if (!res.ok) throw new Error("Failed to fetch");
+
+    const data = await res.json(); // Should be an array of DocumentListRow
+    console.log(data);
+
+    $documents.set(data);
+  } catch (err) {
+    console.error("Failed to fetch documents:", err);
+    $documents.set([]);
+  }
+}
+
+$currentProjectId.listen((projectId) => {
+  if (typeof projectId === "number" && projectId >= 0) {
+    fetchDocuments(projectId);
+  }
 });

@@ -13,3 +13,12 @@ type ProjectRow struct {
 	CreatedAt      string `db:"created_at"`
 	UpdatedAt      string `db:"updated_at"`
 }
+
+type DocumentListRow struct {
+	ID        int64  `db:"id"`
+	ProjectID int64  `db:"project_id"`
+	DocsID    string `db:"docs_id"`
+	FileName  string `db:"file_name"`
+	CreatedAt string `db:"created_at"`
+	UpdatedAt string `db:"updated_at"`
+}

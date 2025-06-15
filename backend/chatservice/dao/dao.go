@@ -23,4 +23,6 @@ type DAO interface {
 	//Project Operations
 	CreateProject(name string, description string, additionalData string) (int64, error)
 	GetProjects() ([]ProjectRow, error)
+	FileSave(project_id int64, docs_id string, file_name string) error
+	FilesList(project_id int64) ([]DocumentListRow, error)
 }

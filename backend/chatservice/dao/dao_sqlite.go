@@ -1,8 +1,10 @@
 package dao
 
 import (
+	"fmt"
 	proto "sortedstartup/chatservice/proto"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -147,18 +149,20 @@ func (s *SQLiteDAO) SearchChatMessages(query string) ([]proto.SearchResult, erro
 }
 
 // Project CRUD
-func (s *SQLiteDAO) CreateProject(name string, description string, additionalData string) (int64, error) {
-	result, err := s.db.Exec(`
-		INSERT INTO project (name, description, additional_data, created_at, updated_at)
-		VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-	`, name, description, additionalData)
+func (s *SQLiteDAO) CreateProject(name string, description string, additionalData string) (string, error) {
+	id := uuid.New().String()
+	_, err := s.db.Exec(`
+		INSERT INTO project (id, name, description, additional_data, created_at, updated_at)
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	`, id, name, description, additionalData)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	id, err := result.LastInsertId()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
+	fmt.Println("snaskar")
+	fmt.Println(id)
 	return id, nil
 }
 
@@ -167,4 +171,30 @@ func (s *SQLiteDAO) GetProjects() ([]ProjectRow, error) {
 	var projects []ProjectRow
 	err := s.db.Select(&projects, `SELECT id, name, description, additional_data, created_at, updated_at FROM project`)
 	return projects, err
+}
+
+func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string) error {
+	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name) VALUES (?, ?, ?)", project_id, docs_id, file_name)
+	return err
+}
+
+func (s *SQLiteDAO) FilesList(project_id string) ([]DocumentListRow, error) {
+	var files []DocumentListRow
+	err := s.db.Select(&files, `
+		SELECT id, project_id, docs_id, file_name, created_at, updated_at
+		FROM project_docs
+		WHERE project_id = ?
+	`, project_id)
+	fmt.Println(files)
+	fmt.Println(err)
+	return files, err
+}
+
+func (s *SQLiteDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
+	var doc DocumentListRow
+	err := s.db.Get(&doc, `SELECT * FROM project_docs WHERE docs_id = ?`, docsId)
+	if err != nil {
+		return nil, err
+	}
+	return &doc, nil
 }

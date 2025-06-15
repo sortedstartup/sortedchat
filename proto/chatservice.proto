@@ -14,6 +14,7 @@ service SortedChat {
     rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
     rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
     rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
+    rpc ListDocuments(ListDocumentsRequest) returns(ListDocumentsResponse);
 }
 
 message CreateChatRequest {
@@ -97,7 +98,7 @@ message CreateProjectRequest {
 
 message CreateProjectResponse {
   string message = 1;
-  int64 project_id = 2;
+  string project_id = 2;
 }
 
 message GetProjectsRequest {}
@@ -107,10 +108,27 @@ message GetProjectsResponse {
 }
 
 message Project {
-  int64 id = 1;
+  string id = 1;
   string name = 2;
   string description = 3;
   string additional_data = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message ListDocumentsRequest {
+  string project_id = 1;
+}
+
+message ListDocumentsResponse {
+  repeated Document documents = 1;
+}
+
+message Document {
+  int64 id = 1;
+  string project_id = 2;
+  string docs_id = 3;
+  string file_name = 4;
   string created_at = 5;
   string updated_at = 6;
 }

@@ -18,6 +18,8 @@ import (
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Server struct {
@@ -298,6 +300,30 @@ func (s *Server) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*
 	}
 
 	return &pb.GetProjectsResponse{Projects: pbProjects}, nil
+}
+
+func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
+	docs, err := s.dao.FilesList(req.GetProjectId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch documents: %v", err)
+	}
+
+	var result []*pb.Document
+	for _, doc := range docs {
+		result = append(result, &pb.Document{
+			Id:        doc.ID,
+			ProjectId: doc.ProjectID,
+			DocsId:    doc.DocsID,
+			FileName:  doc.FileName,
+			CreatedAt: doc.CreatedAt,
+			UpdatedAt: doc.UpdatedAt,
+		})
+	}
+
+	return &pb.ListDocumentsResponse{
+		Documents: result,
+	}, nil
+
 }
 
 func (s *Server) Init() {

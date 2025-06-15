@@ -1440,7 +1440,7 @@ export class CreateProjectResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         message?: string;
-        project_id?: number;
+        project_id?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -1460,14 +1460,14 @@ export class CreateProjectResponse extends pb_1.Message {
         pb_1.Message.setField(this, 1, value);
     }
     get project_id() {
-        return pb_1.Message.getFieldWithDefault(this, 2, 0) as number;
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
     }
-    set project_id(value: number) {
+    set project_id(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
     static fromObject(data: {
         message?: string;
-        project_id?: number;
+        project_id?: string;
     }): CreateProjectResponse {
         const message = new CreateProjectResponse({});
         if (data.message != null) {
@@ -1481,7 +1481,7 @@ export class CreateProjectResponse extends pb_1.Message {
     toObject() {
         const data: {
             message?: string;
-            project_id?: number;
+            project_id?: string;
         } = {};
         if (this.message != null) {
             data.message = this.message;
@@ -1497,8 +1497,8 @@ export class CreateProjectResponse extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.message.length)
             writer.writeString(1, this.message);
-        if (this.project_id != 0)
-            writer.writeInt64(2, this.project_id);
+        if (this.project_id.length)
+            writer.writeString(2, this.project_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1512,7 +1512,7 @@ export class CreateProjectResponse extends pb_1.Message {
                     message.message = reader.readString();
                     break;
                 case 2:
-                    message.project_id = reader.readInt64();
+                    message.project_id = reader.readString();
                     break;
                 default: reader.skipField();
             }
@@ -1636,7 +1636,7 @@ export class GetProjectsResponse extends pb_1.Message {
 export class Project extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        id?: number;
+        id?: string;
         name?: string;
         description?: string;
         additional_data?: string;
@@ -1667,9 +1667,9 @@ export class Project extends pb_1.Message {
         }
     }
     get id() {
-        return pb_1.Message.getFieldWithDefault(this, 1, 0) as number;
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
     }
-    set id(value: number) {
+    set id(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
     get name() {
@@ -1703,7 +1703,7 @@ export class Project extends pb_1.Message {
         pb_1.Message.setField(this, 6, value);
     }
     static fromObject(data: {
-        id?: number;
+        id?: string;
         name?: string;
         description?: string;
         additional_data?: string;
@@ -1733,7 +1733,7 @@ export class Project extends pb_1.Message {
     }
     toObject() {
         const data: {
-            id?: number;
+            id?: string;
             name?: string;
             description?: string;
             additional_data?: string;
@@ -1764,8 +1764,8 @@ export class Project extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.id != 0)
-            writer.writeInt64(1, this.id);
+        if (this.id.length)
+            writer.writeString(1, this.id);
         if (this.name.length)
             writer.writeString(2, this.name);
         if (this.description.length)
@@ -1786,7 +1786,7 @@ export class Project extends pb_1.Message {
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
-                    message.id = reader.readInt64();
+                    message.id = reader.readString();
                     break;
                 case 2:
                     message.name = reader.readString();
@@ -1813,6 +1813,322 @@ export class Project extends pb_1.Message {
     }
     static deserializeBinary(bytes: Uint8Array): Project {
         return Project.deserialize(bytes);
+    }
+}
+export class ListDocumentsRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        project_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("project_id" in data && data.project_id != undefined) {
+                this.project_id = data.project_id;
+            }
+        }
+    }
+    get project_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set project_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        project_id?: string;
+    }): ListDocumentsRequest {
+        const message = new ListDocumentsRequest({});
+        if (data.project_id != null) {
+            message.project_id = data.project_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            project_id?: string;
+        } = {};
+        if (this.project_id != null) {
+            data.project_id = this.project_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.project_id.length)
+            writer.writeString(1, this.project_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListDocumentsRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListDocumentsRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.project_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListDocumentsRequest {
+        return ListDocumentsRequest.deserialize(bytes);
+    }
+}
+export class ListDocumentsResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        documents?: Document[];
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("documents" in data && data.documents != undefined) {
+                this.documents = data.documents;
+            }
+        }
+    }
+    get documents() {
+        return pb_1.Message.getRepeatedWrapperField(this, Document, 1) as Document[];
+    }
+    set documents(value: Document[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 1, value);
+    }
+    static fromObject(data: {
+        documents?: ReturnType<typeof Document.prototype.toObject>[];
+    }): ListDocumentsResponse {
+        const message = new ListDocumentsResponse({});
+        if (data.documents != null) {
+            message.documents = data.documents.map(item => Document.fromObject(item));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            documents?: ReturnType<typeof Document.prototype.toObject>[];
+        } = {};
+        if (this.documents != null) {
+            data.documents = this.documents.map((item: Document) => item.toObject());
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.documents.length)
+            writer.writeRepeatedMessage(1, this.documents, (item: Document) => item.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListDocumentsResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListDocumentsResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.documents, () => pb_1.Message.addToRepeatedWrapperField(message, 1, Document.deserialize(reader), Document));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListDocumentsResponse {
+        return ListDocumentsResponse.deserialize(bytes);
+    }
+}
+export class Document extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        id?: number;
+        project_id?: string;
+        docs_id?: string;
+        file_name?: string;
+        created_at?: string;
+        updated_at?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("id" in data && data.id != undefined) {
+                this.id = data.id;
+            }
+            if ("project_id" in data && data.project_id != undefined) {
+                this.project_id = data.project_id;
+            }
+            if ("docs_id" in data && data.docs_id != undefined) {
+                this.docs_id = data.docs_id;
+            }
+            if ("file_name" in data && data.file_name != undefined) {
+                this.file_name = data.file_name;
+            }
+            if ("created_at" in data && data.created_at != undefined) {
+                this.created_at = data.created_at;
+            }
+            if ("updated_at" in data && data.updated_at != undefined) {
+                this.updated_at = data.updated_at;
+            }
+        }
+    }
+    get id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, 0) as number;
+    }
+    set id(value: number) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get project_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set project_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get docs_id() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set docs_id(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get file_name() {
+        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+    }
+    set file_name(value: string) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    get created_at() {
+        return pb_1.Message.getFieldWithDefault(this, 5, "") as string;
+    }
+    set created_at(value: string) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    get updated_at() {
+        return pb_1.Message.getFieldWithDefault(this, 6, "") as string;
+    }
+    set updated_at(value: string) {
+        pb_1.Message.setField(this, 6, value);
+    }
+    static fromObject(data: {
+        id?: number;
+        project_id?: string;
+        docs_id?: string;
+        file_name?: string;
+        created_at?: string;
+        updated_at?: string;
+    }): Document {
+        const message = new Document({});
+        if (data.id != null) {
+            message.id = data.id;
+        }
+        if (data.project_id != null) {
+            message.project_id = data.project_id;
+        }
+        if (data.docs_id != null) {
+            message.docs_id = data.docs_id;
+        }
+        if (data.file_name != null) {
+            message.file_name = data.file_name;
+        }
+        if (data.created_at != null) {
+            message.created_at = data.created_at;
+        }
+        if (data.updated_at != null) {
+            message.updated_at = data.updated_at;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            id?: number;
+            project_id?: string;
+            docs_id?: string;
+            file_name?: string;
+            created_at?: string;
+            updated_at?: string;
+        } = {};
+        if (this.id != null) {
+            data.id = this.id;
+        }
+        if (this.project_id != null) {
+            data.project_id = this.project_id;
+        }
+        if (this.docs_id != null) {
+            data.docs_id = this.docs_id;
+        }
+        if (this.file_name != null) {
+            data.file_name = this.file_name;
+        }
+        if (this.created_at != null) {
+            data.created_at = this.created_at;
+        }
+        if (this.updated_at != null) {
+            data.updated_at = this.updated_at;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.id != 0)
+            writer.writeInt64(1, this.id);
+        if (this.project_id.length)
+            writer.writeString(2, this.project_id);
+        if (this.docs_id.length)
+            writer.writeString(3, this.docs_id);
+        if (this.file_name.length)
+            writer.writeString(4, this.file_name);
+        if (this.created_at.length)
+            writer.writeString(5, this.created_at);
+        if (this.updated_at.length)
+            writer.writeString(6, this.updated_at);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): Document {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new Document();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.id = reader.readInt64();
+                    break;
+                case 2:
+                    message.project_id = reader.readString();
+                    break;
+                case 3:
+                    message.docs_id = reader.readString();
+                    break;
+                case 4:
+                    message.file_name = reader.readString();
+                    break;
+                case 5:
+                    message.created_at = reader.readString();
+                    break;
+                case 6:
+                    message.updated_at = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): Document {
+        return Document.deserialize(bytes);
     }
 }
 export abstract class UnimplementedSortedChatService {
@@ -1888,6 +2204,15 @@ export abstract class UnimplementedSortedChatService {
             requestDeserialize: (bytes: Buffer) => GetProjectsRequest.deserialize(new Uint8Array(bytes)),
             responseSerialize: (message: GetProjectsResponse) => Buffer.from(message.serialize()),
             responseDeserialize: (bytes: Buffer) => GetProjectsResponse.deserialize(new Uint8Array(bytes))
+        },
+        ListDocuments: {
+            path: "/sortedchat.SortedChat/ListDocuments",
+            requestStream: false,
+            responseStream: false,
+            requestSerialize: (message: ListDocumentsRequest) => Buffer.from(message.serialize()),
+            requestDeserialize: (bytes: Buffer) => ListDocumentsRequest.deserialize(new Uint8Array(bytes)),
+            responseSerialize: (message: ListDocumentsResponse) => Buffer.from(message.serialize()),
+            responseDeserialize: (bytes: Buffer) => ListDocumentsResponse.deserialize(new Uint8Array(bytes))
         }
     };
     [method: string]: grpc_1.UntypedHandleCall;
@@ -1899,6 +2224,7 @@ export abstract class UnimplementedSortedChatService {
     abstract SearchChat(call: grpc_1.ServerUnaryCall<ChatSearchRequest, ChatSearchResponse>, callback: grpc_1.sendUnaryData<ChatSearchResponse>): void;
     abstract CreateProject(call: grpc_1.ServerUnaryCall<CreateProjectRequest, CreateProjectResponse>, callback: grpc_1.sendUnaryData<CreateProjectResponse>): void;
     abstract GetProjects(call: grpc_1.ServerUnaryCall<GetProjectsRequest, GetProjectsResponse>, callback: grpc_1.sendUnaryData<GetProjectsResponse>): void;
+    abstract ListDocuments(call: grpc_1.ServerUnaryCall<ListDocumentsRequest, ListDocumentsResponse>, callback: grpc_1.sendUnaryData<ListDocumentsResponse>): void;
 }
 export class SortedChatClient {
     private _address: string;
@@ -1941,5 +2267,9 @@ export class SortedChatClient {
     private static GetProjects = new grpc_web_1.MethodDescriptor<GetProjectsRequest, GetProjectsResponse>("/sortedchat.SortedChat/GetProjects", grpc_web_1.MethodType.UNARY, GetProjectsRequest, GetProjectsResponse, (message: GetProjectsRequest) => message.serialize(), GetProjectsResponse.deserialize);
     GetProjects(message: GetProjectsRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<GetProjectsRequest, GetProjectsResponse>(this._address + "/sortedchat.SortedChat/GetProjects", message, metadata || {}, SortedChatClient.GetProjects);
+    }
+    private static ListDocuments = new grpc_web_1.MethodDescriptor<ListDocumentsRequest, ListDocumentsResponse>("/sortedchat.SortedChat/ListDocuments", grpc_web_1.MethodType.UNARY, ListDocumentsRequest, ListDocumentsResponse, (message: ListDocumentsRequest) => message.serialize(), ListDocumentsResponse.deserialize);
+    ListDocuments(message: ListDocumentsRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<ListDocumentsRequest, ListDocumentsResponse>(this._address + "/sortedchat.SortedChat/ListDocuments", message, metadata || {}, SortedChatClient.ListDocuments);
     }
 }

@@ -1,4 +1,6 @@
+import { useStore } from "@nanostores/react";
 import React, { useState, useRef } from "react";
+import { $currentProjectId } from "~/store/chat";
 
 export type FileItem = {
   id: string;
@@ -22,6 +24,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const [fileList, setFileList] = useState<FileItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
+  const currentProjectId = useStore($currentProjectId);
 
   const updateStatus = (
     id: string,
@@ -36,6 +39,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const uploadFile = async (fileItem: FileItem): Promise<FileItem> => {
     const formData = new FormData();
     formData.append("file", fileItem.file, fileItem.path);
+    formData.append("project_id",currentProjectId.toString())
 
     const res = await fetch(uploadUrl, {
       method: "POST",

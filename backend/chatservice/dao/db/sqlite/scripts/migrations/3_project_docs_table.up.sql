@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS project_docs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER,
+    docs_id TEXT,
+    file_name TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

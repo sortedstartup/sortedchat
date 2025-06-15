@@ -136,7 +136,7 @@ export default function Chat() {
   //   await fetchDocuments(projectId);
   // };
 
-  const handleProjectClick = (projectId: number) => {
+  const handleProjectClick = (projectId: string) => {
      $currentProject.set(
       projectsList.find((p) => p.id === projectId)?.name || ""
     );

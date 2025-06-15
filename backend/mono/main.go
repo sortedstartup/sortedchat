@@ -2,13 +2,14 @@ package main
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log"
 	"net"
 	"net/http"
-	"strconv"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"sortedstartup/chatservice/api"
 	"sortedstartup/chatservice/dao"
@@ -89,15 +90,9 @@ func main() {
 			return
 		}
 
-		projectIDStr := r.FormValue("project_id")
-		if projectIDStr == "" {
+		projectID := r.FormValue("project_id")
+		if projectID == "" {
 			http.Error(w, "Missing project_id", http.StatusBadRequest)
-			return
-		}
-
-		projectID, err := strconv.ParseInt(projectIDStr, 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid project_id", http.StatusBadRequest)
 			return
 		}
 
@@ -123,32 +118,33 @@ func main() {
 		fmt.Fprintf(w, `{"message": "File uploaded successfully", "id": "%s"}`, objectID)
 	})
 
-	mux.HandleFunc("/documents", func(w http.ResponseWriter, r *http.Request) {
-		projectIDStr := r.URL.Query().Get("project_id")
-		fmt.Println(projectIDStr)
-		if projectIDStr == "" {
-			http.Error(w, "Missing project_id", http.StatusBadRequest)
+	mux.HandleFunc("/documents/", func(w http.ResponseWriter, r *http.Request) {
+
+		docsId := strings.TrimPrefix(r.URL.Path, "/documents/")
+		if docsId == "" {
+			http.Error(w, "Missing document ID", http.StatusBadRequest)
 			return
 		}
 
-		projectID, err := strconv.ParseInt(projectIDStr, 10, 64)
+		doc, err := db.GetFileMetadata(docsId)
 		if err != nil {
-			http.Error(w, "Invalid project_id", http.StatusBadRequest)
+			fmt.Printf("Database error: %v\n", err)
+			http.Error(w, "Document not found", http.StatusNotFound)
 			return
 		}
-		fmt.Println(projectID)
 
-		docs, err := db.FilesList(projectID)
-		if err != nil {
-			http.Error(w, "Failed to fetch documents", http.StatusInternalServerError)
+		filePath := filepath.Join("filestore", "objects", docsId)
+
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			fmt.Printf("File does not exist at path: %s\n", filePath)
+			http.Error(w, "File not found on disk", http.StatusNotFound)
 			return
 		}
-		fmt.Println("hii", docs)
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(docs)
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, doc.FileName))
+
+		http.ServeFile(w, r, filePath)
 	})
-	http.Handle("/documents/", http.StripPrefix("/documents/", http.FileServer(http.Dir("backend/mono/filestore/objects"))))
 
 	httpServer := &http.Server{
 		Addr:    httpPort,

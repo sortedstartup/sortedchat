@@ -135,7 +135,7 @@ export default function Chat() {
     }
   };
 
-  const handleProjectClick = (projectId: number) => {
+  const handleProjectClick = (projectId: string) => {
     $currentProject.set(
       projectsList.find((p) => p.id === projectId)?.name || ""
     );
@@ -283,7 +283,6 @@ export default function Chat() {
           >
             <UploadIcon /> Add Documents
           </button>
-          //here show list of documents with the name
           {documents.length > 0 && (
             <div className="my-4">
               <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -291,14 +290,14 @@ export default function Chat() {
               </h2>
               <ul className="space-y-2">
                 {documents.map((doc) => (
-                  <li key={doc.ID}>
+                  <li key={doc.id}>
                     <a
-                      href={`http://localhost:8080/documents/${doc.DocsID}`}
+                      href={`http://localhost:8080/documents/${doc.docs_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline dark:text-blue-400"
                     >
-                      📄 {doc.FileName}
+                      📄 {doc.file_name}
                     </a>
                   </li>
                 ))}

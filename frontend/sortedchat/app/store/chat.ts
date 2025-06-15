@@ -15,6 +15,8 @@ import {
   SortedChatClient,
   Project,
   GetProjectsRequest,
+  ListDocumentsRequest,
+  Document
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
 
@@ -213,7 +215,7 @@ export const getSearchResults = async () => {
 
 export const $currentProject = atom<string>("");
 export const $projectList = atom<Project[]>([]);
-export const $currentProjectId = atom<Number>(-1);
+export const $currentProjectId = atom<String>("");
 
 export const createProject = async (
   description: string,
@@ -255,38 +257,26 @@ onMount($projectList, () => {
   };
 });
 
-export const $documents = atom<DocumentListRow[]>([]);
+export const $documents = atom<Document[]>([]);
 
-export type DocumentListRow = {
- ID: number;
-  ProjectID: number;
-  DocsID: string;
-  FileName: string;
-  CreatedAt: string;
-  UpdatedAt: string;
-};
-
-export async function fetchDocuments(projectId: number) {
+export async function fetchDocuments(projectId: string) {
   try {
-    const res = await fetch(
-      `http://localhost:8080/documents?project_id=${projectId}`
+    const res = await chat.ListDocuments(
+      ListDocumentsRequest.fromObject({ project_id: projectId }),
+      {}
     );
-    console.log(res);
 
-    if (!res.ok) throw new Error("Failed to fetch");
+    console.log(res.documents);
+    
 
-    const data = await res.json(); // Should be an array of DocumentListRow
-    console.log(data);
-
-    $documents.set(data);
+    $documents.set(res.documents);
   } catch (err) {
     console.error("Failed to fetch documents:", err);
     $documents.set([]);
   }
 }
-
 $currentProjectId.listen((projectId) => {
-  if (typeof projectId === "number" && projectId >= 0) {
+  if (typeof projectId === "string" && projectId != "") {
     fetchDocuments(projectId);
   }
 });

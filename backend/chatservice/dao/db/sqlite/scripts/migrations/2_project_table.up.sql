@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS project (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
     additional_data TEXT,

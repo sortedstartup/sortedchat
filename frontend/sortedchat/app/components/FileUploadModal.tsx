@@ -1,5 +1,7 @@
 import React from "react";
 import FileUploader from "./upload";
+import { $currentProjectId, fetchDocuments } from "~/store/chat";
+import { useStore } from "@nanostores/react";
 
 type UploadModalProps = {
   isOpen: boolean;
@@ -8,6 +10,8 @@ type UploadModalProps = {
 
 const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
+
+  const currentProjectId = useStore($currentProjectId)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -24,8 +28,15 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose }) => {
 
         <FileUploader
           uploadUrl="http://localhost:8080/upload"
-          onFileUpload={(file) => console.log("Uploaded:", file)}
-          onCompleteUpload={(files) => console.log("All files uploaded:", files)}
+          onFileUpload={(file) => {
+            console.log("Uploaded:", file);
+            if (file.status === "success") {
+              fetchDocuments(currentProjectId.toString()); 
+            }
+          }}
+          onCompleteUpload={(files) =>
+            console.log("All files uploaded:", files)
+          }
         />
       </div>
     </div>

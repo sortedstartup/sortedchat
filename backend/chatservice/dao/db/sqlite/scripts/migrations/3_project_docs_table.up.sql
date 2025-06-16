@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS project_docs (
     project_id INTEGER,
     docs_id TEXT,
     file_name TEXT,
+    file_size REAL NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

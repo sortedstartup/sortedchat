@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"fmt"
 	proto "sortedstartup/chatservice/proto"
 
 	"github.com/google/uuid"
@@ -161,8 +160,6 @@ func (s *SQLiteDAO) CreateProject(name string, description string, additionalDat
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("snaskar")
-	fmt.Println(id)
 	return id, nil
 }
 
@@ -173,9 +170,20 @@ func (s *SQLiteDAO) GetProjects() ([]ProjectRow, error) {
 	return projects, err
 }
 
-func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string) error {
-	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name) VALUES (?, ?, ?)", project_id, docs_id, file_name)
+func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string, file_size int64) error {
+	size_kb := float64(file_size) / 1024.0
+	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name,file_size) VALUES (?, ?, ?, ?)", project_id, docs_id, file_name, size_kb)
 	return err
+}
+
+func (s *SQLiteDAO) TotalUsedSize(projectID string) (int64, error) {
+	var total int64
+	err := s.db.Get(&total, `
+		SELECT SUM(file_size)
+		FROM project_docs
+		WHERE project_id = ?
+	`, projectID)
+	return total, err
 }
 
 func (s *SQLiteDAO) FilesList(project_id string) ([]DocumentListRow, error) {
@@ -185,8 +193,6 @@ func (s *SQLiteDAO) FilesList(project_id string) ([]DocumentListRow, error) {
 		FROM project_docs
 		WHERE project_id = ?
 	`, project_id)
-	fmt.Println(files)
-	fmt.Println(err)
 	return files, err
 }
 

@@ -17,7 +17,7 @@ import {
   createNewChat,
   createProject,
   doChat,
-  fetchDocuments,
+  getProjectList,
 } from "~/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -50,11 +50,9 @@ export default function Chat() {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-  // const [selectedModel, setSelectedModel] = useState("gpt-4.1");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll function
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -123,19 +121,12 @@ export default function Chat() {
 
   const handleProjectSubmit = async (description: string) => {
     try {
-      await createProject(description, "{}");
+      const res = await createProject(description, "{}");
+      await getProjectList()
     } catch (err) {
       console.error("Failed to create project:", err);
     }
   };
-
-  // const handleProjectClick = async (projectId: number) => {
-    // $currentProject.set(
-    //   projectsList.find((p) => p.id === projectId)?.name || ""
-    // );
-  //   await fetchDocuments(projectId);
-  // };
-
   const handleProjectClick = (projectId: string) => {
      $currentProject.set(
       projectsList.find((p) => p.id === projectId)?.name || ""

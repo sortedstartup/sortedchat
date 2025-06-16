@@ -16,7 +16,7 @@ import {
   Project,
   GetProjectsRequest,
   ListDocumentsRequest,
-  Document
+  Document,
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
 
@@ -257,6 +257,10 @@ onMount($projectList, () => {
   };
 });
 
+$currentProjectId.listen(() => {
+  getProjectList();
+});
+
 export const $documents = atom<Document[]>([]);
 
 export async function fetchDocuments(projectId: string) {
@@ -267,7 +271,6 @@ export async function fetchDocuments(projectId: string) {
     );
 
     console.log(res.documents);
-    
 
     $documents.set(res.documents);
   } catch (err) {
@@ -277,6 +280,12 @@ export async function fetchDocuments(projectId: string) {
 }
 $currentProjectId.listen((projectId) => {
   if (typeof projectId === "string" && projectId != "") {
+    fetchDocuments(projectId);
+  }
+});
+
+$documents.listen((projectId) => {
+  if (typeof projectId === "string" && projectId !== "") {
     fetchDocuments(projectId);
   }
 });

@@ -105,10 +105,29 @@ func main() {
 		}
 		defer file.Close()
 
+		fileSize := header.Size
+
+		if fileSize > 50*1024*1024 {
+			http.Error(w, "max limit ecxeed", http.StatusRequestEntityTooLarge)
+			return
+		}
+
+		totalUsed, err := db.TotalUsedSize(projectID)
+		fmt.Println(totalUsed)
+		if err != nil {
+			fmt.Println("totalUsed")
+			http.Error(w, "Failed "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if totalUsed+fileSize > 500*1024*1024 {
+			http.Error(w, "Project storage exceed", http.StatusRequestEntityTooLarge)
+			return
+		}
+
 		objectID := uuid.New().String()
 
 		err = store.StoreObject(r.Context(), objectID, file)
-		err = db.FileSave(projectID, objectID, filename)
+		err = db.FileSave(projectID, objectID, filename, fileSize)
 		if err != nil {
 			http.Error(w, "Failed to save file: "+err.Error(), http.StatusInternalServerError)
 			return

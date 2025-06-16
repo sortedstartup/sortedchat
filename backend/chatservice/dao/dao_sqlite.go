@@ -171,7 +171,7 @@ func (s *SQLiteDAO) GetProjects() ([]ProjectRow, error) {
 }
 
 func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string, file_size int64) error {
-	size_kb := float64(file_size) / 1024.0
+	size_kb := file_size / 1024
 	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name,file_size) VALUES (?, ?, ?, ?)", project_id, docs_id, file_name, size_kb)
 	return err
 }
@@ -179,7 +179,7 @@ func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string
 func (s *SQLiteDAO) TotalUsedSize(projectID string) (int64, error) {
 	var total int64
 	err := s.db.Get(&total, `
-		SELECT SUM(file_size)
+		SELECT total(file_size)
 		FROM project_docs
 		WHERE project_id = ?
 	`, projectID)

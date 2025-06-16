@@ -19,6 +19,7 @@ type DocumentListRow struct {
 	ProjectID string `db:"project_id"`
 	DocsID    string `db:"docs_id"`
 	FileName  string `db:"file_name"`
+	FileSize  string `db:"file_size"`
 	CreatedAt string `db:"created_at"`
 	UpdatedAt string `db:"updated_at"`
 }

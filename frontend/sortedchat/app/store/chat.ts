@@ -231,6 +231,7 @@ export const createProject = async (
       {}
     );
     $currentProjectId.set(response.project_id);
+    await getProjectList();
   } catch (error) {
     console.error("failed", error);
   }
@@ -243,7 +244,6 @@ export const getProjectList = async () => {
       {}
     );
     $projectList.set(response.projects || []);
-    console.log(response);
   } catch (err) {
     console.error(err);
   }
@@ -257,9 +257,6 @@ onMount($projectList, () => {
   };
 });
 
-$currentProjectId.listen(() => {
-  getProjectList();
-});
 
 export const $documents = atom<Document[]>([]);
 

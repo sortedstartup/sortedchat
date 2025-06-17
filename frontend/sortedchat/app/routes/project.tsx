@@ -11,13 +11,14 @@ import {
   $currentChatMessages,
   $currentProject,
   $currentProjectId,
+  $documents,
   $projectList,
   $selectedModel,
   $streamingMessage,
   createNewChat,
   createProject,
   doChat,
-  getProjectList,
+  fetchDocuments,
 } from "~/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -41,7 +42,12 @@ export default function Chat() {
   const selectedModel = useStore($selectedModel);
   const projectsList = useStore($projectList);
   const projectName = useStore($currentProject);
+  const projectId = useStore($currentProjectId);
+  const documents = useStore($documents);
   console.log(projectsList);
+  console.log(projectName);
+//   console.log(documents[0].docs_id);
+  console.log(documents);
 
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -50,9 +56,11 @@ export default function Chat() {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
+  // const [selectedModel, setSelectedModel] = useState("gpt-4.1");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll function
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -121,17 +129,17 @@ export default function Chat() {
 
   const handleProjectSubmit = async (description: string) => {
     try {
-      const res = await createProject(description, "{}");
-      await getProjectList()
+      await createProject(description, "{}");
     } catch (err) {
       console.error("Failed to create project:", err);
     }
   };
+
   const handleProjectClick = (projectId: string) => {
-     $currentProject.set(
+    $currentProject.set(
       projectsList.find((p) => p.id === projectId)?.name || ""
     );
-    $currentProjectId.set(projectId)
+    $currentProjectId.set(projectId);
     navigate(`/project/${projectId}`);
   };
 
@@ -209,6 +217,7 @@ export default function Chat() {
             {projectsList.map((project) => (
               <li
                 key={project.id}
+                // onClick={() => handleProjectClick(project.id)}
                 onClick={() => handleProjectClick(project.id)}
                 className="px-3 py-2 mx-2 rounded-md cursor-default dark:hover:bg-gray-800 hover:bg-gray-100"
               >
@@ -268,6 +277,33 @@ export default function Chat() {
 
         {/* Chat messages */}
         <div className="flex-1 overflow-y-auto p-4">
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="border border-gray-200 dark:border-gray-700 p-4 mx-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <UploadIcon /> Add Documents
+          </button>
+          {documents.length > 0 && (
+            <div className="my-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Project Documents
+              </h2>
+              <ul className="space-y-2">
+                {documents.map((doc) => (
+                  <li key={doc.id}>
+                    <a
+                      href={`http://localhost:8080/documents/${doc.docs_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                      📄 {doc.file_name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {loading ? (
             <div className="flex items-center justify-center h-full text-gray-500">
               Loading messages...

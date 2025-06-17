@@ -27,6 +27,7 @@ const (
 	SortedChat_SearchChat_FullMethodName    = "/sortedchat.SortedChat/SearchChat"
 	SortedChat_CreateProject_FullMethodName = "/sortedchat.SortedChat/CreateProject"
 	SortedChat_GetProjects_FullMethodName   = "/sortedchat.SortedChat/GetProjects"
+	SortedChat_ListDocuments_FullMethodName = "/sortedchat.SortedChat/ListDocuments"
 )
 
 // SortedChatClient is the client API for SortedChat service.
@@ -41,6 +42,7 @@ type SortedChatClient interface {
 	SearchChat(ctx context.Context, in *ChatSearchRequest, opts ...grpc.CallOption) (*ChatSearchResponse, error)
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
 	GetProjects(ctx context.Context, in *GetProjectsRequest, opts ...grpc.CallOption) (*GetProjectsResponse, error)
+	ListDocuments(ctx context.Context, in *ListDocumentsRequest, opts ...grpc.CallOption) (*ListDocumentsResponse, error)
 }
 
 type sortedChatClient struct {
@@ -140,6 +142,16 @@ func (c *sortedChatClient) GetProjects(ctx context.Context, in *GetProjectsReque
 	return out, nil
 }
 
+func (c *sortedChatClient) ListDocuments(ctx context.Context, in *ListDocumentsRequest, opts ...grpc.CallOption) (*ListDocumentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDocumentsResponse)
+	err := c.cc.Invoke(ctx, SortedChat_ListDocuments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SortedChatServer is the server API for SortedChat service.
 // All implementations must embed UnimplementedSortedChatServer
 // for forward compatibility.
@@ -152,6 +164,7 @@ type SortedChatServer interface {
 	SearchChat(context.Context, *ChatSearchRequest) (*ChatSearchResponse, error)
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
 	GetProjects(context.Context, *GetProjectsRequest) (*GetProjectsResponse, error)
+	ListDocuments(context.Context, *ListDocumentsRequest) (*ListDocumentsResponse, error)
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -185,6 +198,9 @@ func (UnimplementedSortedChatServer) CreateProject(context.Context, *CreateProje
 }
 func (UnimplementedSortedChatServer) GetProjects(context.Context, *GetProjectsRequest) (*GetProjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjects not implemented")
+}
+func (UnimplementedSortedChatServer) ListDocuments(context.Context, *ListDocumentsRequest) (*ListDocumentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDocuments not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}
 func (UnimplementedSortedChatServer) testEmbeddedByValue()                    {}
@@ -344,6 +360,24 @@ func _SortedChat_GetProjects_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SortedChat_ListDocuments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDocumentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).ListDocuments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_ListDocuments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).ListDocuments(ctx, req.(*ListDocumentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SortedChat_ServiceDesc is the grpc.ServiceDesc for SortedChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -378,6 +412,10 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProjects",
 			Handler:    _SortedChat_GetProjects_Handler,
+		},
+		{
+			MethodName: "ListDocuments",
+			Handler:    _SortedChat_ListDocuments_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

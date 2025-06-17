@@ -1,3 +1,4 @@
+import { useStore } from "@nanostores/react";
 import {
   ChatInfo,
   ChatMessage,
@@ -13,7 +14,9 @@ import {
   SearchResult,
   SortedChatClient,
   Project,
-  GetProjectsRequest
+  GetProjectsRequest,
+  ListDocumentsRequest,
+  Document,
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
 
@@ -212,8 +215,12 @@ export const getSearchResults = async () => {
 
 export const $currentProject = atom<string>("");
 export const $projectList = atom<Project[]>([]);
+export const $currentProjectId = atom<String>("");
 
-export const createProject = async (description: string, additionalData: string) => {
+export const createProject = async (
+  description: string,
+  additionalData: string
+) => {
   try {
     const response = await chat.CreateProject(
       CreateProjectRequest.fromObject({
@@ -223,7 +230,8 @@ export const createProject = async (description: string, additionalData: string)
       }),
       {}
     );
-    console.log(response.project_id);
+    $currentProjectId.set(response.project_id);
+    await getProjectList();
   } catch (error) {
     console.error("failed", error);
   }
@@ -236,7 +244,6 @@ export const getProjectList = async () => {
       {}
     );
     $projectList.set(response.projects || []);
-    console.log(response);
   } catch (err) {
     console.error(err);
   }
@@ -248,4 +255,34 @@ onMount($projectList, () => {
   return () => {
     // Disabled mode
   };
+});
+
+
+export const $documents = atom<Document[]>([]);
+
+export async function fetchDocuments(projectId: string) {
+  try {
+    const res = await chat.ListDocuments(
+      ListDocumentsRequest.fromObject({ project_id: projectId }),
+      {}
+    );
+
+    console.log(res.documents);
+
+    $documents.set(res.documents);
+  } catch (err) {
+    console.error("Failed to fetch documents:", err);
+    $documents.set([]);
+  }
+}
+$currentProjectId.listen((projectId) => {
+  if (typeof projectId === "string" && projectId != "") {
+    fetchDocuments(projectId);
+  }
+});
+
+$documents.listen((projectId) => {
+  if (typeof projectId === "string" && projectId !== "") {
+    fetchDocuments(projectId);
+  }
 });

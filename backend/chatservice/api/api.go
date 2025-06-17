@@ -15,14 +15,39 @@ import (
 	"sortedstartup/chatservice/dao"
 	db "sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
+	"sortedstartup/chatservice/store"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Server struct {
 	pb.UnimplementedSortedChatServer
-	dao db.DAO
+	dao   *dao.SQLiteDAO
+	store *store.DiskObjectStore
+}
+
+func NewServer(mux *http.ServeMux) *Server {
+	daoInstance, err := dao.NewSQLiteDAO("chatservice.db")
+	if err != nil {
+		log.Fatalf("Failed to initialize DAO: %v", err)
+	}
+
+	storeInstance, err := store.NewDiskObjectStore("filestore")
+	if err != nil {
+		log.Fatalf("Failed to initialize object store: %v", err)
+	}
+
+	s := &Server{
+		dao:   daoInstance,
+		store: storeInstance,
+	}
+
+	s.registerRoutes(mux)
+
+	return s
 }
 
 func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
@@ -260,15 +285,16 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 }
 
 func (s *Server) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
+	id := uuid.New().String()
+
 	name := req.Name
 	if name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
-
 	description := req.Description
 	additionalData := req.AdditionalData
 
-	projectID, err := s.dao.CreateProject(name, description, additionalData)
+	projectID, err := s.dao.CreateProject(id, name, description, additionalData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create project: %w", err)
 	}
@@ -298,6 +324,30 @@ func (s *Server) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*
 	}
 
 	return &pb.GetProjectsResponse{Projects: pbProjects}, nil
+}
+
+func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
+	docs, err := s.dao.FilesList(req.GetProjectId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch documents: %v", err)
+	}
+
+	var result []*pb.Document
+	for _, doc := range docs {
+		result = append(result, &pb.Document{
+			Id:        doc.ID,
+			ProjectId: doc.ProjectID,
+			DocsId:    doc.DocsID,
+			FileName:  doc.FileName,
+			CreatedAt: doc.CreatedAt,
+			UpdatedAt: doc.UpdatedAt,
+		})
+	}
+
+	return &pb.ListDocumentsResponse{
+		Documents: result,
+	}, nil
+
 }
 
 func (s *Server) Init() {

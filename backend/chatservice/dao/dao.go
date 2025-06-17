@@ -21,6 +21,9 @@ type DAO interface {
 	SearchChatMessages(query string) ([]proto.SearchResult, error)
 
 	//Project Operations
-	CreateProject(name string, description string, additionalData string) (int64, error)
+	CreateProject(id string, name string, description string, additionalData string) (string, error)
 	GetProjects() ([]ProjectRow, error)
+	FileSave(project_id string, docs_id string, file_name string, fileSize int64) error
+	FilesList(project_id string) ([]DocumentListRow, error)
+	GetFileMetadata(docsId string) (*DocumentListRow, error)
 }

@@ -3,7 +3,6 @@ package dao
 import (
 	proto "sortedstartup/chatservice/proto"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -148,8 +147,7 @@ func (s *SQLiteDAO) SearchChatMessages(query string) ([]proto.SearchResult, erro
 }
 
 // Project CRUD
-func (s *SQLiteDAO) CreateProject(name string, description string, additionalData string) (string, error) {
-	id := uuid.New().String()
+func (s *SQLiteDAO) CreateProject(id string, name string, description string, additionalData string) (string, error) {
 	_, err := s.db.Exec(`
 		INSERT INTO project (id, name, description, additional_data, created_at, updated_at)
 		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)

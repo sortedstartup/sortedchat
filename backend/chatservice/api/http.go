@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -64,6 +65,15 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if err := s.dao.FileSave(projectID, objectID, header.Filename, fileSize); err != nil {
 		http.Error(w, "Failed to save metadata: "+err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	msg := map[string]interface{}{
+		"docs_id": objectID,
+	}
+	msgBytes, _ := json.Marshal(msg)
+	err = s.queue.Publish(r.Context(), "GenerateEmbedding", msgBytes)
+	if err != nil {
+		fmt.Errorf("failed publish %v", err)
 	}
 
 	w.WriteHeader(http.StatusOK)

@@ -15,6 +15,7 @@ import (
 	"sortedstartup/chatservice/dao"
 	db "sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
+	"sortedstartup/chatservice/queue"
 	"sortedstartup/chatservice/store"
 
 	"github.com/google/uuid"
@@ -27,6 +28,7 @@ type Server struct {
 	pb.UnimplementedSortedChatServer
 	dao   *dao.SQLiteDAO
 	store *store.DiskObjectStore
+	queue queue.Queue
 }
 
 func NewServer(mux *http.ServeMux) *Server {
@@ -43,6 +45,7 @@ func NewServer(mux *http.ServeMux) *Server {
 	s := &Server{
 		dao:   daoInstance,
 		store: storeInstance,
+		queue: queue.NewInMemoryQueue(),
 	}
 
 	s.registerRoutes(mux)

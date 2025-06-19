@@ -366,3 +366,22 @@ func (s *Server) Init() {
 	db.MigrateSQLite("chatservice.db")
 	db.SeedSqlite("chatservice.db")
 }
+
+func (s *Server) EmbeddingSubscriber() {
+	go func() {
+
+		sub, err := s.queue.Subscribe(context.Background(), "generate.embedding")
+		if err != nil {
+			fmt.Printf("Failed %v\n", err)
+			return
+		}
+		for msg := range sub {
+			fmt.Println(msg)
+			var payload GenerateEmbeddingMessage
+			if err := json.Unmarshal(msg.Data, &payload); err == nil {
+				fmt.Println(payload)
+				fmt.Printf("docs_id: %v\n", payload.DocsID)
+			}
+		}
+	}()
+}

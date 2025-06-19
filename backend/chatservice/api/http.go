@@ -16,6 +16,10 @@ const (
 	MaxProjectUploadSize = 500 * 1024 * 1024 // 500MB
 )
 
+type GenerateEmbeddingMessage struct {
+	DocsID string `json:"docs_id"`
+}
+
 // registerRoutes binds HTTP routes to the Server
 func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/upload", s.handleUpload)
@@ -67,11 +71,9 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg := map[string]interface{}{
-		"docs_id": objectID,
-	}
+	msg := GenerateEmbeddingMessage{DocsID: objectID}
 	msgBytes, _ := json.Marshal(msg)
-	err = s.queue.Publish(r.Context(), "GenerateEmbedding", msgBytes)
+	err = s.queue.Publish(r.Context(), "generate.embedding", msgBytes)
 	if err != nil {
 		fmt.Errorf("failed publish %v", err)
 	}

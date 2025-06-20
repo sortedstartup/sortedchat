@@ -2,6 +2,7 @@ package rag
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 )
@@ -40,11 +41,17 @@ type TikaExtractor struct{ Endpoint string }
 type TextExtractor struct{}
 
 func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (Document, error) {
+	data, err := io.ReadAll(r)
+	fmt.Println(string(data))
+	if err != nil {
+		return Document{}, err
+	}
+
 	return Document{
-		ID:       "text",
+		ID:       "text", //document id form subscriber
 		MIME:     mime,
-		Text:     "text",
-		Metadata: map[string]string{},
+		Text:     string(data),
+		Metadata: map[string]string{}, //idk
 	}, nil
 }
 
@@ -52,7 +59,28 @@ func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (
 type EqualSizeChunker struct{ ChunkSize int }
 
 func (e *EqualSizeChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, error) {
-	return nil, nil
+	text := docs.Text
+	length := len(text)
+
+	partSize := length / 3
+	chunks := make([]Chunk, 0, 3)
+
+	chunks = append(chunks, Chunk{
+		DocID: docs.ID,
+		Text:  text[0:partSize],
+	})
+
+	chunks = append(chunks, Chunk{
+		DocID: docs.ID,
+		Text:  text[partSize : 2*partSize],
+	})
+
+	chunks = append(chunks, Chunk{
+		DocID: docs.ID,
+		Text:  text[2*partSize:],
+	})
+
+	return chunks, nil
 }
 
 // ParagraphChunker splits on double newlines , if paragaph exceeds token limit, it will be split into multiple chunkss

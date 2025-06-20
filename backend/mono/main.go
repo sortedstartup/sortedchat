@@ -42,7 +42,6 @@ func main() {
 
 	apiServer := api.NewServer(mux)
 	proto.RegisterSortedChatServer(grpcServer, apiServer)
-	apiServer.EmbeddingSubscriber()
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)

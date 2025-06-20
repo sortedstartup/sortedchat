@@ -50,6 +50,8 @@ func NewServer(mux *http.ServeMux) *Server {
 
 	s.registerRoutes(mux)
 
+	s.EmbeddingSubscriber()
+
 	return s
 }
 

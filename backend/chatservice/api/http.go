@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,6 +15,10 @@ const (
 	MaxFileSize          = 50 * 1024 * 1024  // 50MB
 	MaxProjectUploadSize = 500 * 1024 * 1024 // 500MB
 )
+
+type GenerateEmbeddingMessage struct {
+	DocsID string `json:"docs_id"`
+}
 
 // registerRoutes binds HTTP routes to the Server
 func (s *Server) registerRoutes(mux *http.ServeMux) {
@@ -64,6 +69,13 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if err := s.dao.FileSave(projectID, objectID, header.Filename, fileSize); err != nil {
 		http.Error(w, "Failed to save metadata: "+err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	msg := GenerateEmbeddingMessage{DocsID: objectID}
+	msgBytes, _ := json.Marshal(msg)
+	err = s.queue.Publish(r.Context(), "generate.embedding", msgBytes)
+	if err != nil {
+		fmt.Errorf("failed publish %v", err)
 	}
 
 	w.WriteHeader(http.StatusOK)

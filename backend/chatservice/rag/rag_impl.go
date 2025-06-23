@@ -1,9 +1,12 @@
 package rag
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 )
 
@@ -42,7 +45,7 @@ type TextExtractor struct{}
 
 func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (Document, error) {
 	data, err := io.ReadAll(r)
-	fmt.Println(string(data))
+	// fmt.Println(string(data))
 	if err != nil {
 		return Document{}, err
 	}
@@ -60,26 +63,22 @@ type EqualSizeChunker struct{ ChunkSize int }
 
 func (e *EqualSizeChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, error) {
 	text := docs.Text
-	length := len(text)
+	wordsArr := strings.Fields(text)
+	chunkSize := e.ChunkSize
 
-	partSize := length / 3
-	chunks := make([]Chunk, 0, 3)
+	var chunks []Chunk
+	for i := 0; i < len(wordsArr); i += chunkSize {
+		end := i + chunkSize
+		if end > len(wordsArr) {
+			end = len(wordsArr)
+		}
 
-	chunks = append(chunks, Chunk{
-		DocID: docs.ID,
-		Text:  text[0:partSize],
-	})
-
-	chunks = append(chunks, Chunk{
-		DocID: docs.ID,
-		Text:  text[partSize : 2*partSize],
-	})
-
-	chunks = append(chunks, Chunk{
-		DocID: docs.ID,
-		Text:  text[2*partSize:],
-	})
-
+		chunkText := strings.Join(wordsArr[i:end], " ")
+		chunks = append(chunks, Chunk{
+			DocID: docs.ID,
+			Text:  chunkText,
+		})
+	}
 	return chunks, nil
 }
 
@@ -91,10 +90,52 @@ func (e *ParagraphChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, e
 }
 
 // OLLamaEmbedder hits /v1/embeddings with batching
-type OLLamaEmbedder struct{ Model, APIKey string }
+type OLLamaEmbedder struct {
+	Model     string
+	APIKey    string
+	AccountID string
+}
 
 func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding, error) {
-	return nil, nil
+	fmt.Println("hii from embedding function")
+	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/ai/run/@cf/baai/bge-m3", e.AccountID)
+
+	var texts []string
+	for _, chunk := range chunks {
+		texts = append(texts, chunk.Text)
+	}
+
+	reqBody := map[string]interface{}{
+		"text": texts,
+	}
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+e.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var respData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+		return nil, err
+	}
+
+	fmt.Println("sanskar136", respData)
+
+	var embeddings []Embedding
+	return embeddings, nil
 }
 
 func sampleCode() {
@@ -102,7 +143,7 @@ func sampleCode() {
 	pipeline := NewPipeline(
 		&TextExtractor{},
 		&EqualSizeChunker{ChunkSize: 512},
-		&OLLamaEmbedder{Model: "bge-base-en", APIKey: "ollama"},
+		&OLLamaEmbedder{Model: "@cf/baai/bge-m3", APIKey: "VY2QyqGKntcFsJBLMr3b6FZ4O86cHh4sp99zT4oT", AccountID: "0b1342921c6940c378a8bf50d24de341"},
 	)
 
 	// Sample code for how to run a pipeline ->

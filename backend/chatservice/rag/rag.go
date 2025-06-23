@@ -21,7 +21,7 @@ type Chunk struct {
 
 type Embedding struct {
 	ChunkID  string    // Need to decide
-	Vector   []float32 // dense vector
+	Vector   []float64 // dense vector
 	Provider string    // "openai", "bge-base-en", …
 }
 

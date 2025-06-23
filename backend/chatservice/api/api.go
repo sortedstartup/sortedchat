@@ -16,6 +16,7 @@ import (
 	db "sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
+	"sortedstartup/chatservice/rag"
 	"sortedstartup/chatservice/store"
 
 	"github.com/google/uuid"
@@ -26,9 +27,10 @@ import (
 
 type Server struct {
 	pb.UnimplementedSortedChatServer
-	dao   *dao.SQLiteDAO
-	store *store.DiskObjectStore
-	queue queue.Queue
+	dao      *dao.SQLiteDAO
+	store    *store.DiskObjectStore
+	queue    queue.Queue
+	pipeline rag.Pipeline
 }
 
 func NewServer(mux *http.ServeMux) *Server {
@@ -42,10 +44,21 @@ func NewServer(mux *http.ServeMux) *Server {
 		log.Fatalf("Failed to initialize object store: %v", err)
 	}
 
+	pipeline := rag.NewPipeline(
+		&rag.TextExtractor{},
+		&rag.EqualSizeChunker{ChunkSize: 512},
+		&rag.OLLamaEmbedder{
+			Model:     "@cf/baai/bge-m3",
+			APIKey:    "VY2QyqGKntcFsJBLMr3b6FZ4O86cHh4sp99zT4oT",
+			AccountID: "0b1342921c6940c378a8bf50d24de341",
+		},
+	)
+
 	s := &Server{
-		dao:   daoInstance,
-		store: storeInstance,
-		queue: queue.NewInMemoryQueue(),
+		dao:      daoInstance,
+		store:    storeInstance,
+		queue:    queue.NewInMemoryQueue(),
+		pipeline: pipeline,
 	}
 
 	s.registerRoutes(mux)
@@ -378,12 +391,25 @@ func (s *Server) EmbeddingSubscriber() {
 			return
 		}
 		for msg := range sub {
-			fmt.Println(msg)
+			// fmt.Println(msg)
 			var payload GenerateEmbeddingMessage
 			if err := json.Unmarshal(msg.Data, &payload); err == nil {
-				fmt.Println(payload)
+				// fmt.Println(payload)
 				fmt.Printf("docs_id: %v\n", payload.DocsID)
+
+				filePath := "filestore/objects/" + payload.DocsID
+				f, err := os.Open(filePath)
+				if err != nil {
+					fmt.Printf("Failed :%v\n", err)
+				}
+				defer f.Close()
+
+				_, err = s.pipeline.Run(context.Background(), f, "text/plain")
+				if err != nil {
+					fmt.Printf("Pipeline error: %v\n", err)
+				}
 			}
+
 		}
 	}()
 }

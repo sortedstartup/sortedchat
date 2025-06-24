@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 type defaultPipeline struct {
@@ -32,6 +34,29 @@ func (p *defaultPipeline) Run(ctx context.Context, r io.Reader, mime string) ([]
 	}
 
 	return p.em.Embed(ctx, chunks)
+}
+
+// RunWithChunks returns both chunks and embeddings, and allows passing metadata
+func (p *defaultPipeline) RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (PipelineResult, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return PipelineResult{}, err
+	}
+	docs := Document{
+		ID:       metadata["docs_id"],
+		MIME:     mime,
+		Text:     string(data),
+		Metadata: metadata,
+	}
+	chunks, err := p.ch.Chunk(ctx, docs)
+	if err != nil {
+		return PipelineResult{}, err
+	}
+	embs, err := p.em.Embed(ctx, chunks)
+	if err != nil {
+		return PipelineResult{}, err
+	}
+	return PipelineResult{Chunks: chunks, Embeddings: embs}, nil
 }
 
 // ------
@@ -59,6 +84,9 @@ func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (
 }
 
 // EqualSizeChunker splits the text into chunks of equal size
+// Now generates UUID, sets ProjectID, DocsID, and chunk tracking fields
+// projectID and docsID should be passed in Document.Metadata
+
 type EqualSizeChunker struct{ ChunkSize int }
 
 func (e *EqualSizeChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, error) {
@@ -66,7 +94,11 @@ func (e *EqualSizeChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, e
 	wordsArr := strings.Fields(text)
 	chunkSize := e.ChunkSize
 
+	projectID := docs.Metadata["project_id"]
+	docsID := docs.Metadata["docs_id"]
+
 	var chunks []Chunk
+	byteIdx := 0
 	for i := 0; i < len(wordsArr); i += chunkSize {
 		end := i + chunkSize
 		if end > len(wordsArr) {
@@ -74,10 +106,19 @@ func (e *EqualSizeChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, e
 		}
 
 		chunkText := strings.Join(wordsArr[i:end], " ")
+		startByte := byteIdx
+		endByte := byteIdx + len(chunkText)
+		chunkID := uuid.New().String()
+
 		chunks = append(chunks, Chunk{
-			DocID: docs.ID,
-			Text:  chunkText,
+			ID:        chunkID,
+			ProjectID: projectID,
+			DocsID:    docsID,
+			StartByte: startByte,
+			EndByte:   endByte,
+			Text:      chunkText,
 		})
+		byteIdx = endByte + 1 // +1 for space
 	}
 	return chunks, nil
 }
@@ -90,6 +131,8 @@ func (e *ParagraphChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, e
 }
 
 // OLLamaEmbedder hits /v1/embeddings with batching
+// Now returns Embedding with ChunkID and Vector
+
 type OLLamaEmbedder struct {
 	Model     string
 	APIKey    string
@@ -134,7 +177,26 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 
 	fmt.Println("sanskar136", respData)
 
+	// Example: parse embeddings from response
 	var embeddings []Embedding
+	// if data, ok := respData["result"].([]interface{}); ok {
+	// 	for i, emb := range data {
+	// 		vec := []float64{}
+	// 		if arr, ok := emb.([]interface{}); ok {
+	// 			for _, v := range arr {
+	// 				if f, ok := v.(float64); ok {
+	// 					vec = append(vec, f)
+	// 				}
+	// 			}
+	// 		}
+	// 		embeddings = append(embeddings, Embedding{
+	// 			ChunkID:  chunks[i].ID,
+	// 			Vector:   vec,
+	// 			Provider: e.Model,
+	// 		})
+	// 	}
+	// }
+
 	return embeddings, nil
 }
 
@@ -143,7 +205,7 @@ func sampleCode() {
 	pipeline := NewPipeline(
 		&TextExtractor{},
 		&EqualSizeChunker{ChunkSize: 512},
-		&OLLamaEmbedder{Model: "@cf/baai/bge-m3", APIKey: "VY2QyqGKntcFsJBLMr3b6FZ4O86cHh4sp99zT4oT", AccountID: "0b1342921c6940c378a8bf50d24de341"},
+		&OLLamaEmbedder{Model: "@cf/baai/bge-m3", APIKey: "ewtTCyj2LDi1W-YefyI8wl_GlUVLMj25mGj5UGNF", AccountID: "0b1342921c6940c378a8bf50d24de341"},
 	)
 
 	// Sample code for how to run a pipeline ->

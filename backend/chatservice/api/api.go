@@ -39,6 +39,9 @@ func NewServer(mux *http.ServeMux) *Server {
 		log.Fatalf("Failed to initialize DAO: %v", err)
 	}
 
+	// Run migrations before any DB access
+	db.MigrateSQLite("chatservice.db")
+
 	storeInstance, err := store.NewDiskObjectStore("filestore")
 	if err != nil {
 		log.Fatalf("Failed to initialize object store: %v", err)
@@ -49,7 +52,7 @@ func NewServer(mux *http.ServeMux) *Server {
 		&rag.EqualSizeChunker{ChunkSize: 512},
 		&rag.OLLamaEmbedder{
 			Model:     "@cf/baai/bge-m3",
-			APIKey:    "VY2QyqGKntcFsJBLMr3b6FZ4O86cHh4sp99zT4oT",
+			APIKey:    "ewtTCyj2LDi1W-YefyI8wl_GlUVLMj25mGj5UGNF",
 			AccountID: "0b1342921c6940c378a8bf50d24de341",
 		},
 	)
@@ -384,32 +387,51 @@ func (s *Server) Init() {
 
 func (s *Server) EmbeddingSubscriber() {
 	go func() {
-
 		sub, err := s.queue.Subscribe(context.Background(), "generate.embedding")
 		if err != nil {
 			fmt.Printf("Failed %v\n", err)
 			return
 		}
 		for msg := range sub {
-			// fmt.Println(msg)
 			var payload GenerateEmbeddingMessage
 			if err := json.Unmarshal(msg.Data, &payload); err == nil {
-				// fmt.Println(payload)
 				fmt.Printf("docs_id: %v\n", payload.DocsID)
+
+				// Fetch project_id for docs_id
+				docMeta, err := s.dao.GetFileMetadata(payload.DocsID)
+				if err != nil {
+					fmt.Printf("Failed to fetch file metadata: %v\n", err)
+					continue
+				}
 
 				filePath := "filestore/objects/" + payload.DocsID
 				f, err := os.Open(filePath)
 				if err != nil {
 					fmt.Printf("Failed :%v\n", err)
+					continue
 				}
 				defer f.Close()
 
-				_, err = s.pipeline.Run(context.Background(), f, "text/plain")
+				metadata := map[string]string{
+					"project_id": docMeta.ProjectID,
+					"docs_id":    payload.DocsID,
+					"source":     docMeta.FileName,
+				}
+
+				result, err := s.pipeline.RunWithChunks(context.Background(), f, "text/plain", metadata)
 				if err != nil {
 					fmt.Printf("Pipeline error: %v\n", err)
+					continue
+				}
+
+				// Save each chunk to rag_chunks
+				for _, chunk := range result.Chunks {
+					err := s.dao.SaveRAGChunk(chunk.ID, chunk.ProjectID, chunk.DocsID, chunk.StartByte, chunk.EndByte)
+					if err != nil {
+						fmt.Printf("Failed to save chunk: %v\n", err)
+					}
 				}
 			}
-
 		}
 	}()
 }

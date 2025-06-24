@@ -3,6 +3,7 @@ module sortedstartup/chatservice
 go 1.24.3
 
 require (
+	github.com/asg017/sqlite-vec-go-bindings v0.1.6
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0

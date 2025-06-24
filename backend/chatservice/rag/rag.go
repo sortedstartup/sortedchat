@@ -6,6 +6,10 @@ import (
 )
 
 // Abstraction to create a extraction and embedding generation pipeline
+// Added ID, ProjectID, DocsID to match DB schema
+// Added Source, StartByte, EndByte for chunk tracking
+// Added Embedding vector to Embedding struct
+
 type Document struct {
 	ID       string
 	MIME     string            // "application/pdf", "text/markdown", …
@@ -14,13 +18,16 @@ type Document struct {
 }
 
 type Chunk struct {
-	DocID string // parent document
-	//TODO: need to store which piece of text was used, may be a byte range ? from the original docs or parsed text ? obviously we need to store the original text then
-	Text string // chunk body
+	ID        string // uuid for chunk
+	ProjectID string
+	DocsID    string
+	StartByte int // for tracking chunk position
+	EndByte   int
+	Text      string // chunk body
 }
 
 type Embedding struct {
-	ChunkID  string    // Need to decide
+	ChunkID  string    // uuid of chunk
 	Vector   []float64 // dense vector
 	Provider string    // "openai", "bge-base-en", …
 }
@@ -44,6 +51,14 @@ type Embedder interface {
 // This signature may change, since we may want to different document types
 type Pipeline interface {
 	Run(ctx context.Context, r io.Reader, mime string) ([]Embedding, error)
+	RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (PipelineResult, error)
+}
+
+// Add a result struct to return both chunks and embeddings
+
+type PipelineResult struct {
+	Chunks     []Chunk
+	Embeddings []Embedding
 }
 
 /*

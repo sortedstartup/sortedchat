@@ -23,3 +23,11 @@ type DocumentListRow struct {
 	CreatedAt string `db:"created_at"`
 	UpdatedAt string `db:"updated_at"`
 }
+
+type RAGChunkRow struct {
+	ID        string `db:"id"`
+	ProjectID string `db:"project_id"`
+	DocsID    string `db:"docs_id"`
+	StartByte int    `db:"start_byte"`
+	EndByte   int    `db:"end_byte"`
+}

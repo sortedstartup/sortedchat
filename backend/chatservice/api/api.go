@@ -52,8 +52,8 @@ func NewServer(mux *http.ServeMux) *Server {
 		&rag.EqualSizeChunker{ChunkSize: 512},
 		&rag.OLLamaEmbedder{
 			Model:     "@cf/baai/bge-m3",
-			APIKey:    "ewtTCyj2LDi1W-YefyI8wl_GlUVLMj25mGj5UGNF",
-			AccountID: "0b1342921c6940c378a8bf50d24de341",
+			APIKey:    os.Getenv("EMBEDDING_API_TOKEN"),
+			AccountID: os.Getenv("EMBEDDING_ACCOUNT_ID"),
 		},
 	)
 

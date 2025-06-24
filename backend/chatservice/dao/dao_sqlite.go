@@ -3,7 +3,7 @@ package dao
 import (
 	proto "sortedstartup/chatservice/proto"
 
-	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
+	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -16,7 +16,7 @@ type SQLiteDAO struct {
 
 // NewSQLiteDAO creates a new SQLite DAO instance
 func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
-	sqlite_vec.Auto()
+	// sqlite_vec.Auto()
 
 	db, err := sqlx.Open("sqlite3", sqliteUrl)
 	if err != nil {
@@ -214,4 +214,20 @@ func (s *SQLiteDAO) SaveRAGChunk(chunkID, projectID, docsID string, startByte, e
 		VALUES (?, ?, ?, ?, ?)
 	`, chunkID, projectID, docsID, startByte, endByte)
 	return err
+}
+
+func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string) ([]RAGChunkRow, error) {
+	var chunks []RAGChunkRow
+	err := s.db.Select(&chunks, `
+        SELECT *
+        FROM rag_chunks
+        WHERE id IN (
+            SELECT id
+            FROM rag_chunks_vec
+            WHERE embedding MATCH ?
+            ORDER BY distance
+            LIMIT 2
+        )
+    `, embedding)
+	return chunks, err
 }

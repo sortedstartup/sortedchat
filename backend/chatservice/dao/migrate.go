@@ -58,8 +58,7 @@ func MigrateDB_UsingConnection(sqlDB *sql.DB, files embed.FS, directoryInFS stri
 func MigrateSQLite(dbURL string) error {
 	slog.Info("Migrating database", "dbURL", dbURL)
 	sqlite_vec.Auto()
-
-	sqlDB, err := sql.Open("sqlite", dbURL)
+	sqlDB, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		slog.Error("error", "err", err)
 	}
@@ -69,7 +68,8 @@ func MigrateSQLite(dbURL string) error {
 
 func SeedSqlite(dbURL string) error {
 	slog.Info("Seeding database", "dbURL", dbURL)
-	sqlDB, err := sql.Open("sqlite", dbURL)
+	sqlite_vec.Auto()
+	sqlDB, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		slog.Error("error", "err", err)
 	}

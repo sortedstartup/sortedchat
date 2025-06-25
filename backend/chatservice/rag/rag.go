@@ -61,14 +61,24 @@ type PipelineResult struct {
 	Embeddings []Embedding
 }
 
-/*
-TODO: RAG Retreival Pipeline
+// RAG Retrieval Pipeline Components
+type SearchParams struct {
+	TopK      int
+	Threshold float64
+	ProjectID string
+}
 
-- find relevant documents
-- extract relevant information
-- create prompt
+type Result struct {
+	Chunk      Chunk
+	Similarity float64
+}
 
-- send prompt to LLMProvider
+// Function types for RAG pipeline
+type Retrieve func(ctx context.Context, embedding []float64, params SearchParams) ([]Result, error)
+type BuildPrompt func(ctx context.Context, query string, results []Result) (string, error)
+type RetrievePipeline func(ctx context.Context, embedding []float64, query string, params SearchParams) (*Response, error)
 
-- return answer
-*/
+type Response struct {
+	Results []Result
+	Prompt  string
+}

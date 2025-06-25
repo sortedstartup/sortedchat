@@ -76,7 +76,7 @@ type Result struct {
 // Function types for RAG pipeline
 type Retrieve func(ctx context.Context, embedding []float64, params SearchParams) ([]Result, error)
 type BuildPrompt func(ctx context.Context, query string, results []Result) (string, error)
-type RetrievePipeline func(ctx context.Context, embedding []float64, query string, params SearchParams) (*Response, error)
+type RetrievePipeline func(ctx context.Context, retriever Retrieve, promptBuilder BuildPrompt, embedding []float64, query string, params SearchParams) (*Response, error)
 
 type Response struct {
 	Results []Result

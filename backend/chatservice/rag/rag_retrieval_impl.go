@@ -6,11 +6,9 @@ import (
 	"strings"
 )
 
-// BasicRetrieve performs simple cosine similarity search
-func BasicRetrieve(ctx context.Context, chunks []Chunk, embeddings []Embedding, embedding []float64, params SearchParams) ([]Result, error) {
-	var results []Result
-	// TODO: Implement cosine similarity search
-	return results, nil
+func BasicRetrieve(ctx context.Context, embedding []float64, params SearchParams) ([]Result, error) {
+	// needs dao
+	return nil, nil
 }
 
 // BasicPromptBuilder creates a simple RAG prompt
@@ -35,14 +33,13 @@ Answer:`, strings.Join(contextParts, "\n"), query)
 	return prompt, nil
 }
 
-// BasicPipeline combines retrieval and prompt building
-func BasicPipeline(ctx context.Context, chunks []Chunk, embeddings []Embedding, embedding []float64, query string, params SearchParams) (*Response, error) {
-	results, err := BasicRetrieve(ctx, chunks, embeddings, embedding, params)
+func BasicRetrievePipeline(ctx context.Context, retriever Retrieve, promptBuilder BuildPrompt, embedding []float64, query string, params SearchParams) (*Response, error) {
+	results, err := retriever(ctx, embedding, params)
 	if err != nil {
 		return nil, err
 	}
 
-	prompt, err := BasicPromptBuilder(ctx, query, results)
+	prompt, err := promptBuilder(ctx, query, results)
 	if err != nil {
 		return nil, err
 	}
@@ -53,25 +50,14 @@ func BasicPipeline(ctx context.Context, chunks []Chunk, embeddings []Embedding, 
 	}, nil
 }
 
-// RunSamplePipeline demonstrates how to use the RAG pipeline with sample data
-func RunSamplePipeline(ctx context.Context) (*Response, error) {
-	// Sample data
-	chunks := []Chunk{
-		{ID: "chunk-1", ProjectID: "project-123", Text: "Go is a programming language developed by Google."},
-		{ID: "chunk-2", ProjectID: "project-123", Text: "React is a JavaScript library for building user interfaces."},
-		{ID: "chunk-3", ProjectID: "project-123", Text: "Tailwind CSS is a utility-first CSS framework."},
-	}
+func testPipeline() {
 
-	embeddings := []Embedding{
-		{ChunkID: "chunk-1", Vector: []float64{0.1, 0.2, 0.3, 0.4}, Provider: "openai"},
-		{ChunkID: "chunk-2", Vector: []float64{0.5, 0.6, 0.7, 0.8}, Provider: "openai"},
-		{ChunkID: "chunk-3", Vector: []float64{0.2, 0.4, 0.6, 0.8}, Provider: "openai"},
-	}
+	var retrievalPipeline RetrievePipeline = BasicRetrievePipeline
 
-	// Run pipeline directly
-	return BasicPipeline(ctx, chunks, embeddings,
-		[]float64{0.15, 0.25, 0.35, 0.45}, // query embedding
-		"What is Go programming language?",
-		SearchParams{TopK: 2, ProjectID: "project-123"},
-	)
+	x, err := retrievalPipeline(context.Background(), BasicRetrieve, BasicPromptBuilder, []float64{0.15, 0.25, 0.35, 0.45}, "What is Go programming language?", SearchParams{TopK: 2, ProjectID: "project-123"})
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	fmt.Println("Response:", x)
+
 }

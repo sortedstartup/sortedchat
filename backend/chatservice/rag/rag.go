@@ -50,7 +50,6 @@ type Embedder interface {
 // 4. Pipeline — convenience wrapper
 // This signature may change, since we may want to different document types
 type Pipeline interface {
-	Run(ctx context.Context, r io.Reader, mime string) ([]Embedding, error)
 	RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (PipelineResult, error)
 }
 

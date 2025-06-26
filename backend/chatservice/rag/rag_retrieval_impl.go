@@ -49,15 +49,3 @@ func BasicRetrievePipeline(ctx context.Context, retriever Retrieve, promptBuilde
 		Prompt:  prompt,
 	}, nil
 }
-
-// func testPipeline() {
-
-// 	var retrievalPipeline RetrievePipeline = BasicRetrievePipeline
-
-// 	x, err := retrievalPipeline(context.Background(), BasicRetrieve, BasicPromptBuilder, []float64{0.15, 0.25, 0.35, 0.45}, "What is Go programming language?", SearchParams{TopK: 2, ProjectID: "project-123"})
-// 	if err != nil {
-// 		fmt.Println("Error:", err)
-// 	}
-// 	fmt.Println("Response:", x)
-
-// }

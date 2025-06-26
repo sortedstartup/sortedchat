@@ -8,7 +8,6 @@ import {
   createNewChat,
   createProject,
   doChat,
-  Dummy,
 } from "~/store/chat";
 import { useStore } from "@nanostores/react";
 import SearchModal from "~/components/modal";
@@ -89,10 +88,6 @@ export function Welcome() {
       console.error("Failed to create project:", err);
     }
   };
-
-  useEffect(() => {
-    Dummy("fsd")
-  },[])
 
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900">

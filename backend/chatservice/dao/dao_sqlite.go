@@ -228,18 +228,19 @@ func (s *SQLiteDAO) SaveRAGChunkEmbedding(chunkID string, vector []float64) erro
 	return err
 }
 
-func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string) ([]RAGChunkRow, error) {
+func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string, projectID string) ([]RAGChunkRow, error) {
 	var chunks []RAGChunkRow
 	err := s.db.Select(&chunks, `
-        SELECT *
+        SELECT id,project_id,docs_id,start_byte,end_byte
         FROM rag_chunks
-        WHERE id IN (
+        WHERE project_id = ?
+        AND id IN (
             SELECT id
             FROM rag_chunks_vec
             WHERE embedding MATCH ?
             ORDER BY distance
             LIMIT 2
         )
-    `, embedding)
+    `, projectID, embedding)
 	return chunks, err
 }

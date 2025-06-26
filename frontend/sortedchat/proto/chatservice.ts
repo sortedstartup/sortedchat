@@ -6,140 +6,6 @@
 import * as pb_1 from "google-protobuf";
 import * as grpc_1 from "grpc-web";
 import * as grpc_web_1 from "grpc-web";
-export class DummyTestRequest extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {
-        input?: string;
-    }) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") {
-            if ("input" in data && data.input != undefined) {
-                this.input = data.input;
-            }
-        }
-    }
-    get input() {
-        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
-    }
-    set input(value: string) {
-        pb_1.Message.setField(this, 1, value);
-    }
-    static fromObject(data: {
-        input?: string;
-    }): DummyTestRequest {
-        const message = new DummyTestRequest({});
-        if (data.input != null) {
-            message.input = data.input;
-        }
-        return message;
-    }
-    toObject() {
-        const data: {
-            input?: string;
-        } = {};
-        if (this.input != null) {
-            data.input = this.input;
-        }
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (this.input.length)
-            writer.writeString(1, this.input);
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): DummyTestRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new DummyTestRequest();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                case 1:
-                    message.input = reader.readString();
-                    break;
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): DummyTestRequest {
-        return DummyTestRequest.deserialize(bytes);
-    }
-}
-export class DummyTestResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {
-        chunk?: string;
-    }) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") {
-            if ("chunk" in data && data.chunk != undefined) {
-                this.chunk = data.chunk;
-            }
-        }
-    }
-    get chunk() {
-        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
-    }
-    set chunk(value: string) {
-        pb_1.Message.setField(this, 1, value);
-    }
-    static fromObject(data: {
-        chunk?: string;
-    }): DummyTestResponse {
-        const message = new DummyTestResponse({});
-        if (data.chunk != null) {
-            message.chunk = data.chunk;
-        }
-        return message;
-    }
-    toObject() {
-        const data: {
-            chunk?: string;
-        } = {};
-        if (this.chunk != null) {
-            data.chunk = this.chunk;
-        }
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (this.chunk.length)
-            writer.writeString(1, this.chunk);
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): DummyTestResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new DummyTestResponse();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                case 1:
-                    message.chunk = reader.readString();
-                    break;
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): DummyTestResponse {
-        return DummyTestResponse.deserialize(bytes);
-    }
-}
 export class CreateChatRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -2265,6 +2131,438 @@ export class Document extends pb_1.Message {
         return Document.deserialize(bytes);
     }
 }
+export class RetrieveSimilarChunksRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        project_id?: string;
+        query?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("project_id" in data && data.project_id != undefined) {
+                this.project_id = data.project_id;
+            }
+            if ("query" in data && data.query != undefined) {
+                this.query = data.query;
+            }
+        }
+    }
+    get project_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set project_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get query() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set query(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        project_id?: string;
+        query?: string;
+    }): RetrieveSimilarChunksRequest {
+        const message = new RetrieveSimilarChunksRequest({});
+        if (data.project_id != null) {
+            message.project_id = data.project_id;
+        }
+        if (data.query != null) {
+            message.query = data.query;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            project_id?: string;
+            query?: string;
+        } = {};
+        if (this.project_id != null) {
+            data.project_id = this.project_id;
+        }
+        if (this.query != null) {
+            data.query = this.query;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.project_id.length)
+            writer.writeString(1, this.project_id);
+        if (this.query.length)
+            writer.writeString(2, this.query);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): RetrieveSimilarChunksRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new RetrieveSimilarChunksRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.project_id = reader.readString();
+                    break;
+                case 2:
+                    message.query = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): RetrieveSimilarChunksRequest {
+        return RetrieveSimilarChunksRequest.deserialize(bytes);
+    }
+}
+export class RetrieveSimilarChunksResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        results?: SimilarChunkResult[];
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("results" in data && data.results != undefined) {
+                this.results = data.results;
+            }
+        }
+    }
+    get results() {
+        return pb_1.Message.getRepeatedWrapperField(this, SimilarChunkResult, 1) as SimilarChunkResult[];
+    }
+    set results(value: SimilarChunkResult[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 1, value);
+    }
+    static fromObject(data: {
+        results?: ReturnType<typeof SimilarChunkResult.prototype.toObject>[];
+    }): RetrieveSimilarChunksResponse {
+        const message = new RetrieveSimilarChunksResponse({});
+        if (data.results != null) {
+            message.results = data.results.map(item => SimilarChunkResult.fromObject(item));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            results?: ReturnType<typeof SimilarChunkResult.prototype.toObject>[];
+        } = {};
+        if (this.results != null) {
+            data.results = this.results.map((item: SimilarChunkResult) => item.toObject());
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.results.length)
+            writer.writeRepeatedMessage(1, this.results, (item: SimilarChunkResult) => item.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): RetrieveSimilarChunksResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new RetrieveSimilarChunksResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.results, () => pb_1.Message.addToRepeatedWrapperField(message, 1, SimilarChunkResult.deserialize(reader), SimilarChunkResult));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): RetrieveSimilarChunksResponse {
+        return RetrieveSimilarChunksResponse.deserialize(bytes);
+    }
+}
+export class SimilarChunkResult extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        chunk?: Chunk;
+        similarity?: number;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("chunk" in data && data.chunk != undefined) {
+                this.chunk = data.chunk;
+            }
+            if ("similarity" in data && data.similarity != undefined) {
+                this.similarity = data.similarity;
+            }
+        }
+    }
+    get chunk() {
+        return pb_1.Message.getWrapperField(this, Chunk, 1) as Chunk;
+    }
+    set chunk(value: Chunk) {
+        pb_1.Message.setWrapperField(this, 1, value);
+    }
+    get has_chunk() {
+        return pb_1.Message.getField(this, 1) != null;
+    }
+    get similarity() {
+        return pb_1.Message.getFieldWithDefault(this, 2, 0) as number;
+    }
+    set similarity(value: number) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        chunk?: ReturnType<typeof Chunk.prototype.toObject>;
+        similarity?: number;
+    }): SimilarChunkResult {
+        const message = new SimilarChunkResult({});
+        if (data.chunk != null) {
+            message.chunk = Chunk.fromObject(data.chunk);
+        }
+        if (data.similarity != null) {
+            message.similarity = data.similarity;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            chunk?: ReturnType<typeof Chunk.prototype.toObject>;
+            similarity?: number;
+        } = {};
+        if (this.chunk != null) {
+            data.chunk = this.chunk.toObject();
+        }
+        if (this.similarity != null) {
+            data.similarity = this.similarity;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.has_chunk)
+            writer.writeMessage(1, this.chunk, () => this.chunk.serialize(writer));
+        if (this.similarity != 0)
+            writer.writeFloat(2, this.similarity);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): SimilarChunkResult {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new SimilarChunkResult();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.chunk, () => message.chunk = Chunk.deserialize(reader));
+                    break;
+                case 2:
+                    message.similarity = reader.readFloat();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): SimilarChunkResult {
+        return SimilarChunkResult.deserialize(bytes);
+    }
+}
+export class Chunk extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        id?: string;
+        project_id?: string;
+        docs_id?: string;
+        start_byte?: number;
+        end_byte?: number;
+        text?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("id" in data && data.id != undefined) {
+                this.id = data.id;
+            }
+            if ("project_id" in data && data.project_id != undefined) {
+                this.project_id = data.project_id;
+            }
+            if ("docs_id" in data && data.docs_id != undefined) {
+                this.docs_id = data.docs_id;
+            }
+            if ("start_byte" in data && data.start_byte != undefined) {
+                this.start_byte = data.start_byte;
+            }
+            if ("end_byte" in data && data.end_byte != undefined) {
+                this.end_byte = data.end_byte;
+            }
+            if ("text" in data && data.text != undefined) {
+                this.text = data.text;
+            }
+        }
+    }
+    get id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get project_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set project_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get docs_id() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set docs_id(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get start_byte() {
+        return pb_1.Message.getFieldWithDefault(this, 4, 0) as number;
+    }
+    set start_byte(value: number) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    get end_byte() {
+        return pb_1.Message.getFieldWithDefault(this, 5, 0) as number;
+    }
+    set end_byte(value: number) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    get text() {
+        return pb_1.Message.getFieldWithDefault(this, 6, "") as string;
+    }
+    set text(value: string) {
+        pb_1.Message.setField(this, 6, value);
+    }
+    static fromObject(data: {
+        id?: string;
+        project_id?: string;
+        docs_id?: string;
+        start_byte?: number;
+        end_byte?: number;
+        text?: string;
+    }): Chunk {
+        const message = new Chunk({});
+        if (data.id != null) {
+            message.id = data.id;
+        }
+        if (data.project_id != null) {
+            message.project_id = data.project_id;
+        }
+        if (data.docs_id != null) {
+            message.docs_id = data.docs_id;
+        }
+        if (data.start_byte != null) {
+            message.start_byte = data.start_byte;
+        }
+        if (data.end_byte != null) {
+            message.end_byte = data.end_byte;
+        }
+        if (data.text != null) {
+            message.text = data.text;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            id?: string;
+            project_id?: string;
+            docs_id?: string;
+            start_byte?: number;
+            end_byte?: number;
+            text?: string;
+        } = {};
+        if (this.id != null) {
+            data.id = this.id;
+        }
+        if (this.project_id != null) {
+            data.project_id = this.project_id;
+        }
+        if (this.docs_id != null) {
+            data.docs_id = this.docs_id;
+        }
+        if (this.start_byte != null) {
+            data.start_byte = this.start_byte;
+        }
+        if (this.end_byte != null) {
+            data.end_byte = this.end_byte;
+        }
+        if (this.text != null) {
+            data.text = this.text;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.id.length)
+            writer.writeString(1, this.id);
+        if (this.project_id.length)
+            writer.writeString(2, this.project_id);
+        if (this.docs_id.length)
+            writer.writeString(3, this.docs_id);
+        if (this.start_byte != 0)
+            writer.writeInt32(4, this.start_byte);
+        if (this.end_byte != 0)
+            writer.writeInt32(5, this.end_byte);
+        if (this.text.length)
+            writer.writeString(6, this.text);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): Chunk {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new Chunk();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.id = reader.readString();
+                    break;
+                case 2:
+                    message.project_id = reader.readString();
+                    break;
+                case 3:
+                    message.docs_id = reader.readString();
+                    break;
+                case 4:
+                    message.start_byte = reader.readInt32();
+                    break;
+                case 5:
+                    message.end_byte = reader.readInt32();
+                    break;
+                case 6:
+                    message.text = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): Chunk {
+        return Chunk.deserialize(bytes);
+    }
+}
 export abstract class UnimplementedSortedChatService {
     static definition = {
         Chat: {
@@ -2348,14 +2646,14 @@ export abstract class UnimplementedSortedChatService {
             responseSerialize: (message: ListDocumentsResponse) => Buffer.from(message.serialize()),
             responseDeserialize: (bytes: Buffer) => ListDocumentsResponse.deserialize(new Uint8Array(bytes))
         },
-        DummyTest: {
-            path: "/sortedchat.SortedChat/DummyTest",
+        RetrieveSimilarChunks: {
+            path: "/sortedchat.SortedChat/RetrieveSimilarChunks",
             requestStream: false,
             responseStream: false,
-            requestSerialize: (message: DummyTestRequest) => Buffer.from(message.serialize()),
-            requestDeserialize: (bytes: Buffer) => DummyTestRequest.deserialize(new Uint8Array(bytes)),
-            responseSerialize: (message: DummyTestResponse) => Buffer.from(message.serialize()),
-            responseDeserialize: (bytes: Buffer) => DummyTestResponse.deserialize(new Uint8Array(bytes))
+            requestSerialize: (message: RetrieveSimilarChunksRequest) => Buffer.from(message.serialize()),
+            requestDeserialize: (bytes: Buffer) => RetrieveSimilarChunksRequest.deserialize(new Uint8Array(bytes)),
+            responseSerialize: (message: RetrieveSimilarChunksResponse) => Buffer.from(message.serialize()),
+            responseDeserialize: (bytes: Buffer) => RetrieveSimilarChunksResponse.deserialize(new Uint8Array(bytes))
         }
     };
     [method: string]: grpc_1.UntypedHandleCall;
@@ -2368,7 +2666,7 @@ export abstract class UnimplementedSortedChatService {
     abstract CreateProject(call: grpc_1.ServerUnaryCall<CreateProjectRequest, CreateProjectResponse>, callback: grpc_1.sendUnaryData<CreateProjectResponse>): void;
     abstract GetProjects(call: grpc_1.ServerUnaryCall<GetProjectsRequest, GetProjectsResponse>, callback: grpc_1.sendUnaryData<GetProjectsResponse>): void;
     abstract ListDocuments(call: grpc_1.ServerUnaryCall<ListDocumentsRequest, ListDocumentsResponse>, callback: grpc_1.sendUnaryData<ListDocumentsResponse>): void;
-    abstract DummyTest(call: grpc_1.ServerUnaryCall<DummyTestRequest, DummyTestResponse>, callback: grpc_1.sendUnaryData<DummyTestResponse>): void;
+    abstract RetrieveSimilarChunks(call: grpc_1.ServerUnaryCall<RetrieveSimilarChunksRequest, RetrieveSimilarChunksResponse>, callback: grpc_1.sendUnaryData<RetrieveSimilarChunksResponse>): void;
 }
 export class SortedChatClient {
     private _address: string;
@@ -2416,8 +2714,8 @@ export class SortedChatClient {
     ListDocuments(message: ListDocumentsRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<ListDocumentsRequest, ListDocumentsResponse>(this._address + "/sortedchat.SortedChat/ListDocuments", message, metadata || {}, SortedChatClient.ListDocuments);
     }
-    private static DummyTest = new grpc_web_1.MethodDescriptor<DummyTestRequest, DummyTestResponse>("/sortedchat.SortedChat/DummyTest", grpc_web_1.MethodType.UNARY, DummyTestRequest, DummyTestResponse, (message: DummyTestRequest) => message.serialize(), DummyTestResponse.deserialize);
-    DummyTest(message: DummyTestRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.thenableCall<DummyTestRequest, DummyTestResponse>(this._address + "/sortedchat.SortedChat/DummyTest", message, metadata || {}, SortedChatClient.DummyTest);
+    private static RetrieveSimilarChunks = new grpc_web_1.MethodDescriptor<RetrieveSimilarChunksRequest, RetrieveSimilarChunksResponse>("/sortedchat.SortedChat/RetrieveSimilarChunks", grpc_web_1.MethodType.UNARY, RetrieveSimilarChunksRequest, RetrieveSimilarChunksResponse, (message: RetrieveSimilarChunksRequest) => message.serialize(), RetrieveSimilarChunksResponse.deserialize);
+    RetrieveSimilarChunks(message: RetrieveSimilarChunksRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<RetrieveSimilarChunksRequest, RetrieveSimilarChunksResponse>(this._address + "/sortedchat.SortedChat/RetrieveSimilarChunks", message, metadata || {}, SortedChatClient.RetrieveSimilarChunks);
     }
 }

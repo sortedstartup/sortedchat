@@ -22,20 +22,6 @@ func NewPipeline(ex Extractor, ch Chunker, em Embedder) Pipeline {
 	return &defaultPipeline{ex: ex, ch: ch, em: em}
 }
 
-func (p *defaultPipeline) Run(ctx context.Context, r io.Reader, mime string) ([]Embedding, error) {
-	docs, err := p.ex.Extract(ctx, r, mime)
-	if err != nil {
-		return nil, err
-	}
-
-	chunks, err := p.ch.Chunk(ctx, docs)
-	if err != nil {
-		return nil, err
-	}
-
-	return p.em.Embed(ctx, chunks)
-}
-
 // RunWithChunks returns both chunks and embeddings, and allows passing metadata
 func (p *defaultPipeline) RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (PipelineResult, error) {
 	data, err := io.ReadAll(r)
@@ -70,16 +56,15 @@ type TextExtractor struct{}
 
 func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (Document, error) {
 	data, err := io.ReadAll(r)
-	// fmt.Println(string(data))
 	if err != nil {
 		return Document{}, err
 	}
 
 	return Document{
-		ID:       "text", //document id form subscriber
+		ID:       "text",
 		MIME:     mime,
 		Text:     string(data),
-		Metadata: map[string]string{}, //idk
+		Metadata: map[string]string{},
 	}, nil
 }
 
@@ -140,7 +125,6 @@ type OLLamaEmbedder struct {
 }
 
 func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding, error) {
-	fmt.Println("hii from embedding function")
 	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/ai/run/@cf/baai/bge-m3", e.AccountID)
 
 	var texts []string
@@ -182,7 +166,6 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 			for i, emb := range data {
 				vec := []float64{}
 				if arr, ok := emb.([]interface{}); ok {
-					fmt.Printf("Raw embedding %d length: %d\n", i, len(arr))
 					for _, v := range arr {
 						if f, ok := v.(float64); ok {
 							vec = append(vec, f)
@@ -190,35 +173,14 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 					}
 				}
 
-				fmt.Printf("Processed vector %d length: %d\n", i, len(vec))
-
 				embeddings = append(embeddings, Embedding{
 					ChunkID:  chunks[i].ID,
 					Vector:   vec,
 					Provider: e.Model,
 				})
 			}
-
-			fmt.Printf("Total embeddings created: %d\n", len(embeddings))
-			for i, emb := range embeddings {
-				fmt.Printf("Final embedding %d: ChunkID=%s, Vector length=%d\n", i, emb.ChunkID, len(emb.Vector))
-			}
 		}
 	}
-	fmt.Println("sanskar136", embeddings)
 
 	return embeddings, nil
-}
-
-func sampleCode() {
-	// Sample Usage
-	pipeline := NewPipeline(
-		&TextExtractor{},
-		&EqualSizeChunker{ChunkSize: 512},
-		&OLLamaEmbedder{Model: "@cf/baai/bge-m3", APIKey: "ewtTCyj2LDi1W-YefyI8wl_GlUVLMj25mGj5UGNF", AccountID: "0b1342921c6940c378a8bf50d24de341"},
-	)
-
-	// Sample code for how to run a pipeline ->
-	stringReader := strings.NewReader("Hello, world!")
-	pipeline.Run(context.Background(), stringReader, "text/plain")
 }

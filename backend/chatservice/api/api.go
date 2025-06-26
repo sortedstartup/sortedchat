@@ -372,9 +372,12 @@ func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest
 
 }
 
-func (s *Server) DummyTest(ctx context.Context, req *pb.DummyTestRequest) (*pb.DummyTestResponse, error) {
-	fmt.Println("sasas")
-	query := "who is gandhi ji"
+func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimilarChunksRequest) (*pb.RetrieveSimilarChunksResponse, error) {
+	projectID := req.GetProjectId()
+	query := req.GetQuery()
+	if projectID == "" || query == "" {
+		return nil, fmt.Errorf("project_id and query are required")
+	}
 
 	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/ai/run/@cf/baai/bge-m3", os.Getenv("EMBEDDING_ACCOUNT_ID"))
 
@@ -405,7 +408,6 @@ func (s *Server) DummyTest(ctx context.Context, req *pb.DummyTestRequest) (*pb.D
 		return nil, err
 	}
 
-	// Extract embedding vector from response
 	var embedding []float64
 	if result, ok := respData["result"].(map[string]interface{}); ok {
 		if data, ok := result["data"].([]interface{}); ok && len(data) > 0 {
@@ -419,57 +421,46 @@ func (s *Server) DummyTest(ctx context.Context, req *pb.DummyTestRequest) (*pb.D
 			}
 		}
 	}
-	fmt.Println(embedding)
 
-	params := rag.SearchParams{TopK: 2, ProjectID: "8df55d0e-02c2-4974-bde8-2448bc2eb126"}
+	params := rag.SearchParams{TopK: 2, ProjectID: projectID}
 
-	// Closure retriever using s.dao
 	retriever := func(ctx context.Context, embedding []float64, params rag.SearchParams) ([]rag.Result, error) {
 		embBytes, err := json.Marshal(embedding)
 		if err != nil {
 			return nil, err
 		}
-		chunks, err := s.dao.GetTopSimilarRAGChunks(string(embBytes))
-		fmt.Println(chunks)
+		vecRows, err := s.dao.GetTopSimilarRAGChunks(string(embBytes), projectID)
 		if err != nil {
 			return nil, err
 		}
 
 		var results []rag.Result
-		for _, chunk := range chunks {
-			// Get file reader from store
-			_, reader, err := s.store.GetObject(ctx, chunk.DocsID)
+		for _, v := range vecRows {
+			_, reader, err := s.store.GetObject(ctx, v.DocsID)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to get object for docsID %s: %w", v.DocsID, err)
 			}
-			// Read all bytes
 			data, err := io.ReadAll(reader)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to read object for docsID %s: %w", v.DocsID, err)
 			}
-			fmt.Println(data)
-			// Slice to get chunk text
-			if chunk.StartByte < 0 || chunk.EndByte > len(data) || chunk.StartByte > chunk.EndByte {
-				return nil, fmt.Errorf("invalid chunk byte range")
+			if v.StartByte < 0 || v.EndByte > len(data) || v.StartByte > v.EndByte {
+				return nil, fmt.Errorf("invalid chunk byte range for docsID %s: %d-%d (file size %d)", v.DocsID, v.StartByte, v.EndByte, len(data))
 			}
-			chunkText := string(data[chunk.StartByte:chunk.EndByte])
-			fmt.Println(chunkText)
+			chunkText := string(data[v.StartByte:v.EndByte])
 
-			// Build rag.Result
 			results = append(results, rag.Result{
 				Chunk: rag.Chunk{
-					ID:        chunk.ID,
-					ProjectID: chunk.ProjectID,
-					DocsID:    chunk.DocsID,
-					StartByte: chunk.StartByte,
-					EndByte:   chunk.EndByte,
+					ID:        v.ID,
+					ProjectID: v.ProjectID,
+					DocsID:    v.DocsID,
+					StartByte: v.StartByte,
+					EndByte:   v.EndByte,
 					Text:      chunkText,
 				},
-				Similarity: 0, // Set if you have similarity info
+				Similarity: 0, // TODO: set actual similarity if available
 			})
 		}
-		// TODO: Map chunks to rag.Result
-		// return []rag.Result{}, nil
 		return results, nil
 	}
 
@@ -478,8 +469,23 @@ func (s *Server) DummyTest(ctx context.Context, req *pb.DummyTestRequest) (*pb.D
 		return nil, err
 	}
 
-	return &pb.DummyTestResponse{
-		Chunk: response.Prompt, //needs to be changed
+	var pbResults []*pb.SimilarChunkResult
+	for _, r := range response.Results {
+		pbResults = append(pbResults, &pb.SimilarChunkResult{
+			Chunk: &pb.Chunk{
+				Id:        r.Chunk.ID,
+				ProjectId: r.Chunk.ProjectID,
+				DocsId:    r.Chunk.DocsID,
+				StartByte: int32(r.Chunk.StartByte),
+				EndByte:   int32(r.Chunk.EndByte),
+				Text:      r.Chunk.Text,
+			},
+			Similarity: float32(r.Similarity),
+		})
+	}
+
+	return &pb.RetrieveSimilarChunksResponse{
+		Results: pbResults,
 	}, nil
 }
 
@@ -507,7 +513,6 @@ func (s *Server) EmbeddingSubscriber() {
 		for msg := range sub {
 			var payload GenerateEmbeddingMessage
 			if err := json.Unmarshal(msg.Data, &payload); err == nil {
-				fmt.Printf("docs_id: %v\n", payload.DocsID)
 
 				// Fetch project_id for docs_id
 				docMeta, err := s.dao.GetFileMetadata(payload.DocsID)
@@ -540,14 +545,11 @@ func (s *Server) EmbeddingSubscriber() {
 				for _, chunk := range result.Chunks {
 					err := s.dao.SaveRAGChunk(chunk.ID, chunk.ProjectID, chunk.DocsID, chunk.StartByte, chunk.EndByte)
 					if err != nil {
-						fmt.Printf("Failed to save chunk: %v\n", err)
+						fmt.Printf("Failed to save chunk: %v", err)
 					}
 
 					for _, emb := range result.Embeddings {
 						if emb.ChunkID == chunk.ID {
-							fmt.Printf("About to save embedding for chunk %s: vector length = %d\n", chunk.ID, len(emb.Vector))
-							fmt.Printf("First 3 values: %v\n", emb.Vector[:3])
-
 							err := s.dao.SaveRAGChunkEmbedding(chunk.ID, emb.Vector)
 							if err != nil {
 								fmt.Printf("Failed to save embedding: %v\n", err)

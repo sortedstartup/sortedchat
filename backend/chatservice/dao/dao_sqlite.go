@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"encoding/json"
+	"fmt"
 	proto "sortedstartup/chatservice/proto"
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
@@ -213,6 +215,16 @@ func (s *SQLiteDAO) SaveRAGChunk(chunkID, projectID, docsID string, startByte, e
 		INSERT INTO rag_chunks (id, project_id, docs_id, start_byte, end_byte)
 		VALUES (?, ?, ?, ?, ?)
 	`, chunkID, projectID, docsID, startByte, endByte)
+	return err
+}
+
+func (s *SQLiteDAO) SaveRAGChunkEmbedding(chunkID string, vector []float64) error {
+	arr, err := json.Marshal(vector)
+	if err != nil {
+		return fmt.Errorf("failed: %w", err)
+	}
+
+	_, err = s.db.Exec("INSERT INTO rag_chunks_vec (id, embedding) VALUES (?, ?)", chunkID, string(arr))
 	return err
 }
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -371,6 +372,117 @@ func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest
 
 }
 
+func (s *Server) DummyTest(ctx context.Context, req *pb.DummyTestRequest) (*pb.DummyTestResponse, error) {
+	fmt.Println("sasas")
+	query := "who is gandhi ji"
+
+	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/ai/run/@cf/baai/bge-m3", os.Getenv("EMBEDDING_ACCOUNT_ID"))
+
+	reqBody := map[string]interface{}{
+		"text": query,
+	}
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+os.Getenv("EMBEDDING_API_TOKEN"))
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var respData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+		return nil, err
+	}
+
+	// Extract embedding vector from response
+	var embedding []float64
+	if result, ok := respData["result"].(map[string]interface{}); ok {
+		if data, ok := result["data"].([]interface{}); ok && len(data) > 0 {
+			if arr, ok := data[0].([]interface{}); ok {
+				embedding = make([]float64, len(arr))
+				for i, v := range arr {
+					if f, ok := v.(float64); ok {
+						embedding[i] = f
+					}
+				}
+			}
+		}
+	}
+	fmt.Println(embedding)
+
+	params := rag.SearchParams{TopK: 2, ProjectID: "8df55d0e-02c2-4974-bde8-2448bc2eb126"}
+
+	// Closure retriever using s.dao
+	retriever := func(ctx context.Context, embedding []float64, params rag.SearchParams) ([]rag.Result, error) {
+		embBytes, err := json.Marshal(embedding)
+		if err != nil {
+			return nil, err
+		}
+		chunks, err := s.dao.GetTopSimilarRAGChunks(string(embBytes))
+		fmt.Println(chunks)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []rag.Result
+		for _, chunk := range chunks {
+			// Get file reader from store
+			_, reader, err := s.store.GetObject(ctx, chunk.DocsID)
+			if err != nil {
+				return nil, err
+			}
+			// Read all bytes
+			data, err := io.ReadAll(reader)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Println(data)
+			// Slice to get chunk text
+			if chunk.StartByte < 0 || chunk.EndByte > len(data) || chunk.StartByte > chunk.EndByte {
+				return nil, fmt.Errorf("invalid chunk byte range")
+			}
+			chunkText := string(data[chunk.StartByte:chunk.EndByte])
+			fmt.Println(chunkText)
+
+			// Build rag.Result
+			results = append(results, rag.Result{
+				Chunk: rag.Chunk{
+					ID:        chunk.ID,
+					ProjectID: chunk.ProjectID,
+					DocsID:    chunk.DocsID,
+					StartByte: chunk.StartByte,
+					EndByte:   chunk.EndByte,
+					Text:      chunkText,
+				},
+				Similarity: 0, // Set if you have similarity info
+			})
+		}
+		// TODO: Map chunks to rag.Result
+		// return []rag.Result{}, nil
+		return results, nil
+	}
+
+	response, err := rag.BasicRetrievePipeline(ctx, retriever, rag.BasicPromptBuilder, embedding, query, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.DummyTestResponse{
+		Chunk: response.Prompt, //needs to be changed
+	}, nil
+}
+
 func (s *Server) Init() {
 	// Initialize DAO
 	sqliteDAO, err := db.NewSQLiteDAO("chatservice.db")
@@ -429,6 +541,19 @@ func (s *Server) EmbeddingSubscriber() {
 					err := s.dao.SaveRAGChunk(chunk.ID, chunk.ProjectID, chunk.DocsID, chunk.StartByte, chunk.EndByte)
 					if err != nil {
 						fmt.Printf("Failed to save chunk: %v\n", err)
+					}
+
+					for _, emb := range result.Embeddings {
+						if emb.ChunkID == chunk.ID {
+							fmt.Printf("About to save embedding for chunk %s: vector length = %d\n", chunk.ID, len(emb.Vector))
+							fmt.Printf("First 3 values: %v\n", emb.Vector[:3])
+
+							err := s.dao.SaveRAGChunkEmbedding(chunk.ID, emb.Vector)
+							if err != nil {
+								fmt.Printf("Failed to save embedding: %v\n", err)
+							}
+							break
+						}
 					}
 				}
 			}

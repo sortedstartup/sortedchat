@@ -29,4 +29,5 @@ type DAO interface {
 
 	// SaveRAGChunk saves a chunk to rag_chunks table
 	SaveRAGChunk(chunkID, projectID, docsID string, startByte, endByte int) error
+	SaveRAGChunkEmbedding(chunkID string, embedding []float64) error
 }

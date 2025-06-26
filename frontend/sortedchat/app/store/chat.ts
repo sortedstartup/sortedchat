@@ -17,6 +17,7 @@ import {
   GetProjectsRequest,
   ListDocumentsRequest,
   Document,
+  DummyTestRequest,
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
 
@@ -286,3 +287,19 @@ $documents.listen((projectId) => {
     fetchDocuments(projectId);
   }
 });
+
+export async function Dummy(input: string){
+   try {
+    const res = await chat.DummyTest(
+      DummyTestRequest.fromObject({ input: "fsd" }),
+      {}
+    );
+
+    console.log(res);
+
+    // $documents.set(res.documents);
+  } catch (err) {
+    console.error("Failed to fetch documents:", err);
+    // $documents.set([]);
+  }
+}

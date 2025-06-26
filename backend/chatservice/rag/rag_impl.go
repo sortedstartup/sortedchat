@@ -175,27 +175,37 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		return nil, err
 	}
 
-	fmt.Println("sanskar136", respData)
-
-	// Example: parse embeddings from response
 	var embeddings []Embedding
-	// if data, ok := respData["result"].([]interface{}); ok {
-	// 	for i, emb := range data {
-	// 		vec := []float64{}
-	// 		if arr, ok := emb.([]interface{}); ok {
-	// 			for _, v := range arr {
-	// 				if f, ok := v.(float64); ok {
-	// 					vec = append(vec, f)
-	// 				}
-	// 			}
-	// 		}
-	// 		embeddings = append(embeddings, Embedding{
-	// 			ChunkID:  chunks[i].ID,
-	// 			Vector:   vec,
-	// 			Provider: e.Model,
-	// 		})
-	// 	}
-	// }
+	result, ok := respData["result"].(map[string]interface{})
+	if ok {
+		if data, ok := result["data"].([]interface{}); ok {
+			for i, emb := range data {
+				vec := []float64{}
+				if arr, ok := emb.([]interface{}); ok {
+					fmt.Printf("Raw embedding %d length: %d\n", i, len(arr))
+					for _, v := range arr {
+						if f, ok := v.(float64); ok {
+							vec = append(vec, f)
+						}
+					}
+				}
+
+				fmt.Printf("Processed vector %d length: %d\n", i, len(vec))
+
+				embeddings = append(embeddings, Embedding{
+					ChunkID:  chunks[i].ID,
+					Vector:   vec,
+					Provider: e.Model,
+				})
+			}
+
+			fmt.Printf("Total embeddings created: %d\n", len(embeddings))
+			for i, emb := range embeddings {
+				fmt.Printf("Final embedding %d: ChunkID=%s, Vector length=%d\n", i, emb.ChunkID, len(emb.Vector))
+			}
+		}
+	}
+	fmt.Println("sanskar136", embeddings)
 
 	return embeddings, nil
 }

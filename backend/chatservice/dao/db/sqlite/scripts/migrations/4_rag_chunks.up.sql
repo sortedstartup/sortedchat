@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS rag_chunks (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- CREATE VIRTUAL TABLE IF NOT EXISTS rag_chunks_vec USING vec0(
--- 	id INTEGER,
---     embedding FLOAT[1024]
--- );
+CREATE VIRTUAL TABLE IF NOT EXISTS rag_chunks_vec USING vec0(
+	id TEXT,
+    embedding FLOAT[1024]
+);

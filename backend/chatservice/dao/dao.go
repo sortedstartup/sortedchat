@@ -26,4 +26,9 @@ type DAO interface {
 	FileSave(project_id string, docs_id string, file_name string, fileSize int64) error
 	FilesList(project_id string) ([]DocumentListRow, error)
 	GetFileMetadata(docsId string) (*DocumentListRow, error)
+
+	// SaveRAGChunk saves a chunk to rag_chunks table
+	SaveRAGChunk(chunkID, projectID, docsID string, startByte, endByte int) error
+	SaveRAGChunkEmbedding(chunkID string, embedding []float64) error
+	GetTopSimilarRAGChunks(embedding string, projectID string) ([]RAGChunkRow, error)
 }

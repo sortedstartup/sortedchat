@@ -17,6 +17,7 @@ import {
   GetProjectsRequest,
   ListDocumentsRequest,
   Document,
+  RetrieveSimilarChunksRequest,
 } from "../../proto/chatservice";
 import { atom, onMount, computed } from "nanostores";
 

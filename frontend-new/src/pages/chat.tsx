@@ -56,7 +56,6 @@ export function Chat() {
 
   const [inputValue, setInputValue] = useState("");
 
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -87,13 +86,12 @@ export function Chat() {
     
     console.log("Selected model:", model);
     console.log("Selected model:", $selectedModel.get());
-
   };
 
   return (
-    <div className="flex flex-col mx-auto max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl w-full h-screen">
-      <div className="flex-1 overflow-y-auto px-2 sm:px-4">
-        <ChatMessageList className="flex flex-col gap-4 py-4 min-h-full">
+    <div className="flex flex-col h-full mx-auto max-w-full w-full">
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4 min-h-0">
+        <ChatMessageList className="flex flex-col gap-4 py-4">
           {loading ? (
             <div className="flex items-center justify-center h-full text-gray-500">
               Loading messages...
@@ -113,7 +111,7 @@ export function Chat() {
                 >
                   <ChatBubble
                     variant={message.role === "user" ? "sent" : "received"}
-                    className="max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg mx-2 sm:mx-4"
+                    className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] mx-2 sm:mx-4"
                   >
                     <ChatBubbleAvatar
                       fallback={message.role === "user" ? "US" : "AI"}
@@ -133,7 +131,7 @@ export function Chat() {
                 <div className="flex justify-end">
                   <ChatBubble
                     variant="sent"
-                    className="max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg mr-2 sm:mr-4"
+                    className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] mr-2 sm:mr-4"
                   >
                     <ChatBubbleAvatar fallback="US" />
                     <ChatBubbleMessage variant="sent">
@@ -149,7 +147,7 @@ export function Chat() {
                 <div className="flex justify-start">
                   <ChatBubble
                     variant="received"
-                    className="max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg ml-2 sm:ml-4"
+                    className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] ml-2 sm:ml-4"
                   >
                     <ChatBubbleAvatar fallback="AI" />
                     <ChatBubbleMessage variant="received">
@@ -165,7 +163,8 @@ export function Chat() {
           )}
         </ChatMessageList>
       </div>
-      <div className="sticky bottom-0 bg-background p-2 sm:p-4 border-t">
+
+      <div className="flex-shrink-0 bg-background p-2 sm:p-4 border-t">
         <div className="relative rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring p-1">
           <ChatInput
             placeholder="Type your message here..."

@@ -41,6 +41,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	apiServer := api.NewServer(mux)
+	apiServer.Init()
 	proto.RegisterSortedChatServer(grpcServer, apiServer)
 
 	// Enable reflection, TODO: may be remove in production ?

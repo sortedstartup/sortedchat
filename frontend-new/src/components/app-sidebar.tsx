@@ -19,16 +19,8 @@ export function AppSidebar() {
   const projectsList = useStore($projectList);
   const chatsList = useStore($chatList);
 
-  let navigate: ReturnType<typeof useNavigate> | undefined;
-  let location: ReturnType<typeof useLocation> | undefined;
-  try {
-    navigate = useNavigate();
-    location = useLocation();
-  } catch {
-    navigate = undefined;
-    location = undefined;
-  }
-
+  const navigate = useNavigate();
+  
   const handleNewChat = async () => {
     try {
       const chatId = await createNewChat();
@@ -49,24 +41,12 @@ export function AppSidebar() {
       projectsList.find((p) => p.id === projectId)?.name || ""
     );
     $currentProjectId.set(projectId);
-    if (navigate && location) {
-      if (location.pathname !== `/project/${projectId}`) {
         navigate(`/project/${projectId}`, { replace: true });
-      }
-    } else {
-      window.location.href = `/project/${projectId}`;
-    }
   };
 
   const handleChatSelect = (selectedChatId: string) => {
     $currentChatId.set(selectedChatId);
-    if (navigate && location) {
-      if (location.pathname !== `/chat/${selectedChatId}`) {
         navigate(`/chat/${selectedChatId}`, { replace: true });
-      }
-    } else {
-      window.location.href = `/chat/${selectedChatId}`;
-    }
   };
 
   return (
@@ -141,6 +121,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {chatsList.map((chat) => (
                 <SidebarMenuItem key={chat.name}>
+                  
                   <SidebarMenuButton
                     onClick={() => handleChatSelect(chat.chatId)}
                   >

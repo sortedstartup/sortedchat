@@ -62,7 +62,7 @@ export function Project() {
             onKeyDown={handleKeyDown}
           />
           <div className="flex items-center p-3 pt-0">
-            <Button variant="ghost" size="icon" type="button">
+            {/* <Button variant="ghost" size="icon" type="button">
               <Paperclip className="size-5 text-gray-400" />
               <span className="sr-only">Attach file</span>
             </Button>
@@ -70,7 +70,7 @@ export function Project() {
             <Button variant="ghost" size="icon" type="button">
               <Mic className="size-5 text-gray-400" />
               <span className="sr-only">Use Microphone</span>
-            </Button>
+            </Button> */}
             <Button
               size="sm"
               className="ml-auto gap-1.5"

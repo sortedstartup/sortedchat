@@ -13,7 +13,7 @@ export function Project() {
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -26,6 +26,7 @@ export function Project() {
       style={{
         minHeight: "100vh",
         marginLeft: "1rem",
+        marginRight: "1rem",
         width: "calc(100vw - 16rem)",
         background: "#fffada",
         color: "#000",
@@ -42,9 +43,7 @@ export function Project() {
 
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="text-center max-w-md">
-          <h2 className="text-xl font-medium mb-3">
-            Start your spy novel
-          </h2>
+          <h2 className="text-xl font-medium mb-3">Start your spy novel</h2>
           <p className="text-gray-500 mb-6 text-sm">
             Begin writing your sophisticated thriller below
           </p>
@@ -61,7 +60,7 @@ export function Project() {
             placeholder="Type your message here..."
             className="min-h-12 border-0 p-3 shadow-none focus-visible:ring-0 bg-gray-50 text-black"
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
           />
           <div className="flex items-center p-3 pt-0">

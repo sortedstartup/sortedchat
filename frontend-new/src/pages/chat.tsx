@@ -7,37 +7,162 @@ import {
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
 import { CornerDownLeft, Mic, Paperclip } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useStore } from "@nanostores/react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  $currentChatId,
+  $selectedModel,
+  doChat,
+  $currentChatMessages,
+  $streamingMessage,
+  $currentChatMessage,
+  $availableModels,
+} from "@/store/chat";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 export function Chat() {
+  const { chatId } = useParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (chatId) {
+      $currentChatId.set(chatId);
+    }
+  }, [chatId]);
+
+  useEffect(() => {
+    const unsub = $currentChatId.listen((newId) => {
+      if (newId && newId !== chatId) {
+        navigate(`/chat/${newId}`, { replace: true });
+      }
+    });
+    return () => unsub();
+  }, [chatId, navigate]);
+
+  const { data, loading } = useStore($currentChatMessages);
+
+  const streamingMessage = useStore($streamingMessage);
+  const currentChatMessage = useStore($currentChatMessage);
+  const availableModels = useStore($availableModels);
+  const selectedModel = useStore($selectedModel);
+
+  const [inputValue, setInputValue] = useState("");
+
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [data, streamingMessage, currentChatMessage]);
+
+  const handleSend = () => {
+    if (inputValue.trim()) {
+      doChat(inputValue);
+      setInputValue("");
+      setTimeout(scrollToBottom, 100);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleModelSelect = (model: string) => {
+    $selectedModel.set(model);
+    
+    console.log("Selected model:", model);
+    console.log("Selected model:", $selectedModel.get());
+
+  };
+
   return (
     <div className="flex flex-col mx-auto max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl w-full h-screen">
       <div className="flex-1 overflow-y-auto px-2 sm:px-4">
         <ChatMessageList className="flex flex-col gap-4 py-4 min-h-full">
-          <div className="flex justify-end">
-            <ChatBubble variant="sent" className="max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg mr-2 sm:mr-4">
-              <ChatBubbleAvatar fallback="US" />
-              <ChatBubbleMessage variant="sent">
-                Hello, how has your day been? I hope you are doing well.
-              </ChatBubbleMessage>
-            </ChatBubble>
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Loading messages...
+            </div>
+          ) : data === undefined || data === null ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              No messages yet
+            </div>
+          ) : (
+            <>
+              {data?.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex ${
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <ChatBubble
+                    variant={message.role === "user" ? "sent" : "received"}
+                    className="max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg mx-2 sm:mx-4"
+                  >
+                    <ChatBubbleAvatar
+                      fallback={message.role === "user" ? "US" : "AI"}
+                    />
+                    <ChatBubbleMessage
+                      variant={message.role === "user" ? "sent" : "received"}
+                    >
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.content}
+                      </ReactMarkdown>
+                    </ChatBubbleMessage>
+                  </ChatBubble>
+                </div>
+              ))}
 
-          <div className="flex justify-start">
-            <ChatBubble variant="received" className="max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg ml-2 sm:ml-4">
-              <ChatBubbleAvatar fallback="AI" />
-              <ChatBubbleMessage variant="received">
-                Hi, I am doing well, thank you for asking. How can I help you
-                today?
-              </ChatBubbleMessage>
-            </ChatBubble>
-          </div>
+              {currentChatMessage && currentChatMessage.trim() && (
+                <div className="flex justify-end">
+                  <ChatBubble
+                    variant="sent"
+                    className="max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg mr-2 sm:mr-4"
+                  >
+                    <ChatBubbleAvatar fallback="US" />
+                    <ChatBubbleMessage variant="sent">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {currentChatMessage}
+                      </ReactMarkdown>
+                    </ChatBubbleMessage>
+                  </ChatBubble>
+                </div>
+              )}
 
-          <div className="flex justify-start">
-            <ChatBubble variant="received" className="max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg ml-2 sm:ml-4">
-              <ChatBubbleAvatar fallback="AI" />
-              <ChatBubbleMessage isLoading />
-            </ChatBubble>
-          </div>
+              {streamingMessage && streamingMessage.trim() && (
+                <div className="flex justify-start">
+                  <ChatBubble
+                    variant="received"
+                    className="max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg ml-2 sm:ml-4"
+                  >
+                    <ChatBubbleAvatar fallback="AI" />
+                    <ChatBubbleMessage variant="received">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {streamingMessage}
+                      </ReactMarkdown>
+                    </ChatBubbleMessage>
+                  </ChatBubble>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </>
+          )}
         </ChatMessageList>
       </div>
       <div className="sticky bottom-0 bg-background p-2 sm:p-4 border-t">
@@ -45,8 +170,29 @@ export function Chat() {
           <ChatInput
             placeholder="Type your message here..."
             className="min-h-12 resize-none rounded-lg bg-background border-0 p-3 shadow-none focus-visible:ring-0"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
           <div className="flex items-center p-3 pt-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="mr-2">
+                  {selectedModel || "Select Model"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {availableModels.map((model) => (
+                  <DropdownMenuItem
+                    key={model.id || model.label}
+                    onClick={() => handleModelSelect(model.id)}
+                  >
+                    {model.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button variant="ghost" size="icon">
               <Paperclip className="size-4" />
               <span className="sr-only">Attach file</span>
@@ -57,7 +203,7 @@ export function Chat() {
               <span className="sr-only">Use Microphone</span>
             </Button>
 
-            <Button size="sm" className="ml-auto gap-1.5">
+            <Button size="sm" className="ml-auto gap-1.5" onClick={handleSend}>
               Send Message
               <CornerDownLeft className="size-3.5" />
             </Button>

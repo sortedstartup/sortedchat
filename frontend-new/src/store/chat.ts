@@ -217,15 +217,15 @@ export const $projectList = atom<Project[]>([]);
 export const $currentProjectId = atom<String>("");
 
 export const createProject = async (
+  name: string,
   description: string,
-  additionalData: string
 ) => {
   try {
     const response = await chat.CreateProject(
       CreateProjectRequest.fromObject({
-        name: $currentProject.get(),
+        name: name,
         description: description,
-        additional_data: additionalData,
+        additional_data: "", // TODO: looks like not needed
       }),
       {}
     );

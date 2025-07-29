@@ -55,14 +55,14 @@ export function Home() {
                 onKeyDown={handleKeyDown}
               />
               <div className="flex items-center gap-2 pt-4">
-                <Button variant="ghost" size="icon" type="button">
+                {/* <Button variant="ghost" size="icon" type="button">
                   <Paperclip className="size-5 text-gray-400" />
                   <span className="sr-only">Attach file</span>
                 </Button>
                 <Button variant="ghost" size="icon" type="button">
                   <Mic className="size-5 text-gray-400" />
                   <span className="sr-only">Use Microphone</span>
-                </Button>
+                </Button> */}
                 <Button
                   size="sm"
                   className="ml-auto gap-1.5"

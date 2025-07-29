@@ -193,7 +193,7 @@ export function Chat() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="ghost" size="icon">
+            {/* <Button variant="ghost" size="icon">
               <Paperclip className="size-4" />
               <span className="sr-only">Attach file</span>
             </Button>
@@ -201,7 +201,7 @@ export function Chat() {
             <Button variant="ghost" size="icon">
               <Mic className="size-4" />
               <span className="sr-only">Use Microphone</span>
-            </Button>
+            </Button> */}
 
             <Button size="sm" className="ml-auto gap-1.5" onClick={handleSend}>
               Send Message

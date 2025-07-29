@@ -38,8 +38,6 @@ export function Home() {
         marginLeft: "1rem",
         marginRight: "1rem",
         width: "calc(100vw - 16rem)",
-        background: "#fffada",
-        color: "#000",
       }}
     >
       <div className="flex flex-1 items-center justify-center">

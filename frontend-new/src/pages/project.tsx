@@ -28,8 +28,6 @@ export function Project() {
         marginLeft: "1rem",
         marginRight: "1rem",
         width: "calc(100vw - 16rem)",
-        background: "#fffada",
-        color: "#000",
       }}
     >
       <div className="p-4 border-b border-gray-200">

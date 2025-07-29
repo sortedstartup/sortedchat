@@ -10,7 +10,7 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       {
-        index: true, 
+        index: true,
         element: <Home />,
       },
       {
@@ -20,6 +20,10 @@ const router = createBrowserRouter([
       {
         path: "project/:projectId",
         element: <Project />,
+      },
+      {
+        path: "*",
+        element: <Home />,
       },
     ],
   },

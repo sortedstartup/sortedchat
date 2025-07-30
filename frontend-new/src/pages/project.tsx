@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { FileUploader } from "./FileUploader";
+import { FileUploader } from "../components/FileUploader";
 import { useStore } from "@nanostores/react";
 import {
   $currentProject,

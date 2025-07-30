@@ -83,9 +83,6 @@ export function Chat() {
 
   const handleModelSelect = (model: string) => {
     $selectedModel.set(model);
-    
-    console.log("Selected model:", model);
-    console.log("Selected model:", $selectedModel.get());
   };
 
   return (

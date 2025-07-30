@@ -243,6 +243,13 @@ export const getProjectList = async () => {
       {}
     );
     $projectList.set(response.projects || []);
+    const currentId = $currentProjectId.get();
+    if (currentId) {
+      const foundProject = response.projects.find((p: Project) => p.id === currentId);
+      if (foundProject) {
+        $currentProject.set(foundProject.name);
+      }
+    }
   } catch (err) {
     console.error(err);
   }

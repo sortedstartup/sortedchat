@@ -33,12 +33,6 @@ export function Home() {
   return (
     <div
       className="flex flex-col min-h-screen"
-      style={{
-        minHeight: "100vh",
-        marginLeft: "1rem",
-        marginRight: "1rem",
-        width: "calc(100vw - 16rem)",
-      }}
     >
       <div className="flex flex-1 items-center justify-center">
         <div className="w-full max-w-2xl mx-auto">

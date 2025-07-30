@@ -191,8 +191,12 @@ export const $searchResults = atom<SearchResult[]>([]);
 export const $searchText = atom<string>("elon");
 
 $searchText.listen((newValue, oldValue) => {
-  if (newValue !== oldValue && newValue !== "") {
-    getSearchResults();
+   if (newValue !== oldValue) {
+    if (newValue === "") {
+      $searchResults.set([]);
+    } else {
+      getSearchResults();
+    }
   }
 });
 
@@ -243,6 +247,13 @@ export const getProjectList = async () => {
       {}
     );
     $projectList.set(response.projects || []);
+    const currentId = $currentProjectId.get();
+    if (currentId) {
+      const foundProject = response.projects.find((p: Project) => p.id === currentId);
+      if (foundProject) {
+        $currentProject.set(foundProject.name);
+      }
+    }
   } catch (err) {
     console.error(err);
   }

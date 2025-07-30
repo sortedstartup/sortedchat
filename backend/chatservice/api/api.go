@@ -375,14 +375,16 @@ func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest
 func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimilarChunksRequest) (*pb.RetrieveSimilarChunksResponse, error) {
 	projectID := req.GetProjectId()
 	query := req.GetQuery()
+	
 	if projectID == "" || query == "" {
 		return nil, fmt.Errorf("project_id and query are required")
 	}
 
-	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/ai/run/@cf/baai/bge-m3", os.Getenv("EMBEDDING_ACCOUNT_ID"))
+	url := os.Getenv("EMBEDDING_API_URL")
 
 	reqBody := map[string]interface{}{
-		"text": query,
+		"model":  "nomic-embed-text",
+		"prompt": query,
 	}
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
@@ -393,7 +395,6 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 	if err != nil {
 		return nil, err
 	}
-	httpReq.Header.Set("Authorization", "Bearer "+os.Getenv("EMBEDDING_API_TOKEN"))
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -409,15 +410,11 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 	}
 
 	var embedding []float64
-	if result, ok := respData["result"].(map[string]interface{}); ok {
-		if data, ok := result["data"].([]interface{}); ok && len(data) > 0 {
-			if arr, ok := data[0].([]interface{}); ok {
-				embedding = make([]float64, len(arr))
-				for i, v := range arr {
-					if f, ok := v.(float64); ok {
-						embedding[i] = f
-					}
-				}
+	if embeddingData, ok := respData["embedding"].([]interface{}); ok {
+		embedding = make([]float64, len(embeddingData))
+		for i, v := range embeddingData {
+			if f, ok := v.(float64); ok {
+				embedding[i] = f
 			}
 		}
 	}
@@ -433,6 +430,7 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 		if err != nil {
 			return nil, err
 		}
+		fmt.Printf("Retrieved %d similar chunks for query '%s'\n", len(vecRows), query)
 
 		var results []rag.Result
 		for _, v := range vecRows {
@@ -449,6 +447,8 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 			}
 			chunkText := string(data[v.StartByte:v.EndByte])
 
+			fmt.Printf("Retrieved chunk %s for docsID %s: %s\n", v.ID, v.DocsID, chunkText)
+
 			results = append(results, rag.Result{
 				Chunk: rag.Chunk{
 					ID:        v.ID,
@@ -458,7 +458,7 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 					EndByte:   v.EndByte,
 					Text:      chunkText,
 				},
-				Similarity: 0, // TODO: set actual similarity if available
+				Similarity: 0,
 			})
 		}
 		return results, nil
@@ -488,7 +488,6 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 		Results: pbResults,
 	}, nil
 }
-
 func (s *Server) Init() {
 	// Initialize DAO
 	sqliteDAO, err := db.NewSQLiteDAO("chatservice.db")

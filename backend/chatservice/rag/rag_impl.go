@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
+	"os"
 	"net/http"
 	"strings"
 
@@ -125,61 +125,54 @@ type OLLamaEmbedder struct {
 }
 
 func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding, error) {
-	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/ai/run/@cf/baai/bge-m3", e.AccountID)
-
-	var texts []string
-	for _, chunk := range chunks {
-		texts = append(texts, chunk.Text)
-	}
-
-	reqBody := map[string]interface{}{
-		"text": texts,
-	}
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+e.APIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var respData map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-		return nil, err
-	}
+	url := os.Getenv("EMBEDDING_API_URL")
 
 	var embeddings []Embedding
-	result, ok := respData["result"].(map[string]interface{})
-	if ok {
-		if data, ok := result["data"].([]interface{}); ok {
-			for i, emb := range data {
-				vec := []float64{}
-				if arr, ok := emb.([]interface{}); ok {
-					for _, v := range arr {
-						if f, ok := v.(float64); ok {
-							vec = append(vec, f)
-						}
-					}
-				}
+	
+	for _, chunk := range chunks {
+		reqBody := map[string]interface{}{
+			"model":  "nomic-embed-text",
+			"prompt": chunk.Text,
+		}
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			return nil, err
+		}
 
-				embeddings = append(embeddings, Embedding{
-					ChunkID:  chunks[i].ID,
-					Vector:   vec,
-					Provider: e.Model,
-				})
+		req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(bodyBytes))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		var respData map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+		resp.Body.Close()
+
+		var vec []float64
+		if embeddingData, ok := respData["embedding"].([]interface{}); ok {
+			vec = make([]float64, len(embeddingData))
+			for i, v := range embeddingData {
+				if f, ok := v.(float64); ok {
+					vec[i] = f
+				}
 			}
 		}
+
+		embeddings = append(embeddings, Embedding{
+			ChunkID:  chunk.ID,
+			Vector:   vec,
+			Provider: e.Model,
+		})
 	}
 
 	return embeddings, nil

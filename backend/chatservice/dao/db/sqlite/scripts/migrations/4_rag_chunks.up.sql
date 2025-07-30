@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS rag_chunks (
 
 CREATE VIRTUAL TABLE IF NOT EXISTS rag_chunks_vec USING vec0(
 	id TEXT,
-    embedding FLOAT[1024]
+    embedding FLOAT[768]
 );

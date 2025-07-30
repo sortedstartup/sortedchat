@@ -25,6 +25,7 @@ import {
   fetchDocuments,
 } from "@/store/chat";
 import { useParams } from "react-router-dom";
+const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
 
 export function Project() {
   const [message, setMessage] = useState("");
@@ -114,9 +115,8 @@ export function Project() {
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                         onClick={() =>
                           window.open(
-                            `http://localhost:8080/documents/${doc.docs_id}`,
+                            `${API_UPLOAD_URL}/documents/${doc.docs_id}`,
                             "_blank",
-                            "noopener,noreferrer"
                           )
                         }
                       >
@@ -157,7 +157,7 @@ export function Project() {
                   <DialogTitle>Upload Files or Folder</DialogTitle>
                 </DialogHeader>
                 <FileUploader
-                  uploadUrl="http://localhost:8080/upload"
+                  uploadUrl={`${API_UPLOAD_URL}/upload`}
                   onFileUpload={(file) => console.log("Uploaded:", file)}
                   onCompleteUpload={handleUploadComplete}
                 />

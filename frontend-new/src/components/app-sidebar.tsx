@@ -109,7 +109,6 @@ export function AppSidebar() {
   const handleSearchClose = () => {
     setIsSearchDialogOpen(false);
     $searchText.set("");
-    $searchResults.set([]);
     setLocalSearchText("");
   };
 

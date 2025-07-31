@@ -29,9 +29,14 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 }
 
 // CreateChat creates a new chat with the given ID and name
-func (s *SQLiteDAO) CreateChat(chatId string, name string) error {
-	_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name) VALUES (?, ?)", chatId, name)
-	return err
+func (s *SQLiteDAO) CreateChat(chatId string, name string, projectID string) error {
+	if projectID == "" || projectID == "null" {
+		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name) VALUES (?, ?)", chatId, name)
+		return err
+	} else {
+		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name, project_id) VALUES (?, ?, ?)", chatId, name, projectID)
+		return err
+	}
 }
 
 // AddChatMessage adds a message to a chat
@@ -54,9 +59,15 @@ type ChatInfoRow struct {
 }
 
 // GetChatList retrieves all chats
-func (s *SQLiteDAO) GetChatList() ([]*proto.ChatInfo, error) {
+func (s *SQLiteDAO) GetChatList(projectID string) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
-	err := s.db.Select(&chats, "SELECT chat_id, name FROM chat_list")
+	var err error
+	
+	if projectID == "" || projectID == "null" {
+		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL")
+	} else {
+		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ?", projectID)
+	}
 
 	if err != nil {
 		return nil, err

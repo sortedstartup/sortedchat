@@ -6,13 +6,13 @@ import (
 
 type DAO interface {
 	// Chat CRUD
-	CreateChat(chatId string, name string) error
+	CreateChat(chatId string, name string, projectID string) error
 	AddChatMessage(chatId string, role string, content string) error
 	AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) error
 	GetChatMessages(chatId string) ([]ChatMessageRow, error)
 
 	// GetChatList retrieves all chats
-	GetChatList() ([]*proto.ChatInfo, error)
+	GetChatList(projectID string) ([]*proto.ChatInfo, error)
 
 	// Model operations
 	GetModels() ([]proto.ModelListInfo, error)

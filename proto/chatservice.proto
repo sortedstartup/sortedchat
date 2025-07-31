@@ -15,11 +15,11 @@ service SortedChat {
     rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
     rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
     rpc ListDocuments(ListDocumentsRequest) returns(ListDocumentsResponse);
-    rpc RetrieveSimilarChunks(RetrieveSimilarChunksRequest) returns (RetrieveSimilarChunksResponse);
 }
 
 message CreateChatRequest {
   string name = 1;
+  string project_id = 2;
 }
 
 message CreateChatResponse {
@@ -31,6 +31,7 @@ message ChatRequest {
     string text = 1;
     string chatId = 2;
     string model = 3;
+    string project_id = 4;
 }
 
 message ChatResponse {
@@ -50,7 +51,9 @@ message ChatMessage {
   string content = 2;
 }
 
-message GetChatListRequest {}
+message GetChatListRequest {
+  string project_id = 1;
+}
 
 message GetChatListResponse {
   repeated ChatInfo chats = 1;
@@ -132,27 +135,4 @@ message Document {
   string file_name = 4;
   string created_at = 5;
   string updated_at = 6;
-}
-
-message RetrieveSimilarChunksRequest {
-  string project_id = 1;
-  string query = 2;
-}
-
-message RetrieveSimilarChunksResponse {
-  repeated SimilarChunkResult results = 1;
-}
-
-message SimilarChunkResult {
-  Chunk chunk = 1;
-  float similarity = 2;
-}
-
-message Chunk {
-  string id = 1;
-  string project_id = 2;
-  string docs_id = 3;
-  int32 start_byte = 4;
-  int32 end_byte = 5;
-  string text = 6;
 }

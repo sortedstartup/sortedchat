@@ -34,6 +34,20 @@ type Server struct {
 	pipeline rag.Pipeline
 }
 
+type Chunk struct {
+	ID        string
+	ProjectID string
+	DocsID    string
+	StartByte int
+	EndByte   int
+	Text      string
+}
+
+type SimilarChunkResult struct {
+	Chunk      Chunk
+	Similarity float32
+}
+
 func NewServer(mux *http.ServeMux) *Server {
 	daoInstance, err := dao.NewSQLiteDAO("chatservice.db")
 	if err != nil {
@@ -73,6 +87,8 @@ func NewServer(mux *http.ServeMux) *Server {
 }
 
 func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
+	projectID := req.GetProjectId()
+
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		return fmt.Errorf("OpenAI API key not set")
@@ -80,12 +96,12 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 
 	chatId := req.ChatId
 	if chatId == "" {
-		return fmt.Errorf(" Chat ID is required to maintain context")
+		return fmt.Errorf("Chat ID is required to maintain context")
 	}
 
 	model := req.Model
 	if model == "" {
-		return fmt.Errorf(" Chat ID is required to maintain context")
+		return fmt.Errorf("Model is required")
 	}
 
 	// Get chat history using DAO
@@ -102,13 +118,30 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 		})
 	}
 
-	// Add user message using DAO
 	err = s.dao.AddChatMessage(chatId, "user", req.Text)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
 	}
 
-	history = append(history, dao.ChatMessageRow{Role: "user", Content: req.Text})
+	userMessage := req.Text
+	
+	if projectID != "" && projectID != "null" {
+		chunks, err := s.retrieveSimilarChunks(context.Background(), projectID, req.Text)
+		if err != nil {
+			slog.Error("failed to retrieve similar chunks", "error", err)
+		} else if len(chunks) > 0 {
+			contextText := ""
+			for _, chunk := range chunks {
+				contextText += chunk.Chunk.Text
+			}
+			userMessage = contextText + "Answer the question on following text: " + req.Text
+		}
+	}
+	if err != nil {
+		return fmt.Errorf("failed to insert user message: %v", err)
+	}
+
+	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
 
 	requestBody := map[string]interface{}{
 		"model":        model,
@@ -188,7 +221,6 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 			if err != nil {
 				log.Printf("Failed to insert assistant message: %v", err)
 			}
-
 		}
 	}
 
@@ -229,13 +261,14 @@ type ChatRow struct {
 }
 
 func (s *Server) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
-	chats, err := s.dao.GetChatList()
+	projectID := req.GetProjectId()
+
+	chats, err := s.dao.GetChatList(projectID)
 	if err != nil {
-		slog.Error("failed to fetch chat list", "error", err)
 		return nil, fmt.Errorf("failed to fetch chat list: %v", err)
 	}
-
 	return &pb.GetChatListResponse{Chats: chats}, nil
+	
 }
 
 func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
@@ -245,15 +278,16 @@ func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb
 	}
 
 	chatId := uuid.New().String()
+	projectID := req.GetProjectId()
 
-	err := s.dao.CreateChat(chatId, name)
+	err := s.dao.CreateChat(chatId, name, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert chat record: %w", err)
 	}
 
 	return &pb.CreateChatResponse{
 		Message: "Chat created successfully",
-		ChatId:  chatId, // return chatId so the frontend can use it for messages
+		ChatId:  chatId,
 	}, nil
 }
 
@@ -372,16 +406,12 @@ func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest
 
 }
 
-func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimilarChunksRequest) (*pb.RetrieveSimilarChunksResponse, error) {
-	projectID := req.GetProjectId()
-	query := req.GetQuery()
-	
+func (s *Server) retrieveSimilarChunks(ctx context.Context, projectID string, query string) ([]SimilarChunkResult, error) {
 	if projectID == "" || query == "" {
 		return nil, fmt.Errorf("project_id and query are required")
 	}
-
+	
 	url := os.Getenv("EMBEDDING_API_URL")
-
 	reqBody := map[string]interface{}{
 		"model":  "nomic-embed-text",
 		"prompt": query,
@@ -390,25 +420,21 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 	if err != nil {
 		return nil, err
 	}
-
 	httpReq, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
-
 	client := &http.Client{}
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
 	var respData map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
 		return nil, err
 	}
-
 	var embedding []float64
 	if embeddingData, ok := respData["embedding"].([]interface{}); ok {
 		embedding = make([]float64, len(embeddingData))
@@ -418,9 +444,7 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 			}
 		}
 	}
-
 	params := rag.SearchParams{TopK: 2, ProjectID: projectID}
-
 	retriever := func(ctx context.Context, embedding []float64, params rag.SearchParams) ([]rag.Result, error) {
 		embBytes, err := json.Marshal(embedding)
 		if err != nil {
@@ -430,8 +454,6 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("Retrieved %d similar chunks for query '%s'\n", len(vecRows), query)
-
 		var results []rag.Result
 		for _, v := range vecRows {
 			_, reader, err := s.store.GetObject(ctx, v.DocsID)
@@ -446,9 +468,6 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 				return nil, fmt.Errorf("invalid chunk byte range for docsID %s: %d-%d (file size %d)", v.DocsID, v.StartByte, v.EndByte, len(data))
 			}
 			chunkText := string(data[v.StartByte:v.EndByte])
-
-			fmt.Printf("Retrieved chunk %s for docsID %s: %s\n", v.ID, v.DocsID, chunkText)
-
 			results = append(results, rag.Result{
 				Chunk: rag.Chunk{
 					ID:        v.ID,
@@ -463,31 +482,27 @@ func (s *Server) RetrieveSimilarChunks(ctx context.Context, req *pb.RetrieveSimi
 		}
 		return results, nil
 	}
-
 	response, err := rag.BasicRetrievePipeline(ctx, retriever, rag.BasicPromptBuilder, embedding, query, params)
 	if err != nil {
 		return nil, err
 	}
-
-	var pbResults []*pb.SimilarChunkResult
+	var results []SimilarChunkResult
 	for _, r := range response.Results {
-		pbResults = append(pbResults, &pb.SimilarChunkResult{
-			Chunk: &pb.Chunk{
-				Id:        r.Chunk.ID,
-				ProjectId: r.Chunk.ProjectID,
-				DocsId:    r.Chunk.DocsID,
-				StartByte: int32(r.Chunk.StartByte),
-				EndByte:   int32(r.Chunk.EndByte),
+		results = append(results, SimilarChunkResult{
+			Chunk: Chunk{
+				ID:        r.Chunk.ID,
+				ProjectID: r.Chunk.ProjectID,
+				DocsID:    r.Chunk.DocsID,
+				StartByte: r.Chunk.StartByte,
+				EndByte:   r.Chunk.EndByte,
 				Text:      r.Chunk.Text,
 			},
-			Similarity: float32(r.Similarity),
+			Similarity: 0,
 		})
 	}
-
-	return &pb.RetrieveSimilarChunksResponse{
-		Results: pbResults,
-	}, nil
+	return results, nil
 }
+
 func (s *Server) Init() {
 	// Initialize DAO
 	sqliteDAO, err := db.NewSQLiteDAO("chatservice.db")
@@ -561,3 +576,5 @@ func (s *Server) EmbeddingSubscriber() {
 		}
 	}()
 }
+
+

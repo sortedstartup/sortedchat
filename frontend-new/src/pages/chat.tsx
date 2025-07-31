@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
-import { CornerDownLeft, Mic, Paperclip } from "lucide-react";
+import { CornerDownLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Chat() {
-  const { chatId } = useParams();
+  const { projectId, chatId } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export function Chat() {
 
   const handleSend = () => {
     if (inputValue.trim()) {
-      doChat(inputValue);
+      doChat(inputValue,projectId);
       setInputValue("");
       setTimeout(scrollToBottom, 100);
     }

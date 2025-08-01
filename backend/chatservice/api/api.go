@@ -87,12 +87,11 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 	chatId := req.ChatId
 	if chatId == "" {
 		return fmt.Errorf("Chat ID is required to maintain context")
-		return fmt.Errorf("Chat ID is required to maintain context")
 	}
 
 	model := req.Model
+	fmt.Println("Using model:", model)
 	if model == "" {
-		return fmt.Errorf("Model is required")
 		return fmt.Errorf("Model is required")
 	}
 
@@ -132,19 +131,17 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 			// TODO: user message also
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
+			fmt.Println("Retrieved chunks:", chunks.Prompt)
 			userMessage = chunks.Prompt
 		}
 	}
 
 	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
-	messages = append(messages, map[string]interface{}{
-		"role":    "user",
-		"content": req.Text,
-	})
 
 	requestBody := map[string]interface{}{
+		// "model": "claude-4-sonnet",
 		"model":    model,
-		"messages": messages,
+		"messages": history,
 		"stream":   true,
 		"stream_options": map[string]interface{}{
 			"include_usage": true,
@@ -156,7 +153,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 		return fmt.Errorf("failed to marshal request: %v", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequest("POST", os.Getenv("OPENAI_API_URL"), bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}

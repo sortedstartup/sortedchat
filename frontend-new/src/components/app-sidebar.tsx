@@ -267,7 +267,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {chatsList.map((chat) => (
-                <SidebarMenuItem key={chat.name}>
+                <SidebarMenuItem key={chat.chatId}>
                   <SidebarMenuButton
                     onClick={() => handleChatSelect(chat.chatId)}
                   >

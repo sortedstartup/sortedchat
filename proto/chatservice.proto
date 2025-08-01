@@ -19,6 +19,7 @@ service SortedChat {
 
 message CreateChatRequest {
   string name = 1;
+  string project_id = 2;
 }
 
 message CreateChatResponse {
@@ -30,6 +31,7 @@ message ChatRequest {
     string text = 1;
     string chatId = 2;
     string model = 3;
+    string project_id = 4;
 }
 
 message ChatResponse {
@@ -49,7 +51,9 @@ message ChatMessage {
   string content = 2;
 }
 
-message GetChatListRequest {}
+message GetChatListRequest {
+  string project_id = 1;
+}
 
 message GetChatListResponse {
   repeated ChatInfo chats = 1;

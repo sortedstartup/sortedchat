@@ -6,6 +6,10 @@ import (
 )
 
 // Abstraction to create a extraction and embedding generation pipeline
+// Added ID, ProjectID, DocsID to match DB schema
+// Added Source, StartByte, EndByte for chunk tracking
+// Added Embedding vector to Embedding struct
+
 type Document struct {
 	ID       string
 	MIME     string            // "application/pdf", "text/markdown", …
@@ -14,14 +18,17 @@ type Document struct {
 }
 
 type Chunk struct {
-	DocID string // parent document
-	//TODO: need to store which piece of text was used, may be a byte range ? from the original docs or parsed text ? obviously we need to store the original text then
-	Text string // chunk body
+	ID        string // uuid for chunk
+	ProjectID string
+	DocsID    string
+	StartByte int // for tracking chunk position
+	EndByte   int
+	Text      string // chunk body
 }
 
 type Embedding struct {
-	ChunkID  string    // Need to decide
-	Vector   []float32 // dense vector
+	ChunkID  string    // uuid of chunk
+	Vector   []float64 // dense vector
 	Provider string    // "openai", "bge-base-en", …
 }
 
@@ -32,7 +39,7 @@ type Extractor interface {
 
 // 2. Chunker — Document → []Chunk
 type Chunker interface {
-	Chunk(ctx context.Context, docs Document) ([]Chunk, error)
+	Chunk(ctx context.Context, doc Document) ([]Chunk, error)
 }
 
 // 3. Embedder — []Chunk → []Embedding
@@ -42,18 +49,35 @@ type Embedder interface {
 
 // 4. Pipeline — convenience wrapper
 // This signature may change, since we may want to different document types
-type Pipeline interface {
-	Run(ctx context.Context, r io.Reader, mime string) ([]Embedding, error)
+type RAGIndexingPipeline interface {
+	RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (RagIndexingPipelineResult, error)
 }
 
-/*
-TODO: RAG Retreival Pipeline
+// Add a result struct to return both chunks and embeddings
 
-- find relevant documents
-- extract relevant information
-- create prompt
+type RagIndexingPipelineResult struct {
+	Chunks     []Chunk
+	Embeddings []Embedding
+}
 
-- send prompt to LLMProvider
+// RAG Retrieval Pipeline Components
+type SearchParams struct {
+	TopK      int
+	Threshold float64
+	ProjectID string
+}
 
-- return answer
-*/
+type Result struct {
+	Chunk      Chunk
+	Similarity float64
+}
+
+// Function types for RAG pipeline
+type Retrieve func(ctx context.Context, embedding []float64, params SearchParams) ([]Result, error)
+type BuildPrompt func(ctx context.Context, query string, results []Result) (string, error)
+type RetrievealPipeline func(ctx context.Context, retriever Retrieve, promptBuilder BuildPrompt, embedding []float64, query string, params SearchParams) (*Response, error)
+
+type Response struct {
+	Results []Result
+	Prompt  string
+}

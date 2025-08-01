@@ -28,10 +28,11 @@ import (
 
 type Server struct {
 	pb.UnimplementedSortedChatServer
-	dao      *dao.SQLiteDAO
-	store    *store.DiskObjectStore
-	queue    queue.Queue
-	pipeline rag.Pipeline
+	dao                *dao.SQLiteDAO
+	store              *store.DiskObjectStore
+	queue              queue.Queue
+	pipeline           rag.Pipeline
+	embeddingsProvider rag.Embedder
 }
 
 func NewServer(mux *http.ServeMux) *Server {
@@ -48,21 +49,24 @@ func NewServer(mux *http.ServeMux) *Server {
 		log.Fatalf("Failed to initialize object store: %v", err)
 	}
 
+	embeddingsProvider := &rag.OLLamaEmbedder{
+		//TODO: read from config
+		URL:   "http://localhost:11434/v1/embeddings",
+		Model: "nomic-embed-text",
+	}
+
 	pipeline := rag.NewPipeline(
 		&rag.TextExtractor{},
 		&rag.EqualSizeChunker{ChunkSize: 512},
-		&rag.OLLamaEmbedder{
-			Model:     "@cf/baai/bge-m3",
-			APIKey:    os.Getenv("EMBEDDING_API_TOKEN"),
-			AccountID: os.Getenv("EMBEDDING_ACCOUNT_ID"),
-		},
+		embeddingsProvider,
 	)
 
 	s := &Server{
-		dao:      daoInstance,
-		store:    storeInstance,
-		queue:    queue.NewInMemoryQueue(),
-		pipeline: pipeline,
+		dao:                daoInstance,
+		store:              storeInstance,
+		queue:              queue.NewInMemoryQueue(),
+		pipeline:           pipeline,
+		embeddingsProvider: embeddingsProvider,
 	}
 
 	s.registerRoutes(mux)
@@ -111,9 +115,10 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 
 	userMessage := req.Text
 
-	if projectID != "" && projectID != "null" {
+	if projectID != "" && projectID != "null" { // if this chat is in context of a project
 		chunks, err := s.retrieveSimilarChunks(context.Background(), projectID, req.Text)
 		if err != nil {
+			// TODO: user message also
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
 			userMessage = chunks.Prompt
@@ -390,39 +395,25 @@ func (s *Server) retrieveSimilarChunks(ctx context.Context, projectID string, qu
 		return nil, fmt.Errorf("project_id and query are required")
 	}
 
-	url := os.Getenv("EMBEDDING_API_URL")
-	reqBody := map[string]interface{}{
-		"model":  "nomic-embed-text",
-		"prompt": query,
-	}
-	bodyBytes, err := json.Marshal(reqBody)
+	// TODO: tech debt, need to refactor this
+	embedding, err := s.embeddingsProvider.Embed(ctx, []rag.Chunk{
+		{
+			ID:        "0",
+			ProjectID: projectID,
+			DocsID:    "0",
+			StartByte: 0,
+			EndByte:   len(query),
+			Text:      query,
+		},
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	httpReq, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return nil, err
+	if len(embedding) == 0 {
+		return nil, fmt.Errorf("embedding could not be created")
 	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	var respData map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-		return nil, err
-	}
-	var embedding []float64
-	if embeddingData, ok := respData["embedding"].([]interface{}); ok {
-		embedding = make([]float64, len(embeddingData))
-		for i, v := range embeddingData {
-			if f, ok := v.(float64); ok {
-				embedding[i] = f
-			}
-		}
-	}
+
 	params := rag.SearchParams{TopK: 2, ProjectID: projectID}
 	retriever := func(ctx context.Context, embedding []float64, params rag.SearchParams) ([]rag.Result, error) {
 		embBytes, err := json.Marshal(embedding)
@@ -461,7 +452,7 @@ func (s *Server) retrieveSimilarChunks(ctx context.Context, projectID string, qu
 		}
 		return results, nil
 	}
-	response, err := rag.BasicRetrievePipeline(ctx, retriever, rag.BasicPromptBuilder, embedding, query, params)
+	response, err := rag.BasicRetrievePipeline(ctx, retriever, rag.BasicPromptBuilder, embedding[0].Vector, query, params)
 	if err != nil {
 		return nil, err
 	}
@@ -541,4 +532,46 @@ func (s *Server) EmbeddingSubscriber() {
 			}
 		}
 	}()
+}
+
+// ---------------
+//
+//	Utils
+//
+// ---------------
+func generateEmbeddings(query string) ([]float64, error) {
+	url := os.Getenv("EMBEDDING_API_URL")
+	reqBody := map[string]interface{}{
+		"model":  "nomic-embed-text",
+		"prompt": query,
+	}
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+	httpReq, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var respData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+		return nil, err
+	}
+	var embedding []float64
+	if embeddingData, ok := respData["embedding"].([]interface{}); ok {
+		embedding = make([]float64, len(embeddingData))
+		for i, v := range embeddingData {
+			if f, ok := v.(float64); ok {
+				embedding[i] = f
+			}
+		}
+	}
+	return embedding, nil
 }

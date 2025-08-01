@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"os"
 	"net/http"
 	"strings"
 
@@ -115,31 +114,35 @@ func (e *ParagraphChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, e
 	return nil, nil
 }
 
-// OLLamaEmbedder hits /v1/embeddings with batching
-// Now returns Embedding with ChunkID and Vector
-
-type OLLamaEmbedder struct {
-	Model     string
+type CloudFlareEmbedder struct {
+	URL       string
 	APIKey    string
 	AccountID string
 }
 
+// OLLamaEmbedder hits /v1/embeddings with batching
+// Now returns Embedding with ChunkID and Vector
+
+type OLLamaEmbedder struct {
+	URL   string
+	Model string
+}
+
 func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding, error) {
-	url := os.Getenv("EMBEDDING_API_URL")
 
 	var embeddings []Embedding
-	
+
 	for _, chunk := range chunks {
 		reqBody := map[string]interface{}{
-			"model":  "nomic-embed-text",
-			"prompt": chunk.Text,
+			"model": e.Model,
+			"input": chunk.Text,
 		}
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			return nil, err
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(bodyBytes))
+		req, err := http.NewRequestWithContext(ctx, "POST", e.URL, bytes.NewBuffer(bodyBytes))
 		if err != nil {
 			return nil, err
 		}
@@ -151,7 +154,11 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 			return nil, err
 		}
 
-		var respData map[string]interface{}
+		var respData struct {
+			Data []struct {
+				Embedding []float64 `json:"embedding"`
+			} `json:"data"`
+		}
 		if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
 			resp.Body.Close()
 			return nil, err
@@ -159,19 +166,14 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		resp.Body.Close()
 
 		var vec []float64
-		if embeddingData, ok := respData["embedding"].([]interface{}); ok {
-			vec = make([]float64, len(embeddingData))
-			for i, v := range embeddingData {
-				if f, ok := v.(float64); ok {
-					vec[i] = f
-				}
-			}
+		if len(respData.Data) > 0 {
+			vec = respData.Data[0].Embedding
 		}
 
 		embeddings = append(embeddings, Embedding{
 			ChunkID:  chunk.ID,
 			Vector:   vec,
-			Provider: e.Model,
+			Provider: e.URL,
 		})
 	}
 

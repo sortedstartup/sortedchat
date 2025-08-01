@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
-import { Paperclip, Mic, CornerDownLeft } from "lucide-react";
+import { CornerDownLeft } from "lucide-react";
 import { createNewChat, $currentChatId, doChat } from "@/store/chat";
 import { useNavigate } from "react-router-dom";
 
@@ -16,7 +16,7 @@ export function Home() {
         $currentChatId.set(chatId);
         navigate(`/chat/${chatId}`);
         setTimeout(() => {
-          doChat(message);
+          doChat(message, undefined);
         }, 100);
         setMessage("");
       }

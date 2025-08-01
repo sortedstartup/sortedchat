@@ -1,7 +1,11 @@
 package dao
 
 import (
+	"encoding/json"
+	"fmt"
 	proto "sortedstartup/chatservice/proto"
+
+	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -14,6 +18,8 @@ type SQLiteDAO struct {
 
 // NewSQLiteDAO creates a new SQLite DAO instance
 func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
+	// sqlite_vec.Auto()
+
 	db, err := sqlx.Open("sqlite3", sqliteUrl)
 	if err != nil {
 		return nil, err
@@ -23,9 +29,14 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 }
 
 // CreateChat creates a new chat with the given ID and name
-func (s *SQLiteDAO) CreateChat(chatId string, name string) error {
-	_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name) VALUES (?, ?)", chatId, name)
-	return err
+func (s *SQLiteDAO) CreateChat(chatId string, name string, projectID string) error {
+	if projectID == "" || projectID == "null" {
+		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name) VALUES (?, ?)", chatId, name)
+		return err
+	} else {
+		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name, project_id) VALUES (?, ?, ?)", chatId, name, projectID)
+		return err
+	}
 }
 
 // AddChatMessage adds a message to a chat
@@ -48,9 +59,15 @@ type ChatInfoRow struct {
 }
 
 // GetChatList retrieves all chats
-func (s *SQLiteDAO) GetChatList() ([]*proto.ChatInfo, error) {
+func (s *SQLiteDAO) GetChatList(projectID string) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
-	err := s.db.Select(&chats, "SELECT chat_id, name FROM chat_list")
+	var err error
+	
+	if projectID == "" || projectID == "null" {
+		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL")
+	} else {
+		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ?", projectID)
+	}
 
 	if err != nil {
 		return nil, err
@@ -201,4 +218,40 @@ func (s *SQLiteDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
 		return nil, err
 	}
 	return &doc, nil
+}
+
+// SaveRAGChunk saves a chunk to rag_chunks table
+func (s *SQLiteDAO) SaveRAGChunk(chunkID, projectID, docsID string, startByte, endByte int) error {
+	_, err := s.db.Exec(`
+		INSERT INTO rag_chunks (id, project_id, docs_id, start_byte, end_byte)
+		VALUES (?, ?, ?, ?, ?)
+	`, chunkID, projectID, docsID, startByte, endByte)
+	return err
+}
+
+func (s *SQLiteDAO) SaveRAGChunkEmbedding(chunkID string, vector []float64) error {
+	arr, err := json.Marshal(vector)
+	if err != nil {
+		return fmt.Errorf("failed: %w", err)
+	}
+
+	_, err = s.db.Exec("INSERT INTO rag_chunks_vec (id, embedding) VALUES (?, ?)", chunkID, string(arr))
+	return err
+}
+
+func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string, projectID string) ([]RAGChunkRow, error) {
+	var chunks []RAGChunkRow
+	err := s.db.Select(&chunks, `
+        SELECT id,project_id,docs_id,start_byte,end_byte
+        FROM rag_chunks
+        WHERE project_id = ?
+        AND id IN (
+            SELECT id
+            FROM rag_chunks_vec
+            WHERE embedding MATCH ?
+            ORDER BY distance
+            LIMIT 2
+        )
+    `, projectID, embedding)
+	return chunks, err
 }

@@ -6,17 +6,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
-	"io"
 	"strings"
 
 	"sortedstartup/chatservice/dao"
 	db "sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
+	"sortedstartup/chatservice/rag"
 	"sortedstartup/chatservice/store"
 
 	"github.com/google/uuid"
@@ -27,9 +28,11 @@ import (
 
 type Server struct {
 	pb.UnimplementedSortedChatServer
-	dao   *dao.SQLiteDAO
-	store *store.DiskObjectStore
-	queue queue.Queue
+	dao                *dao.SQLiteDAO
+	store              *store.DiskObjectStore
+	queue              queue.Queue
+	pipeline           rag.RAGIndexingPipeline
+	embeddingsProvider rag.Embedder
 }
 
 func NewServer(mux *http.ServeMux) *Server {
@@ -38,15 +41,32 @@ func NewServer(mux *http.ServeMux) *Server {
 		log.Fatalf("Failed to initialize DAO: %v", err)
 	}
 
+	// Run migrations before any DB access
+	db.MigrateSQLite("chatservice.db")
+
 	storeInstance, err := store.NewDiskObjectStore("filestore")
 	if err != nil {
 		log.Fatalf("Failed to initialize object store: %v", err)
 	}
 
+	embeddingsProvider := &rag.OLLamaEmbedder{
+		//TODO: read from config
+		URL:   "http://localhost:11434/v1/embeddings",
+		Model: "nomic-embed-text",
+	}
+
+	pipeline := rag.NewPipeline(
+		&rag.TextExtractor{},
+		&rag.EqualSizeChunker{ChunkSize: 512},
+		embeddingsProvider,
+	)
+
 	s := &Server{
-		dao:   daoInstance,
-		store: storeInstance,
-		queue: queue.NewInMemoryQueue(),
+		dao:                daoInstance,
+		store:              storeInstance,
+		queue:              queue.NewInMemoryQueue(),
+		pipeline:           pipeline,
+		embeddingsProvider: embeddingsProvider,
 	}
 
 	s.registerRoutes(mux)
@@ -56,8 +76,9 @@ func NewServer(mux *http.ServeMux) *Server {
 	return s
 }
 
-
 func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
+	projectID := req.GetProjectId()
+
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		return fmt.Errorf("OpenAI API key not set")
@@ -66,10 +87,12 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 	chatId := req.ChatId
 	if chatId == "" {
 		return fmt.Errorf("Chat ID is required to maintain context")
+		return fmt.Errorf("Chat ID is required to maintain context")
 	}
 
 	model := req.Model
 	if model == "" {
+		return fmt.Errorf("Model is required")
 		return fmt.Errorf("Model is required")
 	}
 
@@ -81,7 +104,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 	}
 
 	var messages []map[string]interface{}
-	
+
 	if len(history) == 0 {
 		messages = append(messages, map[string]interface{}{
 			"role":    "system",
@@ -95,13 +118,25 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 			"content": msg.Content,
 		})
 	}
-	
 
 	err = s.dao.AddChatMessage(chatId, "user", req.Text)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
 	}
 
+	userMessage := req.Text
+
+	if projectID != "" && projectID != "null" { // if this chat is in context of a project
+		chunks, err := s.retrieveSimilarChunks(context.Background(), projectID, req.Text)
+		if err != nil {
+			// TODO: user message also
+			slog.Error("failed to retrieve similar chunks", "error", err)
+		} else if len(chunks.Results) > 0 {
+			userMessage = chunks.Prompt
+		}
+	}
+
+	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
 	messages = append(messages, map[string]interface{}{
 		"role":    "user",
 		"content": req.Text,
@@ -145,17 +180,17 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		if line == "" {
 			continue
 		}
-		
+
 		if !strings.HasPrefix(line, "data: ") {
 			continue
 		}
 
 		data := strings.TrimPrefix(line, "data: ")
-		
+
 		if data == "[DONE]" {
 			break
 		}
@@ -189,7 +224,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 		if delta, ok := choice["delta"].(map[string]interface{}); ok {
 			if content, ok := delta["content"].(string); ok && content != "" {
 				fullResponse.WriteString(content)
-				
+
 				if err := stream.Send(&pb.ChatResponse{Text: content}); err != nil {
 					return fmt.Errorf("failed to send stream response: %v", err)
 				}
@@ -242,13 +277,14 @@ type ChatRow struct {
 }
 
 func (s *Server) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
-	chats, err := s.dao.GetChatList()
+	projectID := req.GetProjectId()
+
+	chats, err := s.dao.GetChatList(projectID)
 	if err != nil {
-		slog.Error("failed to fetch chat list", "error", err)
 		return nil, fmt.Errorf("failed to fetch chat list: %v", err)
 	}
-
 	return &pb.GetChatListResponse{Chats: chats}, nil
+
 }
 
 func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
@@ -258,15 +294,16 @@ func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb
 	}
 
 	chatId := uuid.New().String()
+	projectID := req.GetProjectId()
 
-	err := s.dao.CreateChat(chatId, name)
+	err := s.dao.CreateChat(chatId, name, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert chat record: %w", err)
 	}
 
 	return &pb.CreateChatResponse{
 		Message: "Chat created successfully",
-		ChatId:  chatId, // return chatId so the frontend can use it for messages
+		ChatId:  chatId,
 	}, nil
 }
 
@@ -385,6 +422,76 @@ func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest
 
 }
 
+func (s *Server) retrieveSimilarChunks(ctx context.Context, projectID string, query string) (*rag.Response, error) {
+	if projectID == "" || query == "" {
+		return nil, fmt.Errorf("project_id and query are required")
+	}
+
+	// TODO: tech debt, need to refactor this
+	embedding, err := s.embeddingsProvider.Embed(ctx, []rag.Chunk{
+		{
+			ID:        "0",
+			ProjectID: projectID,
+			DocsID:    "0",
+			StartByte: 0,
+			EndByte:   len(query),
+			Text:      query,
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	if len(embedding) == 0 {
+		return nil, fmt.Errorf("embedding could not be created")
+	}
+
+	params := rag.SearchParams{TopK: 2, ProjectID: projectID}
+	retriever := func(ctx context.Context, embedding []float64, params rag.SearchParams) ([]rag.Result, error) {
+		embBytes, err := json.Marshal(embedding)
+		if err != nil {
+			return nil, err
+		}
+		vecRows, err := s.dao.GetTopSimilarRAGChunks(string(embBytes), projectID)
+		if err != nil {
+			return nil, err
+		}
+		var results []rag.Result
+		for _, v := range vecRows {
+			_, reader, err := s.store.GetObject(ctx, v.DocsID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get object for docsID %s: %w", v.DocsID, err)
+			}
+			data, err := io.ReadAll(reader)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read object for docsID %s: %w", v.DocsID, err)
+			}
+			if v.StartByte < 0 || v.EndByte > len(data) || v.StartByte > v.EndByte {
+				return nil, fmt.Errorf("invalid chunk byte range for docsID %s: %d-%d (file size %d)", v.DocsID, v.StartByte, v.EndByte, len(data))
+			}
+			chunkText := string(data[v.StartByte:v.EndByte])
+			results = append(results, rag.Result{
+				Chunk: rag.Chunk{
+					ID:        v.ID,
+					ProjectID: v.ProjectID,
+					DocsID:    v.DocsID,
+					StartByte: v.StartByte,
+					EndByte:   v.EndByte,
+					Text:      chunkText,
+				},
+				Similarity: 0,
+			})
+		}
+		return results, nil
+	}
+	response, err := rag.BasicRetrievePipeline(ctx, retriever, rag.BasicPromptBuilder, embedding[0].Vector, query, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
 func (s *Server) Init() {
 	// Initialize DAO
 	sqliteDAO, err := db.NewSQLiteDAO("chatservice.db")
@@ -401,19 +508,102 @@ func (s *Server) Init() {
 
 func (s *Server) EmbeddingSubscriber() {
 	go func() {
-
 		sub, err := s.queue.Subscribe(context.Background(), "generate.embedding")
 		if err != nil {
 			fmt.Printf("Failed %v\n", err)
 			return
 		}
 		for msg := range sub {
-			fmt.Println(msg)
 			var payload GenerateEmbeddingMessage
 			if err := json.Unmarshal(msg.Data, &payload); err == nil {
-				fmt.Println(payload)
-				fmt.Printf("docs_id: %v\n", payload.DocsID)
+
+				// Fetch project_id for docs_id
+				docMeta, err := s.dao.GetFileMetadata(payload.DocsID)
+				if err != nil {
+					fmt.Printf("Failed to fetch file metadata: %v\n", err)
+					continue
+				}
+
+				filePath := "filestore/objects/" + payload.DocsID
+				f, err := os.Open(filePath)
+				if err != nil {
+					fmt.Printf("Failed :%v\n", err)
+					continue
+				}
+				defer f.Close()
+
+				metadata := map[string]string{
+					"project_id": docMeta.ProjectID,
+					"docs_id":    payload.DocsID,
+					"source":     docMeta.FileName,
+				}
+
+				result, err := s.pipeline.RunWithChunks(context.Background(), f, "text/plain", metadata)
+				if err != nil {
+					fmt.Printf("Pipeline error: %v\n", err)
+					continue
+				}
+
+				// Save each chunk to rag_chunks
+				for _, chunk := range result.Chunks {
+					err := s.dao.SaveRAGChunk(chunk.ID, chunk.ProjectID, chunk.DocsID, chunk.StartByte, chunk.EndByte)
+					if err != nil {
+						fmt.Printf("Failed to save chunk: %v", err)
+					}
+
+					for _, emb := range result.Embeddings {
+						if emb.ChunkID == chunk.ID {
+							err := s.dao.SaveRAGChunkEmbedding(chunk.ID, emb.Vector)
+							if err != nil {
+								fmt.Printf("Failed to save embedding: %v\n", err)
+							}
+							break
+						}
+					}
+				}
 			}
 		}
 	}()
+}
+
+// ---------------
+//
+//	Utils
+//
+// ---------------
+func generateEmbeddings(query string) ([]float64, error) {
+	url := os.Getenv("EMBEDDING_API_URL")
+	reqBody := map[string]interface{}{
+		"model":  "nomic-embed-text",
+		"prompt": query,
+	}
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+	httpReq, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var respData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+		return nil, err
+	}
+	var embedding []float64
+	if embeddingData, ok := respData["embedding"].([]interface{}); ok {
+		embedding = make([]float64, len(embeddingData))
+		for i, v := range embeddingData {
+			if f, ok := v.(float64); ok {
+				embedding[i] = f
+			}
+		}
+	}
+	return embedding, nil
 }

@@ -22,6 +22,10 @@ const router = createBrowserRouter([
         element: <Project />,
       },
       {
+        path: "project/:projectId/chat/:chatId",
+        element: <Chat />,
+      },
+      {
         path: "*",
         element: <Home />,
       },

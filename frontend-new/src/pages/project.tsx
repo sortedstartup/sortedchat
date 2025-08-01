@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import {
-  Paperclip,
-  Mic,
   CornerDownLeft,
   FileText,
   Upload,
   Eye,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
@@ -23,8 +22,12 @@ import {
   $currentProjectId,
   $documents,
   fetchDocuments,
+  createNewChat,
+  $currentChatId,
+  doChat,
+  $projectChatList,
 } from "@/store/chat";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
 
 export function Project() {
@@ -34,6 +37,9 @@ export function Project() {
   const documents = useStore($documents);
   const projectName = useStore($currentProject);
   const currentProjectId = useStore($currentProjectId);
+  const chatsList = useStore($projectChatList);
+  const navigate = useNavigate();
+
   const { projectId } = useParams();
 
   useEffect(() => {
@@ -43,11 +49,14 @@ export function Project() {
     }
   }, [projectId]);
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      console.log("Sending message:", message);
-      setMessage("");
-    }
+  const handleSendMessage = async () => {
+    const newChatId = await createNewChat(projectId);
+    $currentChatId.set(newChatId);
+    navigate(`/project/${projectId}/chat/${newChatId}`);
+    setTimeout(() => {
+      doChat(message, projectId);
+    }, 100);
+    setMessage("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -85,8 +94,8 @@ export function Project() {
       </div>
 
       <div className="flex-1 flex items-center justify-center p-6 overflow-hidden">
-        <div className="text-center max-w-md">
-          <div className="flex gap-3 justify-center">
+        <div className="text-center max-w-md w-full">
+          <div className="flex gap-3 justify-center mb-6">
             <Dialog
               open={isDocumentsDialogOpen}
               onOpenChange={handleDocumentsDialogClose}
@@ -116,7 +125,7 @@ export function Project() {
                         onClick={() =>
                           window.open(
                             `${API_UPLOAD_URL}/documents/${doc.docs_id}`,
-                            "_blank",
+                            "_blank"
                           )
                         }
                       >
@@ -163,6 +172,37 @@ export function Project() {
                 />
               </DialogContent>
             </Dialog>
+          </div>
+
+          <div className="w-full max-w-lg">
+            <h3 className="text-lg font-semibold mb-3 text-gray-800">
+              Project Chats
+            </h3>
+            <div className="space-y-2 max-h-64 overflow-auto">
+              {chatsList.length > 0 ? (
+                chatsList.map((chat: any) => (
+                  <div
+                    key={chat.chatId}
+                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors text-left"
+                    onClick={() => {
+                      navigate(`/project/${projectId}/chat/${chat.chatId}`);
+                    }}
+                  >
+                    <MessageSquare className="size-5 text-orange-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">
+                        {chat.name}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <MessageSquare className="size-12 mx-auto mb-3 text-gray-300" />
+                  <p>No chats yet</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

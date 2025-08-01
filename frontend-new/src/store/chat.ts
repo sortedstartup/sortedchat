@@ -94,18 +94,35 @@ const addMessageToHistory = (message: ChatMessage) => {
 };
 
 // --- state management ---
-export const createNewChat = async () => {
+export const createNewChat = async (projectId?: string) => {
+  const requestObj: {name: string,project_id?: string} = {
+    name: "New Chat",
+  };
+  if (projectId) {
+    requestObj.project_id = projectId;
+  }
+  
   const response = await chat.CreateChat(
-    CreateChatRequest.fromObject({
-      name: "New Chat",
-    }),
+    CreateChatRequest.fromObject(requestObj),
     {}
   );
-  getChatList();
+  getChatList(projectId);
   return response.chat_id;
 };
 
-export const doChat = (msg: string) => {
+
+export const $projectChatList = atom<ChatInfo[]>([]);   
+export const getChatList = (projectId?: string) => {
+  const requestObj: GetChatListRequest = projectId
+    ? GetChatListRequest.fromObject({ project_id: projectId })
+    : new GetChatListRequest();
+
+  chat.GetChatList(requestObj, {}).then((value) => {
+    (projectId ? $projectChatList : $chatList).set(value.chats);
+  });
+};
+
+export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
 
@@ -117,6 +134,7 @@ export const doChat = (msg: string) => {
       text: msg,
       chatId: $currentChatId.get(),
       model: $selectedModel.get(),
+      project_id: projectId || "",
     }),
     {}
   );
@@ -154,12 +172,6 @@ $currentChatId.listen((newValue, oldValue) => {
   $streamingMessage.set("");
   $currentChatMessage.set("");
 });
-
-const getChatList = () => {
-  chat.GetChatList(GetChatListRequest.fromObject({}), {}).then((value) => {
-    $chatList.set(value.chats);
-  });
-};
 
 // load chat history of first use
 onMount($chatList, () => {
@@ -296,3 +308,12 @@ $documents.listen((projectId) => {
     fetchDocuments(projectId);
   }
 });
+
+$currentProjectId.listen((newProjectId) => {
+  if (newProjectId) {
+    getChatList(String(newProjectId));
+  } else {
+    $chatList.set([]);
+  }
+});
+

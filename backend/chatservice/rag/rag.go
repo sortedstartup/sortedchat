@@ -39,7 +39,7 @@ type Extractor interface {
 
 // 2. Chunker — Document → []Chunk
 type Chunker interface {
-	Chunk(ctx context.Context, docs Document) ([]Chunk, error)
+	Chunk(ctx context.Context, doc Document) ([]Chunk, error)
 }
 
 // 3. Embedder — []Chunk → []Embedding
@@ -49,13 +49,13 @@ type Embedder interface {
 
 // 4. Pipeline — convenience wrapper
 // This signature may change, since we may want to different document types
-type Pipeline interface {
-	RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (PipelineResult, error)
+type RAGIndexingPipeline interface {
+	RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (RagIndexingPipelineResult, error)
 }
 
 // Add a result struct to return both chunks and embeddings
 
-type PipelineResult struct {
+type RagIndexingPipelineResult struct {
 	Chunks     []Chunk
 	Embeddings []Embedding
 }
@@ -75,7 +75,7 @@ type Result struct {
 // Function types for RAG pipeline
 type Retrieve func(ctx context.Context, embedding []float64, params SearchParams) ([]Result, error)
 type BuildPrompt func(ctx context.Context, query string, results []Result) (string, error)
-type RetrievePipeline func(ctx context.Context, retriever Retrieve, promptBuilder BuildPrompt, embedding []float64, query string, params SearchParams) (*Response, error)
+type RetrievealPipeline func(ctx context.Context, retriever Retrieve, promptBuilder BuildPrompt, embedding []float64, query string, params SearchParams) (*Response, error)
 
 type Response struct {
 	Results []Result

@@ -17,31 +17,31 @@ type defaultPipeline struct {
 	em Embedder
 }
 
-func NewPipeline(ex Extractor, ch Chunker, em Embedder) Pipeline {
+func NewPipeline(ex Extractor, ch Chunker, em Embedder) RAGIndexingPipeline {
 	return &defaultPipeline{ex: ex, ch: ch, em: em}
 }
 
 // RunWithChunks returns both chunks and embeddings, and allows passing metadata
-func (p *defaultPipeline) RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (PipelineResult, error) {
+func (p *defaultPipeline) RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (RagIndexingPipelineResult, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return PipelineResult{}, err
+		return RagIndexingPipelineResult{}, err
 	}
-	docs := Document{
+	doc := Document{
 		ID:       metadata["docs_id"],
 		MIME:     mime,
 		Text:     string(data),
 		Metadata: metadata,
 	}
-	chunks, err := p.ch.Chunk(ctx, docs)
+	chunks, err := p.ch.Chunk(ctx, doc)
 	if err != nil {
-		return PipelineResult{}, err
+		return RagIndexingPipelineResult{}, err
 	}
 	embs, err := p.em.Embed(ctx, chunks)
 	if err != nil {
-		return PipelineResult{}, err
+		return RagIndexingPipelineResult{}, err
 	}
-	return PipelineResult{Chunks: chunks, Embeddings: embs}, nil
+	return RagIndexingPipelineResult{Chunks: chunks, Embeddings: embs}, nil
 }
 
 // ------
@@ -73,13 +73,13 @@ func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (
 
 type EqualSizeChunker struct{ ChunkSize int }
 
-func (e *EqualSizeChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, error) {
-	text := docs.Text
+func (e *EqualSizeChunker) Chunk(ctx context.Context, doc Document) ([]Chunk, error) {
+	text := doc.Text
 	wordsArr := strings.Fields(text)
 	chunkSize := e.ChunkSize
 
-	projectID := docs.Metadata["project_id"]
-	docsID := docs.Metadata["docs_id"]
+	projectID := doc.Metadata["project_id"]
+	docsID := doc.Metadata["docs_id"]
 
 	var chunks []Chunk
 	byteIdx := 0
@@ -110,7 +110,7 @@ func (e *EqualSizeChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, e
 // ParagraphChunker splits on double newlines , if paragaph exceeds token limit, it will be split into multiple chunkss
 type ParagraphChunker struct{ TokenLimit int }
 
-func (e *ParagraphChunker) Chunk(ctx context.Context, docs Document) ([]Chunk, error) {
+func (e *ParagraphChunker) Chunk(ctx context.Context, doc Document) ([]Chunk, error) {
 	return nil, nil
 }
 

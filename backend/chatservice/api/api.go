@@ -31,7 +31,7 @@ type Server struct {
 	dao                *dao.SQLiteDAO
 	store              *store.DiskObjectStore
 	queue              queue.Queue
-	pipeline           rag.Pipeline
+	pipeline           rag.RAGIndexingPipeline
 	embeddingsProvider rag.Embedder
 }
 

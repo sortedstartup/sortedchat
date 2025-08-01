@@ -90,7 +90,6 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 	}
 
 	model := req.Model
-	fmt.Println("Using model:", model)
 	if model == "" {
 		return fmt.Errorf("Model is required")
 	}
@@ -139,7 +138,6 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
 
 	requestBody := map[string]interface{}{
-		// "model": "claude-4-sonnet",
 		"model":    model,
 		"messages": history,
 		"stream":   true,
@@ -205,7 +203,6 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 			if completionTokens, ok := usage["completion_tokens"].(float64); ok {
 				outputTokens = int(completionTokens)
 			}
-			log.Printf("Token usage found: input=%d, output=%d", inputTokens, outputTokens)
 		}
 
 		choices, ok := chunk["choices"].([]interface{})

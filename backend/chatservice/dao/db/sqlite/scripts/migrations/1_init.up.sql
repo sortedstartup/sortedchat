@@ -14,7 +14,6 @@
 CREATE TABLE IF NOT EXISTS chat_list (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     chat_id TEXT NOT NULL,
-    project_id TEXT,
     name TEXT NOT NULL
 );
 

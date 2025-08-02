@@ -1,0 +1,59 @@
+version: '3.9'
+
+services:
+  sortedchat:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    environment:
+      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+      - OPENAI_API_URL=http://litellm:4000/v1/chat/completions
+      - OLLAMA_URL=http://ollama:11434
+    ports:
+      - "8080:8080"
+    depends_on:
+      - litellm
+      - ollama
+    restart: unless-stopped
+    networks:
+      - llm_network
+
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.74.9-stable
+
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml
+    command: ["--config", "/app/config.yaml", "--detailed_debug"]
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    # ports:
+    #   - "4000:4000"
+    restart: unless-stopped
+    networks:
+      - llm_network
+
+  ollama:
+    image: ollama/ollama
+    # ports:
+    #   - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+    entrypoint: >
+      /bin/sh -c "
+        ollama serve &
+        sleep 5 &&
+        ollama pull nomic-embed-text &&
+        wait
+      "
+    networks:
+      - llm_network
+
+volumes:
+  ollama:
+
+networks:
+  llm_network:
+    driver: bridge

@@ -2,3 +2,4 @@
 /mono/chat_history.db
 **/*.db
 /mono/filestore/objects
+__debug*

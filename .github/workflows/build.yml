@@ -203,6 +203,9 @@ jobs:
           cat > Dockerfile << 'EOF'
           FROM ubuntu:24.04
           
+          # Declare the TARGETARCH argument (automatically provided by Docker Buildx)
+          ARG TARGETARCH
+          
           # Install runtime dependencies
           RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
           

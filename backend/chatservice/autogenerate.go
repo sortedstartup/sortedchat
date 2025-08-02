@@ -7,13 +7,18 @@ package main
 //go:generate protoc --go_opt=module=sortedstartup/chatservice/proto --go-grpc_opt=module=sortedstartup/chatservice/proto --go_out=./proto/ --go-grpc_out=./proto/ --proto_path=../../proto chatservice.proto
 
 // This generates JS code from .proto files
-//go:generate protoc --ts_opt=no_namespace --ts_opt=unary_rpc_promise=true --ts_opt=target=web --ts_out=../../frontend-new/proto/ --proto_path=../../proto chatservice.proto
+//go:generate protoc --ts_opt=no_namespace --ts_opt=unary_rpc_promise=true --ts_opt=target=web --ts_out=../../frontend/proto/ --proto_path=../../proto chatservice.proto
 
-// This is a hack to avoid using grpc-js which is not needed in the browser
-// If we can move to connect RPC auto generation this is not needed
-//go:generate sh -c "sed -i  's|@grpc/grpc-js|grpc-web|g' ../../frontend-new/proto/chatservice.ts"
+// Replace grpc-js with grpc-web for browser compatibility
+//go:generate sh -c "sed -i 's|@grpc/grpc-js|grpc-web|g' ../../frontend/proto/chatservice.ts"
 
-// This to avoid any errors during `npm run build`
-// go:generate sh -c "sed -i '1i\\// @ts-nocheck' ../../frontend-new/proto/chatservice.ts"
+// Remove server-side abstract service class completely (between the class declaration and its closing brace)
+//go:generate sh -c "sed -i '/^export abstract class.*Service {$/,/^}$/c\\// Server-side service class removed for client-side compatibility' ../../frontend/proto/chatservice.ts"
+
+// Remove lines containing server-side types that don't exist in grpc-web
+//go:generate sh -c "sed -i '/UntypedHandleCall/d; /ServerWritableStream/d; /ServerUnaryCall/d; /sendUnaryData/d' ../../frontend/proto/chatservice.ts"
+
+// Add @ts-nocheck at the beginning to suppress any remaining TypeScript errors
+//go:generate sh -c "sed -i '1i\\// @ts-nocheck' ../../frontend/proto/chatservice.ts"
 
 // // go:generate sqlc -f db/scripts/sqlc.yaml generate

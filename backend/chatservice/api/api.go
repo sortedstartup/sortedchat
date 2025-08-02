@@ -101,10 +101,19 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 		return fmt.Errorf("failed to fetch message history: %v", err)
 	}
 
+	var messages []map[string]interface{}
+
 	if len(history) == 0 {
-		history = append(history, dao.ChatMessageRow{
-			Role:    "system",
-			Content: "You are a helpful assistant",
+		messages = append(messages, map[string]interface{}{
+			"role":    "system",
+			"content": "You are a helpful assistant",
+		})
+	}
+
+	for _, msg := range history {
+		messages = append(messages, map[string]interface{}{
+			"role":    msg.Role,
+			"content": msg.Content,
 		})
 	}
 
@@ -121,6 +130,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 			// TODO: user message also
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
+			fmt.Println("Retrieved chunks:", chunks.Prompt)
 			userMessage = chunks.Prompt
 		}
 	}
@@ -128,10 +138,12 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
 
 	requestBody := map[string]interface{}{
-		"model":        model,
-		"instructions": "You are a helpful assistant",
-		"input":        history,
-		"stream":       true,
+		"model":    model,
+		"messages": history,
+		"stream":   true,
+		"stream_options": map[string]interface{}{
+			"include_usage": true,
+		},
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -139,7 +151,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 		return fmt.Errorf("failed to marshal request: %v", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/responses", bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequest("POST", os.Getenv("OPENAI_API_URL"), bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}
@@ -152,14 +164,31 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("OpenAI API error: %d - %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var fullResponse strings.Builder
+	var inputTokens, outputTokens int
+
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
+
+		if line == "" {
+			continue
+		}
+
 		if !strings.HasPrefix(line, "data: ") {
 			continue
 		}
 
 		data := strings.TrimPrefix(line, "data: ")
+
+		if data == "[DONE]" {
+			break
+		}
 
 		var chunk map[string]interface{}
 		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
@@ -167,49 +196,46 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 			continue
 		}
 
-		switch chunk["type"] {
-		case "response.output_text.delta":
-			if text, ok := chunk["delta"].(string); ok {
-				stream.Send(&pb.ChatResponse{Text: text})
+		if usage, ok := chunk["usage"].(map[string]interface{}); ok {
+			if promptTokens, ok := usage["prompt_tokens"].(float64); ok {
+				inputTokens = int(promptTokens)
 			}
-		case "response.completed":
-			response, ok := chunk["response"].(map[string]interface{})
-			if !ok {
-				continue
+			if completionTokens, ok := usage["completion_tokens"].(float64); ok {
+				outputTokens = int(completionTokens)
 			}
+		}
 
-			var assistantText string
-			if outputArr, ok := response["output"].([]interface{}); ok && len(outputArr) > 0 {
-				if outputObj, ok := outputArr[0].(map[string]interface{}); ok {
-					if contentArr, ok := outputObj["content"].([]interface{}); ok && len(contentArr) > 0 {
-						if contentObj, ok := contentArr[0].(map[string]interface{}); ok {
-							assistantText, _ = contentObj["text"].(string)
-						}
-					}
-				}
-			}
+		choices, ok := chunk["choices"].([]interface{})
+		if !ok || len(choices) == 0 {
+			continue
+		}
 
-			inputTokens := 0
-			outputTokens := 0
-			if usage, ok := response["usage"].(map[string]interface{}); ok {
-				if val, ok := usage["input_tokens"].(float64); ok {
-					inputTokens = int(val)
-				}
-				if val, ok := usage["output_tokens"].(float64); ok {
-					outputTokens = int(val)
-				}
-			}
+		choice, ok := choices[0].(map[string]interface{})
+		if !ok {
+			continue
+		}
 
-			// Final DB insert
-			err := s.dao.AddChatMessageWithTokens(chatId, "assistant", assistantText, model, inputTokens, outputTokens)
-			if err != nil {
-				log.Printf("Failed to insert assistant message: %v", err)
+		if delta, ok := choice["delta"].(map[string]interface{}); ok {
+			if content, ok := delta["content"].(string); ok && content != "" {
+				fullResponse.WriteString(content)
+
+				if err := stream.Send(&pb.ChatResponse{Text: content}); err != nil {
+					return fmt.Errorf("failed to send stream response: %v", err)
+				}
 			}
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("error reading stream: %v", err)
+	}
+
+	assistantText := fullResponse.String()
+	if assistantText != "" {
+		err := s.dao.AddChatMessageWithTokens(chatId, "assistant", assistantText, model, inputTokens, outputTokens)
+		if err != nil {
+			log.Printf("Failed to insert assistant message: %v", err)
+		}
 	}
 
 	return nil

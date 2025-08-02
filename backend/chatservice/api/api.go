@@ -49,9 +49,10 @@ func NewServer(mux *http.ServeMux) *Server {
 		log.Fatalf("Failed to initialize object store: %v", err)
 	}
 
+	ollama_url := os.Getenv("OLLAMA_URL")
 	embeddingsProvider := &rag.OLLamaEmbedder{
 		//TODO: read from config
-		URL:   "http://localhost:11434/v1/embeddings",
+		URL:   ollama_url + "/v1/embeddings",
 		Model: "nomic-embed-text",
 	}
 

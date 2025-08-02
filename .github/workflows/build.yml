@@ -125,7 +125,7 @@ jobs:
           fi
 
           go env
-          go build -o $OUT ./mono
+          go build -tags "sqlite_fts5" -o $OUT ./mono
 
       - name: Upload Go executable as artifact
         uses: actions/upload-artifact@v4

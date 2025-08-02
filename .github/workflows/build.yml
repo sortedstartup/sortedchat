@@ -103,13 +103,15 @@ jobs:
           export GOOS=${{ matrix.os }}
           export GOARCH=${{ matrix.arch }}
           export CGO_ENABLED=1
+          
+          # Use custom SQLite headers for all platforms to ensure version consistency
+          export CGO_CFLAGS="-I$(pwd)/sqlite3"
 
           # Windows
           export OUT=sortedchat-${{ matrix.os }}-${{ matrix.arch }}
           if [ "${{ matrix.os }}" = "windows" ]; then 
             export OUT="$OUT.exe";
             export CC=x86_64-w64-mingw32-gcc
-            export CGO_CFLAGS="-I./sqlite3"
           fi
 
           # Linux ARM64

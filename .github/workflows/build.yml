@@ -9,7 +9,8 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-frontend:
+    name: Build frontend UI
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -40,7 +41,8 @@ jobs:
           retention-days: 10
 
   build-go:
-    needs: build
+    name: Build Go backend
+    needs: build-frontend
     runs-on: ${{ matrix.runner }}
     continue-on-error: true
     strategy:

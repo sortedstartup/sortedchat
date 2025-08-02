@@ -24,18 +24,18 @@ jobs:
         run: npm install -g pnpm
 
       - name: Install frontend dependencies
-        working-directory: frontend/sortedchat
+        working-directory: frontend
         run: pnpm install
 
       - name: Build frontend in standalone mode
-        working-directory: frontend/sortedchat
+        working-directory: frontend
         run: pnpm run build --mode standalone
 
       - name: Upload frontend build
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: frontend/sortedchat/build/client
+          path: frontend/build/client
           if-no-files-found: error
           retention-days: 10
 

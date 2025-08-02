@@ -1285,238 +1285,6 @@ func (x *Document) GetUpdatedAt() string {
 	return ""
 }
 
-type RetrieveSimilarChunksRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	Query         string                 `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RetrieveSimilarChunksRequest) Reset() {
-	*x = RetrieveSimilarChunksRequest{}
-	mi := &file_chatservice_proto_msgTypes[24]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RetrieveSimilarChunksRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RetrieveSimilarChunksRequest) ProtoMessage() {}
-
-func (x *RetrieveSimilarChunksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[24]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RetrieveSimilarChunksRequest.ProtoReflect.Descriptor instead.
-func (*RetrieveSimilarChunksRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{24}
-}
-
-func (x *RetrieveSimilarChunksRequest) GetProjectId() string {
-	if x != nil {
-		return x.ProjectId
-	}
-	return ""
-}
-
-func (x *RetrieveSimilarChunksRequest) GetQuery() string {
-	if x != nil {
-		return x.Query
-	}
-	return ""
-}
-
-type RetrieveSimilarChunksResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Results       []*SimilarChunkResult  `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RetrieveSimilarChunksResponse) Reset() {
-	*x = RetrieveSimilarChunksResponse{}
-	mi := &file_chatservice_proto_msgTypes[25]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RetrieveSimilarChunksResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RetrieveSimilarChunksResponse) ProtoMessage() {}
-
-func (x *RetrieveSimilarChunksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[25]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RetrieveSimilarChunksResponse.ProtoReflect.Descriptor instead.
-func (*RetrieveSimilarChunksResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{25}
-}
-
-func (x *RetrieveSimilarChunksResponse) GetResults() []*SimilarChunkResult {
-	if x != nil {
-		return x.Results
-	}
-	return nil
-}
-
-type SimilarChunkResult struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Chunk         *Chunk                 `protobuf:"bytes,1,opt,name=chunk,proto3" json:"chunk,omitempty"`
-	Similarity    float32                `protobuf:"fixed32,2,opt,name=similarity,proto3" json:"similarity,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SimilarChunkResult) Reset() {
-	*x = SimilarChunkResult{}
-	mi := &file_chatservice_proto_msgTypes[26]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SimilarChunkResult) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SimilarChunkResult) ProtoMessage() {}
-
-func (x *SimilarChunkResult) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[26]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SimilarChunkResult.ProtoReflect.Descriptor instead.
-func (*SimilarChunkResult) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{26}
-}
-
-func (x *SimilarChunkResult) GetChunk() *Chunk {
-	if x != nil {
-		return x.Chunk
-	}
-	return nil
-}
-
-func (x *SimilarChunkResult) GetSimilarity() float32 {
-	if x != nil {
-		return x.Similarity
-	}
-	return 0
-}
-
-type Chunk struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	ProjectId     string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	DocsId        string                 `protobuf:"bytes,3,opt,name=docs_id,json=docsId,proto3" json:"docs_id,omitempty"`
-	StartByte     int32                  `protobuf:"varint,4,opt,name=start_byte,json=startByte,proto3" json:"start_byte,omitempty"`
-	EndByte       int32                  `protobuf:"varint,5,opt,name=end_byte,json=endByte,proto3" json:"end_byte,omitempty"`
-	Text          string                 `protobuf:"bytes,6,opt,name=text,proto3" json:"text,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Chunk) Reset() {
-	*x = Chunk{}
-	mi := &file_chatservice_proto_msgTypes[27]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Chunk) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Chunk) ProtoMessage() {}
-
-func (x *Chunk) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[27]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Chunk.ProtoReflect.Descriptor instead.
-func (*Chunk) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{27}
-}
-
-func (x *Chunk) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *Chunk) GetProjectId() string {
-	if x != nil {
-		return x.ProjectId
-	}
-	return ""
-}
-
-func (x *Chunk) GetDocsId() string {
-	if x != nil {
-		return x.DocsId
-	}
-	return ""
-}
-
-func (x *Chunk) GetStartByte() int32 {
-	if x != nil {
-		return x.StartByte
-	}
-	return 0
-}
-
-func (x *Chunk) GetEndByte() int32 {
-	if x != nil {
-		return x.EndByte
-	}
-	return 0
-}
-
-func (x *Chunk) GetText() string {
-	if x != nil {
-		return x.Text
-	}
-	return ""
-}
-
 var File_chatservice_proto protoreflect.FileDescriptor
 
 const file_chatservice_proto_rawDesc = "" +
@@ -1606,27 +1374,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x05 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x06 \x01(\tR\tupdatedAt\"S\n" +
-	"\x1cRetrieveSimilarChunksRequest\x12\x1d\n" +
-	"\n" +
-	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x14\n" +
-	"\x05query\x18\x02 \x01(\tR\x05query\"Y\n" +
-	"\x1dRetrieveSimilarChunksResponse\x128\n" +
-	"\aresults\x18\x01 \x03(\v2\x1e.sortedchat.SimilarChunkResultR\aresults\"]\n" +
-	"\x12SimilarChunkResult\x12'\n" +
-	"\x05chunk\x18\x01 \x01(\v2\x11.sortedchat.ChunkR\x05chunk\x12\x1e\n" +
-	"\n" +
-	"similarity\x18\x02 \x01(\x02R\n" +
-	"similarity\"\x9d\x01\n" +
-	"\x05Chunk\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
-	"\n" +
-	"project_id\x18\x02 \x01(\tR\tprojectId\x12\x17\n" +
-	"\adocs_id\x18\x03 \x01(\tR\x06docsId\x12\x1d\n" +
-	"\n" +
-	"start_byte\x18\x04 \x01(\x05R\tstartByte\x12\x19\n" +
-	"\bend_byte\x18\x05 \x01(\x05R\aendByte\x12\x12\n" +
-	"\x04text\x18\x06 \x01(\tR\x04text2\xb6\x06\n" +
+	"updated_at\x18\x06 \x01(\tR\tupdatedAt2\xc8\x05\n" +
 	"\n" +
 	"SortedChat\x12;\n" +
 	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12K\n" +
@@ -1640,8 +1388,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"SearchChat\x12\x1d.sortedchat.ChatSearchRequest\x1a\x1e.sortedchat.ChatSearchResponse\x12T\n" +
 	"\rCreateProject\x12 .sortedchat.CreateProjectRequest\x1a!.sortedchat.CreateProjectResponse\x12N\n" +
 	"\vGetProjects\x12\x1e.sortedchat.GetProjectsRequest\x1a\x1f.sortedchat.GetProjectsResponse\x12T\n" +
-	"\rListDocuments\x12 .sortedchat.ListDocumentsRequest\x1a!.sortedchat.ListDocumentsResponse\x12l\n" +
-	"\x15RetrieveSimilarChunks\x12(.sortedchat.RetrieveSimilarChunksRequest\x1a).sortedchat.RetrieveSimilarChunksResponseB!Z\x1fsortedstartup/chatservice/protob\x06proto3"
+	"\rListDocuments\x12 .sortedchat.ListDocumentsRequest\x1a!.sortedchat.ListDocumentsResponseB!Z\x1fsortedstartup/chatservice/protob\x06proto3"
 
 var (
 	file_chatservice_proto_rawDescOnce sync.Once
@@ -1655,36 +1402,32 @@ func file_chatservice_proto_rawDescGZIP() []byte {
 	return file_chatservice_proto_rawDescData
 }
 
-var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_chatservice_proto_goTypes = []any{
-	(*CreateChatRequest)(nil),             // 0: sortedchat.CreateChatRequest
-	(*CreateChatResponse)(nil),            // 1: sortedchat.CreateChatResponse
-	(*ChatRequest)(nil),                   // 2: sortedchat.ChatRequest
-	(*ChatResponse)(nil),                  // 3: sortedchat.ChatResponse
-	(*GetHistoryRequest)(nil),             // 4: sortedchat.GetHistoryRequest
-	(*GetHistoryResponse)(nil),            // 5: sortedchat.GetHistoryResponse
-	(*ChatMessage)(nil),                   // 6: sortedchat.ChatMessage
-	(*GetChatListRequest)(nil),            // 7: sortedchat.GetChatListRequest
-	(*GetChatListResponse)(nil),           // 8: sortedchat.GetChatListResponse
-	(*ChatInfo)(nil),                      // 9: sortedchat.ChatInfo
-	(*ModelListInfo)(nil),                 // 10: sortedchat.ModelListInfo
-	(*ListModelsRequest)(nil),             // 11: sortedchat.ListModelsRequest
-	(*ListModelsResponse)(nil),            // 12: sortedchat.ListModelsResponse
-	(*ChatSearchRequest)(nil),             // 13: sortedchat.ChatSearchRequest
-	(*SearchResult)(nil),                  // 14: sortedchat.SearchResult
-	(*ChatSearchResponse)(nil),            // 15: sortedchat.ChatSearchResponse
-	(*CreateProjectRequest)(nil),          // 16: sortedchat.CreateProjectRequest
-	(*CreateProjectResponse)(nil),         // 17: sortedchat.CreateProjectResponse
-	(*GetProjectsRequest)(nil),            // 18: sortedchat.GetProjectsRequest
-	(*GetProjectsResponse)(nil),           // 19: sortedchat.GetProjectsResponse
-	(*Project)(nil),                       // 20: sortedchat.Project
-	(*ListDocumentsRequest)(nil),          // 21: sortedchat.ListDocumentsRequest
-	(*ListDocumentsResponse)(nil),         // 22: sortedchat.ListDocumentsResponse
-	(*Document)(nil),                      // 23: sortedchat.Document
-	(*RetrieveSimilarChunksRequest)(nil),  // 24: sortedchat.RetrieveSimilarChunksRequest
-	(*RetrieveSimilarChunksResponse)(nil), // 25: sortedchat.RetrieveSimilarChunksResponse
-	(*SimilarChunkResult)(nil),            // 26: sortedchat.SimilarChunkResult
-	(*Chunk)(nil),                         // 27: sortedchat.Chunk
+	(*CreateChatRequest)(nil),     // 0: sortedchat.CreateChatRequest
+	(*CreateChatResponse)(nil),    // 1: sortedchat.CreateChatResponse
+	(*ChatRequest)(nil),           // 2: sortedchat.ChatRequest
+	(*ChatResponse)(nil),          // 3: sortedchat.ChatResponse
+	(*GetHistoryRequest)(nil),     // 4: sortedchat.GetHistoryRequest
+	(*GetHistoryResponse)(nil),    // 5: sortedchat.GetHistoryResponse
+	(*ChatMessage)(nil),           // 6: sortedchat.ChatMessage
+	(*GetChatListRequest)(nil),    // 7: sortedchat.GetChatListRequest
+	(*GetChatListResponse)(nil),   // 8: sortedchat.GetChatListResponse
+	(*ChatInfo)(nil),              // 9: sortedchat.ChatInfo
+	(*ModelListInfo)(nil),         // 10: sortedchat.ModelListInfo
+	(*ListModelsRequest)(nil),     // 11: sortedchat.ListModelsRequest
+	(*ListModelsResponse)(nil),    // 12: sortedchat.ListModelsResponse
+	(*ChatSearchRequest)(nil),     // 13: sortedchat.ChatSearchRequest
+	(*SearchResult)(nil),          // 14: sortedchat.SearchResult
+	(*ChatSearchResponse)(nil),    // 15: sortedchat.ChatSearchResponse
+	(*CreateProjectRequest)(nil),  // 16: sortedchat.CreateProjectRequest
+	(*CreateProjectResponse)(nil), // 17: sortedchat.CreateProjectResponse
+	(*GetProjectsRequest)(nil),    // 18: sortedchat.GetProjectsRequest
+	(*GetProjectsResponse)(nil),   // 19: sortedchat.GetProjectsResponse
+	(*Project)(nil),               // 20: sortedchat.Project
+	(*ListDocumentsRequest)(nil),  // 21: sortedchat.ListDocumentsRequest
+	(*ListDocumentsResponse)(nil), // 22: sortedchat.ListDocumentsResponse
+	(*Document)(nil),              // 23: sortedchat.Document
 }
 var file_chatservice_proto_depIdxs = []int32{
 	6,  // 0: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
@@ -1693,33 +1436,29 @@ var file_chatservice_proto_depIdxs = []int32{
 	14, // 3: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
 	20, // 4: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
 	23, // 5: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
-	26, // 6: sortedchat.RetrieveSimilarChunksResponse.results:type_name -> sortedchat.SimilarChunkResult
-	27, // 7: sortedchat.SimilarChunkResult.chunk:type_name -> sortedchat.Chunk
-	2,  // 8: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	4,  // 9: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
-	7,  // 10: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
-	0,  // 11: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
-	11, // 12: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
-	13, // 13: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
-	16, // 14: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
-	18, // 15: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
-	21, // 16: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
-	24, // 17: sortedchat.SortedChat.RetrieveSimilarChunks:input_type -> sortedchat.RetrieveSimilarChunksRequest
-	3,  // 18: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	5,  // 19: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
-	8,  // 20: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
-	1,  // 21: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	12, // 22: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
-	15, // 23: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
-	17, // 24: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
-	19, // 25: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
-	22, // 26: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
-	25, // 27: sortedchat.SortedChat.RetrieveSimilarChunks:output_type -> sortedchat.RetrieveSimilarChunksResponse
-	18, // [18:28] is the sub-list for method output_type
-	8,  // [8:18] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	2,  // 6: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
+	4,  // 7: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
+	7,  // 8: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
+	0,  // 9: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
+	11, // 10: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
+	13, // 11: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
+	16, // 12: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
+	18, // 13: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
+	21, // 14: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
+	3,  // 15: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	5,  // 16: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
+	8,  // 17: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
+	1,  // 18: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
+	12, // 19: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
+	15, // 20: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
+	17, // 21: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
+	19, // 22: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
+	22, // 23: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
+	15, // [15:24] is the sub-list for method output_type
+	6,  // [6:15] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_chatservice_proto_init() }
@@ -1733,7 +1472,7 @@ func file_chatservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chatservice_proto_rawDesc), len(file_chatservice_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   28,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -9,7 +9,8 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-frontend:
+    name: Build frontend UI
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -24,23 +25,24 @@ jobs:
         run: npm install -g pnpm
 
       - name: Install frontend dependencies
-        working-directory: frontend/sortedchat
+        working-directory: frontend
         run: pnpm install
 
       - name: Build frontend in standalone mode
-        working-directory: frontend/sortedchat
+        working-directory: frontend
         run: pnpm run build --mode standalone
 
       - name: Upload frontend build
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: frontend/sortedchat/build/client
+          path: frontend/dist/
           if-no-files-found: error
           retention-days: 10
 
   build-go:
-    needs: build
+    name: Build Go backend
+    needs: build-frontend
     runs-on: ${{ matrix.runner }}
     continue-on-error: true
     strategy:
@@ -103,6 +105,9 @@ jobs:
           export GOOS=${{ matrix.os }}
           export GOARCH=${{ matrix.arch }}
           export CGO_ENABLED=1
+          
+          # Use custom SQLite headers for all platforms to ensure version consistency
+          export CGO_CFLAGS="-I$(pwd)/sqlite3"
 
           # Windows
           export OUT=sortedchat-${{ matrix.os }}-${{ matrix.arch }}
@@ -122,7 +127,7 @@ jobs:
           fi
 
           go env
-          go build -o $OUT ./mono
+          go build -tags "sqlite_fts5" -o $OUT ./mono
 
       - name: Upload Go executable as artifact
         uses: actions/upload-artifact@v4

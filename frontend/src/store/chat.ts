@@ -117,7 +117,7 @@ export const getChatList = (projectId?: string) => {
     ? GetChatListRequest.fromObject({ project_id: projectId })
     : new GetChatListRequest();
 
-  chat.GetChatList(requestObj, {}).then((value) => {
+  chat.GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
     (projectId ? $projectChatList : $chatList).set(value.chats);
   });
 };
@@ -161,14 +161,14 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     $currentChatMessage.set("");
   });
 
-  stream.on("error", (err) => {
+  stream.on("error", (err: Error) => {
     console.error("Stream error:", err);
     $streamingMessage.set("");
     $currentChatMessage.set("");
   });
 };
 
-$currentChatId.listen((newValue, oldValue) => {
+$currentChatId.listen((_newValue, _oldValue) => {
   $streamingMessage.set("");
   $currentChatMessage.set("");
 });
@@ -230,7 +230,7 @@ export const getSearchResults = async () => {
 
 export const $currentProject = atom<string>("");
 export const $projectList = atom<Project[]>([]);
-export const $currentProjectId = atom<String>("");
+export const $currentProjectId = atom<string>("");
 
 export const createProject = async (
   name: string,
@@ -311,9 +311,8 @@ $documents.listen((projectId) => {
 
 $currentProjectId.listen((newProjectId) => {
   if (newProjectId) {
-    getChatList(String(newProjectId));
+    getChatList(newProjectId);
   } else {
     $chatList.set([]);
   }
 });
-

@@ -109,6 +109,7 @@ jobs:
           if [ "${{ matrix.os }}" = "windows" ]; then 
             export OUT="$OUT.exe";
             export CC=x86_64-w64-mingw32-gcc
+            export CGO_CFLAGS="-I./sqlite3"
           fi
 
           # Linux ARM64

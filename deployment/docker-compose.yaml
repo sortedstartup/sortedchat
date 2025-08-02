@@ -7,7 +7,7 @@ services:
       dockerfile: deployment/Dockerfile
     environment:
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
-      - OPENAI_URL=http://litellm:4000
+      - OPENAI_API_URL=http://litellm:4000/v1/chat/completions
       - OLLAMA_URL=http://ollama:11434
     ports:
       - "8080:8080"

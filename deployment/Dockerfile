@@ -5,7 +5,7 @@ FROM node:20 AS frontend-builder
 RUN npm install -g pnpm
 
 # Copy frontend source
-COPY frontend/sortedchat /app/frontend
+COPY frontend/ /app/frontend
 WORKDIR /app/frontend
 
 # Install dependencies and build frontend
@@ -31,7 +31,7 @@ COPY backend /app/backend
 COPY proto /app/proto
 
 # Copy built frontend to backend public directory
-COPY --from=frontend-builder /app/frontend/build/client /app/backend/mono/public
+COPY --from=frontend-builder /app/frontend/dist /app/backend/mono/public
 
 WORKDIR /app/backend
 

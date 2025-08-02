@@ -1,14 +1,16 @@
 version: '3.9'
 
 services:
-  custom-app:
-    image: ubuntu:latest
-    command: /bin/bash -c "while true; do sleep 30; done"
+  sortedchat:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
     environment:
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
       - OPENAI_URL=http://litellm:4000
       - OLLAMA_URL=http://ollama:11434
-
+    ports:
+      - "8080:8080"
     depends_on:
       - litellm
       - ollama

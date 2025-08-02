@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Development
+.vscode
+.cursor
+.devcontainer
+
+# Dependencies
+**/node_modules
+**/.vite
+
+# Builds
+**/build
+**/dist
+
+# Logs
+**/*.log
+
+# Environment
+.env*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+**/__debug_bin*
+**/go.sum
+
+# SQLite
+**/*.db
+**/*.sqlite
+
+# Docker
+**/Dockerfile
+**/docker-compose*
+**/.dockerignore

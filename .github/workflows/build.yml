@@ -173,10 +173,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Check if this is a production release (not pre-release)
+      - name: Check if production release
+        id: check_prod
+        run: |
+          tag=${GITHUB_REF#refs/tags/}
+          if [[ $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_production=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_production=false" >> $GITHUB_OUTPUT
+          fi
+
       # Extract Docker tags and metadata from Git tags
-      # For tag 'v1.2.3', this creates:
-      # - ghcr.io/{owner}/sortedchat:v1.2.3
-      # - ghcr.io/{owner}/sortedchat:latest
+      # Production releases (v1.2.3): get version tag + latest
+      # RC releases (v1.2.3-rc1): get version tag only (no latest)
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -184,7 +194,7 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/sortedchat
           tags: |
             type=ref,event=tag
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ steps.check_prod.outputs.is_production }}
 
       # Create Dockerfile for multi-architecture build
       # Uses pre-built Go binaries instead of compiling in Docker (much faster!)
@@ -269,15 +279,16 @@ jobs:
             
             ### Quick Start
             ```bash
-            # Pull the version-specific image (recommended)
+            # Pull this specific version
             docker pull ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
-            
-            # Or use the latest tag
-            docker pull ghcr.io/${{ github.repository_owner }}/sortedchat:latest
             
             # Run the container
             docker run -p 8080:8080 ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
             ```
+            
+            ### Available Docker Tags
+            - `ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}` - This specific version
+            - `ghcr.io/${{ github.repository_owner }}/sortedchat:latest` - Latest stable release (production only)
             
             ### 🎯 How Multi-Arch Works
             - **One tag, multiple architectures**: The same tag works on both Intel/AMD (x64) and ARM (Apple Silicon, Raspberry Pi, etc.)

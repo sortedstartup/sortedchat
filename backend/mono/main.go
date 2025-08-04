@@ -11,9 +11,12 @@ import (
 	"sortedstartup/chatservice/api"
 	"sortedstartup/chatservice/proto"
 
+	pb "sortedstartup/chatservice/proto"
+
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -83,10 +86,20 @@ func main() {
 		serverErr <- httpServer.ListenAndServe()
 	}()
 
-	// Wait for either server to error
-	err = <-serverErr
+	conn, err := grpc.NewClient("localhost:8000", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Server error: %v", err)
+		log.Fatal(err)
 	}
+	defer conn.Close()
+	client := pb.NewSortedChatClient(conn)
+
+	// Wails(apiserver)
+	Wails(client)
+
+	// Wait for either server to error
+	// err = <-serverErr
+	// if err != nil {
+	// 	log.Fatalf("Server error: %v", err)
+	// }
 
 }

@@ -1,0 +1,10 @@
+# Example configuration file for chatservice
+# Copy this to config.yaml and customize as needed
+
+openai_api_key: "your-openai-api-key-here"
+openai_base_url: "https://api.openai.com/v1/chat/completions"
+ollama_url: "http://localhost:11434"
+db_path: "chatservice.db"
+filestore_path: "filestore"
+port: 8080
+host: "localhost"

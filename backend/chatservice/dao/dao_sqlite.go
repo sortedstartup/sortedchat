@@ -3,6 +3,7 @@ package dao
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	proto "sortedstartup/chatservice/proto"
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
@@ -62,7 +63,7 @@ type ChatInfoRow struct {
 func (s *SQLiteDAO) GetChatList(projectID string) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
 	var err error
-	
+
 	if projectID == "" || projectID == "null" {
 		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL")
 	} else {
@@ -254,4 +255,71 @@ func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string, projectID string) (
         )
     `, projectID, embedding)
 	return chunks, err
+}
+
+type SQLiteSettingsDAO struct {
+	db *sqlx.DB
+}
+
+func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
+	db, err := sqlx.Open("sqlite3", sqliteUrl)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	return &SQLiteSettingsDAO{db: db}
+}
+
+func (s *SQLiteSettingsDAO) GetSettings() (*proto.Settings, error) {
+	var settings proto.Settings
+	err := s.db.Get(&settings, "SELECT * FROM settings")
+	return &settings, err
+}
+
+func (s *SQLiteSettingsDAO) SetSettings(settings *proto.Settings) error {
+	_, err := s.db.Exec("INSERT INTO settings (settings) VALUES (?)", settings)
+	return err
+}
+
+type SQLiteConfigDAO struct {
+	db *sqlx.DB
+}
+
+func NewSQLiteConfigDAO(db *sqlx.DB) *SQLiteConfigDAO {
+	return &SQLiteConfigDAO{db: db}
+}
+
+func (s *SQLiteConfigDAO) GetConfig() (*proto.Settings, error) {
+	var settings proto.Settings
+	var settingsJSON string
+	err := s.db.Get(&settingsJSON, "SELECT settings FROM settings WHERE name = 'settings'")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings from database: %w", err)
+	}
+	err = json.Unmarshal([]byte(settingsJSON), &settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal settings JSON: %w", err)
+	}
+
+	return &settings, nil
+}
+
+func (s *SQLiteConfigDAO) SetConfig(settings *proto.Settings) error {
+	// Marshal settings to JSON
+	settingsJSON, err := json.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("failed to marshal settings to JSON: %w", err)
+	}
+
+	// Use UPSERT to either insert or update the settings row with name="settings"
+	query := `
+		INSERT INTO settings (name, settings) VALUES ('settings', ?)
+		ON CONFLICT(name) DO UPDATE SET settings = excluded.settings
+	`
+
+	_, err = s.db.Exec(query, string(settingsJSON))
+	if err != nil {
+		return fmt.Errorf("failed to save settings to database: %w", err)
+	}
+
+	return nil
 }

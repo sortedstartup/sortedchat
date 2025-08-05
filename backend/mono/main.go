@@ -40,9 +40,13 @@ func main() {
 	grpcServer := grpc.NewServer()
 	mux := http.NewServeMux()
 
-	apiServer := api.NewServer(mux)
-	apiServer.Init()
-	proto.RegisterSortedChatServer(grpcServer, apiServer)
+	chatServiceApi := api.NewChatService(mux)
+	chatServiceApi.Init()
+	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
+
+	configServiceApi := api.NewConfigService()
+	configServiceApi.Init()
+	proto.RegisterConfigServiceServer(grpcServer, configServiceApi)
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)

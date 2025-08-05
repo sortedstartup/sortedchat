@@ -32,3 +32,8 @@ type DAO interface {
 	SaveRAGChunkEmbedding(chunkID string, embedding []float64) error
 	GetTopSimilarRAGChunks(embedding string, projectID string) ([]RAGChunkRow, error)
 }
+
+type SettingsDAO interface {
+	GetSettings() (*proto.Settings, error)
+	SetSettings(settings *proto.Settings) error
+}

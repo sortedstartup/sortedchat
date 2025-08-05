@@ -21,12 +21,12 @@ type GenerateEmbeddingMessage struct {
 }
 
 // registerRoutes binds HTTP routes to the Server
-func (s *Server) registerRoutes(mux *http.ServeMux) {
+func (s *ChatService) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/upload", s.handleUpload)
 	mux.HandleFunc("/documents/", s.handleDownload)
 }
 
-func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
+func (s *ChatService) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -82,7 +82,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `{"message": "File uploaded successfully", "id": "%s"}`, objectID)
 }
 
-func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
+func (s *ChatService) handleDownload(w http.ResponseWriter, r *http.Request) {
 	docsId := strings.TrimPrefix(r.URL.Path, "/documents/")
 	if docsId == "" {
 		http.Error(w, "Missing document ID", http.StatusBadRequest)

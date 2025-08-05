@@ -12,10 +12,36 @@ service SortedChat {
     rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
     rpc ListModel(ListModelsRequest) returns (ListModelsResponse);
     rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
+
     rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
     rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
     rpc ListDocuments(ListDocumentsRequest) returns(ListDocumentsResponse);
 }
+
+service ConfigService {
+    rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+    rpc SetConfig(SetConfigRequest) returns (SetConfigResponse);
+}
+
+message Settings {
+   string OPENAI_API_KEY = 1;
+   string OPENAI_API_URL = 2;
+}
+
+message GetConfigRequest {}
+
+message GetConfigResponse {
+    Settings settings = 1;
+}
+
+message SetConfigRequest {
+    Settings settings = 1;
+}
+
+message SetConfigResponse {
+    string message = 1;
+}
+
 
 message CreateChatRequest {
   string name = 1;

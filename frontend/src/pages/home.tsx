@@ -63,7 +63,7 @@ export function Home() {
                   onClick={handleSendMessage}
                   type="button"
                 >
-                  Send Message
+                  Send Messages
                   <CornerDownLeft className="size-4" />
                 </Button>
               </div>

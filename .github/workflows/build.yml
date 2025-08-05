@@ -109,14 +109,19 @@ jobs:
             librsvg2-dev \
             pkg-config
 
+      - name: Add ARM64 architecture
+        if: matrix.os == 'linux' && matrix.arch == 'arm64'
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt-get update
+
       - name: Install Linux ARM64 dependencies and cross-compiler
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |
-          sudo apt-get update
           sudo apt-get install -y \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
-            pkg-config-aarch64-linux-gnu
+            pkg-config
           
           # Install ARM64 versions of the required libraries
           sudo apt-get install -y \
@@ -129,12 +134,6 @@ jobs:
             libpango1.0-dev:arm64 \
             libatk1.0-dev:arm64 \
             libgdk-pixbuf-2.0-dev:arm64
-
-      - name: Add ARM64 architecture
-        if: matrix.os == 'linux' && matrix.arch == 'arm64'
-        run: |
-          sudo dpkg --add-architecture arm64
-          sudo apt-get update
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -162,7 +161,6 @@ jobs:
           if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then 
             export CC=aarch64-linux-gnu-gcc
             export CXX=aarch64-linux-gnu-g++
-            export PKG_CONFIG=aarch64-linux-gnu-pkg-config
             export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
             export CGO_CFLAGS="$CGO_CFLAGS -I/usr/include/aarch64-linux-gnu"
             export CGO_LDFLAGS="-L/usr/lib/aarch64-linux-gnu"

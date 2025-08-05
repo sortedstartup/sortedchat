@@ -109,15 +109,23 @@ jobs:
             librsvg2-dev \
             pkg-config
 
-      - name: Add ARM64 architecture
+      - name: Setup ARM64 cross-compilation environment
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |
+          # Add ARM64 architecture
           sudo dpkg --add-architecture arm64
+          
+          # Update sources.list to include ARM64 repositories
+          sudo sed -i 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          
+          # Update package lists
           sudo apt-get update
-
-      - name: Install Linux ARM64 dependencies and cross-compiler
-        if: matrix.os == 'linux' && matrix.arch == 'arm64'
-        run: |
+          
+          # Install cross-compiler and build tools
           sudo apt-get install -y \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \

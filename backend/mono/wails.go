@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"embed"
+	"net/http"
+	"strings"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
-//go:embed all:frontend/dist
+//go:embed all:frontend-build-wails/dist
 var assets embed.FS
 
 type App struct {
@@ -24,7 +26,17 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func Wails() {
+type MuxHandler struct {
+	mux *http.ServeMux
+}
+
+func (h *MuxHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	req.URL.Path = strings.TrimPrefix(req.URL.Path, "/hack")
+
+	h.mux.ServeHTTP(res, req)
+}
+
+func Wails(mux *http.ServeMux) {
 
 	app := NewApp()
 
@@ -33,7 +45,8 @@ func Wails() {
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets:  assets,
+			Handler: &MuxHandler{mux: mux},
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,

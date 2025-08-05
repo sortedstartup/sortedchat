@@ -73,8 +73,16 @@ jobs:
           name: frontend-build
           path: backend/mono/public
 
+      - name: Download frontend build to Wails directory
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: backend/mono/frontend-build-wails/dist
+
       - name: Ensure public directory exists
-        run: mkdir -p backend/mono/public
+        run: |
+          mkdir -p backend/mono/frontend-build-wails/dist
+          mkdir -p backend/mono/public
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -127,7 +135,8 @@ jobs:
           fi
 
           go env
-          go build -tags "sqlite_fts5" -o $OUT ./mono
+          go build -buildvcs=false -tags "desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $OUT ./mono
+
 
       - name: Upload Go executable as artifact
         uses: actions/upload-artifact@v4

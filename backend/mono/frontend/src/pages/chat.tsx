@@ -13,7 +13,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   $currentChatId,
   $selectedModel,
-  // doChat,
+  doChat,
   $currentChatMessages,
   $streamingMessage,
   $currentChatMessage,
@@ -27,15 +27,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { DoChat } from "../../wailsjs/go/main/App";
 
 export function Chat() {
-  console.log("Chat component rendered",$currentChatMessage.get());
-  console.log("Chat component rendered2",$streamingMessage.get());
-
-  // const { projectId, chatId } = useParams();
-  const {  chatId } = useParams();
-
+  const { projectId, chatId } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,9 +47,7 @@ export function Chat() {
     return () => unsub();
   }, [chatId, navigate]);
 
-  // const { data, loading } = useStore($currentChatMessages);
-  const { data } = useStore($currentChatMessages);
-
+  const { data, loading } = useStore($currentChatMessages);
 
   const streamingMessage = useStore($streamingMessage);
   const currentChatMessage = useStore($currentChatMessage);
@@ -75,11 +67,9 @@ export function Chat() {
   }, [data, streamingMessage, currentChatMessage]);
 
   const handleSend = () => {
-    $currentChatMessage.set(inputValue);
     if (inputValue.trim()) {
-      DoChat(inputValue);
+      doChat(inputValue,projectId);
       setInputValue("");
-      
       setTimeout(scrollToBottom, 100);
     }
   };
@@ -99,7 +89,7 @@ export function Chat() {
     <div className="flex flex-col h-full mx-auto max-w-full w-full">
       <div className="flex-1 overflow-y-auto px-2 sm:px-4 min-h-0">
         <ChatMessageList className="flex flex-col gap-4 py-4">
-          {/* {loading ? (
+          {loading ? (
             <div className="flex items-center justify-center h-full text-gray-500">
               Loading messages...
             </div>
@@ -107,8 +97,7 @@ export function Chat() {
             <div className="flex items-center justify-center h-full text-gray-500">
               No messages yet
             </div>
-          ) : */}
-           (
+          ) : (
             <>
               {data?.map((message, index) => (
                 <div
@@ -168,8 +157,7 @@ export function Chat() {
               )}
               <div ref={messagesEndRef} />
             </>
-          )
-          {/* } */}
+          )}
         </ChatMessageList>
       </div>
 

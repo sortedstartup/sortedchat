@@ -2,38 +2,21 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { CornerDownLeft } from "lucide-react";
-// import { createNewChat, $currentChatId, doChat } from "@/store/chat";
+import { createNewChat, $currentChatId, doChat } from "@/store/chat";
 import { useNavigate } from "react-router-dom";
-import {DoChat,CreateNewChat}  from "../../wailsjs/go/main/App";
-import { $currentChatMessage, $streamingMessage } from "@/store/chat";
 
 export function Home() {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  // useEffect(() => {
-  //   // Initial greeting message
-  //   Greet("hi").then((greeting) => {
-  //     console.log(greeting);
-  //   });
-  //   DoChat("Hello, i am sanskar").then((response) => {
-  //     console.log(response);
-      
-  //   });
-  // }, []);
-
   const handleSendMessage = async () => {
     if (message.trim()) {
-      const chatId = await CreateNewChat();
-      console.log("New chat created with ID:", chatId);
+      const chatId = await createNewChat();
       if (chatId) {
-        // $currentChatId.set(chatId);
+        $currentChatId.set(chatId);
         navigate(`/chat/${chatId}`);
-        $currentChatMessage.set(message);
-        setTimeout(async() => {
-          const res = await DoChat(message);
-          $streamingMessage.set(res);
-          console.log("Message sent:", res);
+        setTimeout(() => {
+          doChat(message, undefined);
         }, 100);
         setMessage("");
       }
@@ -80,7 +63,7 @@ export function Home() {
                   onClick={handleSendMessage}
                   type="button"
                 >
-                  Send Message
+                  Send Messages
                   <CornerDownLeft className="size-4" />
                 </Button>
               </div>

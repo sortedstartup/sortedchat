@@ -1,5 +1,5 @@
 // pages/Settings.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
 import { $settings, saveSettings } from "../store/setting";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,13 +9,25 @@ import { Button } from "@/components/ui/button";
 
 const Settings = () => {
   const settings = useStore($settings);
-  
-  const [apiKey, setApiKey] = useState(settings.OPENAI_API_KEY || "");
-  const [apiUrl, setApiUrl] = useState(settings.OPENAI_API_URL || "");
+  const [formData, setFormData] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (settings) {
+      const settingsObj = settings.toObject?.() ?? {};
+      setFormData(settingsObj);
+    }
+  }, [settings]);
+
+  const handleFieldChange = (fieldName: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: value
+    }));
+  };
 
   const handleSave = async () => {
     try {
-      const message = await saveSettings(apiKey, apiUrl);
+      const message = await saveSettings(formData);
       console.log(message);
     } catch (error) {
       console.error("Save failed:", error);
@@ -28,29 +40,20 @@ const Settings = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>API Configuration</CardTitle>
+          <CardTitle>Configuration</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="apiKey">OpenAI API Key</Label>
-            <Input
-              id="apiKey"
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="apiUrl">OpenAI API URL</Label>
-            <Input
-              id="apiUrl"
-              type="url"
-              value={apiUrl}
-              onChange={(e) => setApiUrl(e.target.value)}
-            />
-          </div>
-
+          {Object.keys(formData).map(fieldName => (
+            <div key={fieldName} className="space-y-2">
+              <Label htmlFor={fieldName}>{fieldName}</Label>
+              <Input
+                id={fieldName}
+                value={formData[fieldName] || ""}
+                onChange={(e) => handleFieldChange(fieldName, e.target.value)}
+              />
+            </div>
+          ))}
+          
           <div className="pt-2">
             <Button onClick={handleSave}>Save</Button>
           </div>

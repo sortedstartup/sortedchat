@@ -1,4 +1,3 @@
-// pages/Settings.tsx
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
 import { $settings, saveSettings } from "../store/setting";
@@ -6,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const Settings = () => {
   const settings = useStore($settings);
@@ -28,10 +28,17 @@ const Settings = () => {
   const handleSave = async () => {
     try {
       const message = await saveSettings(formData);
-      console.log(message);
+      toast.success(message);
+      
     } catch (error) {
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "An unexpected error occurred while saving settings";
+        
+      toast.error(errorMessage);
+      
       console.error("Save failed:", error);
-    }
+    } 
   };
 
   return (
@@ -55,7 +62,11 @@ const Settings = () => {
           ))}
           
           <div className="pt-2">
-            <Button onClick={handleSave}>Save</Button>
+            <Button 
+              onClick={handleSave} 
+            >
+                Save
+            </Button>
           </div>
         </CardContent>
       </Card>

@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { Toaster } from "@/components/ui/sonner";
 
 export function Layout() {
   return (
@@ -14,6 +15,7 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
+      <Toaster />
     </SidebarProvider>
   );
 }

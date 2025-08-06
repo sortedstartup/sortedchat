@@ -257,6 +257,11 @@ func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string, projectID string) (
 	return chunks, err
 }
 
+type dbSettings struct {
+	Name     string `db:"name" json:"name"`
+	Settings string `db:"settings" json:"settings"`
+}
+
 type SQLiteSettingsDAO struct {
 	db *sqlx.DB
 }
@@ -270,14 +275,38 @@ func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
 }
 
 func (s *SQLiteSettingsDAO) GetSettings() (*proto.Settings, error) {
+	var dbSetting dbSettings
+	err := s.db.Get(&dbSetting, "SELECT settings FROM settings WHERE name = ?", "settings")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings from database: %w", err)
+	}
+
 	var settings proto.Settings
-	err := s.db.Get(&settings, "SELECT * FROM settings")
-	return &settings, err
+	err = json.Unmarshal([]byte(dbSetting.Settings), &settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal settings JSON: %w", err)
+	}
+
+	return &settings, nil
 }
 
 func (s *SQLiteSettingsDAO) SetSettings(settings *proto.Settings) error {
-	_, err := s.db.Exec("INSERT INTO settings (settings) VALUES (?)", settings)
-	return err
+	settingsJSON, err := json.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("failed to marshal settings to JSON: %w", err)
+	}
+
+	query := `
+        INSERT INTO settings (name, settings) VALUES (?, ?)
+        ON CONFLICT(name) DO UPDATE SET settings = excluded.settings
+    `
+
+	_, err = s.db.Exec(query, "settings", string(settingsJSON))
+	if err != nil {
+		return fmt.Errorf("failed to upsert settings: %w", err)
+	}
+
+	return nil
 }
 
 type SQLiteConfigDAO struct {

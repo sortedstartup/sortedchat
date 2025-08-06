@@ -3,6 +3,7 @@ import { Chat } from "./pages/chat";
 import { Project } from "./pages/project";
 import { Home } from "./pages/home";
 import { Layout } from "./layout";
+import SettingsPage from "./pages/setting";
 
 const router = createBrowserRouter([
   {
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
       {
         path: "project/:projectId/chat/:chatId",
         element: <Chat />,
+      },
+      {
+        path: "setting",
+        element: <SettingsPage />,
       },
       {
         path: "*",

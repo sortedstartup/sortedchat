@@ -3,6 +3,7 @@ package dao
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	proto "sortedstartup/chatservice/proto"
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
@@ -62,7 +63,7 @@ type ChatInfoRow struct {
 func (s *SQLiteDAO) GetChatList(projectID string) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
 	var err error
-	
+
 	if projectID == "" || projectID == "null" {
 		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL")
 	} else {
@@ -254,4 +255,56 @@ func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string, projectID string) (
         )
     `, projectID, embedding)
 	return chunks, err
+}
+
+type dbSettings struct {
+	Name     string `db:"name" json:"name"`
+	Settings string `db:"settings" json:"settings"`
+}
+
+type SQLiteSettingsDAO struct {
+	db *sqlx.DB
+}
+
+func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
+	db, err := sqlx.Open("sqlite3", sqliteUrl)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	return &SQLiteSettingsDAO{db: db}
+}
+
+func (s *SQLiteSettingsDAO) GetSettings() (*proto.Settings, error) {
+	var dbSetting dbSettings
+	err := s.db.Get(&dbSetting, "SELECT name,settings FROM settings WHERE name = ?", "settings")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings from database: %w", err)
+	}
+
+	var settings proto.Settings
+	err = json.Unmarshal([]byte(dbSetting.Settings), &settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal settings JSON: %w", err)
+	}
+
+	return &settings, nil
+}
+
+func (s *SQLiteSettingsDAO) SetSettings(settings *proto.Settings) error {
+	settingsJSON, err := json.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("failed to marshal settings to JSON: %w", err)
+	}
+
+	query := `
+        INSERT INTO settings (name, settings) VALUES (?, ?)
+        ON CONFLICT(name) DO UPDATE SET settings = excluded.settings
+    `
+
+	_, err = s.db.Exec(query, "settings", string(settingsJSON))
+	if err != nil {
+		return fmt.Errorf("failed to upsert settings: %w", err)
+	}
+
+	return nil
 }

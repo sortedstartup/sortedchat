@@ -26,7 +26,44 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type Server struct {
+type SettingService struct {
+	pb.UnimplementedSettingServiceServer
+	dao *dao.SQLiteSettingsDAO
+}
+
+func NewSettingService() *SettingService {
+	dao := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
+	return &SettingService{dao: dao}
+}
+
+func (s *SettingService) Init() {
+	// since right now the Setting is in chatservice so chatservice handles migrations
+}
+
+func (s *SettingService) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
+	settings, err := s.dao.GetSettings()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	return &pb.GetSettingResponse{
+		Settings: settings,
+	}, nil
+}
+
+func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingRequest) (*pb.SetSettingResponse, error) {
+
+	err := s.dao.SetSettings(req.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set settings: %w", err)
+	}
+
+	return &pb.SetSettingResponse{
+		Message: "Setting Saved",
+	}, nil
+}
+
+type ChatService struct {
 	pb.UnimplementedSortedChatServer
 	dao                *dao.SQLiteDAO
 	store              *store.DiskObjectStore
@@ -35,14 +72,14 @@ type Server struct {
 	embeddingsProvider rag.Embedder
 }
 
-func NewServer(mux *http.ServeMux) *Server {
-	daoInstance, err := dao.NewSQLiteDAO("chatservice.db")
+var SQLITE_DB_URL = "db.sqlite"
+
+func NewChatService(mux *http.ServeMux) *ChatService {
+
+	daoInstance, err := dao.NewSQLiteDAO(SQLITE_DB_URL)
 	if err != nil {
 		log.Fatalf("Failed to initialize DAO: %v", err)
 	}
-
-	// Run migrations before any DB access
-	db.MigrateSQLite("chatservice.db")
 
 	storeInstance, err := store.NewDiskObjectStore("filestore")
 	if err != nil {
@@ -62,7 +99,7 @@ func NewServer(mux *http.ServeMux) *Server {
 		embeddingsProvider,
 	)
 
-	s := &Server{
+	s := &ChatService{
 		dao:                daoInstance,
 		store:              storeInstance,
 		queue:              queue.NewInMemoryQueue(),
@@ -77,7 +114,7 @@ func NewServer(mux *http.ServeMux) *Server {
 	return s
 }
 
-func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
+func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
 	projectID := req.GetProjectId()
 
 	apiKey := os.Getenv("OPENAI_API_KEY")
@@ -242,7 +279,7 @@ func (s *Server) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.
 	return nil
 }
 
-func (s *Server) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
+func (s *ChatService) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
 	chatId := req.ChatId
 	if chatId == "" {
 		return nil, fmt.Errorf("chat ID is required")
@@ -271,7 +308,7 @@ type ChatRow struct {
 	Name   string `db:"name"`
 }
 
-func (s *Server) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
+func (s *ChatService) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
 	projectID := req.GetProjectId()
 
 	chats, err := s.dao.GetChatList(projectID)
@@ -282,7 +319,7 @@ func (s *Server) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*
 
 }
 
-func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
+func (s *ChatService) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
 	name := req.Name
 	if name == "" {
 		return nil, fmt.Errorf("name is required")
@@ -302,7 +339,7 @@ func (s *Server) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb
 	}, nil
 }
 
-func (s *Server) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
+func (s *ChatService) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
 	models, err := s.dao.GetModels()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch models: %v", err)
@@ -325,7 +362,7 @@ type ChatSearchRow struct {
 	MatchedText string `db:"aggregated_snippets"`
 }
 
-func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
+func (s *ChatService) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
 	query := req.Query
 	if query == "" {
 		return nil, fmt.Errorf("query is required")
@@ -351,7 +388,7 @@ func (s *Server) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb
 	}, nil
 }
 
-func (s *Server) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
+func (s *ChatService) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
 	id := uuid.New().String()
 
 	name := req.Name
@@ -372,7 +409,7 @@ func (s *Server) CreateProject(ctx context.Context, req *pb.CreateProjectRequest
 	}, nil
 }
 
-func (s *Server) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
+func (s *ChatService) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
 	projects, err := s.dao.GetProjects()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch project list: %w", err)
@@ -393,7 +430,7 @@ func (s *Server) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*
 	return &pb.GetProjectsResponse{Projects: pbProjects}, nil
 }
 
-func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
+func (s *ChatService) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
 	docs, err := s.dao.FilesList(req.GetProjectId())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch documents: %v", err)
@@ -417,7 +454,7 @@ func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest
 
 }
 
-func (s *Server) retrieveSimilarChunks(ctx context.Context, projectID string, query string) (*rag.Response, error) {
+func (s *ChatService) retrieveSimilarChunks(ctx context.Context, projectID string, query string) (*rag.Response, error) {
 	if projectID == "" || query == "" {
 		return nil, fmt.Errorf("project_id and query are required")
 	}
@@ -487,21 +524,14 @@ func (s *Server) retrieveSimilarChunks(ctx context.Context, projectID string, qu
 	return response, nil
 }
 
-func (s *Server) Init() {
-	// Initialize DAO
-	sqliteDAO, err := db.NewSQLiteDAO("chatservice.db")
-	if err != nil {
-		log.Fatalf("Failed to initialize DAO: %v", err)
-	}
-	s.dao = sqliteDAO
-
+func (s *ChatService) Init() {
 	//db.InitDB()
 	// TODO: handle migration for postgres also
-	db.MigrateSQLite("chatservice.db")
-	db.SeedSqlite("chatservice.db")
+	db.MigrateSQLite(SQLITE_DB_URL)
+	db.SeedSqlite(SQLITE_DB_URL)
 }
 
-func (s *Server) EmbeddingSubscriber() {
+func (s *ChatService) EmbeddingSubscriber() {
 	go func() {
 		sub, err := s.queue.Subscribe(context.Background(), "generate.embedding")
 		if err != nil {
@@ -559,46 +589,4 @@ func (s *Server) EmbeddingSubscriber() {
 			}
 		}
 	}()
-}
-
-// ---------------
-//
-//	Utils
-//
-// ---------------
-func generateEmbeddings(query string) ([]float64, error) {
-	url := os.Getenv("EMBEDDING_API_URL")
-	reqBody := map[string]interface{}{
-		"model":  "nomic-embed-text",
-		"prompt": query,
-	}
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, err
-	}
-	httpReq, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return nil, err
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	var respData map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-		return nil, err
-	}
-	var embedding []float64
-	if embeddingData, ok := respData["embedding"].([]interface{}); ok {
-		embedding = make([]float64, len(embeddingData))
-		for i, v := range embeddingData {
-			if f, ok := v.(float64); ok {
-				embedding[i] = f
-			}
-		}
-	}
-	return embedding, nil
 }

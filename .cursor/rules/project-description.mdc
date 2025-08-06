@@ -1,0 +1,24 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This is a mono repo, it has a directory per service, each service is deployable seperately, but deployed as a monolith in the name mono
+tech stack:
+- go 1.24 + grpc + proto file
+- react + tailwind
+backend in backend/, frontend in frontend/, proto files in proto/, docs in docs/
+
+backend/
+- chatservice/ # is one of the microservices, with its own database
+- mono/ # monolith combining all microservices
+
+proto/
+  chatservce.proto # - protofile
+
+commands
+- For every microservice there is a proto file, to auto generate code from the proto file -
+ - `go generate` # from chatservice dir, this generates go code at - backend/chatservice/proto, js/ts code at frontend/proto/ 
+
+- To start the monolith
+`go run ./mono` # from backend folder

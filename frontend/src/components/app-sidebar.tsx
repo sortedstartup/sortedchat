@@ -1,4 +1,4 @@
-import { Search, Plus, Folder, MessageCircle } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -117,168 +117,189 @@ export function AppSidebar() {
     handleSearchClose();
   };
 
+  const handleSettingsClick = () => {
+    navigate("/setting");
+  };
+
   return (
     <Sidebar className="pl-4">
-      <SidebarContent className="overflow-y-auto overflow-x-hidden h-full">
-        <SidebarGroup>
-          <SidebarGroupLabel className="w-full h-[25%] text-2xl">
-            SortedChat
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <button onClick={handleNewChat}>
-                    <Plus />
-                    <span>New Chat</span>
-                  </button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-                  <DialogTrigger asChild>
-                    <SidebarMenuButton>
-                      <Search />
-                      <span>Search Chats</span>
-                    </SidebarMenuButton>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] p-0">
-                    <DialogHeader className="px-6 pt-6 pb-4">
-                      <DialogTitle>Search Conversations</DialogTitle>
-                    </DialogHeader>
-                    
-                    <div className="px-6">
-                      <Input
-                        type="text"
-                        placeholder="Search conversations..."
-                        value={localSearchText}
-                        onChange={(e) => setLocalSearchText(e.target.value)}
-                        autoFocus
-                        className="w-full"
-                      />
-                    </div>
-
-                    {/* Search Results */}
-                    <div className="flex-1 overflow-y-auto px-6 pb-6 mt-4 space-y-2 max-h-96">
-                      {searchResults.length > 0 ? (
-                        searchResults.map((result, index) => (
-                          <div
-                            key={index}
-                            className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                            onClick={() => handleSearchResultClick(result.chat_id)}
-                          >
-                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                              Chat: {result.chat_name || "Unnamed Chat"}
-                            </div>
-                            <div className="text-gray-900 dark:text-white line-clamp-2">
-                              {result.matched_text}
-                            </div>
-                          </div>
-                        ))
-                      ) : localSearchText.trim() ? (
-                        <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                          No results found for "{localSearchText}"
-                        </div>
-                      ) : (
-                        <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                          Start typing to search your conversations...
-                        </div>
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
-                  <DialogTrigger asChild>
-                    <SidebarMenuButton>
+      <SidebarContent className="overflow-y-auto overflow-x-hidden h-full flex flex-col">
+        <div className="flex-1">
+          <SidebarGroup>
+            <SidebarGroupLabel className="w-full h-[25%] text-2xl">
+              SortedChat
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <button onClick={handleNewChat}>
                       <Plus />
-                      <span>Create Project</span>
-                    </SidebarMenuButton>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create New Project</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-3 items-center gap-4">
+                      <span>New Chat</span>
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                  <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
+                    <DialogTrigger asChild>
+                      <SidebarMenuButton>
+                        <Search />
+                        <span>Search Chats</span>
+                      </SidebarMenuButton>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] p-0">
+                      <DialogHeader className="px-6 pt-6 pb-4">
+                        <DialogTitle>Search Conversations</DialogTitle>
+                      </DialogHeader>
+                      
+                      <div className="px-6">
                         <Input
-                          id="project-name"
-                          value={projectName}
-                          onChange={(e) => setProjectName(e.target.value)}
-                          placeholder="Enter project name"
-                          className="col-span-4"
+                          type="text"
+                          placeholder="Search conversations..."
+                          value={localSearchText}
+                          onChange={(e) => setLocalSearchText(e.target.value)}
+                          autoFocus
+                          className="w-full"
                         />
                       </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleCancelProject}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={handleCreateProject}
-                        disabled={!projectName.trim()}
-                      >
-                        Create
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
-        <SidebarSeparator />
+                      {/* Search Results */}
+                      <div className="flex-1 overflow-y-auto px-6 pb-6 mt-4 space-y-2 max-h-96">
+                        {searchResults.length > 0 ? (
+                          searchResults.map((result, index) => (
+                            <div
+                              key={index}
+                              className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                              onClick={() => handleSearchResultClick(result.chat_id)}
+                            >
+                              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                Chat: {result.chat_name || "Unnamed Chat"}
+                              </div>
+                              <div className="text-gray-900 dark:text-white line-clamp-2">
+                                {result.matched_text}
+                              </div>
+                            </div>
+                          ))
+                        ) : localSearchText.trim() ? (
+                          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                            No results found for "{localSearchText}"
+                          </div>
+                        ) : (
+                          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                            Start typing to search your conversations...
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                  <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
+                    <DialogTrigger asChild>
+                      <SidebarMenuButton>
+                        <Plus />
+                        <span>Create Project</span>
+                      </SidebarMenuButton>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Project</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Input
+                            id="project-name"
+                            value={projectName}
+                            onChange={(e) => setProjectName(e.target.value)}
+                            placeholder="Enter project name"
+                            className="col-span-4"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleCancelProject}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleCreateProject}
+                          disabled={!projectName.trim()}
+                        >
+                          Create
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
-            Projects
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {projectsList.map((project) => (
-                <SidebarMenuItem key={project.name}>
-                  <SidebarMenuButton
-                    onClick={() => handleProjectClick(project.id)}
-                  >
-                    <Folder />
-                    <span>{project.name}</span>
+          <SidebarSeparator />
+
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
+              Projects
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {projectsList.map((project) => (
+                  <SidebarMenuItem key={project.name}>
+                    <SidebarMenuButton
+                      onClick={() => handleProjectClick(project.id)}
+                    >
+                      <Folder />
+                      <span>{project.name}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarSeparator />
+
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
+              Chats
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {chatsList.map((chat) => (
+                  <SidebarMenuItem key={chat.chatId}>
+                    <SidebarMenuButton
+                      onClick={() => handleChatSelect(chat.chatId)}
+                    >
+                      <MessageCircle />
+                      <span>{chat.name}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </div>
+
+        <div className="mt-auto border-t border-gray-200 dark:border-gray-700 pt-2">
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleSettingsClick}>
+                    <Settings />
+                    <span>Settings</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
-            Chats
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {chatsList.map((chat) => (
-                <SidebarMenuItem key={chat.chatId}>
-                  <SidebarMenuButton
-                    onClick={() => handleChatSelect(chat.chatId)}
-                  >
-                    <MessageCircle />
-                    <span>{chat.name}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </div>
       </SidebarContent>
     </Sidebar>
   );

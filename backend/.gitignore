@@ -3,3 +3,4 @@
 **/*.db
 /mono/filestore/objects
 __debug*
+/db.sqlite

@@ -7,6 +7,366 @@
 import * as pb_1 from "google-protobuf";
 import * as grpc_1 from "grpc-web";
 import * as grpc_web_1 from "grpc-web";
+export class Settings extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        OPENAI_API_KEY?: string;
+        OPENAI_API_URL?: string;
+        OLLAMA_URL?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("OPENAI_API_KEY" in data && data.OPENAI_API_KEY != undefined) {
+                this.OPENAI_API_KEY = data.OPENAI_API_KEY;
+            }
+            if ("OPENAI_API_URL" in data && data.OPENAI_API_URL != undefined) {
+                this.OPENAI_API_URL = data.OPENAI_API_URL;
+            }
+            if ("OLLAMA_URL" in data && data.OLLAMA_URL != undefined) {
+                this.OLLAMA_URL = data.OLLAMA_URL;
+            }
+        }
+    }
+    get OPENAI_API_KEY() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set OPENAI_API_KEY(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get OPENAI_API_URL() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set OPENAI_API_URL(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get OLLAMA_URL() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set OLLAMA_URL(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    static fromObject(data: {
+        OPENAI_API_KEY?: string;
+        OPENAI_API_URL?: string;
+        OLLAMA_URL?: string;
+    }): Settings {
+        const message = new Settings({});
+        if (data.OPENAI_API_KEY != null) {
+            message.OPENAI_API_KEY = data.OPENAI_API_KEY;
+        }
+        if (data.OPENAI_API_URL != null) {
+            message.OPENAI_API_URL = data.OPENAI_API_URL;
+        }
+        if (data.OLLAMA_URL != null) {
+            message.OLLAMA_URL = data.OLLAMA_URL;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            OPENAI_API_KEY?: string;
+            OPENAI_API_URL?: string;
+            OLLAMA_URL?: string;
+        } = {};
+        if (this.OPENAI_API_KEY != null) {
+            data.OPENAI_API_KEY = this.OPENAI_API_KEY;
+        }
+        if (this.OPENAI_API_URL != null) {
+            data.OPENAI_API_URL = this.OPENAI_API_URL;
+        }
+        if (this.OLLAMA_URL != null) {
+            data.OLLAMA_URL = this.OLLAMA_URL;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.OPENAI_API_KEY.length)
+            writer.writeString(1, this.OPENAI_API_KEY);
+        if (this.OPENAI_API_URL.length)
+            writer.writeString(2, this.OPENAI_API_URL);
+        if (this.OLLAMA_URL.length)
+            writer.writeString(3, this.OLLAMA_URL);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): Settings {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new Settings();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.OPENAI_API_KEY = reader.readString();
+                    break;
+                case 2:
+                    message.OPENAI_API_URL = reader.readString();
+                    break;
+                case 3:
+                    message.OLLAMA_URL = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): Settings {
+        return Settings.deserialize(bytes);
+    }
+}
+export class GetSettingRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {}) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") { }
+    }
+    static fromObject(data: {}): GetSettingRequest {
+        const message = new GetSettingRequest({});
+        return message;
+    }
+    toObject() {
+        const data: {} = {};
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetSettingRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetSettingRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): GetSettingRequest {
+        return GetSettingRequest.deserialize(bytes);
+    }
+}
+export class GetSettingResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        settings?: Settings;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("settings" in data && data.settings != undefined) {
+                this.settings = data.settings;
+            }
+        }
+    }
+    get settings() {
+        return pb_1.Message.getWrapperField(this, Settings, 1) as Settings;
+    }
+    set settings(value: Settings) {
+        pb_1.Message.setWrapperField(this, 1, value);
+    }
+    get has_settings() {
+        return pb_1.Message.getField(this, 1) != null;
+    }
+    static fromObject(data: {
+        settings?: ReturnType<typeof Settings.prototype.toObject>;
+    }): GetSettingResponse {
+        const message = new GetSettingResponse({});
+        if (data.settings != null) {
+            message.settings = Settings.fromObject(data.settings);
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            settings?: ReturnType<typeof Settings.prototype.toObject>;
+        } = {};
+        if (this.settings != null) {
+            data.settings = this.settings.toObject();
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.has_settings)
+            writer.writeMessage(1, this.settings, () => this.settings.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetSettingResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetSettingResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.settings, () => message.settings = Settings.deserialize(reader));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): GetSettingResponse {
+        return GetSettingResponse.deserialize(bytes);
+    }
+}
+export class SetSettingRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        settings?: Settings;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("settings" in data && data.settings != undefined) {
+                this.settings = data.settings;
+            }
+        }
+    }
+    get settings() {
+        return pb_1.Message.getWrapperField(this, Settings, 1) as Settings;
+    }
+    set settings(value: Settings) {
+        pb_1.Message.setWrapperField(this, 1, value);
+    }
+    get has_settings() {
+        return pb_1.Message.getField(this, 1) != null;
+    }
+    static fromObject(data: {
+        settings?: ReturnType<typeof Settings.prototype.toObject>;
+    }): SetSettingRequest {
+        const message = new SetSettingRequest({});
+        if (data.settings != null) {
+            message.settings = Settings.fromObject(data.settings);
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            settings?: ReturnType<typeof Settings.prototype.toObject>;
+        } = {};
+        if (this.settings != null) {
+            data.settings = this.settings.toObject();
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.has_settings)
+            writer.writeMessage(1, this.settings, () => this.settings.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): SetSettingRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new SetSettingRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.settings, () => message.settings = Settings.deserialize(reader));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): SetSettingRequest {
+        return SetSettingRequest.deserialize(bytes);
+    }
+}
+export class SetSettingResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message?: string;
+    }): SetSettingResponse {
+        const message = new SetSettingResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): SetSettingResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new SetSettingResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): SetSettingResponse {
+        return SetSettingResponse.deserialize(bytes);
+    }
+}
 export class CreateChatRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -2251,5 +2611,25 @@ export class SortedChatClient {
     private static ListDocuments = new grpc_web_1.MethodDescriptor<ListDocumentsRequest, ListDocumentsResponse>("/sortedchat.SortedChat/ListDocuments", grpc_web_1.MethodType.UNARY, ListDocumentsRequest, ListDocumentsResponse, (message: ListDocumentsRequest) => message.serialize(), ListDocumentsResponse.deserialize);
     ListDocuments(message: ListDocumentsRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<ListDocumentsRequest, ListDocumentsResponse>(this._address + "/sortedchat.SortedChat/ListDocuments", message, metadata || {}, SortedChatClient.ListDocuments);
+    }
+}
+// Server-side service class removed for client-side compatibility
+export class SettingServiceClient {
+    private _address: string;
+    private _client: grpc_web_1.GrpcWebClientBase;
+    constructor(address: string, credentials?: Object, options?: grpc_web_1.GrpcWebClientBaseOptions) {
+        if (!options)
+            options = {};
+        options.format = options.format || "text";
+        this._address = address;
+        this._client = new grpc_web_1.GrpcWebClientBase(options);
+    }
+    private static GetSetting = new grpc_web_1.MethodDescriptor<GetSettingRequest, GetSettingResponse>("/sortedchat.SettingService/GetSetting", grpc_web_1.MethodType.UNARY, GetSettingRequest, GetSettingResponse, (message: GetSettingRequest) => message.serialize(), GetSettingResponse.deserialize);
+    GetSetting(message: GetSettingRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<GetSettingRequest, GetSettingResponse>(this._address + "/sortedchat.SettingService/GetSetting", message, metadata || {}, SettingServiceClient.GetSetting);
+    }
+    private static SetSetting = new grpc_web_1.MethodDescriptor<SetSettingRequest, SetSettingResponse>("/sortedchat.SettingService/SetSetting", grpc_web_1.MethodType.UNARY, SetSettingRequest, SetSettingResponse, (message: SetSettingRequest) => message.serialize(), SetSettingResponse.deserialize);
+    SetSetting(message: SetSettingRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<SetSettingRequest, SetSettingResponse>(this._address + "/sortedchat.SettingService/SetSetting", message, metadata || {}, SettingServiceClient.SetSetting);
     }
 }

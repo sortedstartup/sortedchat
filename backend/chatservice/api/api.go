@@ -59,7 +59,7 @@ func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingReque
 	}
 
 	return &pb.SetSettingResponse{
-		Message: "Setting set successfully",
+		Message: "Setting Saved",
 	}, nil
 }
 

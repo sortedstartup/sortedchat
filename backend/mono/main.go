@@ -44,9 +44,9 @@ func main() {
 	chatServiceApi.Init()
 	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
 
-	configServiceApi := api.NewConfigService()
-	configServiceApi.Init()
-	proto.RegisterConfigServiceServer(grpcServer, configServiceApi)
+	settingServiceApi := api.NewSettingService()
+	settingServiceApi.Init()
+	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)

@@ -26,40 +26,40 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type ConfigService struct {
-	pb.UnimplementedConfigServiceServer
+type SettingService struct {
+	pb.UnimplementedSettingServiceServer
 	dao *dao.SQLiteSettingsDAO
 }
 
-func NewConfigService() *ConfigService {
+func NewSettingService() *SettingService {
 	dao := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
-	return &ConfigService{dao: dao}
+	return &SettingService{dao: dao}
 }
 
-func (s *ConfigService) Init() {
-	// since right now the config is in chatservice so chatservice handles migrations
+func (s *SettingService) Init() {
+	// since right now the Setting is in chatservice so chatservice handles migrations
 }
 
-func (s *ConfigService) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
+func (s *SettingService) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
 	settings, err := s.dao.GetSettings()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get settings: %w", err)
 	}
 
-	return &pb.GetConfigResponse{
+	return &pb.GetSettingResponse{
 		Settings: settings,
 	}, nil
 }
 
-func (s *ConfigService) SetConfig(ctx context.Context, req *pb.SetConfigRequest) (*pb.SetConfigResponse, error) {
+func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingRequest) (*pb.SetSettingResponse, error) {
 
 	err := s.dao.SetSettings(req.Settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set settings: %w", err)
 	}
 
-	return &pb.SetConfigResponse{
-		Message: "Config set successfully",
+	return &pb.SetSettingResponse{
+		Message: "Setting set successfully",
 	}, nil
 }
 

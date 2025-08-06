@@ -18,9 +18,9 @@ service SortedChat {
     rpc ListDocuments(ListDocumentsRequest) returns(ListDocumentsResponse);
 }
 
-service ConfigService {
-    rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
-    rpc SetConfig(SetConfigRequest) returns (SetConfigResponse);
+service SettingService {
+    rpc GetSetting(GetSettingRequest) returns (GetSettingResponse);
+    rpc SetSetting(SetSettingRequest) returns (SetSettingResponse);
 }
 
 message Settings {
@@ -29,17 +29,17 @@ message Settings {
    string OLLAMA_URL = 3;
 }
 
-message GetConfigRequest {}
+message GetSettingRequest {}
 
-message GetConfigResponse {
+message GetSettingResponse {
     Settings settings = 1;
 }
 
-message SetConfigRequest {
+message SetSettingRequest {
     Settings settings = 1;
 }
 
-message SetConfigResponse {
+message SetSettingResponse {
     string message = 1;
 }
 

@@ -1,15 +1,15 @@
 // store/setting.ts
 import {
   Settings,
-  GetConfigRequest,
-  GetConfigResponse,
-  SetConfigRequest,
-  SetConfigResponse,
-  ConfigServiceClient,
+  GetSettingRequest,
+  GetSettingResponse,
+  SetSettingRequest,
+  SetSettingResponse,
+  SettingServiceClient,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
-const client = new ConfigServiceClient(import.meta.env.VITE_API_URL);
+const client = new SettingServiceClient(import.meta.env.VITE_API_URL);
 
 export const $settings = atom<Settings>(new Settings({}));
 
@@ -17,8 +17,8 @@ export const saveSettings = async (formData: Record<string, string>): Promise<st
   try {
     const settings = new Settings(formData);
     
-    const req = new SetConfigRequest({ settings });
-    const res: SetConfigResponse = await client.SetConfig(req, {});
+    const req = new SetSettingRequest({ settings });
+    const res: SetSettingResponse = await client.SetSetting(req, {});
     
     $settings.set(settings);
     
@@ -29,10 +29,10 @@ export const saveSettings = async (formData: Record<string, string>): Promise<st
   }
 };
 
-const getConfig = async () => {
+const getSetting = async () => {
   try {
-    const req = new GetConfigRequest({});
-    const res: GetConfigResponse = await client.GetConfig(req, {});
+    const req = new GetSettingRequest({});
+    const res: GetSettingResponse = await client.GetSetting(req, {});
     if (res.settings) {
       $settings.set(res.settings);
     }
@@ -42,6 +42,6 @@ const getConfig = async () => {
 };
 
 onMount($settings, () => {
-  getConfig();
+  getSetting();
   return () => {};
 });

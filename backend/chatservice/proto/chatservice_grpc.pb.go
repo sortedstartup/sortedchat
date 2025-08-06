@@ -429,139 +429,139 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	ConfigService_GetConfig_FullMethodName = "/sortedchat.ConfigService/GetConfig"
-	ConfigService_SetConfig_FullMethodName = "/sortedchat.ConfigService/SetConfig"
+	SettingService_GetSetting_FullMethodName = "/sortedchat.SettingService/GetSetting"
+	SettingService_SetSetting_FullMethodName = "/sortedchat.SettingService/SetSetting"
 )
 
-// ConfigServiceClient is the client API for ConfigService service.
+// SettingServiceClient is the client API for SettingService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ConfigServiceClient interface {
-	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
-	SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (*SetConfigResponse, error)
+type SettingServiceClient interface {
+	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*GetSettingResponse, error)
+	SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*SetSettingResponse, error)
 }
 
-type configServiceClient struct {
+type settingServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewConfigServiceClient(cc grpc.ClientConnInterface) ConfigServiceClient {
-	return &configServiceClient{cc}
+func NewSettingServiceClient(cc grpc.ClientConnInterface) SettingServiceClient {
+	return &settingServiceClient{cc}
 }
 
-func (c *configServiceClient) GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error) {
+func (c *settingServiceClient) GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*GetSettingResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetConfigResponse)
-	err := c.cc.Invoke(ctx, ConfigService_GetConfig_FullMethodName, in, out, cOpts...)
+	out := new(GetSettingResponse)
+	err := c.cc.Invoke(ctx, SettingService_GetSetting_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *configServiceClient) SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (*SetConfigResponse, error) {
+func (c *settingServiceClient) SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*SetSettingResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SetConfigResponse)
-	err := c.cc.Invoke(ctx, ConfigService_SetConfig_FullMethodName, in, out, cOpts...)
+	out := new(SetSettingResponse)
+	err := c.cc.Invoke(ctx, SettingService_SetSetting_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ConfigServiceServer is the server API for ConfigService service.
-// All implementations must embed UnimplementedConfigServiceServer
+// SettingServiceServer is the server API for SettingService service.
+// All implementations must embed UnimplementedSettingServiceServer
 // for forward compatibility.
-type ConfigServiceServer interface {
-	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
-	SetConfig(context.Context, *SetConfigRequest) (*SetConfigResponse, error)
-	mustEmbedUnimplementedConfigServiceServer()
+type SettingServiceServer interface {
+	GetSetting(context.Context, *GetSettingRequest) (*GetSettingResponse, error)
+	SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error)
+	mustEmbedUnimplementedSettingServiceServer()
 }
 
-// UnimplementedConfigServiceServer must be embedded to have
+// UnimplementedSettingServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedConfigServiceServer struct{}
+type UnimplementedSettingServiceServer struct{}
 
-func (UnimplementedConfigServiceServer) GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
+func (UnimplementedSettingServiceServer) GetSetting(context.Context, *GetSettingRequest) (*GetSettingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSetting not implemented")
 }
-func (UnimplementedConfigServiceServer) SetConfig(context.Context, *SetConfigRequest) (*SetConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetConfig not implemented")
+func (UnimplementedSettingServiceServer) SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetSetting not implemented")
 }
-func (UnimplementedConfigServiceServer) mustEmbedUnimplementedConfigServiceServer() {}
-func (UnimplementedConfigServiceServer) testEmbeddedByValue()                       {}
+func (UnimplementedSettingServiceServer) mustEmbedUnimplementedSettingServiceServer() {}
+func (UnimplementedSettingServiceServer) testEmbeddedByValue()                        {}
 
-// UnsafeConfigServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ConfigServiceServer will
+// UnsafeSettingServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SettingServiceServer will
 // result in compilation errors.
-type UnsafeConfigServiceServer interface {
-	mustEmbedUnimplementedConfigServiceServer()
+type UnsafeSettingServiceServer interface {
+	mustEmbedUnimplementedSettingServiceServer()
 }
 
-func RegisterConfigServiceServer(s grpc.ServiceRegistrar, srv ConfigServiceServer) {
-	// If the following call pancis, it indicates UnimplementedConfigServiceServer was
+func RegisterSettingServiceServer(s grpc.ServiceRegistrar, srv SettingServiceServer) {
+	// If the following call pancis, it indicates UnimplementedSettingServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&ConfigService_ServiceDesc, srv)
+	s.RegisterService(&SettingService_ServiceDesc, srv)
 }
 
-func _ConfigService_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetConfigRequest)
+func _SettingService_GetSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSettingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConfigServiceServer).GetConfig(ctx, in)
+		return srv.(SettingServiceServer).GetSetting(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConfigService_GetConfig_FullMethodName,
+		FullMethod: SettingService_GetSetting_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConfigServiceServer).GetConfig(ctx, req.(*GetConfigRequest))
+		return srv.(SettingServiceServer).GetSetting(ctx, req.(*GetSettingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConfigService_SetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetConfigRequest)
+func _SettingService_SetSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetSettingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConfigServiceServer).SetConfig(ctx, in)
+		return srv.(SettingServiceServer).SetSetting(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConfigService_SetConfig_FullMethodName,
+		FullMethod: SettingService_SetSetting_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConfigServiceServer).SetConfig(ctx, req.(*SetConfigRequest))
+		return srv.(SettingServiceServer).SetSetting(ctx, req.(*SetSettingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// ConfigService_ServiceDesc is the grpc.ServiceDesc for ConfigService service.
+// SettingService_ServiceDesc is the grpc.ServiceDesc for SettingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ConfigService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "sortedchat.ConfigService",
-	HandlerType: (*ConfigServiceServer)(nil),
+var SettingService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "sortedchat.SettingService",
+	HandlerType: (*SettingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetConfig",
-			Handler:    _ConfigService_GetConfig_Handler,
+			MethodName: "GetSetting",
+			Handler:    _SettingService_GetSetting_Handler,
 		},
 		{
-			MethodName: "SetConfig",
-			Handler:    _ConfigService_SetConfig_Handler,
+			MethodName: "SetSetting",
+			Handler:    _SettingService_SetSetting_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

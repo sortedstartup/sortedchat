@@ -120,15 +120,15 @@ export class Settings extends pb_1.Message {
         return Settings.deserialize(bytes);
     }
 }
-export class GetConfigRequest extends pb_1.Message {
+export class GetSettingRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {}) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") { }
     }
-    static fromObject(data: {}): GetConfigRequest {
-        const message = new GetConfigRequest({});
+    static fromObject(data: {}): GetSettingRequest {
+        const message = new GetSettingRequest({});
         return message;
     }
     toObject() {
@@ -142,8 +142,8 @@ export class GetConfigRequest extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetConfigRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetConfigRequest();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetSettingRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetSettingRequest();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -156,11 +156,11 @@ export class GetConfigRequest extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): GetConfigRequest {
-        return GetConfigRequest.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): GetSettingRequest {
+        return GetSettingRequest.deserialize(bytes);
     }
 }
-export class GetConfigResponse extends pb_1.Message {
+export class GetSettingResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         settings?: Settings;
@@ -184,8 +184,8 @@ export class GetConfigResponse extends pb_1.Message {
     }
     static fromObject(data: {
         settings?: ReturnType<typeof Settings.prototype.toObject>;
-    }): GetConfigResponse {
-        const message = new GetConfigResponse({});
+    }): GetSettingResponse {
+        const message = new GetSettingResponse({});
         if (data.settings != null) {
             message.settings = Settings.fromObject(data.settings);
         }
@@ -209,8 +209,8 @@ export class GetConfigResponse extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetConfigResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetConfigResponse();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetSettingResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetSettingResponse();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -226,11 +226,11 @@ export class GetConfigResponse extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): GetConfigResponse {
-        return GetConfigResponse.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): GetSettingResponse {
+        return GetSettingResponse.deserialize(bytes);
     }
 }
-export class SetConfigRequest extends pb_1.Message {
+export class SetSettingRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         settings?: Settings;
@@ -254,8 +254,8 @@ export class SetConfigRequest extends pb_1.Message {
     }
     static fromObject(data: {
         settings?: ReturnType<typeof Settings.prototype.toObject>;
-    }): SetConfigRequest {
-        const message = new SetConfigRequest({});
+    }): SetSettingRequest {
+        const message = new SetSettingRequest({});
         if (data.settings != null) {
             message.settings = Settings.fromObject(data.settings);
         }
@@ -279,8 +279,8 @@ export class SetConfigRequest extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): SetConfigRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new SetConfigRequest();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): SetSettingRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new SetSettingRequest();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -296,11 +296,11 @@ export class SetConfigRequest extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): SetConfigRequest {
-        return SetConfigRequest.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): SetSettingRequest {
+        return SetSettingRequest.deserialize(bytes);
     }
 }
-export class SetConfigResponse extends pb_1.Message {
+export class SetSettingResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         message?: string;
@@ -321,8 +321,8 @@ export class SetConfigResponse extends pb_1.Message {
     }
     static fromObject(data: {
         message?: string;
-    }): SetConfigResponse {
-        const message = new SetConfigResponse({});
+    }): SetSettingResponse {
+        const message = new SetSettingResponse({});
         if (data.message != null) {
             message.message = data.message;
         }
@@ -346,8 +346,8 @@ export class SetConfigResponse extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): SetConfigResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new SetConfigResponse();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): SetSettingResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new SetSettingResponse();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -363,8 +363,8 @@ export class SetConfigResponse extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): SetConfigResponse {
-        return SetConfigResponse.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): SetSettingResponse {
+        return SetSettingResponse.deserialize(bytes);
     }
 }
 export class CreateChatRequest extends pb_1.Message {
@@ -2614,7 +2614,7 @@ export class SortedChatClient {
     }
 }
 // Server-side service class removed for client-side compatibility
-export class ConfigServiceClient {
+export class SettingServiceClient {
     private _address: string;
     private _client: grpc_web_1.GrpcWebClientBase;
     constructor(address: string, credentials?: Object, options?: grpc_web_1.GrpcWebClientBaseOptions) {
@@ -2624,12 +2624,12 @@ export class ConfigServiceClient {
         this._address = address;
         this._client = new grpc_web_1.GrpcWebClientBase(options);
     }
-    private static GetConfig = new grpc_web_1.MethodDescriptor<GetConfigRequest, GetConfigResponse>("/sortedchat.ConfigService/GetConfig", grpc_web_1.MethodType.UNARY, GetConfigRequest, GetConfigResponse, (message: GetConfigRequest) => message.serialize(), GetConfigResponse.deserialize);
-    GetConfig(message: GetConfigRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.thenableCall<GetConfigRequest, GetConfigResponse>(this._address + "/sortedchat.ConfigService/GetConfig", message, metadata || {}, ConfigServiceClient.GetConfig);
+    private static GetSetting = new grpc_web_1.MethodDescriptor<GetSettingRequest, GetSettingResponse>("/sortedchat.SettingService/GetSetting", grpc_web_1.MethodType.UNARY, GetSettingRequest, GetSettingResponse, (message: GetSettingRequest) => message.serialize(), GetSettingResponse.deserialize);
+    GetSetting(message: GetSettingRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<GetSettingRequest, GetSettingResponse>(this._address + "/sortedchat.SettingService/GetSetting", message, metadata || {}, SettingServiceClient.GetSetting);
     }
-    private static SetConfig = new grpc_web_1.MethodDescriptor<SetConfigRequest, SetConfigResponse>("/sortedchat.ConfigService/SetConfig", grpc_web_1.MethodType.UNARY, SetConfigRequest, SetConfigResponse, (message: SetConfigRequest) => message.serialize(), SetConfigResponse.deserialize);
-    SetConfig(message: SetConfigRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.thenableCall<SetConfigRequest, SetConfigResponse>(this._address + "/sortedchat.ConfigService/SetConfig", message, metadata || {}, ConfigServiceClient.SetConfig);
+    private static SetSetting = new grpc_web_1.MethodDescriptor<SetSettingRequest, SetSettingResponse>("/sortedchat.SettingService/SetSetting", grpc_web_1.MethodType.UNARY, SetSettingRequest, SetSettingResponse, (message: SetSettingRequest) => message.serialize(), SetSettingResponse.deserialize);
+    SetSetting(message: SetSettingRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<SetSettingRequest, SetSettingResponse>(this._address + "/sortedchat.SettingService/SetSetting", message, metadata || {}, SettingServiceClient.SetSetting);
     }
 }

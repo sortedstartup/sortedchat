@@ -81,26 +81,26 @@ func (x *Settings) GetOLLAMA_URL() string {
 	return ""
 }
 
-type GetConfigRequest struct {
+type GetSettingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetConfigRequest) Reset() {
-	*x = GetConfigRequest{}
+func (x *GetSettingRequest) Reset() {
+	*x = GetSettingRequest{}
 	mi := &file_chatservice_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetConfigRequest) String() string {
+func (x *GetSettingRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetConfigRequest) ProtoMessage() {}
+func (*GetSettingRequest) ProtoMessage() {}
 
-func (x *GetConfigRequest) ProtoReflect() protoreflect.Message {
+func (x *GetSettingRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -112,32 +112,32 @@ func (x *GetConfigRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetConfigRequest.ProtoReflect.Descriptor instead.
-func (*GetConfigRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetSettingRequest.ProtoReflect.Descriptor instead.
+func (*GetSettingRequest) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{1}
 }
 
-type GetConfigResponse struct {
+type GetSettingResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Settings      *Settings              `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetConfigResponse) Reset() {
-	*x = GetConfigResponse{}
+func (x *GetSettingResponse) Reset() {
+	*x = GetSettingResponse{}
 	mi := &file_chatservice_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetConfigResponse) String() string {
+func (x *GetSettingResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetConfigResponse) ProtoMessage() {}
+func (*GetSettingResponse) ProtoMessage() {}
 
-func (x *GetConfigResponse) ProtoReflect() protoreflect.Message {
+func (x *GetSettingResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -149,39 +149,39 @@ func (x *GetConfigResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetConfigResponse.ProtoReflect.Descriptor instead.
-func (*GetConfigResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetSettingResponse.ProtoReflect.Descriptor instead.
+func (*GetSettingResponse) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetConfigResponse) GetSettings() *Settings {
+func (x *GetSettingResponse) GetSettings() *Settings {
 	if x != nil {
 		return x.Settings
 	}
 	return nil
 }
 
-type SetConfigRequest struct {
+type SetSettingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Settings      *Settings              `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SetConfigRequest) Reset() {
-	*x = SetConfigRequest{}
+func (x *SetSettingRequest) Reset() {
+	*x = SetSettingRequest{}
 	mi := &file_chatservice_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SetConfigRequest) String() string {
+func (x *SetSettingRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SetConfigRequest) ProtoMessage() {}
+func (*SetSettingRequest) ProtoMessage() {}
 
-func (x *SetConfigRequest) ProtoReflect() protoreflect.Message {
+func (x *SetSettingRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -193,39 +193,39 @@ func (x *SetConfigRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetConfigRequest.ProtoReflect.Descriptor instead.
-func (*SetConfigRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use SetSettingRequest.ProtoReflect.Descriptor instead.
+func (*SetSettingRequest) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *SetConfigRequest) GetSettings() *Settings {
+func (x *SetSettingRequest) GetSettings() *Settings {
 	if x != nil {
 		return x.Settings
 	}
 	return nil
 }
 
-type SetConfigResponse struct {
+type SetSettingResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SetConfigResponse) Reset() {
-	*x = SetConfigResponse{}
+func (x *SetSettingResponse) Reset() {
+	*x = SetSettingResponse{}
 	mi := &file_chatservice_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SetConfigResponse) String() string {
+func (x *SetSettingResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SetConfigResponse) ProtoMessage() {}
+func (*SetSettingResponse) ProtoMessage() {}
 
-func (x *SetConfigResponse) ProtoReflect() protoreflect.Message {
+func (x *SetSettingResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -237,12 +237,12 @@ func (x *SetConfigResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetConfigResponse.ProtoReflect.Descriptor instead.
-func (*SetConfigResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use SetSettingResponse.ProtoReflect.Descriptor instead.
+func (*SetSettingResponse) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *SetConfigResponse) GetMessage() string {
+func (x *SetSettingResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -1523,13 +1523,13 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x0eOPENAI_API_KEY\x18\x01 \x01(\tR\fOPENAIAPIKEY\x12$\n" +
 	"\x0eOPENAI_API_URL\x18\x02 \x01(\tR\fOPENAIAPIURL\x12\x1d\n" +
 	"\n" +
-	"OLLAMA_URL\x18\x03 \x01(\tR\tOLLAMAURL\"\x12\n" +
-	"\x10GetConfigRequest\"E\n" +
-	"\x11GetConfigResponse\x120\n" +
-	"\bsettings\x18\x01 \x01(\v2\x14.sortedchat.SettingsR\bsettings\"D\n" +
-	"\x10SetConfigRequest\x120\n" +
-	"\bsettings\x18\x01 \x01(\v2\x14.sortedchat.SettingsR\bsettings\"-\n" +
-	"\x11SetConfigResponse\x12\x18\n" +
+	"OLLAMA_URL\x18\x03 \x01(\tR\tOLLAMAURL\"\x13\n" +
+	"\x11GetSettingRequest\"F\n" +
+	"\x12GetSettingResponse\x120\n" +
+	"\bsettings\x18\x01 \x01(\v2\x14.sortedchat.SettingsR\bsettings\"E\n" +
+	"\x11SetSettingRequest\x120\n" +
+	"\bsettings\x18\x01 \x01(\v2\x14.sortedchat.SettingsR\bsettings\".\n" +
+	"\x12SetSettingResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"F\n" +
 	"\x11CreateChatRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
@@ -1628,10 +1628,12 @@ const file_chatservice_proto_rawDesc = "" +
 	"SearchChat\x12\x1d.sortedchat.ChatSearchRequest\x1a\x1e.sortedchat.ChatSearchResponse\x12T\n" +
 	"\rCreateProject\x12 .sortedchat.CreateProjectRequest\x1a!.sortedchat.CreateProjectResponse\x12N\n" +
 	"\vGetProjects\x12\x1e.sortedchat.GetProjectsRequest\x1a\x1f.sortedchat.GetProjectsResponse\x12T\n" +
-	"\rListDocuments\x12 .sortedchat.ListDocumentsRequest\x1a!.sortedchat.ListDocumentsResponse2\xa3\x01\n" +
-	"\rConfigService\x12H\n" +
-	"\tGetConfig\x12\x1c.sortedchat.GetConfigRequest\x1a\x1d.sortedchat.GetConfigResponse\x12H\n" +
-	"\tSetConfig\x12\x1c.sortedchat.SetConfigRequest\x1a\x1d.sortedchat.SetConfigResponseB!Z\x1fsortedstartup/chatservice/protob\x06proto3"
+	"\rListDocuments\x12 .sortedchat.ListDocumentsRequest\x1a!.sortedchat.ListDocumentsResponse2\xaa\x01\n" +
+	"\x0eSettingService\x12K\n" +
+	"\n" +
+	"GetSetting\x12\x1d.sortedchat.GetSettingRequest\x1a\x1e.sortedchat.GetSettingResponse\x12K\n" +
+	"\n" +
+	"SetSetting\x12\x1d.sortedchat.SetSettingRequest\x1a\x1e.sortedchat.SetSettingResponseB!Z\x1fsortedstartup/chatservice/protob\x06proto3"
 
 var (
 	file_chatservice_proto_rawDescOnce sync.Once
@@ -1648,10 +1650,10 @@ func file_chatservice_proto_rawDescGZIP() []byte {
 var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_chatservice_proto_goTypes = []any{
 	(*Settings)(nil),              // 0: sortedchat.Settings
-	(*GetConfigRequest)(nil),      // 1: sortedchat.GetConfigRequest
-	(*GetConfigResponse)(nil),     // 2: sortedchat.GetConfigResponse
-	(*SetConfigRequest)(nil),      // 3: sortedchat.SetConfigRequest
-	(*SetConfigResponse)(nil),     // 4: sortedchat.SetConfigResponse
+	(*GetSettingRequest)(nil),     // 1: sortedchat.GetSettingRequest
+	(*GetSettingResponse)(nil),    // 2: sortedchat.GetSettingResponse
+	(*SetSettingRequest)(nil),     // 3: sortedchat.SetSettingRequest
+	(*SetSettingResponse)(nil),    // 4: sortedchat.SetSettingResponse
 	(*CreateChatRequest)(nil),     // 5: sortedchat.CreateChatRequest
 	(*CreateChatResponse)(nil),    // 6: sortedchat.CreateChatResponse
 	(*ChatRequest)(nil),           // 7: sortedchat.ChatRequest
@@ -1678,8 +1680,8 @@ var file_chatservice_proto_goTypes = []any{
 	(*Document)(nil),              // 28: sortedchat.Document
 }
 var file_chatservice_proto_depIdxs = []int32{
-	0,  // 0: sortedchat.GetConfigResponse.settings:type_name -> sortedchat.Settings
-	0,  // 1: sortedchat.SetConfigRequest.settings:type_name -> sortedchat.Settings
+	0,  // 0: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
+	0,  // 1: sortedchat.SetSettingRequest.settings:type_name -> sortedchat.Settings
 	11, // 2: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
 	14, // 3: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
 	15, // 4: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
@@ -1695,8 +1697,8 @@ var file_chatservice_proto_depIdxs = []int32{
 	21, // 14: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
 	23, // 15: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
 	26, // 16: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
-	1,  // 17: sortedchat.ConfigService.GetConfig:input_type -> sortedchat.GetConfigRequest
-	3,  // 18: sortedchat.ConfigService.SetConfig:input_type -> sortedchat.SetConfigRequest
+	1,  // 17: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
+	3,  // 18: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
 	8,  // 19: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
 	10, // 20: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
 	13, // 21: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
@@ -1706,8 +1708,8 @@ var file_chatservice_proto_depIdxs = []int32{
 	22, // 25: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
 	24, // 26: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
 	27, // 27: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
-	2,  // 28: sortedchat.ConfigService.GetConfig:output_type -> sortedchat.GetConfigResponse
-	4,  // 29: sortedchat.ConfigService.SetConfig:output_type -> sortedchat.SetConfigResponse
+	2,  // 28: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
+	4,  // 29: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
 	19, // [19:30] is the sub-list for method output_type
 	8,  // [8:19] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name

@@ -276,7 +276,7 @@ func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
 
 func (s *SQLiteSettingsDAO) GetSettings() (*proto.Settings, error) {
 	var dbSetting dbSettings
-	err := s.db.Get(&dbSetting, "SELECT settings FROM settings WHERE name = ?", "settings")
+	err := s.db.Get(&dbSetting, "SELECT name,settings FROM settings WHERE name = ?", "settings")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get settings from database: %w", err)
 	}
@@ -304,50 +304,6 @@ func (s *SQLiteSettingsDAO) SetSettings(settings *proto.Settings) error {
 	_, err = s.db.Exec(query, "settings", string(settingsJSON))
 	if err != nil {
 		return fmt.Errorf("failed to upsert settings: %w", err)
-	}
-
-	return nil
-}
-
-type SQLiteConfigDAO struct {
-	db *sqlx.DB
-}
-
-func NewSQLiteConfigDAO(db *sqlx.DB) *SQLiteConfigDAO {
-	return &SQLiteConfigDAO{db: db}
-}
-
-func (s *SQLiteConfigDAO) GetConfig() (*proto.Settings, error) {
-	var settings proto.Settings
-	var settingsJSON string
-	err := s.db.Get(&settingsJSON, "SELECT settings FROM settings WHERE name = 'settings'")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get settings from database: %w", err)
-	}
-	err = json.Unmarshal([]byte(settingsJSON), &settings)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal settings JSON: %w", err)
-	}
-
-	return &settings, nil
-}
-
-func (s *SQLiteConfigDAO) SetConfig(settings *proto.Settings) error {
-	// Marshal settings to JSON
-	settingsJSON, err := json.Marshal(settings)
-	if err != nil {
-		return fmt.Errorf("failed to marshal settings to JSON: %w", err)
-	}
-
-	// Use UPSERT to either insert or update the settings row with name="settings"
-	query := `
-		INSERT INTO settings (name, settings) VALUES ('settings', ?)
-		ON CONFLICT(name) DO UPDATE SET settings = excluded.settings
-	`
-
-	_, err = s.db.Exec(query, string(settingsJSON))
-	if err != nil {
-		return fmt.Errorf("failed to save settings to database: %w", err)
 	}
 
 	return nil

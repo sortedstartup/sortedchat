@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	proto "sortedstartup/chatservice/proto"
+	"sortedstartup/chatservice/settings"
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
@@ -274,14 +275,14 @@ func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
 	return &SQLiteSettingsDAO{db: db}
 }
 
-func (s *SQLiteSettingsDAO) GetSettings() (*proto.Settings, error) {
+func (s *SQLiteSettingsDAO) GetSettings() (*settings.Settings, error) {
 	var dbSetting dbSettings
 	err := s.db.Get(&dbSetting, "SELECT name,settings FROM settings WHERE name = ?", "settings")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get settings from database: %w", err)
 	}
 
-	var settings proto.Settings
+	var settings settings.Settings
 	err = json.Unmarshal([]byte(dbSetting.Settings), &settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal settings JSON: %w", err)
@@ -290,7 +291,7 @@ func (s *SQLiteSettingsDAO) GetSettings() (*proto.Settings, error) {
 	return &settings, nil
 }
 
-func (s *SQLiteSettingsDAO) SetSettings(settings *proto.Settings) error {
+func (s *SQLiteSettingsDAO) SetSettings(settings *settings.Settings) error {
 	settingsJSON, err := json.Marshal(settings)
 	if err != nil {
 		return fmt.Errorf("failed to marshal settings to JSON: %w", err)
@@ -306,5 +307,28 @@ func (s *SQLiteSettingsDAO) SetSettings(settings *proto.Settings) error {
 		return fmt.Errorf("failed to upsert settings: %w", err)
 	}
 
+	return nil
+}
+
+func (s *SQLiteSettingsDAO) GetSettingValue(settingName string) (string, error) {
+	var dbSetting dbSettings
+	err := s.db.Get(&dbSetting, "SELECT name,settings FROM settings WHERE name = ?", settingName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get setting '%s' from database: %w", settingName, err)
+	}
+
+	return dbSetting.Settings, nil
+}
+
+func (s *SQLiteSettingsDAO) SetSettingValue(settingName string, settingValue string) error {
+	query := `
+        INSERT INTO settings (name, settings) VALUES (?, ?)
+        ON CONFLICT(name) DO UPDATE SET settings = excluded.settings
+    `
+
+	_, err := s.db.Exec(query, settingName, settingValue)
+	if err != nil {
+		return fmt.Errorf("failed to upsert settings: %w", err)
+	}
 	return nil
 }

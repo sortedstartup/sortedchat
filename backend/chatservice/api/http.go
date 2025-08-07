@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sortedstartup/chatservice/events"
 	"strings"
 
 	"github.com/google/uuid"
@@ -73,7 +74,7 @@ func (s *ChatService) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	msg := GenerateEmbeddingMessage{DocsID: objectID}
 	msgBytes, _ := json.Marshal(msg)
-	err = s.queue.Publish(r.Context(), "generate.embedding", msgBytes)
+	err = s.queue.Publish(r.Context(), events.GENERATE_EMBEDDINGS, msgBytes)
 	if err != nil {
 		fmt.Errorf("failed publish %v", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"sortedstartup/chatservice/dao"
@@ -41,6 +43,18 @@ func NewSettingService(queue queue.Queue) *SettingService {
 
 func (s *SettingService) Init() {
 	// since right now the Setting is in chatservice so chatservice handles migrations
+	if s.IsFirstBoot() {
+		s.SetSetting(context.Background(), &pb.SetSettingRequest{Settings: settings.DefaultSettings.ToProto()})
+	}
+
+	s.FirstBootComplete()
+}
+
+func (s *SettingService) FirstBootComplete() {
+	err := s.dao.SetSettingValue("is_first_boot", "1")
+	if err != nil {
+		log.Printf("Failed to set is_first_boot setting: %v", err)
+	}
 }
 
 func (s *SettingService) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
@@ -50,13 +64,13 @@ func (s *SettingService) GetSetting(ctx context.Context, req *pb.GetSettingReque
 	}
 
 	return &pb.GetSettingResponse{
-		Settings: settings,
+		Settings: settings.ToProto(),
 	}, nil
 }
 
 func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingRequest) (*pb.SetSettingResponse, error) {
 
-	err := s.dao.SetSettings(req.Settings)
+	err := s.dao.SetSettings(settings.FromProto(req.Settings))
 	if err != nil {
 		return nil, fmt.Errorf("failed to set settings: %w", err)
 	}
@@ -70,6 +84,31 @@ func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingReque
 	}, nil
 }
 
+// IsFirstBoot checks if this is the first boot by looking for the 'is_first_boot' setting
+// Returns true if the setting doesn't exist or is 0, false otherwise
+func (s *SettingService) IsFirstBoot() bool {
+	value, err := s.dao.GetSettingValue("is_first_boot")
+	if err != nil {
+		// If the setting doesn't exist or there's an error, consider it first boot
+		if err == sql.ErrNoRows {
+			return true
+		}
+		log.Printf("Error getting is_first_boot setting: %v", err)
+		return true
+	}
+
+	// Try to parse the value as an integer
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		// If we can't parse it, consider it first boot
+		log.Printf("Error parsing is_first_boot value '%s': %v", value, err)
+		return true
+	}
+
+	// Return true if value is 0, false otherwise
+	return intValue == 0
+}
+
 type ChatService struct {
 	pb.UnimplementedSortedChatServer
 	dao                *dao.SQLiteDAO
@@ -77,12 +116,12 @@ type ChatService struct {
 	queue              queue.Queue
 	pipeline           rag.RAGIndexingPipeline
 	embeddingsProvider rag.Embedder
-	settingsManager    *settings.SettingsManager
+	settingsManager    *SettingsManager
 }
 
 var SQLITE_DB_URL = "db.sqlite"
 
-func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager) *ChatService {
+func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *SettingsManager) *ChatService {
 
 	daoInstance, err := dao.NewSQLiteDAO(SQLITE_DB_URL)
 	if err != nil {
@@ -543,7 +582,7 @@ func (s *ChatService) Init() {
 
 func (s *ChatService) EmbeddingSubscriber() {
 	go func() {
-		sub, err := s.queue.Subscribe(context.Background(), "generate.embedding")
+		sub, err := s.queue.Subscribe(context.Background(), events.GENERATE_EMBEDDINGS)
 		if err != nil {
 			fmt.Printf("Failed %v\n", err)
 			return

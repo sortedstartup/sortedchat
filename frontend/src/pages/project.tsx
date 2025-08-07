@@ -168,19 +168,17 @@ export function Project() {
                             <span className="font-medium">{doc.file_name}</span>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-gray-500">
-                                Embedding:
+                                {doc.embedding_status === 0 ? "Failed to index this file Regenerate enbeddings": ""}
                               </span>
-                              <span
+                              {/* <span
                                 className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(
                                   doc.embedding_status
                                 )}`}
                               >
                                 {doc.embedding_status === 0
                                   ? "error"
-                                  : doc.embedding_status === 1
-                                  ? "success"
-                                  : "queued"}
-                              </span>
+                                  :""}
+                              </span> */}
                             </div>
                           </div>
                         </div>

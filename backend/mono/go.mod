@@ -9,7 +9,6 @@ require (
 )
 
 require (
-	github.com/asg017/sqlite-vec-go-bindings v0.1.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

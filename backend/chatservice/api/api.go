@@ -18,6 +18,7 @@ import (
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
 	"sortedstartup/chatservice/rag"
+	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/store"
 
 	"github.com/google/uuid"
@@ -26,14 +27,19 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const SETTINGS_CHANGED_EVENT = "settings.changed"
+
 type SettingService struct {
 	pb.UnimplementedSettingServiceServer
-	dao *dao.SQLiteSettingsDAO
+	dao             *dao.SQLiteSettingsDAO
+	queue           queue.Queue
+	settingsManager *settings.SettingsManager
 }
 
-func NewSettingService() *SettingService {
+func NewSettingService(queue queue.Queue, settingsManager *settings.SettingsManager) *SettingService {
 	dao := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
-	return &SettingService{dao: dao}
+
+	return &SettingService{dao: dao, queue: queue, settingsManager: settingsManager}
 }
 
 func (s *SettingService) Init() {
@@ -58,9 +64,35 @@ func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingReque
 		return nil, fmt.Errorf("failed to set settings: %w", err)
 	}
 
+	// publish an event, any subscriber now need to reload settings from the database
+	s.queue.Publish(context.Background(), SETTINGS_CHANGED_EVENT, []byte(""))
+
 	return &pb.SetSettingResponse{
 		Message: "Setting Saved",
 	}, nil
+}
+
+func (s *SettingService) SettingsChangedSubscriber() {
+	go func() {
+		sub, err := s.queue.Subscribe(context.Background(), SETTINGS_CHANGED_EVENT)
+		if err != nil {
+			fmt.Printf("Failed %v\n", err)
+			return
+		}
+		for msg := range sub {
+			fmt.Printf("Received message [%s]: %s\n", SETTINGS_CHANGED_EVENT, string(msg.Data))
+			// reload settings from the database
+			fmt.Println("Reloading settings from the database")
+			settings, err := s.dao.GetSettings()
+			if err != nil {
+				fmt.Printf("Failed to get settings: %v\n", err)
+				continue
+			}
+
+			s.settingsManager.LoadSettingsFromProto(settings)
+
+		}
+	}()
 }
 
 type ChatService struct {
@@ -70,11 +102,12 @@ type ChatService struct {
 	queue              queue.Queue
 	pipeline           rag.RAGIndexingPipeline
 	embeddingsProvider rag.Embedder
+	settingsManager    *settings.SettingsManager
 }
 
 var SQLITE_DB_URL = "db.sqlite"
 
-func NewChatService(mux *http.ServeMux) *ChatService {
+func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager) *ChatService {
 
 	daoInstance, err := dao.NewSQLiteDAO(SQLITE_DB_URL)
 	if err != nil {
@@ -86,7 +119,7 @@ func NewChatService(mux *http.ServeMux) *ChatService {
 		log.Fatalf("Failed to initialize object store: %v", err)
 	}
 
-	ollama_url := os.Getenv("OLLAMA_URL")
+	ollama_url := settingsManager.GetSettings().OllamaURL
 	embeddingsProvider := &rag.OLLamaEmbedder{
 		//TODO: read from config
 		URL:   ollama_url + "/v1/embeddings",
@@ -102,9 +135,10 @@ func NewChatService(mux *http.ServeMux) *ChatService {
 	s := &ChatService{
 		dao:                daoInstance,
 		store:              storeInstance,
-		queue:              queue.NewInMemoryQueue(),
+		queue:              queue,
 		pipeline:           pipeline,
 		embeddingsProvider: embeddingsProvider,
+		settingsManager:    settingsManager,
 	}
 
 	s.registerRoutes(mux)
@@ -117,7 +151,7 @@ func NewChatService(mux *http.ServeMux) *ChatService {
 func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
 	projectID := req.GetProjectId()
 
-	apiKey := os.Getenv("OPENAI_API_KEY")
+	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
 		return fmt.Errorf("OpenAI API key not set")
 	}
@@ -189,7 +223,7 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 		return fmt.Errorf("failed to marshal request: %v", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", os.Getenv("OPENAI_API_URL"), bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequest("POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}

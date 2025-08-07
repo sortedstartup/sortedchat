@@ -24,6 +24,8 @@ type DAO interface {
 	CreateProject(id string, name string, description string, additionalData string) (string, error)
 	GetProjects() ([]ProjectRow, error)
 	FileSave(project_id string, docs_id string, file_name string, fileSize int64) error
+	UpdateEmbeddingStatus(docs_id string, status int32) error
+	CheckEmbeddingStatus(docs_id string) (int32, error)
 	FilesList(project_id string) ([]DocumentListRow, error)
 	GetFileMetadata(docsId string) (*DocumentListRow, error)
 

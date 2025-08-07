@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import {
   ChatInfo,
   ChatMessage,
@@ -16,6 +17,7 @@ import {
   GetProjectsRequest,
   ListDocumentsRequest,
   Document,
+  GenerateEmbeddingRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -290,7 +292,7 @@ export async function fetchDocuments(projectId: string) {
     );
 
     console.log(res.documents);
-
+  
     $documents.set(res.documents);
   } catch (err) {
     console.error("Failed to fetch documents:", err);
@@ -316,3 +318,22 @@ $currentProjectId.listen((newProjectId) => {
     $chatList.set([]);
   }
 });
+
+export const SubmitGenerateEmbeddingsJob = async (docsId: string, projectId: string): Promise<String> => {
+  try {
+    const response = await chat.SubmitGenerateEmbeddingsJob(
+      GenerateEmbeddingRequest.fromObject({
+        docs_id: docsId,
+        project_id: projectId,
+      }),
+      {}
+    );
+    console.log("Embedding job submitted:", response);
+    toast.success(response.message || "Embedding job submitted successfully");
+    return response.message; 
+  } catch (error) {
+    console.error("Failed to submit embedding job:", error);
+    toast.error("Failed to submit embedding job: " + (error as Error).message);
+    return "failed to submit embedding job";
+  }
+}

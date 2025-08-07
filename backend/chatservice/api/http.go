@@ -75,7 +75,9 @@ func (s *ChatService) handleUpload(w http.ResponseWriter, r *http.Request) {
 	msgBytes, _ := json.Marshal(msg)
 	err = s.queue.Publish(r.Context(), "generate.embedding", msgBytes)
 	if err != nil {
-		fmt.Errorf("failed publish %v", err)
+		err := fmt.Errorf("failed publish %v", err)
+		http.Error(w, "Failed to publish event: "+err.Error(), http.StatusInternalServerError)
+
 	}
 
 	w.WriteHeader(http.StatusOK)

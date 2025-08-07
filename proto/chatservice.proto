@@ -16,6 +16,7 @@ service SortedChat {
     rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
     rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
     rpc ListDocuments(ListDocumentsRequest) returns(ListDocumentsResponse);
+    rpc SubmitGenerateEmbeddingsJob(GenerateEmbeddingRequest) returns (GenerateEmbeddingResponse);
 }
 
 service SettingService {
@@ -162,4 +163,20 @@ message Document {
   string file_name = 4;
   string created_at = 5;
   string updated_at = 6;
+  Embedding_Status embedding_status=7;
+}
+
+enum Embedding_Status {
+  STATUS_ERROR = 0;
+  STATUS_SUCCESS = 1;
+  STATUS_QUEUED = 2;
+}
+
+message GenerateEmbeddingRequest {
+  string project_id = 1;
+  string docs_id = 2;
+}
+
+message GenerateEmbeddingResponse {
+  string message = 1;
 }

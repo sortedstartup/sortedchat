@@ -188,8 +188,22 @@ func (s *SQLiteDAO) GetProjects() ([]ProjectRow, error) {
 
 func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string, file_size int64) error {
 	size_kb := file_size / 1024
-	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name,file_size) VALUES (?, ?, ?, ?)", project_id, docs_id, file_name, size_kb)
+	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name,file_size,embedding_status) VALUES (?, ?, ?, ?, ?)", project_id, docs_id, file_name, size_kb, int32(proto.Embedding_Status_STATUS_QUEUED))
 	return err
+}
+
+func (s *SQLiteDAO) UpdateEmbeddingStatus(docs_id string, status int32) error {
+	_, err := s.db.Exec("UPDATE project_docs SET embedding_status = ? WHERE docs_id = ?", status, docs_id)
+	return err
+}
+
+func (s *SQLiteDAO) CheckEmbeddingStatus(docs_id string) (int32, error) {
+	var status int32
+	err := s.db.Get(&status, "SELECT embedding_status FROM project_docs WHERE docs_id = ?", docs_id)
+	if err != nil {
+		return 0, fmt.Errorf("failed to check embedding status: %w", err)
+	}
+	return status, nil
 }
 
 func (s *SQLiteDAO) TotalUsedSize(projectID string) (int64, error) {
@@ -205,7 +219,7 @@ func (s *SQLiteDAO) TotalUsedSize(projectID string) (int64, error) {
 func (s *SQLiteDAO) FilesList(project_id string) ([]DocumentListRow, error) {
 	var files []DocumentListRow
 	err := s.db.Select(&files, `
-		SELECT id, project_id, docs_id, file_name, created_at, updated_at
+		SELECT id, project_id, docs_id, file_name, created_at, updated_at,embedding_status
 		FROM project_docs
 		WHERE project_id = ?
 	`, project_id)

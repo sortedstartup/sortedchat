@@ -7,6 +7,11 @@
 import * as pb_1 from "google-protobuf";
 import * as grpc_1 from "grpc-web";
 import * as grpc_web_1 from "grpc-web";
+export enum Embedding_Status {
+    STATUS_ERROR = 0,
+    STATUS_SUCCESS = 1,
+    STATUS_QUEUED = 2
+}
 export class Settings extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -2392,6 +2397,7 @@ export class Document extends pb_1.Message {
         file_name?: string;
         created_at?: string;
         updated_at?: string;
+        embedding_status?: Embedding_Status;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -2413,6 +2419,9 @@ export class Document extends pb_1.Message {
             }
             if ("updated_at" in data && data.updated_at != undefined) {
                 this.updated_at = data.updated_at;
+            }
+            if ("embedding_status" in data && data.embedding_status != undefined) {
+                this.embedding_status = data.embedding_status;
             }
         }
     }
@@ -2452,6 +2461,12 @@ export class Document extends pb_1.Message {
     set updated_at(value: string) {
         pb_1.Message.setField(this, 6, value);
     }
+    get embedding_status() {
+        return pb_1.Message.getFieldWithDefault(this, 7, Embedding_Status.STATUS_ERROR) as Embedding_Status;
+    }
+    set embedding_status(value: Embedding_Status) {
+        pb_1.Message.setField(this, 7, value);
+    }
     static fromObject(data: {
         id?: number;
         project_id?: string;
@@ -2459,6 +2474,7 @@ export class Document extends pb_1.Message {
         file_name?: string;
         created_at?: string;
         updated_at?: string;
+        embedding_status?: Embedding_Status;
     }): Document {
         const message = new Document({});
         if (data.id != null) {
@@ -2479,6 +2495,9 @@ export class Document extends pb_1.Message {
         if (data.updated_at != null) {
             message.updated_at = data.updated_at;
         }
+        if (data.embedding_status != null) {
+            message.embedding_status = data.embedding_status;
+        }
         return message;
     }
     toObject() {
@@ -2489,6 +2508,7 @@ export class Document extends pb_1.Message {
             file_name?: string;
             created_at?: string;
             updated_at?: string;
+            embedding_status?: Embedding_Status;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -2508,6 +2528,9 @@ export class Document extends pb_1.Message {
         if (this.updated_at != null) {
             data.updated_at = this.updated_at;
         }
+        if (this.embedding_status != null) {
+            data.embedding_status = this.embedding_status;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -2526,6 +2549,8 @@ export class Document extends pb_1.Message {
             writer.writeString(5, this.created_at);
         if (this.updated_at.length)
             writer.writeString(6, this.updated_at);
+        if (this.embedding_status != Embedding_Status.STATUS_ERROR)
+            writer.writeEnum(7, this.embedding_status);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -2553,6 +2578,9 @@ export class Document extends pb_1.Message {
                 case 6:
                     message.updated_at = reader.readString();
                     break;
+                case 7:
+                    message.embedding_status = reader.readEnum();
+                    break;
                 default: reader.skipField();
             }
         }
@@ -2563,6 +2591,163 @@ export class Document extends pb_1.Message {
     }
     static deserializeBinary(bytes: Uint8Array): Document {
         return Document.deserialize(bytes);
+    }
+}
+export class GenerateEmbeddingRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        project_id?: string;
+        docs_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("project_id" in data && data.project_id != undefined) {
+                this.project_id = data.project_id;
+            }
+            if ("docs_id" in data && data.docs_id != undefined) {
+                this.docs_id = data.docs_id;
+            }
+        }
+    }
+    get project_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set project_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get docs_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set docs_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        project_id?: string;
+        docs_id?: string;
+    }): GenerateEmbeddingRequest {
+        const message = new GenerateEmbeddingRequest({});
+        if (data.project_id != null) {
+            message.project_id = data.project_id;
+        }
+        if (data.docs_id != null) {
+            message.docs_id = data.docs_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            project_id?: string;
+            docs_id?: string;
+        } = {};
+        if (this.project_id != null) {
+            data.project_id = this.project_id;
+        }
+        if (this.docs_id != null) {
+            data.docs_id = this.docs_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.project_id.length)
+            writer.writeString(1, this.project_id);
+        if (this.docs_id.length)
+            writer.writeString(2, this.docs_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GenerateEmbeddingRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GenerateEmbeddingRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.project_id = reader.readString();
+                    break;
+                case 2:
+                    message.docs_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): GenerateEmbeddingRequest {
+        return GenerateEmbeddingRequest.deserialize(bytes);
+    }
+}
+export class GenerateEmbeddingResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message?: string;
+    }): GenerateEmbeddingResponse {
+        const message = new GenerateEmbeddingResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GenerateEmbeddingResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GenerateEmbeddingResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): GenerateEmbeddingResponse {
+        return GenerateEmbeddingResponse.deserialize(bytes);
     }
 }
 // Server-side service class removed for client-side compatibility
@@ -2611,6 +2796,10 @@ export class SortedChatClient {
     private static ListDocuments = new grpc_web_1.MethodDescriptor<ListDocumentsRequest, ListDocumentsResponse>("/sortedchat.SortedChat/ListDocuments", grpc_web_1.MethodType.UNARY, ListDocumentsRequest, ListDocumentsResponse, (message: ListDocumentsRequest) => message.serialize(), ListDocumentsResponse.deserialize);
     ListDocuments(message: ListDocumentsRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<ListDocumentsRequest, ListDocumentsResponse>(this._address + "/sortedchat.SortedChat/ListDocuments", message, metadata || {}, SortedChatClient.ListDocuments);
+    }
+    private static SubmitGenerateEmbeddingsJob = new grpc_web_1.MethodDescriptor<GenerateEmbeddingRequest, GenerateEmbeddingResponse>("/sortedchat.SortedChat/SubmitGenerateEmbeddingsJob", grpc_web_1.MethodType.UNARY, GenerateEmbeddingRequest, GenerateEmbeddingResponse, (message: GenerateEmbeddingRequest) => message.serialize(), GenerateEmbeddingResponse.deserialize);
+    SubmitGenerateEmbeddingsJob(message: GenerateEmbeddingRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<GenerateEmbeddingRequest, GenerateEmbeddingResponse>(this._address + "/sortedchat.SortedChat/SubmitGenerateEmbeddingsJob", message, metadata || {}, SortedChatClient.SubmitGenerateEmbeddingsJob);
     }
 }
 // Server-side service class removed for client-side compatibility

@@ -439,12 +439,13 @@ func (s *ChatService) ListDocuments(ctx context.Context, req *pb.ListDocumentsRe
 	var result []*pb.Document
 	for _, doc := range docs {
 		result = append(result, &pb.Document{
-			Id:        doc.ID,
-			ProjectId: doc.ProjectID,
-			DocsId:    doc.DocsID,
-			FileName:  doc.FileName,
-			CreatedAt: doc.CreatedAt,
-			UpdatedAt: doc.UpdatedAt,
+			Id:              doc.ID,
+			ProjectId:       doc.ProjectID,
+			DocsId:          doc.DocsID,
+			FileName:        doc.FileName,
+			CreatedAt:       doc.CreatedAt,
+			UpdatedAt:       doc.UpdatedAt,
+			EmbeddingStatus: pb.Embedding_Status(doc.EmbeddingStatus),
 		})
 	}
 
@@ -524,6 +525,39 @@ func (s *ChatService) retrieveSimilarChunks(ctx context.Context, projectID strin
 	return response, nil
 }
 
+func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.GenerateEmbeddingRequest) (*pb.GenerateEmbeddingResponse, error) {
+	projectID := req.GetProjectId()
+	if projectID == "" {
+		return nil, fmt.Errorf("project_id is required")
+	}
+
+	docsID := req.GetDocsId()
+	if docsID == "" {
+		return nil, fmt.Errorf("docs_id is required")
+	}
+
+	status, error := s.dao.CheckEmbeddingStatus(docsID)
+	if error != nil {
+		return nil, fmt.Errorf("failed to check embedding status: %v", error)
+	}
+	if status != int32(pb.Embedding_Status_STATUS_ERROR) {
+		return &pb.GenerateEmbeddingResponse{
+			Message: "Embedding already exists for this document",
+		}, nil
+	}
+
+	msg := GenerateEmbeddingMessage{DocsID: docsID}
+	msgBytes, _ := json.Marshal(msg)
+	err := s.queue.Publish(ctx, "generate.embedding", msgBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to publish job: %v", err)
+	}
+
+	return &pb.GenerateEmbeddingResponse{
+		Message: "Embedding job submitted successfully",
+	}, nil
+}
+
 func (s *ChatService) Init() {
 	//db.InitDB()
 	// TODO: handle migration for postgres also
@@ -566,6 +600,9 @@ func (s *ChatService) EmbeddingSubscriber() {
 				result, err := s.pipeline.RunWithChunks(context.Background(), f, "text/plain", metadata)
 				if err != nil {
 					fmt.Printf("Pipeline error: %v\n", err)
+					if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_ERROR)); updateErr != nil {
+						fmt.Printf("Failed to update embedding status to error: %v\n", updateErr)
+					}
 					continue
 				}
 
@@ -585,6 +622,9 @@ func (s *ChatService) EmbeddingSubscriber() {
 							break
 						}
 					}
+				}
+				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_SUCCESS)); updateErr != nil {
+					fmt.Printf("Failed to update embedding status to success: %v\n", updateErr)
 				}
 			}
 		}

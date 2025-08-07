@@ -1,12 +1,18 @@
 package config
 
 import (
+	"context"
+	"fmt"
+	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/proto"
+	"sortedstartup/chatservice/queue"
 	"sync"
 
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
+
+	events "sortedstartup/chatservice/events"
 )
 
 /*
@@ -22,18 +28,24 @@ type SettingsManager struct {
 	settings *Settings
 	mu       sync.RWMutex
 	parser   koanf.Parser
+	queue    queue.Queue
+	dao      dao.SettingsDAO
 }
 
-func NewSettingsManager() *SettingsManager {
+const SQLITE_DB_URL = "db.sqlite"
+
+func NewSettingsManager(queue queue.Queue) *SettingsManager {
+	dao := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
+
 	cm := &SettingsManager{
 		parser: json.Parser(),
+		queue:  queue,
+		dao:    dao,
 	}
 	return cm
 }
 
 func (cm *SettingsManager) LoadSettingsFromProto(settings *proto.Settings) error {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
 
 	cm.settings = &Settings{
 		OpenAIAPIKey: settings.OPENAI_API_KEY,
@@ -46,6 +58,7 @@ func (cm *SettingsManager) LoadSettingsFromProto(settings *proto.Settings) error
 }
 
 func (cm *SettingsManager) LoadSettings(settings *Settings) error {
+
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
@@ -73,4 +86,31 @@ func (cm *SettingsManager) GetSettings() *Settings {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
 	return cm.settings
+}
+
+func (s *SettingsManager) SettingsChangedSubscriber() {
+	go func() {
+		sub, err := s.queue.Subscribe(context.Background(), events.SETTINGS_CHANGED_EVENT)
+		if err != nil {
+			fmt.Printf("Failed %v\n", err)
+			return
+		}
+		for msg := range sub {
+			fmt.Printf("Received message [%s]: %s\n", events.SETTINGS_CHANGED_EVENT, string(msg.Data))
+			// reload settings from the database
+			fmt.Println("Reloading settings from the database")
+			s.LoadSettingsFromDB()
+
+		}
+	}()
+}
+
+func (s *SettingsManager) LoadSettingsFromDB() error {
+
+	settings, err := s.dao.GetSettings()
+	if err != nil {
+		return err
+	}
+
+	return s.LoadSettingsFromProto(settings)
 }

@@ -15,6 +15,7 @@ import (
 
 	"sortedstartup/chatservice/dao"
 	db "sortedstartup/chatservice/dao"
+	"sortedstartup/chatservice/events"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
 	"sortedstartup/chatservice/rag"
@@ -27,19 +28,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const SETTINGS_CHANGED_EVENT = "settings.changed"
-
 type SettingService struct {
 	pb.UnimplementedSettingServiceServer
-	dao             *dao.SQLiteSettingsDAO
-	queue           queue.Queue
-	settingsManager *settings.SettingsManager
+	dao   dao.SettingsDAO
+	queue queue.Queue
 }
 
-func NewSettingService(queue queue.Queue, settingsManager *settings.SettingsManager) *SettingService {
+func NewSettingService(queue queue.Queue) *SettingService {
 	dao := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
-
-	return &SettingService{dao: dao, queue: queue, settingsManager: settingsManager}
+	return &SettingService{dao: dao, queue: queue}
 }
 
 func (s *SettingService) Init() {
@@ -65,34 +62,11 @@ func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingReque
 	}
 
 	// publish an event, any subscriber now need to reload settings from the database
-	s.queue.Publish(context.Background(), SETTINGS_CHANGED_EVENT, []byte(""))
+	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
 
 	return &pb.SetSettingResponse{
 		Message: "Setting Saved",
 	}, nil
-}
-
-func (s *SettingService) SettingsChangedSubscriber() {
-	go func() {
-		sub, err := s.queue.Subscribe(context.Background(), SETTINGS_CHANGED_EVENT)
-		if err != nil {
-			fmt.Printf("Failed %v\n", err)
-			return
-		}
-		for msg := range sub {
-			fmt.Printf("Received message [%s]: %s\n", SETTINGS_CHANGED_EVENT, string(msg.Data))
-			// reload settings from the database
-			fmt.Println("Reloading settings from the database")
-			settings, err := s.dao.GetSettings()
-			if err != nil {
-				fmt.Printf("Failed to get settings: %v\n", err)
-				continue
-			}
-
-			s.settingsManager.LoadSettingsFromProto(settings)
-
-		}
-	}()
 }
 
 type ChatService struct {
@@ -119,6 +93,7 @@ func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *sett
 		log.Fatalf("Failed to initialize object store: %v", err)
 	}
 
+	settingsManager.LoadSettingsFromDB()
 	ollama_url := settingsManager.GetSettings().OllamaURL
 	embeddingsProvider := &rag.OLLamaEmbedder{
 		//TODO: read from config

@@ -43,13 +43,13 @@ func main() {
 	mux := http.NewServeMux()
 
 	queue := queue.NewInMemoryQueue()
-	settingsManager := settings.NewSettingsManager()
+	settingsManager := settings.NewSettingsManager(queue)
 
 	chatServiceApi := api.NewChatService(mux, queue, settingsManager)
 	chatServiceApi.Init()
 	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
 
-	settingServiceApi := api.NewSettingService(queue, settingsManager)
+	settingServiceApi := api.NewSettingService(queue)
 	settingServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 

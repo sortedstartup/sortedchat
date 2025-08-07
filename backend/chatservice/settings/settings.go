@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"log"
 	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
@@ -38,10 +39,13 @@ func NewSettingsManager(queue queue.Queue) *SettingsManager {
 	dao := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
 
 	cm := &SettingsManager{
-		parser: json.Parser(),
-		queue:  queue,
-		dao:    dao,
+		settings: &Settings{},
+		parser:   json.Parser(),
+		queue:    queue,
+		dao:      dao,
 	}
+
+	cm.StartSettingsChangedSubscriber()
 	return cm
 }
 
@@ -88,7 +92,7 @@ func (cm *SettingsManager) GetSettings() *Settings {
 	return cm.settings
 }
 
-func (s *SettingsManager) SettingsChangedSubscriber() {
+func (s *SettingsManager) StartSettingsChangedSubscriber() {
 	go func() {
 		sub, err := s.queue.Subscribe(context.Background(), events.SETTINGS_CHANGED_EVENT)
 		if err != nil {
@@ -96,9 +100,9 @@ func (s *SettingsManager) SettingsChangedSubscriber() {
 			return
 		}
 		for msg := range sub {
-			fmt.Printf("Received message [%s]: %s\n", events.SETTINGS_CHANGED_EVENT, string(msg.Data))
+			log.Printf("Received message [%s]: %s\n", events.SETTINGS_CHANGED_EVENT, string(msg.Data))
 			// reload settings from the database
-			fmt.Println("Reloading settings from the database")
+			log.Println("Reloading settings from the database")
 			s.LoadSettingsFromDB()
 
 		}

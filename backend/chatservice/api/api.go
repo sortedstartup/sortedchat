@@ -61,6 +61,7 @@ func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingReque
 		return nil, fmt.Errorf("failed to set settings: %w", err)
 	}
 
+	log.Printf("Publishing event [%s] to reload settings", events.SETTINGS_CHANGED_EVENT)
 	// publish an event, any subscriber now need to reload settings from the database
 	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
 

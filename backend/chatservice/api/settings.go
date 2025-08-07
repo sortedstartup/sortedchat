@@ -18,6 +18,8 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
+// Application should use settings from here, not directly from the database
+// This monitors the database for changes and reloads the settings
 type SettingsManager struct {
 	settings *settings.Settings
 	mu       sync.RWMutex
@@ -54,6 +56,7 @@ func (cm *SettingsManager) LoadSettingsFromProto(protoSettings *proto.Settings) 
 
 func (cm *SettingsManager) LoadSettings(settings_ *settings.Settings) error {
 
+	// The lock prevents race conditions when loading settings from the database
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 

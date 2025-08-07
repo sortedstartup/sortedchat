@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"sortedstartup/chatservice/dao"
@@ -12,7 +13,7 @@ import (
 
 	"sortedstartup/chatservice/settings"
 
-	"github.com/knadh/koanf/parsers/json"
+	koanfjson "github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
 )
@@ -30,7 +31,7 @@ func NewSettingsManager(queue queue.Queue) *SettingsManager {
 
 	cm := &SettingsManager{
 		settings: &settings.Settings{},
-		parser:   json.Parser(),
+		parser:   koanfjson.Parser(),
 		queue:    queue,
 		dao:      dao,
 	}
@@ -90,7 +91,7 @@ func (s *SettingsManager) StartSettingsChangedSubscriber() {
 			return
 		}
 		for msg := range sub {
-			log.Printf("Received message [%s]: %s\n", events.SETTINGS_CHANGED_EVENT, string(msg.Data))
+			log.Printf("Received message [%s], data:[%s]\n", events.SETTINGS_CHANGED_EVENT, string(msg.Data))
 			// reload settings from the database
 			log.Println("Reloading settings from the database")
 			s.LoadSettingsFromDB()
@@ -101,10 +102,17 @@ func (s *SettingsManager) StartSettingsChangedSubscriber() {
 
 func (s *SettingsManager) LoadSettingsFromDB() error {
 
-	settings, err := s.dao.GetSettings()
+	settingsString, err := s.dao.GetSettingValue("settings")
 	if err != nil {
 		return err
 	}
 
-	return s.LoadSettings(settings)
+	//json decode the settings
+	var settings settings.Settings
+	err = json.Unmarshal([]byte(settingsString), &settings)
+	if err != nil {
+		return err
+	}
+
+	return s.LoadSettings(&settings)
 }

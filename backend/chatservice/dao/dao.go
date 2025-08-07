@@ -2,7 +2,6 @@ package dao
 
 import (
 	proto "sortedstartup/chatservice/proto"
-	"sortedstartup/chatservice/settings"
 )
 
 type DAO interface {
@@ -35,8 +34,6 @@ type DAO interface {
 }
 
 type SettingsDAO interface {
-	GetSettings() (*settings.Settings, error)
-	SetSettings(settings *settings.Settings) error
 	GetSettingValue(settingName string) (string, error)
 	SetSettingValue(settingName string, settingValue string) error
 }

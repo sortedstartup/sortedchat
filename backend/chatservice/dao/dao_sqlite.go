@@ -1,11 +1,11 @@
 package dao
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	proto "sortedstartup/chatservice/proto"
-	"sortedstartup/chatservice/settings"
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
@@ -275,45 +275,14 @@ func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
 	return &SQLiteSettingsDAO{db: db}
 }
 
-func (s *SQLiteSettingsDAO) GetSettings() (*settings.Settings, error) {
-	var dbSetting dbSettings
-	err := s.db.Get(&dbSetting, "SELECT name,settings FROM settings WHERE name = ?", "settings")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get settings from database: %w", err)
-	}
-
-	var settings settings.Settings
-	err = json.Unmarshal([]byte(dbSetting.Settings), &settings)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal settings JSON: %w", err)
-	}
-
-	return &settings, nil
-}
-
-func (s *SQLiteSettingsDAO) SetSettings(settings *settings.Settings) error {
-	settingsJSON, err := json.Marshal(settings)
-	if err != nil {
-		return fmt.Errorf("failed to marshal settings to JSON: %w", err)
-	}
-
-	query := `
-        INSERT INTO settings (name, settings) VALUES (?, ?)
-        ON CONFLICT(name) DO UPDATE SET settings = excluded.settings
-    `
-
-	_, err = s.db.Exec(query, "settings", string(settingsJSON))
-	if err != nil {
-		return fmt.Errorf("failed to upsert settings: %w", err)
-	}
-
-	return nil
-}
-
 func (s *SQLiteSettingsDAO) GetSettingValue(settingName string) (string, error) {
 	var dbSetting dbSettings
-	err := s.db.Get(&dbSetting, "SELECT name,settings FROM settings WHERE name = ?", settingName)
+	err := s.db.Get(&dbSetting, "SELECT name, settings FROM settings WHERE name = ?", settingName)
 	if err != nil {
+		// Preserve sql.ErrNoRows so callers can distinguish between no rows and actual database errors
+		if err == sql.ErrNoRows {
+			return "", err
+		}
 		return "", fmt.Errorf("failed to get setting '%s' from database: %w", settingName, err)
 	}
 

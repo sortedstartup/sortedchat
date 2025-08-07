@@ -43,7 +43,13 @@ func NewSettingService(queue queue.Queue) *SettingService {
 
 func (s *SettingService) Init() {
 	// since right now the Setting is in chatservice so chatservice handles migrations
-	if s.IsFirstBoot() {
+	isFirstBoot, err := s.IsFirstBoot()
+	if err != nil {
+		log.Printf("Failed to check if this is first boot: %v", err)
+		return
+	}
+
+	if isFirstBoot {
 		s.SetSetting(context.Background(), &pb.SetSettingRequest{Settings: settings.DefaultSettings.ToProto()})
 	}
 
@@ -58,9 +64,16 @@ func (s *SettingService) FirstBootComplete() {
 }
 
 func (s *SettingService) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
-	settings, err := s.dao.GetSettings()
+	settingsString, err := s.dao.GetSettingValue("settings")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	//json decode the settings
+	var settings settings.Settings
+	err = json.Unmarshal([]byte(settingsString), &settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal settings: %w", err)
 	}
 
 	return &pb.GetSettingResponse{
@@ -70,12 +83,17 @@ func (s *SettingService) GetSetting(ctx context.Context, req *pb.GetSettingReque
 
 func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingRequest) (*pb.SetSettingResponse, error) {
 
-	err := s.dao.SetSettings(settings.FromProto(req.Settings))
+	settingsJSON, err := json.Marshal(settings.FromProto(req.Settings))
 	if err != nil {
 		return nil, fmt.Errorf("failed to set settings: %w", err)
 	}
 
-	log.Printf("Publishing event [%s] to reload settings", events.SETTINGS_CHANGED_EVENT)
+	err = s.dao.SetSettingValue("settings", string(settingsJSON))
+	if err != nil {
+		return nil, fmt.Errorf("failed to set settings: %w", err)
+	}
+
+	log.Printf("Publishing event [%s], data:[%s] to reload settings", events.SETTINGS_CHANGED_EVENT, "")
 	// publish an event, any subscriber now need to reload settings from the database
 	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
 
@@ -86,15 +104,16 @@ func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingReque
 
 // IsFirstBoot checks if this is the first boot by looking for the 'is_first_boot' setting
 // Returns true if the setting doesn't exist or is 0, false otherwise
-func (s *SettingService) IsFirstBoot() bool {
+// Returns an error if there's a database error (except for sql.ErrNoRows)
+func (s *SettingService) IsFirstBoot() (bool, error) {
 	value, err := s.dao.GetSettingValue("is_first_boot")
 	if err != nil {
-		// If the setting doesn't exist or there's an error, consider it first boot
+		// If the setting doesn't exist, consider it first boot
 		if err == sql.ErrNoRows {
-			return true
+			return true, nil
 		}
-		log.Printf("Error getting is_first_boot setting: %v", err)
-		return true
+		// For other database errors, return the error
+		return false, fmt.Errorf("error getting is_first_boot setting: %w", err)
 	}
 
 	// Try to parse the value as an integer
@@ -102,11 +121,11 @@ func (s *SettingService) IsFirstBoot() bool {
 	if err != nil {
 		// If we can't parse it, consider it first boot
 		log.Printf("Error parsing is_first_boot value '%s': %v", value, err)
-		return true
+		return true, nil
 	}
 
 	// Return true if value is 0, false otherwise
-	return intValue == 0
+	return intValue == 0, nil
 }
 
 type ChatService struct {

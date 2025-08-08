@@ -36,6 +36,6 @@ type DAO interface {
 }
 
 type SettingsDAO interface {
-	GetSettings() (*proto.Settings, error)
-	SetSettings(settings *proto.Settings) error
+	GetSettingValue(settingName string) (string, error)
+	SetSettingValue(settingName string, settingValue string) error
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"sortedstartup/chatservice/settings"
 	"strings"
 
 	"github.com/google/uuid"
@@ -124,8 +125,8 @@ type CloudFlareEmbedder struct {
 // Now returns Embedding with ChunkID and Vector
 
 type OLLamaEmbedder struct {
-	URL   string
-	Model string
+	SettingsManager *settings.SettingsManager
+	Model           string
 }
 
 func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding, error) {
@@ -141,8 +142,8 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		if err != nil {
 			return nil, err
 		}
-
-		req, err := http.NewRequestWithContext(ctx, "POST", e.URL, bytes.NewBuffer(bodyBytes))
+		ollama_url := e.SettingsManager.GetSettings().OllamaURL
+		req, err := http.NewRequestWithContext(ctx, "POST", ollama_url, bytes.NewBuffer(bodyBytes))
 		if err != nil {
 			return nil, err
 		}
@@ -173,7 +174,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		embeddings = append(embeddings, Embedding{
 			ChunkID:  chunk.ID,
 			Vector:   vec,
-			Provider: e.URL,
+			Provider: e.SettingsManager.GetSettings().OllamaURL,
 		})
 	}
 

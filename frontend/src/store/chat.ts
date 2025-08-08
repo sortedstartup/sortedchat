@@ -291,10 +291,6 @@ export async function fetchDocuments(projectId: string) {
       {}
     );
 
-    res.documents.map((doc: Document) => {
-      console.log(doc.docs_id, doc.embedding_status);
-    });
-
     $documents.set(res.documents);
   } catch (err) {
     console.error("Failed to fetch documents:", err);

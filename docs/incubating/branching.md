@@ -226,28 +226,28 @@ sequenceDiagram
 
 ```mermaid
 graph TD
-    M[Main Chat: "Project Discussion"]
-    B1[Branch 1: "API Design Focus"]
-    B2[Branch 2: "Database Schema Focus"]
-    B3[Branch 3: "UI/UX Focus"]
+    M["Main Chat: Project Discussion"]
+    B1["Branch 1: API Design Focus"]
+    B2["Branch 2: Database Schema Focus"]
+    B3["Branch 3: UI/UX Focus"]
     
-    M -.->|Branch at msg 5| B1
-    M -.->|Branch at msg 8| B2
-    M -.->|Branch at msg 12| B3
+    M -.->|"Branch at msg 5"| B1
+    M -.->|"Branch at msg 8"| B2
+    M -.->|"Branch at msg 12"| B3
     
-    M --> M1[Msg 1: Initial idea]
-    M --> M2[Msg 2: Requirements]
-    M --> M3[Msg 3: Discussion]
-    M --> M4[Msg 4: Clarification]
-    M --> M5[Msg 5: Architecture]
+    M --> M1["Msg 1: Initial idea"]
+    M --> M2["Msg 2: Requirements"]
+    M --> M3["Msg 3: Discussion"]
+    M --> M4["Msg 4: Clarification"]
+    M --> M5["Msg 5: Architecture"]
     
     B1 --> M1
     B1 --> M2
     B1 --> M3
     B1 --> M4
     B1 --> M5
-    B1 --> B1_1[Msg 6: API focus]
-    B1 --> B1_2[Msg 7: Endpoints]
+    B1 --> B1_1["Msg 6: API focus"]
+    B1 --> B1_2["Msg 7: Endpoints"]
     
     style M fill:#e1f5fe
     style B1 fill:#f3e5f5

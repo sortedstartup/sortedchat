@@ -1573,7 +1573,6 @@ func (x *Document) GetEmbeddingStatus() Embedding_Status {
 type GenerateEmbeddingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	DocsId        string                 `protobuf:"bytes,2,opt,name=docs_id,json=docsId,proto3" json:"docs_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1611,13 +1610,6 @@ func (*GenerateEmbeddingRequest) Descriptor() ([]byte, []int) {
 func (x *GenerateEmbeddingRequest) GetProjectId() string {
 	if x != nil {
 		return x.ProjectId
-	}
-	return ""
-}
-
-func (x *GenerateEmbeddingRequest) GetDocsId() string {
-	if x != nil {
-		return x.DocsId
 	}
 	return ""
 }
@@ -1768,11 +1760,10 @@ const file_chatservice_proto_rawDesc = "" +
 	"created_at\x18\x05 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
 	"updated_at\x18\x06 \x01(\tR\tupdatedAt\x12G\n" +
-	"\x10embedding_status\x18\a \x01(\x0e2\x1c.sortedchat.Embedding_StatusR\x0fembeddingStatus\"R\n" +
+	"\x10embedding_status\x18\a \x01(\x0e2\x1c.sortedchat.Embedding_StatusR\x0fembeddingStatus\"9\n" +
 	"\x18GenerateEmbeddingRequest\x12\x1d\n" +
 	"\n" +
-	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x17\n" +
-	"\adocs_id\x18\x02 \x01(\tR\x06docsId\"5\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\"5\n" +
 	"\x19GenerateEmbeddingResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage*K\n" +
 	"\x10Embedding_Status\x12\x10\n" +

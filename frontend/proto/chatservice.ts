@@ -2597,16 +2597,12 @@ export class GenerateEmbeddingRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         project_id?: string;
-        docs_id?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("project_id" in data && data.project_id != undefined) {
                 this.project_id = data.project_id;
-            }
-            if ("docs_id" in data && data.docs_id != undefined) {
-                this.docs_id = data.docs_id;
             }
         }
     }
@@ -2616,35 +2612,21 @@ export class GenerateEmbeddingRequest extends pb_1.Message {
     set project_id(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
-    get docs_id() {
-        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
-    }
-    set docs_id(value: string) {
-        pb_1.Message.setField(this, 2, value);
-    }
     static fromObject(data: {
         project_id?: string;
-        docs_id?: string;
     }): GenerateEmbeddingRequest {
         const message = new GenerateEmbeddingRequest({});
         if (data.project_id != null) {
             message.project_id = data.project_id;
-        }
-        if (data.docs_id != null) {
-            message.docs_id = data.docs_id;
         }
         return message;
     }
     toObject() {
         const data: {
             project_id?: string;
-            docs_id?: string;
         } = {};
         if (this.project_id != null) {
             data.project_id = this.project_id;
-        }
-        if (this.docs_id != null) {
-            data.docs_id = this.docs_id;
         }
         return data;
     }
@@ -2654,8 +2636,6 @@ export class GenerateEmbeddingRequest extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.project_id.length)
             writer.writeString(1, this.project_id);
-        if (this.docs_id.length)
-            writer.writeString(2, this.docs_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -2667,9 +2647,6 @@ export class GenerateEmbeddingRequest extends pb_1.Message {
             switch (reader.getFieldNumber()) {
                 case 1:
                     message.project_id = reader.readString();
-                    break;
-                case 2:
-                    message.docs_id = reader.readString();
                     break;
                 default: reader.skipField();
             }

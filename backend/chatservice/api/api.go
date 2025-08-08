@@ -531,26 +531,19 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.G
 		return nil, fmt.Errorf("project_id is required")
 	}
 
-	docsID := req.GetDocsId()
-	if docsID == "" {
-		return nil, fmt.Errorf("docs_id is required")
-	}
-
-	status, error := s.dao.CheckEmbeddingStatus(docsID)
+	docs, error := s.dao.FetchErrorDocs(projectID)
 	if error != nil {
 		return nil, fmt.Errorf("failed to check embedding status: %v", error)
 	}
-	if status != int32(pb.Embedding_Status_STATUS_ERROR) {
-		return &pb.GenerateEmbeddingResponse{
-			Message: "Embedding already exists for this document",
-		}, nil
-	}
 
-	msg := GenerateEmbeddingMessage{DocsID: docsID}
-	msgBytes, _ := json.Marshal(msg)
-	err := s.queue.Publish(ctx, "generate.embedding", msgBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to publish job: %v", err)
+	for _, docsID := range docs {
+
+		msg := GenerateEmbeddingMessage{DocsID: docsID}
+		msgBytes, _ := json.Marshal(msg)
+		err := s.queue.Publish(ctx, "generate.embedding", msgBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to publish job: %v", err)
+		}
 	}
 
 	return &pb.GenerateEmbeddingResponse{

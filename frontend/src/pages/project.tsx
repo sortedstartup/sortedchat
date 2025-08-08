@@ -28,6 +28,7 @@ import {
   doChat,
   $projectChatList,
   SubmitGenerateEmbeddingsJob,
+  $isErrorDocs,
 } from "@/store/chat";
 import { useNavigate, useParams } from "react-router-dom";
 const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
@@ -40,6 +41,7 @@ export function Project() {
   const projectName = useStore($currentProject);
   const currentProjectId = useStore($currentProjectId);
   const chatsList = useStore($projectChatList);
+  const isErrorDocs = useStore($isErrorDocs);
   const navigate = useNavigate();
 
   const { projectId } = useParams();
@@ -84,24 +86,14 @@ export function Project() {
     setIsDocumentsDialogOpen(open);
   };
 
-  const handleRetryEmbedding = async (docId: string) => {
+  const handleRetryEmbedding = async () => {
     try {
-      await SubmitGenerateEmbeddingsJob(docId, currentProjectId.toString());
+      console.log("Retrying embedding for project:1", isErrorDocs);
+      $isErrorDocs.set(false);
+
+      await SubmitGenerateEmbeddingsJob(currentProjectId.toString());
     } catch (error) {
       console.error("Error retrying embedding:", error);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "success":
-        return "bg-green-100 text-green-800";
-      case "error":
-        return "bg-red-100 text-red-800";
-      case "queued":
-        return "bg-yellow-100 text-yellow-800";
-      default:
-        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -137,14 +129,16 @@ export function Project() {
               <DialogContent className="sm:max-w-2xl max-h-[70vh] overflow-hidden [&>button]:hidden">
                 <DialogHeader className="flex flex-row items-center justify-between space-y-0 mr-2">
                   <DialogTitle>Project Documents</DialogTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => fetchDocuments(currentProjectId.toString())}
-                    className="h-8 w-8 p-1"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
+                  {$isErrorDocs.get() ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRetryEmbedding()}
+                      className="h-8 w-8 p-1"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  ) : null}
                 </DialogHeader>
 
                 <div className="space-y-2 max-h-[50vh] overflow-auto">
@@ -168,34 +162,15 @@ export function Project() {
                             <span className="font-medium">{doc.file_name}</span>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-gray-500">
-                                {doc.embedding_status === 0 ? "Failed to index this file Regenerate enbeddings": ""}
-                              </span>
-                              {/* <span
-                                className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(
-                                  doc.embedding_status
-                                )}`}
-                              >
                                 {doc.embedding_status === 0
-                                  ? "error"
-                                  :""}
-                              </span> */}
+                                  ? "Indexing failed, Regenerate enbeddings"
+                                  : ""}
+                              </span>
                             </div>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {doc.embedding_status === 0 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                handleRetryEmbedding(doc.docs_id);
-                              }}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <RefreshCw className="size-4" />
-                            </Button>
-                          )}
                           <Button variant="ghost" size="sm">
                             <Eye className="size-4" />
                           </Button>

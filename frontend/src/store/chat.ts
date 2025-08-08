@@ -291,8 +291,6 @@ export async function fetchDocuments(projectId: string) {
       {}
     );
 
-    console.log(res.documents);
-  
     $documents.set(res.documents);
   } catch (err) {
     console.error("Failed to fetch documents:", err);
@@ -318,18 +316,22 @@ $currentProjectId.listen((newProjectId) => {
     $chatList.set([]);
   }
 });
+export const $isErrorDocs = atom<boolean>(false);
+$documents.listen((documents) => {
+  const hasErrorDocs = documents.some(doc => doc.embedding_status === 0);
+  $isErrorDocs.set(hasErrorDocs);
+});
 
-export const SubmitGenerateEmbeddingsJob = async (docsId: string, projectId: string): Promise<String> => {
+export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<String> => {
   try {
     const response = await chat.SubmitGenerateEmbeddingsJob(
       GenerateEmbeddingRequest.fromObject({
-        docs_id: docsId,
         project_id: projectId,
       }),
       {}
     );
-    console.log("Embedding job submitted:", response);
     toast.success(response.message || "Embedding job submitted successfully");
+    fetchDocuments(projectId); 
     return response.message; 
   } catch (error) {
     console.error("Failed to submit embedding job:", error);

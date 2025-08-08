@@ -197,13 +197,15 @@ func (s *SQLiteDAO) UpdateEmbeddingStatus(docs_id string, status int32) error {
 	return err
 }
 
-func (s *SQLiteDAO) CheckEmbeddingStatus(docs_id string) (int32, error) {
-	var status int32
-	err := s.db.Get(&status, "SELECT embedding_status FROM project_docs WHERE docs_id = ?", docs_id)
+func (s *SQLiteDAO) FetchErrorDocs(project_id string) ([]string, error) {
+	var docs_list []string
+	err := s.db.Select(&docs_list, "SELECT docs_id FROM project_docs WHERE project_id = ? AND embedding_status = ?", project_id, 0)
 	if err != nil {
-		return 0, fmt.Errorf("failed to check embedding status: %w", err)
+		fmt.Print("fetchErrorDocs dao", err)
+		return nil, fmt.Errorf("failed to check embedding status: %w", err)
 	}
-	return status, nil
+	fmt.Println("fetchErrorDocs dao", docs_list)
+	return docs_list, nil
 }
 
 func (s *SQLiteDAO) TotalUsedSize(projectID string) (int64, error) {

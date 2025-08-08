@@ -135,12 +135,12 @@ type ChatService struct {
 	queue              queue.Queue
 	pipeline           rag.RAGIndexingPipeline
 	embeddingsProvider rag.Embedder
-	settingsManager    *SettingsManager
+	settingsManager    *settings.SettingsManager
 }
 
 var SQLITE_DB_URL = "db.sqlite"
 
-func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *SettingsManager) *ChatService {
+func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager) *ChatService {
 
 	daoInstance, err := dao.NewSQLiteDAO(SQLITE_DB_URL)
 	if err != nil {
@@ -153,11 +153,10 @@ func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *Sett
 	}
 
 	settingsManager.LoadSettingsFromDB()
-	ollama_url := settingsManager.GetSettings().OllamaURL
+
 	embeddingsProvider := &rag.OLLamaEmbedder{
-		//TODO: read from config
-		URL:   ollama_url + "/v1/embeddings",
-		Model: "nomic-embed-text",
+		SettingsManager: settingsManager,
+		Model:           "nomic-embed-text",
 	}
 
 	pipeline := rag.NewPipeline(

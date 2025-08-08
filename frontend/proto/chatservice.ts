@@ -8,9 +8,10 @@ import * as pb_1 from "google-protobuf";
 import * as grpc_1 from "grpc-web";
 import * as grpc_web_1 from "grpc-web";
 export enum Embedding_Status {
-    STATUS_ERROR = 0,
-    STATUS_SUCCESS = 1,
-    STATUS_QUEUED = 2
+    STATUS_QUEUED = 0,
+    STATUS_IN_PROGRESS = 1,
+    STATUS_ERROR = 2,
+    STATUS_SUCCESS = 3
 }
 export class Settings extends pb_1.Message {
     #one_of_decls: number[][] = [];
@@ -2462,7 +2463,7 @@ export class Document extends pb_1.Message {
         pb_1.Message.setField(this, 6, value);
     }
     get embedding_status() {
-        return pb_1.Message.getFieldWithDefault(this, 7, Embedding_Status.STATUS_ERROR) as Embedding_Status;
+        return pb_1.Message.getFieldWithDefault(this, 7, Embedding_Status.STATUS_QUEUED) as Embedding_Status;
     }
     set embedding_status(value: Embedding_Status) {
         pb_1.Message.setField(this, 7, value);
@@ -2549,7 +2550,7 @@ export class Document extends pb_1.Message {
             writer.writeString(5, this.created_at);
         if (this.updated_at.length)
             writer.writeString(6, this.updated_at);
-        if (this.embedding_status != Embedding_Status.STATUS_ERROR)
+        if (this.embedding_status != Embedding_Status.STATUS_QUEUED)
             writer.writeEnum(7, this.embedding_status);
         if (!w)
             return writer.getResultBuffer();

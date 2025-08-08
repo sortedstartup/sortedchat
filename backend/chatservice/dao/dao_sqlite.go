@@ -193,14 +193,13 @@ func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string
 }
 
 func (s *SQLiteDAO) UpdateEmbeddingStatus(docs_id string, status int32) error {
-	fmt.Println("UpdateEmbeddingStatus dao", docs_id, status)
 	_, err := s.db.Exec("UPDATE project_docs SET embedding_status = ? WHERE docs_id = ?", status, docs_id)
 	return err
 }
 
 func (s *SQLiteDAO) FetchErrorDocs(project_id string) ([]string, error) {
 	var docs_list []string
-	err := s.db.Select(&docs_list, "SELECT docs_id FROM project_docs WHERE project_id = ? AND embedding_status = ?", project_id, 0)
+	err := s.db.Select(&docs_list, "SELECT docs_id FROM project_docs WHERE project_id = ? AND embedding_status = ?", project_id, int32(proto.Embedding_Status_STATUS_ERROR))
 	if err != nil {
 		fmt.Print("fetchErrorDocs dao", err)
 		return nil, fmt.Errorf("failed to check embedding status: %w", err)

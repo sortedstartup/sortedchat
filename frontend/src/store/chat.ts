@@ -291,6 +291,10 @@ export async function fetchDocuments(projectId: string) {
       {}
     );
 
+    res.documents.map((doc: Document) => {
+      console.log(doc.docs_id, doc.embedding_status);
+    });
+
     $documents.set(res.documents);
   } catch (err) {
     console.error("Failed to fetch documents:", err);
@@ -318,7 +322,7 @@ $currentProjectId.listen((newProjectId) => {
 });
 export const $isErrorDocs = atom<boolean>(false);
 $documents.listen((documents) => {
-  const hasErrorDocs = documents.some(doc => doc.embedding_status === 0);
+  const hasErrorDocs = documents.some(doc => doc.embedding_status === 2);
   $isErrorDocs.set(hasErrorDocs);
 });
 

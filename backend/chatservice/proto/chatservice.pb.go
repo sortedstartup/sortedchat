@@ -24,22 +24,25 @@ const (
 type Embedding_Status int32
 
 const (
-	Embedding_Status_STATUS_ERROR   Embedding_Status = 0
-	Embedding_Status_STATUS_SUCCESS Embedding_Status = 1
-	Embedding_Status_STATUS_QUEUED  Embedding_Status = 2
+	Embedding_Status_STATUS_QUEUED      Embedding_Status = 0
+	Embedding_Status_STATUS_IN_PROGRESS Embedding_Status = 1
+	Embedding_Status_STATUS_ERROR       Embedding_Status = 2
+	Embedding_Status_STATUS_SUCCESS     Embedding_Status = 3
 )
 
 // Enum value maps for Embedding_Status.
 var (
 	Embedding_Status_name = map[int32]string{
-		0: "STATUS_ERROR",
-		1: "STATUS_SUCCESS",
-		2: "STATUS_QUEUED",
+		0: "STATUS_QUEUED",
+		1: "STATUS_IN_PROGRESS",
+		2: "STATUS_ERROR",
+		3: "STATUS_SUCCESS",
 	}
 	Embedding_Status_value = map[string]int32{
-		"STATUS_ERROR":   0,
-		"STATUS_SUCCESS": 1,
-		"STATUS_QUEUED":  2,
+		"STATUS_QUEUED":      0,
+		"STATUS_IN_PROGRESS": 1,
+		"STATUS_ERROR":       2,
+		"STATUS_SUCCESS":     3,
 	}
 )
 
@@ -1567,7 +1570,7 @@ func (x *Document) GetEmbeddingStatus() Embedding_Status {
 	if x != nil {
 		return x.EmbeddingStatus
 	}
-	return Embedding_Status_STATUS_ERROR
+	return Embedding_Status_STATUS_QUEUED
 }
 
 type GenerateEmbeddingRequest struct {
@@ -1765,11 +1768,12 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\"5\n" +
 	"\x19GenerateEmbeddingResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage*K\n" +
-	"\x10Embedding_Status\x12\x10\n" +
-	"\fSTATUS_ERROR\x10\x00\x12\x12\n" +
-	"\x0eSTATUS_SUCCESS\x10\x01\x12\x11\n" +
-	"\rSTATUS_QUEUED\x10\x022\xb4\x06\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage*c\n" +
+	"\x10Embedding_Status\x12\x11\n" +
+	"\rSTATUS_QUEUED\x10\x00\x12\x16\n" +
+	"\x12STATUS_IN_PROGRESS\x10\x01\x12\x10\n" +
+	"\fSTATUS_ERROR\x10\x02\x12\x12\n" +
+	"\x0eSTATUS_SUCCESS\x10\x032\xb4\x06\n" +
 	"\n" +
 	"SortedChat\x12;\n" +
 	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12K\n" +

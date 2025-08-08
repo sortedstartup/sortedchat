@@ -179,10 +179,12 @@ export function Project() {
                             <span className="font-medium">{doc.file_name}</span>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-gray-500">
-                                {doc.embedding_status === 0
+                                {doc.embedding_status === 2
                                   ? "Indexing failed, Regenerate embeddings"
-                                  : doc.embedding_status === 2
+                                  : doc.embedding_status === 0
                                   ? "Currently in queue"
+                                  : doc.embedding_status === 1
+                                  ? "Embedding in progress"
                                   : ""}
                               </span>
                             </div>

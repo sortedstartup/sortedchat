@@ -167,9 +167,10 @@ message Document {
 }
 
 enum Embedding_Status {
-  STATUS_ERROR = 0;
-  STATUS_SUCCESS = 1;
-  STATUS_QUEUED = 2;
+  STATUS_QUEUED = 0;
+  STATUS_IN_PROGRESS = 1;
+  STATUS_ERROR = 2;
+  STATUS_SUCCESS = 3;
 }
 
 message GenerateEmbeddingRequest {

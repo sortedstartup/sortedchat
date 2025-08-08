@@ -569,9 +569,14 @@ func (s *ChatService) EmbeddingSubscriber() {
 			fmt.Printf("Failed %v\n", err)
 			return
 		}
+
 		for msg := range sub {
 			var payload GenerateEmbeddingMessage
 			if err := json.Unmarshal(msg.Data, &payload); err == nil {
+
+				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_IN_PROGRESS)); updateErr != nil {
+					fmt.Printf("Failed to update embedding status to error: %v\n", updateErr)
+				}
 
 				// Fetch project_id for docs_id
 				docMeta, err := s.dao.GetFileMetadata(payload.DocsID)

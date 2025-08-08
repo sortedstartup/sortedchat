@@ -86,7 +86,8 @@ func (cm *SettingsManager) LoadSettings(settings_ *Settings) error {
 	defer cm.mu.Unlock()
 
 	// Create new config struct
-	var newSettings Settings
+	// clone the settings_, Later this will be replaced by koanf
+	newSettings := *settings_
 
 	// Replace the config atomically
 	cm.settings = &newSettings

@@ -18,6 +18,7 @@ import {
   ListDocumentsRequest,
   Document,
   GenerateEmbeddingRequest,
+  ChatNameRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -98,7 +99,7 @@ const addMessageToHistory = (message: ChatMessage) => {
 // --- state management ---
 export const createNewChat = async (projectId?: string) => {
   const requestObj: {name: string,project_id?: string} = {
-    name: "New Chat",
+    name: "",
   };
   if (projectId) {
     requestObj.project_id = projectId;
@@ -124,9 +125,18 @@ export const getChatList = (projectId?: string) => {
   });
 };
 
+const isFirstMessageInChat = (): boolean => {
+  const currentState = $currentChatMessages.get();
+  return !currentState.data || currentState.data.length === 0;
+};
+
+
+
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
+
+  const isFirstMessage = isFirstMessageInChat();
 
   let assistantResponse = "";
 
@@ -159,6 +169,10 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     addMessageToHistory(userMessage);
     addMessageToHistory(assistantMessage);
 
+    if (isFirstMessage) {
+      chatName(msg);
+    }
+
     $streamingMessage.set("");
     $currentChatMessage.set("");
   });
@@ -169,6 +183,28 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     $currentChatMessage.set("");
   });
 };
+export const $chatName = atom<string>("");
+export const chatName = async (msg: string) => {
+  try{
+    // grpc call
+    const response = await chat.GetChatName(
+      ChatNameRequest.fromObject({
+        message: msg,
+        chat_id: $currentChatId.get()
+      }),
+      {}
+    );
+    
+    $chatName.set(response.message)
+  }
+  catch(error) {
+    console.error("Can't get the chat name", error)
+  }
+};
+
+$chatName.listen(() => {
+  getChatList();
+});
 
 $currentChatId.listen((_newValue, _oldValue) => {
   $streamingMessage.set("");

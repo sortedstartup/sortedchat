@@ -7,6 +7,7 @@ option go_package = "sortedstartup/chatservice/proto";
 
 service SortedChat {
     rpc Chat(ChatRequest) returns (stream ChatResponse);
+    rpc GetChatName(ChatNameRequest) returns (ChatNameResponse);
     rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
     rpc GetChatList(GetChatListRequest) returns (GetChatListResponse);
     rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
@@ -178,5 +179,14 @@ message GenerateEmbeddingRequest {
 }
 
 message GenerateEmbeddingResponse {
+  string message = 1;
+}
+
+message ChatNameRequest{
+  string chat_id = 1;
+  string message = 2;
+}
+
+message ChatNameResponse {
   string message = 1;
 }

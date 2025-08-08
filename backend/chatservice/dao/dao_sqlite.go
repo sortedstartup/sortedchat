@@ -41,6 +41,23 @@ func (s *SQLiteDAO) CreateChat(chatId string, name string, projectID string) err
 	}
 }
 
+func (s *SQLiteDAO) GetChatName(chatId string) (string, error) {
+	var name string
+	err := s.db.Get(&name, "SELECT name FROM chat_list WHERE chat_id = ?", chatId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get chat name: %w", err)
+	}
+	return name, nil
+}
+
+func (s *SQLiteDAO) SaveChatName(chatId string, name string) error {
+	_, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ?", name, chatId)
+	if err != nil {
+		return fmt.Errorf("failed to get chat name: %w", err)
+	}
+	return nil
+}
+
 // AddChatMessage adds a message to a chat
 func (s *SQLiteDAO) AddChatMessage(chatId string, role string, content string) error {
 	_, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content) VALUES (?, ?, ?)", chatId, role, content)

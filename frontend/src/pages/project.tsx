@@ -29,6 +29,7 @@ import {
   $projectChatList,
   SubmitGenerateEmbeddingsJob,
   $isErrorDocs,
+  $isPolling,
 } from "@/store/chat";
 import { useNavigate, useParams } from "react-router-dom";
 const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
@@ -42,6 +43,8 @@ export function Project() {
   const currentProjectId = useStore($currentProjectId);
   const chatsList = useStore($projectChatList);
   const isErrorDocs = useStore($isErrorDocs);
+    const isPolling = useStore($isPolling);
+
   const navigate = useNavigate();
 
   const { projectId } = useParams();
@@ -129,21 +132,35 @@ export function Project() {
               <DialogContent className="sm:max-w-2xl max-h-[70vh] overflow-hidden [&>button]:hidden">
                 <DialogHeader className="flex flex-row items-center justify-between space-y-0 mr-2">
                   <DialogTitle>Project Documents</DialogTitle>
-                  {$isErrorDocs.get() ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRetryEmbedding()}
-                      className="h-8 w-8 p-1"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  ) : null}
+                  <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {fetchDocuments(currentProjectId.toString())}}
+                        disabled={isPolling}
+                        className="gap-2"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${isPolling ? 'animate-spin' : ''}`} />
+                        {isPolling ? 'Refreshing...' : 'Refresh'}
+                      </Button>
+                      
+                      {$isErrorDocs.get() ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRetryEmbedding}
+                          className="gap-2"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          Regenerate
+                        </Button>
+                      ) : null}
+                  </div>
                 </DialogHeader>
 
                 <div className="space-y-2 max-h-[50vh] overflow-auto">
-                  {documents.length > 0 ? (
-                    documents.map((doc: any, index: number) => (
+                  {$documents.get().length > 0 ? (
+                    $documents.get().map((doc: any, index: number) => (
                       <div
                         key={doc.id || index}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -163,7 +180,9 @@ export function Project() {
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-gray-500">
                                 {doc.embedding_status === 0
-                                  ? "Indexing failed, Regenerate enbeddings"
+                                  ? "Indexing failed, Regenerate embeddings"
+                                  : doc.embedding_status === 2
+                                  ? "Currently in queue"
                                   : ""}
                               </span>
                             </div>

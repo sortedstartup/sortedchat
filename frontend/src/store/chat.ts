@@ -322,6 +322,8 @@ $documents.listen((documents) => {
   $isErrorDocs.set(hasErrorDocs);
 });
 
+export const $isPolling = atom<boolean>(false);
+
 export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<String> => {
   try {
     const response = await chat.SubmitGenerateEmbeddingsJob(
@@ -330,12 +332,24 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
       }),
       {}
     );
+    
+    $isPolling.set(true);
     toast.success(response.message || "Embedding job submitted successfully");
-    fetchDocuments(projectId); 
+    
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => {
+        fetchDocuments(projectId);
+        if (i === 7) {
+          $isPolling.set(false);
+        }
+      }, i * 3000); 
+    }
+    
     return response.message; 
   } catch (error) {
     console.error("Failed to submit embedding job:", error);
     toast.error("Failed to submit embedding job: " + (error as Error).message);
+    $isPolling.set(false);
     return "failed to submit embedding job";
   }
 }

@@ -537,13 +537,17 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.G
 	}
 
 	for _, docsID := range docs {
-
 		msg := GenerateEmbeddingMessage{DocsID: docsID}
 		msgBytes, _ := json.Marshal(msg)
 		err := s.queue.Publish(ctx, "generate.embedding", msgBytes)
 		if err != nil {
 			return nil, fmt.Errorf("failed to publish job: %v", err)
 		}
+
+		if updateErr := s.dao.UpdateEmbeddingStatus(docsID, int32(pb.Embedding_Status_STATUS_QUEUED)); updateErr != nil {
+			fmt.Printf("Failed to update embedding status to error: %v\n", updateErr)
+		}
+
 	}
 
 	return &pb.GenerateEmbeddingResponse{

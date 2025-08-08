@@ -193,6 +193,7 @@ func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string
 }
 
 func (s *SQLiteDAO) UpdateEmbeddingStatus(docs_id string, status int32) error {
+	fmt.Println("UpdateEmbeddingStatus dao", docs_id, status)
 	_, err := s.db.Exec("UPDATE project_docs SET embedding_status = ? WHERE docs_id = ?", status, docs_id)
 	return err
 }

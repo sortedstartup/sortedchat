@@ -481,10 +481,6 @@ func (s *ChatService) GetChatList(ctx context.Context, req *pb.GetChatListReques
 
 func (s *ChatService) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
 	name := req.Name
-	// if name == "" {
-	// 	return nil, fmt.Errorf("name is required")
-	// }
-
 	chatId := uuid.New().String()
 	projectID := req.GetProjectId()
 

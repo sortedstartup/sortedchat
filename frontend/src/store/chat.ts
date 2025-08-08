@@ -317,12 +317,19 @@ $currentProjectId.listen((newProjectId) => {
   }
 });
 export const $isErrorDocs = atom<boolean>(false);
+export const $isPolling = atom<boolean>(false);
 $documents.listen((documents) => {
   const hasErrorDocs = documents.some(doc => doc.embedding_status === 2);
   $isErrorDocs.set(hasErrorDocs);
+
+  if ($isPolling.get()) {
+    const allSuccessful = documents.every(doc => doc.embedding_status === 3);
+    if (allSuccessful) {
+      $isPolling.set(false);
+    }
+  }
 });
 
-export const $isPolling = atom<boolean>(false);
 
 export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<String> => {
   try {
@@ -338,7 +345,9 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
     
     for (let i = 0; i < 8; i++) {
       setTimeout(() => {
-        fetchDocuments(projectId);
+        if ($isPolling.get()) {
+          fetchDocuments(projectId);
+        }
         if (i === 7) {
           $isPolling.set(false);
         }

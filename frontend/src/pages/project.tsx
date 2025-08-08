@@ -32,6 +32,7 @@ import {
   $isPolling,
 } from "@/store/chat";
 import { useNavigate, useParams } from "react-router-dom";
+import { Embedding_Status } from "../../proto/chatservice";
 const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
 
 export function Project() {
@@ -43,7 +44,7 @@ export function Project() {
   const currentProjectId = useStore($currentProjectId);
   const chatsList = useStore($projectChatList);
   const isErrorDocs = useStore($isErrorDocs);
-    const isPolling = useStore($isPolling);
+  const isPolling = useStore($isPolling);
 
   const navigate = useNavigate();
 
@@ -91,7 +92,6 @@ export function Project() {
 
   const handleRetryEmbedding = async () => {
     try {
-      console.log("Retrying embedding for project:1", isErrorDocs);
       $isErrorDocs.set(false);
 
       await SubmitGenerateEmbeddingsJob(currentProjectId.toString());
@@ -144,7 +144,7 @@ export function Project() {
                         {isPolling ? 'Refreshing...' : 'Refresh'}
                       </Button>
                       
-                      {$isErrorDocs.get() ? (
+                      {isErrorDocs ? (
                         <Button
                           variant="outline"
                           size="sm"
@@ -159,8 +159,8 @@ export function Project() {
                 </DialogHeader>
 
                 <div className="space-y-2 max-h-[50vh] overflow-auto">
-                  {$documents.get().length > 0 ? (
-                    $documents.get().map((doc: any, index: number) => (
+                  {documents.length > 0 ? (
+                    documents.map((doc: any, index: number) => (
                       <div
                         key={doc.id || index}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -179,11 +179,11 @@ export function Project() {
                             <span className="font-medium">{doc.file_name}</span>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-gray-500">
-                                {doc.embedding_status === 2
+                                {doc.embedding_status === Embedding_Status.STATUS_ERROR
                                   ? "Indexing failed, Regenerate embeddings"
-                                  : doc.embedding_status === 0
+                                  : doc.embedding_status === Embedding_Status.STATUS_QUEUED
                                   ? "Currently in queue"
-                                  : doc.embedding_status === 1
+                                  : doc.embedding_status === Embedding_Status.STATUS_IN_PROGRESS
                                   ? "Embedding in progress"
                                   : ""}
                               </span>

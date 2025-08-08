@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import {
   ChatInfo,
   ChatMessage,
@@ -16,6 +17,7 @@ import {
   GetProjectsRequest,
   ListDocumentsRequest,
   Document,
+  GenerateEmbeddingRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -289,8 +291,6 @@ export async function fetchDocuments(projectId: string) {
       {}
     );
 
-    console.log(res.documents);
-
     $documents.set(res.documents);
   } catch (err) {
     console.error("Failed to fetch documents:", err);
@@ -316,3 +316,49 @@ $currentProjectId.listen((newProjectId) => {
     $chatList.set([]);
   }
 });
+export const $isErrorDocs = atom<boolean>(false);
+export const $isPolling = atom<boolean>(false);
+$documents.listen((documents) => {
+  const hasErrorDocs = documents.some(doc => doc.embedding_status === 2);
+  $isErrorDocs.set(hasErrorDocs);
+
+  if ($isPolling.get()) {
+    const allSuccessful = documents.every(doc => doc.embedding_status === 3);
+    if (allSuccessful) {
+      $isPolling.set(false);
+    }
+  }
+});
+
+
+export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<String> => {
+  try {
+    const response = await chat.SubmitGenerateEmbeddingsJob(
+      GenerateEmbeddingRequest.fromObject({
+        project_id: projectId,
+      }),
+      {}
+    );
+    
+    $isPolling.set(true);
+    toast.success(response.message || "Embedding job submitted successfully");
+    
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => {
+        if ($isPolling.get()) {
+          fetchDocuments(projectId);
+        }
+        if (i === 7) {
+          $isPolling.set(false);
+        }
+      }, i * 3000); 
+    }
+    
+    return response.message; 
+  } catch (error) {
+    console.error("Failed to submit embedding job:", error);
+    toast.error("Failed to submit embedding job: " + (error as Error).message);
+    $isPolling.set(false);
+    return "failed to submit embedding job";
+  }
+}

@@ -98,10 +98,5 @@ func main() {
 
 	Wails(mux)
 
-	// Wait for either server to error
-	// err = <-serverErr
-	// if err != nil {
-	// 	log.Fatalf("Server error: %v", err)
-	// }
-
+	WaitForServerError(serverErr)
 }

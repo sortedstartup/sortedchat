@@ -1,3 +1,5 @@
+//go:build wails
+
 package main
 
 import (
@@ -58,4 +60,10 @@ func Wails(mux *http.ServeMux) {
 	if err != nil {
 		println("Error:", err.Error())
 	}
+}
+
+// NOOP since wails will block exit of the app unless running
+// if we still wait for server error, `wail dev` gets stuck in generating bindings
+func WaitForServerError(serverErr chan error) {
+
 }

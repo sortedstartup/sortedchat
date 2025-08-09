@@ -116,19 +116,32 @@ jobs:
 
           sudo dpkg --add-architecture arm64
 
-          # Restrict existing entries to amd64 only (archive + security)
-          sudo sed -Ei 's|^deb (https?://)|deb [arch=amd64] \1|' /etc/apt/sources.list
+          # 0) Disable everything we don't control (safe even if empty)
+          sudo mkdir -p /etc/apt/disabled
+          sudo mv /etc/apt/sources.list.d/* /etc/apt/disabled/ 2>/dev/null || true
+          [ -f /etc/apt/sources.sources ] && sudo mv /etc/apt/sources.sources /etc/apt/disabled/ || true
 
-          # Add arm64 entries from Ubuntu Ports (archive + updates + backports + security)
-          sudo tee /etc/apt/sources.list.d/arm64-ports.list >/dev/null <<'EOF'
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-updates main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-backports main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse
+          # 1) Replace /etc/apt/sources.list with clean amd64-only Ubuntu mirrors
+          sudo tee /etc/apt/sources.list >/dev/null <<'EOF'
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+          deb [arch=amd64] http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
           EOF
-          
-          # Update package lists
+
+          # 2) Add arm64-only Ubuntu Ports
+          sudo tee /etc/apt/sources.list.d/arm64-ports.list >/dev/null <<'EOF'
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-backports main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse
+          EOF
+
+          # 3) Clean & refresh indexes
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
           sudo apt-get update
+
           
           # Install cross-compiler and build tools
           sudo apt-get install -y \

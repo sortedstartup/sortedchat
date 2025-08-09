@@ -110,7 +110,6 @@ func main() {
 
 	// Start Wails GUI unless --server flag is specified
 	if !*serverOnly {
-		log.Println("Starting Wails GUI")
 		Wails(mux)
 	} else {
 		log.Println("Running in server-only mode")

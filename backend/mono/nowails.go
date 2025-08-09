@@ -9,6 +9,7 @@ import (
 
 // Wails is a no-op function when wails build tag is not present
 func Wails(mux *http.ServeMux) {
+	log.Println("server-only build, Wails is not enabled")
 }
 
 // When we dont use wails, we want to wait for the server to error

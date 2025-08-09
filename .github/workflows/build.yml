@@ -112,17 +112,20 @@ jobs:
       - name: Setup ARM64 cross-compilation environment
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |
-          # Add ARM64 architecture
+          set -euo pipefail
+
           sudo dpkg --add-architecture arm64
-          
-          # Update sources.list to include ARM64 repositories
-          sudo sed -i 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
-          sudo sed -i 's/^deb https/deb [arch=amd64] https/g' /etc/apt/sources.list
-          
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+
+          # Restrict existing entries to amd64 only (archive + security)
+          sudo sed -Ei 's|^deb (https?://)|deb [arch=amd64] \1|' /etc/apt/sources.list
+
+          # Add arm64 entries from Ubuntu Ports (archive + updates + backports + security)
+          sudo tee /etc/apt/sources.list.d/arm64-ports.list >/dev/null <<'EOF'
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-backports main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse
+          EOF
           
           # Update package lists
           sudo apt-get update
@@ -138,12 +141,7 @@ jobs:
             libgtk-3-dev:arm64 \
             libwebkit2gtk-4.1-dev:arm64 \
             libayatana-appindicator3-dev:arm64 \
-            librsvg2-dev:arm64 \
-            libglib2.0-dev:arm64 \
-            libcairo2-dev:arm64 \
-            libpango1.0-dev:arm64 \
-            libatk1.0-dev:arm64 \
-            libgdk-pixbuf-2.0-dev:arm64
+            librsvg2-dev:arm64
 
       - name: Set up Go
         uses: actions/setup-go@v5

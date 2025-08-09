@@ -1,8 +1,10 @@
 package dao
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	proto "sortedstartup/chatservice/proto"
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
@@ -39,6 +41,23 @@ func (s *SQLiteDAO) CreateChat(chatId string, name string, projectID string) err
 	}
 }
 
+func (s *SQLiteDAO) GetChatName(chatId string) (string, error) {
+	var name string
+	err := s.db.Get(&name, "SELECT name FROM chat_list WHERE chat_id = ?", chatId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get chat name: %w", err)
+	}
+	return name, nil
+}
+
+func (s *SQLiteDAO) SaveChatName(chatId string, name string) error {
+	_, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ?", name, chatId)
+	if err != nil {
+		return fmt.Errorf("failed to get chat name: %w", err)
+	}
+	return nil
+}
+
 // AddChatMessage adds a message to a chat
 func (s *SQLiteDAO) AddChatMessage(chatId string, role string, content string) error {
 	_, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content) VALUES (?, ?, ?)", chatId, role, content)
@@ -62,7 +81,7 @@ type ChatInfoRow struct {
 func (s *SQLiteDAO) GetChatList(projectID string) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
 	var err error
-	
+
 	if projectID == "" || projectID == "null" {
 		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL")
 	} else {
@@ -187,8 +206,24 @@ func (s *SQLiteDAO) GetProjects() ([]ProjectRow, error) {
 
 func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string, file_size int64) error {
 	size_kb := file_size / 1024
-	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name,file_size) VALUES (?, ?, ?, ?)", project_id, docs_id, file_name, size_kb)
+	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name,file_size,embedding_status) VALUES (?, ?, ?, ?, ?)", project_id, docs_id, file_name, size_kb, int32(proto.Embedding_Status_STATUS_QUEUED))
 	return err
+}
+
+func (s *SQLiteDAO) UpdateEmbeddingStatus(docs_id string, status int32) error {
+	_, err := s.db.Exec("UPDATE project_docs SET embedding_status = ? WHERE docs_id = ?", status, docs_id)
+	return err
+}
+
+func (s *SQLiteDAO) FetchErrorDocs(project_id string) ([]string, error) {
+	var docs_list []string
+	err := s.db.Select(&docs_list, "SELECT docs_id FROM project_docs WHERE project_id = ? AND embedding_status = ?", project_id, int32(proto.Embedding_Status_STATUS_ERROR))
+	if err != nil {
+		fmt.Print("fetchErrorDocs dao", err)
+		return nil, fmt.Errorf("failed to check embedding status: %w", err)
+	}
+	fmt.Println("fetchErrorDocs dao", docs_list)
+	return docs_list, nil
 }
 
 func (s *SQLiteDAO) TotalUsedSize(projectID string) (int64, error) {
@@ -204,7 +239,7 @@ func (s *SQLiteDAO) TotalUsedSize(projectID string) (int64, error) {
 func (s *SQLiteDAO) FilesList(project_id string) ([]DocumentListRow, error) {
 	var files []DocumentListRow
 	err := s.db.Select(&files, `
-		SELECT id, project_id, docs_id, file_name, created_at, updated_at
+		SELECT id, project_id, docs_id, file_name, created_at, updated_at,embedding_status
 		FROM project_docs
 		WHERE project_id = ?
 	`, project_id)
@@ -254,4 +289,48 @@ func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string, projectID string) (
         )
     `, projectID, embedding)
 	return chunks, err
+}
+
+type dbSettings struct {
+	Name     string `db:"name" json:"name"`
+	Settings string `db:"settings" json:"settings"`
+}
+
+type SQLiteSettingsDAO struct {
+	db *sqlx.DB
+}
+
+func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
+	db, err := sqlx.Open("sqlite3", sqliteUrl)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	return &SQLiteSettingsDAO{db: db}
+}
+
+func (s *SQLiteSettingsDAO) GetSettingValue(settingName string) (string, error) {
+	var dbSetting dbSettings
+	err := s.db.Get(&dbSetting, "SELECT name, settings FROM settings WHERE name = ?", settingName)
+	if err != nil {
+		// Preserve sql.ErrNoRows so callers can distinguish between no rows and actual database errors
+		if err == sql.ErrNoRows {
+			return "", err
+		}
+		return "", fmt.Errorf("failed to get setting '%s' from database: %w", settingName, err)
+	}
+
+	return dbSetting.Settings, nil
+}
+
+func (s *SQLiteSettingsDAO) SetSettingValue(settingName string, settingValue string) error {
+	query := `
+        INSERT INTO settings (name, settings) VALUES (?, ?)
+        ON CONFLICT(name) DO UPDATE SET settings = excluded.settings
+    `
+
+	_, err := s.db.Exec(query, settingName, settingValue)
+	if err != nil {
+		return fmt.Errorf("failed to upsert settings: %w", err)
+	}
+	return nil
 }

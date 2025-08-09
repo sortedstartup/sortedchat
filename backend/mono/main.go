@@ -10,6 +10,8 @@ import (
 	"sortedstartup/chat/mono/util"
 	"sortedstartup/chatservice/api"
 	"sortedstartup/chatservice/proto"
+	"sortedstartup/chatservice/queue"
+	"sortedstartup/chatservice/settings"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/joho/godotenv"
@@ -40,9 +42,16 @@ func main() {
 	grpcServer := grpc.NewServer()
 	mux := http.NewServeMux()
 
-	apiServer := api.NewServer(mux)
-	apiServer.Init()
-	proto.RegisterSortedChatServer(grpcServer, apiServer)
+	queue := queue.NewInMemoryQueue()
+	settingsManager := settings.NewSettingsManager(queue)
+
+	chatServiceApi := api.NewChatService(mux, queue, settingsManager)
+	chatServiceApi.Init()
+	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
+
+	settingServiceApi := api.NewSettingService(queue)
+	settingServiceApi.Init()
+	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)
@@ -52,17 +61,21 @@ func main() {
 
 	// serve static UI
 	publicFS, err := fs.Sub(staticUIFS, "public")
+	if err != nil {
+		log.Fatalf("Failed to create sub FS: %v", err)
+	}
 	staticUI := http.FileServer(http.FS(publicFS))
 
 	// HTTP router (fallback to static UI if not gRPC)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	httpHandler := func(w http.ResponseWriter, r *http.Request) {
+
 		if wrappedGrpc.IsGrpcWebRequest(r) || wrappedGrpc.IsAcceptableGrpcCorsRequest(r) {
 			util.EnableCORS(wrappedGrpc).ServeHTTP(w, r)
-			wrappedGrpc.ServeHTTP(w, r)
 			return
 		}
 		staticUI.ServeHTTP(w, r)
-	})
+	}
+	mux.HandleFunc("/", httpHandler)
 
 	// HTTP server with CORS
 	httpServer := &http.Server{
@@ -83,10 +96,7 @@ func main() {
 		serverErr <- httpServer.ListenAndServe()
 	}()
 
-	// Wait for either server to error
-	err = <-serverErr
-	if err != nil {
-		log.Fatalf("Server error: %v", err)
-	}
+	Wails(mux)
 
+	WaitForServerError(serverErr)
 }

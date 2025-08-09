@@ -10,7 +10,7 @@ import (
 
 func TestChat(t *testing.T) {
 
-	server := &Server{}
+	server := &ChatService{}
 
 	req := &pb.ChatRequest{Text: "Hello"}
 	stream := &grpc.GenericServerStream[pb.ChatRequest, pb.ChatResponse]{ServerStream: stream}

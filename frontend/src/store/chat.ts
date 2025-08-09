@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import {
   ChatInfo,
   ChatMessage,
@@ -16,6 +17,8 @@ import {
   GetProjectsRequest,
   ListDocumentsRequest,
   Document,
+  GenerateEmbeddingRequest,
+  GenerateChatNameRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -96,7 +99,7 @@ const addMessageToHistory = (message: ChatMessage) => {
 // --- state management ---
 export const createNewChat = async (projectId?: string) => {
   const requestObj: {name: string,project_id?: string} = {
-    name: "New Chat",
+    name: "",
   };
   if (projectId) {
     requestObj.project_id = projectId;
@@ -122,11 +125,25 @@ export const getChatList = (projectId?: string) => {
   });
 };
 
+const isFirstMessageInChat = (): boolean => {
+  const currentState = $currentChatMessages.get();
+  return !currentState.data || currentState.data.length === 0;
+};
+
+
+
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
 
+  const isFirstMessage = isFirstMessageInChat();
+
   let assistantResponse = "";
+
+  if (isFirstMessage) {
+      generateChatName(msg);
+    }
+
 
   // grpc call
   const stream = chat.Chat(
@@ -167,6 +184,29 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     $currentChatMessage.set("");
   });
 };
+export const $chatName = atom<string>("");
+export const generateChatName = async (msg: string) => {
+  try{
+    // grpc call
+    const response = await chat.GenerateChatName(
+      GenerateChatNameRequest.fromObject({
+        message: msg,
+        chat_id: $currentChatId.get(),
+        model: $selectedModel.get()
+      }),
+      {}
+    );
+    
+    $chatName.set(response.chat_name)
+  }
+  catch(error) {
+    console.error("Can't get the chat name", error)
+  }
+};
+
+$chatName.listen(() => {
+  getChatList();
+});
 
 $currentChatId.listen((_newValue, _oldValue) => {
   $streamingMessage.set("");
@@ -289,8 +329,6 @@ export async function fetchDocuments(projectId: string) {
       {}
     );
 
-    console.log(res.documents);
-
     $documents.set(res.documents);
   } catch (err) {
     console.error("Failed to fetch documents:", err);
@@ -316,3 +354,49 @@ $currentProjectId.listen((newProjectId) => {
     $chatList.set([]);
   }
 });
+export const $isErrorDocs = atom<boolean>(false);
+export const $isPolling = atom<boolean>(false);
+$documents.listen((documents) => {
+  const hasErrorDocs = documents.some(doc => doc.embedding_status === 2);
+  $isErrorDocs.set(hasErrorDocs);
+
+  if ($isPolling.get()) {
+    const allSuccessful = documents.every(doc => doc.embedding_status === 3);
+    if (allSuccessful) {
+      $isPolling.set(false);
+    }
+  }
+});
+
+
+export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<String> => {
+  try {
+    const response = await chat.SubmitGenerateEmbeddingsJob(
+      GenerateEmbeddingRequest.fromObject({
+        project_id: projectId,
+      }),
+      {}
+    );
+    
+    $isPolling.set(true);
+    toast.success(response.message || "Embedding job submitted successfully");
+    
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => {
+        if ($isPolling.get()) {
+          fetchDocuments(projectId);
+        }
+        if (i === 7) {
+          $isPolling.set(false);
+        }
+      }, i * 3000); 
+    }
+    
+    return response.message; 
+  } catch (error) {
+    console.error("Failed to submit embedding job:", error);
+    toast.error("Failed to submit embedding job: " + (error as Error).message);
+    $isPolling.set(false);
+    return "failed to submit embedding job";
+  }
+}

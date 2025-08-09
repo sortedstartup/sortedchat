@@ -19,15 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SortedChat_Chat_FullMethodName          = "/sortedchat.SortedChat/Chat"
-	SortedChat_GetHistory_FullMethodName    = "/sortedchat.SortedChat/GetHistory"
-	SortedChat_GetChatList_FullMethodName   = "/sortedchat.SortedChat/GetChatList"
-	SortedChat_CreateChat_FullMethodName    = "/sortedchat.SortedChat/CreateChat"
-	SortedChat_ListModel_FullMethodName     = "/sortedchat.SortedChat/ListModel"
-	SortedChat_SearchChat_FullMethodName    = "/sortedchat.SortedChat/SearchChat"
-	SortedChat_CreateProject_FullMethodName = "/sortedchat.SortedChat/CreateProject"
-	SortedChat_GetProjects_FullMethodName   = "/sortedchat.SortedChat/GetProjects"
-	SortedChat_ListDocuments_FullMethodName = "/sortedchat.SortedChat/ListDocuments"
+	SortedChat_Chat_FullMethodName                        = "/sortedchat.SortedChat/Chat"
+	SortedChat_GenerateChatName_FullMethodName            = "/sortedchat.SortedChat/GenerateChatName"
+	SortedChat_GetHistory_FullMethodName                  = "/sortedchat.SortedChat/GetHistory"
+	SortedChat_GetChatList_FullMethodName                 = "/sortedchat.SortedChat/GetChatList"
+	SortedChat_CreateChat_FullMethodName                  = "/sortedchat.SortedChat/CreateChat"
+	SortedChat_ListModel_FullMethodName                   = "/sortedchat.SortedChat/ListModel"
+	SortedChat_SearchChat_FullMethodName                  = "/sortedchat.SortedChat/SearchChat"
+	SortedChat_CreateProject_FullMethodName               = "/sortedchat.SortedChat/CreateProject"
+	SortedChat_GetProjects_FullMethodName                 = "/sortedchat.SortedChat/GetProjects"
+	SortedChat_ListDocuments_FullMethodName               = "/sortedchat.SortedChat/ListDocuments"
+	SortedChat_SubmitGenerateEmbeddingsJob_FullMethodName = "/sortedchat.SortedChat/SubmitGenerateEmbeddingsJob"
 )
 
 // SortedChatClient is the client API for SortedChat service.
@@ -35,6 +37,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SortedChatClient interface {
 	Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error)
+	GenerateChatName(ctx context.Context, in *GenerateChatNameRequest, opts ...grpc.CallOption) (*GenerateChatNameResponse, error)
 	GetHistory(ctx context.Context, in *GetHistoryRequest, opts ...grpc.CallOption) (*GetHistoryResponse, error)
 	GetChatList(ctx context.Context, in *GetChatListRequest, opts ...grpc.CallOption) (*GetChatListResponse, error)
 	CreateChat(ctx context.Context, in *CreateChatRequest, opts ...grpc.CallOption) (*CreateChatResponse, error)
@@ -43,6 +46,7 @@ type SortedChatClient interface {
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
 	GetProjects(ctx context.Context, in *GetProjectsRequest, opts ...grpc.CallOption) (*GetProjectsResponse, error)
 	ListDocuments(ctx context.Context, in *ListDocumentsRequest, opts ...grpc.CallOption) (*ListDocumentsResponse, error)
+	SubmitGenerateEmbeddingsJob(ctx context.Context, in *GenerateEmbeddingRequest, opts ...grpc.CallOption) (*GenerateEmbeddingResponse, error)
 }
 
 type sortedChatClient struct {
@@ -71,6 +75,16 @@ func (c *sortedChatClient) Chat(ctx context.Context, in *ChatRequest, opts ...gr
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SortedChat_ChatClient = grpc.ServerStreamingClient[ChatResponse]
+
+func (c *sortedChatClient) GenerateChatName(ctx context.Context, in *GenerateChatNameRequest, opts ...grpc.CallOption) (*GenerateChatNameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateChatNameResponse)
+	err := c.cc.Invoke(ctx, SortedChat_GenerateChatName_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 func (c *sortedChatClient) GetHistory(ctx context.Context, in *GetHistoryRequest, opts ...grpc.CallOption) (*GetHistoryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -152,11 +166,22 @@ func (c *sortedChatClient) ListDocuments(ctx context.Context, in *ListDocumentsR
 	return out, nil
 }
 
+func (c *sortedChatClient) SubmitGenerateEmbeddingsJob(ctx context.Context, in *GenerateEmbeddingRequest, opts ...grpc.CallOption) (*GenerateEmbeddingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateEmbeddingResponse)
+	err := c.cc.Invoke(ctx, SortedChat_SubmitGenerateEmbeddingsJob_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SortedChatServer is the server API for SortedChat service.
 // All implementations must embed UnimplementedSortedChatServer
 // for forward compatibility.
 type SortedChatServer interface {
 	Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error
+	GenerateChatName(context.Context, *GenerateChatNameRequest) (*GenerateChatNameResponse, error)
 	GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error)
 	GetChatList(context.Context, *GetChatListRequest) (*GetChatListResponse, error)
 	CreateChat(context.Context, *CreateChatRequest) (*CreateChatResponse, error)
@@ -165,6 +190,7 @@ type SortedChatServer interface {
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
 	GetProjects(context.Context, *GetProjectsRequest) (*GetProjectsResponse, error)
 	ListDocuments(context.Context, *ListDocumentsRequest) (*ListDocumentsResponse, error)
+	SubmitGenerateEmbeddingsJob(context.Context, *GenerateEmbeddingRequest) (*GenerateEmbeddingResponse, error)
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -177,6 +203,9 @@ type UnimplementedSortedChatServer struct{}
 
 func (UnimplementedSortedChatServer) Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
+}
+func (UnimplementedSortedChatServer) GenerateChatName(context.Context, *GenerateChatNameRequest) (*GenerateChatNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateChatName not implemented")
 }
 func (UnimplementedSortedChatServer) GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetHistory not implemented")
@@ -201,6 +230,9 @@ func (UnimplementedSortedChatServer) GetProjects(context.Context, *GetProjectsRe
 }
 func (UnimplementedSortedChatServer) ListDocuments(context.Context, *ListDocumentsRequest) (*ListDocumentsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListDocuments not implemented")
+}
+func (UnimplementedSortedChatServer) SubmitGenerateEmbeddingsJob(context.Context, *GenerateEmbeddingRequest) (*GenerateEmbeddingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitGenerateEmbeddingsJob not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}
 func (UnimplementedSortedChatServer) testEmbeddedByValue()                    {}
@@ -233,6 +265,24 @@ func _SortedChat_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SortedChat_ChatServer = grpc.ServerStreamingServer[ChatResponse]
+
+func _SortedChat_GenerateChatName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateChatNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).GenerateChatName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_GenerateChatName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).GenerateChatName(ctx, req.(*GenerateChatNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 func _SortedChat_GetHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetHistoryRequest)
@@ -378,6 +428,24 @@ func _SortedChat_ListDocuments_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SortedChat_SubmitGenerateEmbeddingsJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateEmbeddingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).SubmitGenerateEmbeddingsJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_SubmitGenerateEmbeddingsJob_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).SubmitGenerateEmbeddingsJob(ctx, req.(*GenerateEmbeddingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SortedChat_ServiceDesc is the grpc.ServiceDesc for SortedChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -385,6 +453,10 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "sortedchat.SortedChat",
 	HandlerType: (*SortedChatServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GenerateChatName",
+			Handler:    _SortedChat_GenerateChatName_Handler,
+		},
 		{
 			MethodName: "GetHistory",
 			Handler:    _SortedChat_GetHistory_Handler,
@@ -417,6 +489,10 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListDocuments",
 			Handler:    _SortedChat_ListDocuments_Handler,
 		},
+		{
+			MethodName: "SubmitGenerateEmbeddingsJob",
+			Handler:    _SortedChat_SubmitGenerateEmbeddingsJob_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -425,5 +501,145 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
+	Metadata: "chatservice.proto",
+}
+
+const (
+	SettingService_GetSetting_FullMethodName = "/sortedchat.SettingService/GetSetting"
+	SettingService_SetSetting_FullMethodName = "/sortedchat.SettingService/SetSetting"
+)
+
+// SettingServiceClient is the client API for SettingService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type SettingServiceClient interface {
+	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*GetSettingResponse, error)
+	SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*SetSettingResponse, error)
+}
+
+type settingServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSettingServiceClient(cc grpc.ClientConnInterface) SettingServiceClient {
+	return &settingServiceClient{cc}
+}
+
+func (c *settingServiceClient) GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*GetSettingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSettingResponse)
+	err := c.cc.Invoke(ctx, SettingService_GetSetting_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *settingServiceClient) SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*SetSettingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetSettingResponse)
+	err := c.cc.Invoke(ctx, SettingService_SetSetting_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SettingServiceServer is the server API for SettingService service.
+// All implementations must embed UnimplementedSettingServiceServer
+// for forward compatibility.
+type SettingServiceServer interface {
+	GetSetting(context.Context, *GetSettingRequest) (*GetSettingResponse, error)
+	SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error)
+	mustEmbedUnimplementedSettingServiceServer()
+}
+
+// UnimplementedSettingServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedSettingServiceServer struct{}
+
+func (UnimplementedSettingServiceServer) GetSetting(context.Context, *GetSettingRequest) (*GetSettingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSetting not implemented")
+}
+func (UnimplementedSettingServiceServer) SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetSetting not implemented")
+}
+func (UnimplementedSettingServiceServer) mustEmbedUnimplementedSettingServiceServer() {}
+func (UnimplementedSettingServiceServer) testEmbeddedByValue()                        {}
+
+// UnsafeSettingServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SettingServiceServer will
+// result in compilation errors.
+type UnsafeSettingServiceServer interface {
+	mustEmbedUnimplementedSettingServiceServer()
+}
+
+func RegisterSettingServiceServer(s grpc.ServiceRegistrar, srv SettingServiceServer) {
+	// If the following call pancis, it indicates UnimplementedSettingServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&SettingService_ServiceDesc, srv)
+}
+
+func _SettingService_GetSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSettingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).GetSetting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_GetSetting_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).GetSetting(ctx, req.(*GetSettingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SettingService_SetSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetSettingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).SetSetting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_SetSetting_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).SetSetting(ctx, req.(*SetSettingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// SettingService_ServiceDesc is the grpc.ServiceDesc for SettingService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var SettingService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "sortedchat.SettingService",
+	HandlerType: (*SettingServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetSetting",
+			Handler:    _SettingService_GetSetting_Handler,
+		},
+		{
+			MethodName: "SetSetting",
+			Handler:    _SettingService_SetSetting_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "chatservice.proto",
 }

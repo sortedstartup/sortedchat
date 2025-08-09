@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sortedstartup/chatservice/events"
 	"strings"
 
 	"github.com/google/uuid"
@@ -21,12 +22,12 @@ type GenerateEmbeddingMessage struct {
 }
 
 // registerRoutes binds HTTP routes to the Server
-func (s *Server) registerRoutes(mux *http.ServeMux) {
+func (s *ChatService) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/upload", s.handleUpload)
 	mux.HandleFunc("/documents/", s.handleDownload)
 }
 
-func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
+func (s *ChatService) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -73,16 +74,18 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	msg := GenerateEmbeddingMessage{DocsID: objectID}
 	msgBytes, _ := json.Marshal(msg)
-	err = s.queue.Publish(r.Context(), "generate.embedding", msgBytes)
+	err = s.queue.Publish(r.Context(), events.GENERATE_EMBEDDINGS, msgBytes)
 	if err != nil {
-		fmt.Errorf("failed publish %v", err)
+		err := fmt.Errorf("failed publish %v", err)
+		http.Error(w, "Failed to publish event: "+err.Error(), http.StatusInternalServerError)
+
 	}
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `{"message": "File uploaded successfully", "id": "%s"}`, objectID)
 }
 
-func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
+func (s *ChatService) handleDownload(w http.ResponseWriter, r *http.Request) {
 	docsId := strings.TrimPrefix(r.URL.Path, "/documents/")
 	if docsId == "" {
 		http.Error(w, "Missing document ID", http.StatusBadRequest)

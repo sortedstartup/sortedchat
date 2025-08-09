@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"flag"
+	"io"
 	"io/fs"
 	"log"
 	"net"
 	"net/http"
+	"time"
 
 	"sortedstartup/chat/mono/util"
 	"sortedstartup/chatservice/api"
@@ -85,6 +88,50 @@ func main() {
 			util.EnableCORS(wrappedGrpc).ServeHTTP(w, r)
 			return
 		}
+
+		// SPA fallback behavior: try to serve the requested file,
+		// if it doesn't exist, serve index.html
+		path := r.URL.Path
+		if path == "/" {
+			path = "/index.html"
+		}
+
+		// Try to open the requested file
+		file, err := publicFS.Open(path[1:]) // Remove leading slash
+		if err != nil {
+			// File doesn't exist, serve index.html for SPA routing
+			indexFile, indexErr := publicFS.Open("index.html")
+			if indexErr != nil {
+				http.Error(w, "index.html not found", http.StatusNotFound)
+				return
+			}
+			defer indexFile.Close()
+
+			// Get file info for modification time
+			var modTime time.Time
+			if stat, statErr := indexFile.Stat(); statErr == nil {
+				modTime = stat.ModTime()
+			} else {
+				modTime = time.Now()
+			}
+
+			// Read the index.html content
+			content, readErr := io.ReadAll(indexFile)
+			if readErr != nil {
+				http.Error(w, "failed to read index.html", http.StatusInternalServerError)
+				return
+			}
+
+			// Set content type to HTML
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+			// Serve index.html with proper HTTP caching support
+			http.ServeContent(w, r, "index.html", modTime, bytes.NewReader(content))
+			return
+		}
+		defer file.Close()
+
+		// File exists, serve it normally
 		staticUI.ServeHTTP(w, r)
 	}
 	mux.HandleFunc("/", httpHandler)

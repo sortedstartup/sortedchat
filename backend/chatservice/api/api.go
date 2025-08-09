@@ -336,7 +336,7 @@ const (
 	END_MESSAGE_LENGTH   = 250
 )
 
-func (s *ChatService) GetChatName(ctx context.Context, req *pb.GetChatNameRequest) (*pb.GetChatNameResponse, error) {
+func (s *ChatService) GenerateChatName(ctx context.Context, req *pb.GenerateChatNameRequest) (*pb.GenerateChatNameResponse, error) {
 	chatId := req.GetChatId()
 	if chatId == "" {
 		return nil, fmt.Errorf("chat ID is required")
@@ -351,7 +351,6 @@ func (s *ChatService) GetChatName(ctx context.Context, req *pb.GetChatNameReques
 	if model == "" {
 		return nil, fmt.Errorf("model is required")
 	}
-	fmt.Println("model in backend:", model)
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
@@ -437,7 +436,7 @@ func (s *ChatService) GetChatName(ctx context.Context, req *pb.GetChatNameReques
 		return nil, fmt.Errorf("error while saving name: %v", err)
 	}
 
-	return &pb.GetChatNameResponse{
+	return &pb.GenerateChatNameResponse{
 		ChatName: chatName,
 	}, nil
 }

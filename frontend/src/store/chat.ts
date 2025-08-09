@@ -18,7 +18,7 @@ import {
   ListDocumentsRequest,
   Document,
   GenerateEmbeddingRequest,
-  GetChatNameRequest,
+  GenerateChatNameRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -141,7 +141,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
   let assistantResponse = "";
 
   if (isFirstMessage) {
-      getChatName(msg);
+      generateChatName(msg);
     }
 
 
@@ -185,11 +185,11 @@ export const doChat = (msg: string,projectId: string | undefined) => {
   });
 };
 export const $chatName = atom<string>("");
-export const getChatName = async (msg: string) => {
+export const generateChatName = async (msg: string) => {
   try{
     // grpc call
-    const response = await chat.GetChatName(
-      GetChatNameRequest.fromObject({
+    const response = await chat.GenerateChatName(
+      GenerateChatNameRequest.fromObject({
         message: msg,
         chat_id: $currentChatId.get(),
         model: $selectedModel.get()

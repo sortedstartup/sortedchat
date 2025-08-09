@@ -2728,7 +2728,7 @@ export class GenerateEmbeddingResponse extends pb_1.Message {
         return GenerateEmbeddingResponse.deserialize(bytes);
     }
 }
-export class GetChatNameRequest extends pb_1.Message {
+export class GenerateChatNameRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         chat_id?: string;
@@ -2771,8 +2771,8 @@ export class GetChatNameRequest extends pb_1.Message {
         chat_id?: string;
         message?: string;
         model?: string;
-    }): GetChatNameRequest {
-        const message = new GetChatNameRequest({});
+    }): GenerateChatNameRequest {
+        const message = new GenerateChatNameRequest({});
         if (data.chat_id != null) {
             message.chat_id = data.chat_id;
         }
@@ -2814,8 +2814,8 @@ export class GetChatNameRequest extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetChatNameRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetChatNameRequest();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GenerateChatNameRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GenerateChatNameRequest();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -2837,11 +2837,11 @@ export class GetChatNameRequest extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): GetChatNameRequest {
-        return GetChatNameRequest.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): GenerateChatNameRequest {
+        return GenerateChatNameRequest.deserialize(bytes);
     }
 }
-export class GetChatNameResponse extends pb_1.Message {
+export class GenerateChatNameResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         chat_name?: string;
@@ -2862,8 +2862,8 @@ export class GetChatNameResponse extends pb_1.Message {
     }
     static fromObject(data: {
         chat_name?: string;
-    }): GetChatNameResponse {
-        const message = new GetChatNameResponse({});
+    }): GenerateChatNameResponse {
+        const message = new GenerateChatNameResponse({});
         if (data.chat_name != null) {
             message.chat_name = data.chat_name;
         }
@@ -2887,8 +2887,8 @@ export class GetChatNameResponse extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetChatNameResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetChatNameResponse();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GenerateChatNameResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GenerateChatNameResponse();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -2904,8 +2904,8 @@ export class GetChatNameResponse extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): GetChatNameResponse {
-        return GetChatNameResponse.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): GenerateChatNameResponse {
+        return GenerateChatNameResponse.deserialize(bytes);
     }
 }
 // Server-side service class removed for client-side compatibility
@@ -2923,9 +2923,9 @@ export class SortedChatClient {
     Chat(message: ChatRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.serverStreaming(this._address + "/sortedchat.SortedChat/Chat", message, metadata || {}, SortedChatClient.Chat);
     }
-    private static GetChatName = new grpc_web_1.MethodDescriptor<GetChatNameRequest, GetChatNameResponse>("/sortedchat.SortedChat/GetChatName", grpc_web_1.MethodType.UNARY, GetChatNameRequest, GetChatNameResponse, (message: GetChatNameRequest) => message.serialize(), GetChatNameResponse.deserialize);
-    GetChatName(message: GetChatNameRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.thenableCall<GetChatNameRequest, GetChatNameResponse>(this._address + "/sortedchat.SortedChat/GetChatName", message, metadata || {}, SortedChatClient.GetChatName);
+    private static GenerateChatName = new grpc_web_1.MethodDescriptor<GenerateChatNameRequest, GenerateChatNameResponse>("/sortedchat.SortedChat/GenerateChatName", grpc_web_1.MethodType.UNARY, GenerateChatNameRequest, GenerateChatNameResponse, (message: GenerateChatNameRequest) => message.serialize(), GenerateChatNameResponse.deserialize);
+    GenerateChatName(message: GenerateChatNameRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<GenerateChatNameRequest, GenerateChatNameResponse>(this._address + "/sortedchat.SortedChat/GenerateChatName", message, metadata || {}, SortedChatClient.GenerateChatName);
     }
     private static GetHistory = new grpc_web_1.MethodDescriptor<GetHistoryRequest, GetHistoryResponse>("/sortedchat.SortedChat/GetHistory", grpc_web_1.MethodType.UNARY, GetHistoryRequest, GetHistoryResponse, (message: GetHistoryRequest) => message.serialize(), GetHistoryResponse.deserialize);
     GetHistory(message: GetHistoryRequest, metadata: grpc_web_1.Metadata | null) {

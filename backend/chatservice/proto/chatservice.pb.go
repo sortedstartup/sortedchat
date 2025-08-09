@@ -1661,6 +1661,110 @@ func (x *GenerateEmbeddingResponse) GetMessage() string {
 	return ""
 }
 
+type GenerateChatNameRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChatId        string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"` //first message in new chat
+	Model         string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateChatNameRequest) Reset() {
+	*x = GenerateChatNameRequest{}
+	mi := &file_chatservice_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateChatNameRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateChatNameRequest) ProtoMessage() {}
+
+func (x *GenerateChatNameRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateChatNameRequest.ProtoReflect.Descriptor instead.
+func (*GenerateChatNameRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *GenerateChatNameRequest) GetChatId() string {
+	if x != nil {
+		return x.ChatId
+	}
+	return ""
+}
+
+func (x *GenerateChatNameRequest) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GenerateChatNameRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+type GenerateChatNameResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChatName      string                 `protobuf:"bytes,1,opt,name=chat_name,json=chatName,proto3" json:"chat_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateChatNameResponse) Reset() {
+	*x = GenerateChatNameResponse{}
+	mi := &file_chatservice_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateChatNameResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateChatNameResponse) ProtoMessage() {}
+
+func (x *GenerateChatNameResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateChatNameResponse.ProtoReflect.Descriptor instead.
+func (*GenerateChatNameResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GenerateChatNameResponse) GetChatName() string {
+	if x != nil {
+		return x.ChatName
+	}
+	return ""
+}
+
 var File_chatservice_proto protoreflect.FileDescriptor
 
 const file_chatservice_proto_rawDesc = "" +
@@ -1768,15 +1872,22 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\"5\n" +
 	"\x19GenerateEmbeddingResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage*c\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"b\n" +
+	"\x17GenerateChatNameRequest\x12\x17\n" +
+	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\x14\n" +
+	"\x05model\x18\x03 \x01(\tR\x05model\"7\n" +
+	"\x18GenerateChatNameResponse\x12\x1b\n" +
+	"\tchat_name\x18\x01 \x01(\tR\bchatName*c\n" +
 	"\x10Embedding_Status\x12\x11\n" +
 	"\rSTATUS_QUEUED\x10\x00\x12\x16\n" +
 	"\x12STATUS_IN_PROGRESS\x10\x01\x12\x10\n" +
 	"\fSTATUS_ERROR\x10\x02\x12\x12\n" +
-	"\x0eSTATUS_SUCCESS\x10\x032\xb4\x06\n" +
+	"\x0eSTATUS_SUCCESS\x10\x032\x93\a\n" +
 	"\n" +
 	"SortedChat\x12;\n" +
-	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12K\n" +
+	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12]\n" +
+	"\x10GenerateChatName\x12#.sortedchat.GenerateChatNameRequest\x1a$.sortedchat.GenerateChatNameResponse\x12K\n" +
 	"\n" +
 	"GetHistory\x12\x1d.sortedchat.GetHistoryRequest\x1a\x1e.sortedchat.GetHistoryResponse\x12N\n" +
 	"\vGetChatList\x12\x1e.sortedchat.GetChatListRequest\x1a\x1f.sortedchat.GetChatListResponse\x12K\n" +
@@ -1808,7 +1919,7 @@ func file_chatservice_proto_rawDescGZIP() []byte {
 }
 
 var file_chatservice_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_chatservice_proto_goTypes = []any{
 	(Embedding_Status)(0),             // 0: sortedchat.Embedding_Status
 	(*Settings)(nil),                  // 1: sortedchat.Settings
@@ -1842,6 +1953,8 @@ var file_chatservice_proto_goTypes = []any{
 	(*Document)(nil),                  // 29: sortedchat.Document
 	(*GenerateEmbeddingRequest)(nil),  // 30: sortedchat.GenerateEmbeddingRequest
 	(*GenerateEmbeddingResponse)(nil), // 31: sortedchat.GenerateEmbeddingResponse
+	(*GenerateChatNameRequest)(nil),   // 32: sortedchat.GenerateChatNameRequest
+	(*GenerateChatNameResponse)(nil),  // 33: sortedchat.GenerateChatNameResponse
 }
 var file_chatservice_proto_depIdxs = []int32{
 	1,  // 0: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
@@ -1854,31 +1967,33 @@ var file_chatservice_proto_depIdxs = []int32{
 	29, // 7: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
 	0,  // 8: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
 	8,  // 9: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	10, // 10: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
-	13, // 11: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
-	6,  // 12: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
-	17, // 13: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
-	19, // 14: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
-	22, // 15: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
-	24, // 16: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
-	27, // 17: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
-	30, // 18: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
-	2,  // 19: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
-	4,  // 20: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
-	9,  // 21: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	11, // 22: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
-	14, // 23: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
-	7,  // 24: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	18, // 25: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
-	21, // 26: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
-	23, // 27: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
-	25, // 28: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
-	28, // 29: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
-	31, // 30: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
-	3,  // 31: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
-	5,  // 32: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
-	21, // [21:33] is the sub-list for method output_type
-	9,  // [9:21] is the sub-list for method input_type
+	32, // 10: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
+	10, // 11: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
+	13, // 12: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
+	6,  // 13: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
+	17, // 14: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
+	19, // 15: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
+	22, // 16: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
+	24, // 17: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
+	27, // 18: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
+	30, // 19: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
+	2,  // 20: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
+	4,  // 21: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
+	9,  // 22: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	33, // 23: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
+	11, // 24: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
+	14, // 25: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
+	7,  // 26: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
+	18, // 27: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
+	21, // 28: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
+	23, // 29: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
+	25, // 30: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
+	28, // 31: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
+	31, // 32: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
+	3,  // 33: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
+	5,  // 34: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
+	22, // [22:35] is the sub-list for method output_type
+	9,  // [9:22] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
 	9,  // [9:9] is the sub-list for extension extendee
 	0,  // [0:9] is the sub-list for field type_name
@@ -1895,7 +2010,7 @@ func file_chatservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chatservice_proto_rawDesc), len(file_chatservice_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   31,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

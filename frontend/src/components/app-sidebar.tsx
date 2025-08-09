@@ -277,7 +277,9 @@ export function AppSidebar() {
                       onClick={() => handleChatSelect(chat.chatId)}
                     >
                       <MessageCircle />
-                      <span>{chat.name}</span>
+                      <span className="flex items-center">
+                        {chat.name || "New Chat"}
+                      </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

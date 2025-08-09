@@ -103,8 +103,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            /var/cache/apt/archives
-            /var/lib/apt/lists
+            /var/cache/apt/archives/*.deb
+            /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-amd64-packages.txt') }}
           
       - name: Install Linux dependencies (AMD64)
@@ -118,8 +118,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            /var/cache/apt/archives
-            /var/lib/apt/lists
+            /var/cache/apt/archives/*.deb
+            /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-arm64-packages.txt') }}
             
       - name: Setup ARM64 cross-compilation environment

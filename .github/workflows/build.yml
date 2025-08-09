@@ -183,7 +183,7 @@ jobs:
           fi
 
           go env
-          go build -buildvcs=false -tags "desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $OUT ./mono
+          go build -buildvcs=false -tags "wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $OUT ./mono
 
       - name: Upload Go executable as artifact
         uses: actions/upload-artifact@v4

@@ -51,10 +51,9 @@ jobs:
           - os: linux
             arch: amd64
             runner: ubuntu-latest
-          # Todo - disabled temporarily
-          # - os: linux
-          #   arch: arm64
-          #   runner: ubuntu-latest
+          - os: linux
+            arch: arm64
+            runner: ubuntu-latest
           - os: windows
             arch: amd64
             runner: ubuntu-latest
@@ -118,6 +117,8 @@ jobs:
           
           # Update sources.list to include ARM64 repositories
           sudo sed -i 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i 's/^deb https/deb [arch=amd64] https/g' /etc/apt/sources.list
+          
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
@@ -277,7 +278,7 @@ jobs:
           RUN chmod +x /usr/local/bin/sortedchat
           
           # Run the application
-          CMD ["/usr/local/bin/sortedchat, "-server"]
+          CMD ["/usr/local/bin/sortedchat", "-server"]
           EOF
 
       # Build and push multi-architecture Docker image

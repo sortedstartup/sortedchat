@@ -277,7 +277,7 @@ jobs:
           RUN chmod +x /usr/local/bin/sortedchat
           
           # Run the application
-          CMD ["/usr/local/bin/sortedchat"]
+          CMD ["/usr/local/bin/sortedchat, "-server"]
           EOF
 
       # Build and push multi-architecture Docker image

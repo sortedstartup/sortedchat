@@ -51,9 +51,10 @@ jobs:
           - os: linux
             arch: amd64
             runner: ubuntu-latest
-          - os: linux
-            arch: arm64
-            runner: ubuntu-latest
+          # Todo - disabled temporarily
+          # - os: linux
+          #   arch: arm64
+          #   runner: ubuntu-latest
           - os: windows
             arch: amd64
             runner: ubuntu-latest
@@ -73,8 +74,16 @@ jobs:
           name: frontend-build
           path: backend/mono/public
 
+      - name: Download frontend build to Wails directory
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: backend/mono/frontend-build-wails/dist
+
       - name: Ensure public directory exists
-        run: mkdir -p backend/mono/public
+        run: |
+          mkdir -p backend/mono/frontend-build-wails/dist
+          mkdir -p backend/mono/public
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -90,9 +99,50 @@ jobs:
         if: matrix.os == 'windows'
         run: sudo apt-get update && sudo apt-get install -y mingw-w64
 
-      - name: Install cross-compiler for Linux ARM64
+      - name: Install Linux dependencies (AMD64)
+        if: matrix.os == 'linux' && matrix.arch == 'amd64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            pkg-config
+
+      - name: Setup ARM64 cross-compilation environment
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
-        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+        run: |
+          # Add ARM64 architecture
+          sudo dpkg --add-architecture arm64
+          
+          # Update sources.list to include ARM64 repositories
+          sudo sed -i 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -cs)-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          
+          # Update package lists
+          sudo apt-get update
+          
+          # Install cross-compiler and build tools
+          sudo apt-get install -y \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            pkg-config
+          
+          # Install ARM64 versions of the required libraries
+          sudo apt-get install -y \
+            libgtk-3-dev:arm64 \
+            libwebkit2gtk-4.1-dev:arm64 \
+            libayatana-appindicator3-dev:arm64 \
+            librsvg2-dev:arm64 \
+            libglib2.0-dev:arm64 \
+            libcairo2-dev:arm64 \
+            libpango1.0-dev:arm64 \
+            libatk1.0-dev:arm64 \
+            libgdk-pixbuf-2.0-dev:arm64
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -116,18 +166,24 @@ jobs:
             export CC=x86_64-w64-mingw32-gcc
           fi
 
-          # Linux ARM64
+          # Linux ARM64 - Fix cross-compilation issues
           if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then 
             export CC=aarch64-linux-gnu-gcc
+            export CXX=aarch64-linux-gnu-g++
+            export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+            export CGO_CFLAGS="$CGO_CFLAGS -I/usr/include/aarch64-linux-gnu"
+            export CGO_LDFLAGS="-L/usr/lib/aarch64-linux-gnu"
           fi
 
           # macOS builds don't need special CC settings
           if [ "${{ matrix.os }}" = "darwin" ]; then
             export CGO_ENABLED=1
+            export CGO_CFLAGS="$CGO_CFLAGS -mmacosx-version-min=11.0"
+            export CGO_LDFLAGS="-mmacosx-version-min=11.0 -framework UniformTypeIdentifiers"
           fi
 
           go env
-          go build -tags "sqlite_fts5" -o $OUT ./mono
+          go build -buildvcs=false -tags "desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $OUT ./mono
 
       - name: Upload Go executable as artifact
         uses: actions/upload-artifact@v4
@@ -135,6 +191,7 @@ jobs:
           name: sortedchat-${{ matrix.os }}-${{ matrix.arch }}
           path: backend/sortedchat-${{ matrix.os }}-${{ matrix.arch }}*
           retention-days: 10
+
   create-release:
     needs: build-go
     if: startsWith(github.ref, 'refs/tags/')
@@ -171,4 +228,3 @@ jobs:
           prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

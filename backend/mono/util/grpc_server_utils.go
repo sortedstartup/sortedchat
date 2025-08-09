@@ -15,8 +15,6 @@ func EnableCORS(next http.Handler) http.Handler {
 		if r.Method == "OPTIONS" {
 			return
 		}
-
-		// Serve the request
 		next.ServeHTTP(w, r)
 	})
 }

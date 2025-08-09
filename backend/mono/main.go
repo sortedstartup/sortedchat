@@ -61,17 +61,21 @@ func main() {
 
 	// serve static UI
 	publicFS, err := fs.Sub(staticUIFS, "public")
+	if err != nil {
+		log.Fatalf("Failed to create sub FS: %v", err)
+	}
 	staticUI := http.FileServer(http.FS(publicFS))
 
 	// HTTP router (fallback to static UI if not gRPC)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	httpHandler := func(w http.ResponseWriter, r *http.Request) {
+
 		if wrappedGrpc.IsGrpcWebRequest(r) || wrappedGrpc.IsAcceptableGrpcCorsRequest(r) {
 			util.EnableCORS(wrappedGrpc).ServeHTTP(w, r)
-			wrappedGrpc.ServeHTTP(w, r)
 			return
 		}
 		staticUI.ServeHTTP(w, r)
-	})
+	}
+	mux.HandleFunc("/", httpHandler)
 
 	// HTTP server with CORS
 	httpServer := &http.Server{
@@ -92,10 +96,12 @@ func main() {
 		serverErr <- httpServer.ListenAndServe()
 	}()
 
+	Wails(mux)
+
 	// Wait for either server to error
-	err = <-serverErr
-	if err != nil {
-		log.Fatalf("Server error: %v", err)
-	}
+	// err = <-serverErr
+	// if err != nil {
+	// 	log.Fatalf("Server error: %v", err)
+	// }
 
 }

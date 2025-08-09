@@ -51,9 +51,10 @@ jobs:
           - os: linux
             arch: amd64
             runner: ubuntu-latest
-          - os: linux
-            arch: arm64
-            runner: ubuntu-latest
+          # Todo - disabled temporarily
+          # - os: linux
+          #   arch: arm64
+          #   runner: ubuntu-latest
           - os: windows
             arch: amd64
             runner: ubuntu-latest

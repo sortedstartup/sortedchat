@@ -192,8 +192,115 @@ jobs:
           path: backend/sortedchat-${{ matrix.os }}-${{ matrix.arch }}*
           retention-days: 10
 
-  create-release:
+  build-docker:
     needs: build-go
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Download pre-built Go binaries for both Linux architectures
+      # These were built in the previous build-go job with cross-compilation
+      - name: Download Linux AMD64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: sortedchat-linux-amd64
+          path: ./binaries/amd64/
+
+      - name: Download Linux ARM64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: sortedchat-linux-arm64
+          path: ./binaries/arm64/
+
+      # Set up Docker Buildx - this enables multi-platform builds
+      # Buildx can build for multiple architectures simultaneously
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Check if this is a production release (not pre-release)
+      - name: Check if production release
+        id: check_prod
+        run: |
+          tag=${GITHUB_REF#refs/tags/}
+          if [[ $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_production=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_production=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Extract Docker tags and metadata from Git tags
+      # Production releases (v1.2.3): get version tag + latest
+      # RC releases (v1.2.3-rc1): get version tag only (no latest)
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/sortedchat
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ steps.check_prod.outputs.is_production }}
+
+      # Create Dockerfile for multi-architecture build
+      # Uses pre-built Go binaries instead of compiling in Docker (much faster!)
+      - name: Create Dockerfile
+        run: |
+          cat > Dockerfile << 'EOF'
+          FROM ubuntu:24.04
+          
+          # Declare the TARGETARCH argument (automatically provided by Docker Buildx)
+          ARG TARGETARCH
+          
+          # Install runtime dependencies
+          RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+          
+          # 🔥 ARCHITECTURE SELECTION MAGIC:
+          # $TARGETARCH is automatically set by Docker Buildx:
+          # - When building linux/amd64: $TARGETARCH = "amd64"
+          # - When building linux/arm64: $TARGETARCH = "arm64"
+          # This ensures the correct binary is copied for each architecture
+          # NOTE: Frontend is already built into the Go binary, no separate copy needed!
+          COPY binaries/${TARGETARCH}/sortedchat-linux-${TARGETARCH} /usr/local/bin/sortedchat
+          
+          # Make the binary executable
+          RUN chmod +x /usr/local/bin/sortedchat
+          
+          # Run the application
+          CMD ["/usr/local/bin/sortedchat"]
+          EOF
+
+      # Build and push multi-architecture Docker image
+      # 🎯 THE MAGIC: Docker Buildx builds SEPARATE images for each platform
+      #    but pushes them under the SAME tag with a multi-arch manifest
+      - name: Build and push multi-platform image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # ✨ MULTI-ARCH MAGIC: These platforms trigger separate builds
+          #    - linux/amd64: Uses the AMD64 binary
+          #    - linux/arm64: Uses the ARM64 binary
+          #    Result: ONE tag that works on BOTH architectures!
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-release:
+    needs: [build-go, build-docker]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
@@ -224,6 +331,38 @@ jobs:
         with:
           files: artifacts/sortedchat-*/*
           generate_release_notes: true
+          body: |
+            ## 🐳 Multi-Architecture Docker Image
+            
+            This release includes a **multi-architecture Docker image** that automatically works on both **AMD64** and **ARM64** platforms!
+            
+            ### Quick Start
+            ```bash
+            # Pull this specific version
+            docker pull ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
+            
+            # Run the container
+            docker run -p 8080:8080 ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
+            ```
+            
+            ### Available Docker Tags
+            - `ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}` - This specific version
+            - `ghcr.io/${{ github.repository_owner }}/sortedchat:latest` - Latest stable release (production only)
+            
+            ### 🎯 How Multi-Arch Works
+            - **One tag, multiple architectures**: The same tag works on both Intel/AMD (x64) and ARM (Apple Silicon, Raspberry Pi, etc.)
+            - **Automatic selection**: Docker automatically downloads the right architecture for your machine
+            - **No platform flags needed**: Just use `docker pull` normally!
+            
+            ### Platform Support
+            - ✅ **linux/amd64** - Intel/AMD 64-bit (most servers, Intel Macs, Windows WSL)
+            - ✅ **linux/arm64** - ARM 64-bit (Apple Silicon Macs, AWS Graviton, Raspberry Pi 4+)
+            
+            ### Verify Your Architecture
+            ```bash
+            docker run --rm ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }} uname -m
+            # Output: x86_64 (on AMD64) or aarch64 (on ARM64)
+            ```
           draft: false
           prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
         env:

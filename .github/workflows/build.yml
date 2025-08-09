@@ -171,10 +171,13 @@ jobs:
           # Use custom SQLite headers for all platforms to ensure version consistency
           export CGO_CFLAGS="-I$(pwd)/sqlite3"
 
+          export BINARY_NAME_SERVER=sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
+          export BINARY_NAME_APP=sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
+
           # Windows
-          export OUT=sortedchat-${{ matrix.os }}-${{ matrix.arch }}
           if [ "${{ matrix.os }}" = "windows" ]; then 
-            export OUT="$OUT.exe";
+            export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe";
+            export BINARY_NAME_APP="$BINARY_NAME_APP.exe";
             export CC=x86_64-w64-mingw32-gcc
           fi
 
@@ -195,13 +198,21 @@ jobs:
           fi
 
           go env
-          go build -buildvcs=false -tags "wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $OUT ./mono
+          go build -buildvcs=false -tags "desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_SERVER ./mono
+          go build -buildvcs=false -tags "wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_APP ./mono-app
 
-      - name: Upload Go executable as artifact
+      - name: Upload server binary as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sortedchat-${{ matrix.os }}-${{ matrix.arch }}
-          path: backend/sortedchat-${{ matrix.os }}-${{ matrix.arch }}*
+          name: sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
+          path: backend/sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}*
+          retention-days: 10
+
+      - name: Upload app binary as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
+          path: backend/sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}*
           retention-days: 10
 
   build-docker:
@@ -220,13 +231,13 @@ jobs:
       - name: Download Linux AMD64 binary
         uses: actions/download-artifact@v4
         with:
-          name: sortedchat-linux-amd64
+          name: sortedchat-server-linux-amd64
           path: ./binaries/amd64/
 
       - name: Download Linux ARM64 binary
         uses: actions/download-artifact@v4
         with:
-          name: sortedchat-linux-arm64
+          name: sortedchat-server-linux-arm64
           path: ./binaries/arm64/
 
       # Set up Docker Buildx - this enables multi-platform builds
@@ -283,13 +294,13 @@ jobs:
           # - When building linux/arm64: $TARGETARCH = "arm64"
           # This ensures the correct binary is copied for each architecture
           # NOTE: Frontend is already built into the Go binary, no separate copy needed!
-          COPY binaries/${TARGETARCH}/sortedchat-linux-${TARGETARCH} /usr/local/bin/sortedchat
+          COPY binaries/${TARGETARCH}/sortedchat-server-linux-${TARGETARCH} /usr/local/bin/sortedchat
           
           # Make the binary executable
           RUN chmod +x /usr/local/bin/sortedchat
           
           # Run the application
-          CMD ["/usr/local/bin/sortedchat", "-server"]
+          CMD ["/usr/local/bin/sortedchat-server", "-server"]
           EOF
 
       # Build and push multi-architecture Docker image

@@ -105,7 +105,7 @@ jobs:
           path: |
             /var/cache/apt/archives
             /var/lib/apt/lists
-          key: apt-${{ runner.os }}-${{ hashFiles('.github/apt-amd64-packages.txt') }}
+          key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-amd64-packages.txt') }}
           
       - name: Install Linux dependencies (AMD64)
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -120,7 +120,7 @@ jobs:
           path: |
             /var/cache/apt/archives
             /var/lib/apt/lists
-          key: apt-${{ runner.os }}-${{ hashFiles('.github/apt-arm64-packages.txt') }}
+          key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-arm64-packages.txt') }}
             
       - name: Setup ARM64 cross-compilation environment
         if: matrix.os == 'linux' && matrix.arch == 'arm64'

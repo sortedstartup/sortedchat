@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"io/fs"
 	"log"
 	"net"
@@ -20,23 +21,34 @@ import (
 )
 
 const (
-	grpcPort = ":8000"
-	httpPort = ":8080"
+	defaultGrpcPort = "8000"
+	defaultHttpPort = "8080"
+	defaultHost     = ""
 )
 
 //go:embed public
 var staticUIFS embed.FS
 
 func main() {
+	// Parse command line flags
+	serverOnly := flag.Bool("server", false, "Start only the server without Wails GUI")
+	host := flag.String("host", defaultHost, "Host to bind the server to (default: all interfaces)")
+	grpcPort := flag.String("grpc-port", defaultGrpcPort, "Port for gRPC server")
+	httpPort := flag.String("http-port", defaultHttpPort, "Port for HTTP server")
+	flag.Parse()
+
+	// Build addresses
+	grpcAddr := net.JoinHostPort(*host, *grpcPort)
+	httpAddr := net.JoinHostPort(*host, *httpPort)
 
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Warning: .env file not found, using system env")
 	}
 
-	listener, err := net.Listen("tcp", grpcPort)
+	listener, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		log.Fatalf("Failed to listen on %s: %v", grpcAddr, err)
 	}
 
 	grpcServer := grpc.NewServer()
@@ -79,7 +91,7 @@ func main() {
 
 	// HTTP server with CORS
 	httpServer := &http.Server{
-		Addr:    httpPort,
+		Addr:    httpAddr,
 		Handler: util.EnableCORS(mux),
 	}
 
@@ -87,16 +99,26 @@ func main() {
 	serverErr := make(chan error)
 
 	go func() {
-		log.Println("Starting gRPC server on", grpcPort)
+		log.Printf("Starting gRPC server on %s", grpcAddr)
 		serverErr <- grpcServer.Serve(listener)
 	}()
 
 	go func() {
-		log.Println("Starting HTTP server on", httpPort)
+		log.Printf("Starting HTTP server on %s", httpAddr)
 		serverErr <- httpServer.ListenAndServe()
 	}()
 
-	Wails(mux)
+	// Start Wails GUI unless --server flag is specified
+	if !*serverOnly {
+		log.Println("Starting Wails GUI")
+		Wails(mux)
+	} else {
+		log.Println("Running in server-only mode")
+		err := <-serverErr
+		if err != nil {
+			log.Fatalf("Server error: %v", err)
+		}
+	}
 
 	WaitForServerError(serverErr)
 }

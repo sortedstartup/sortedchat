@@ -7,15 +7,44 @@ option go_package = "sortedstartup/chatservice/proto";
 
 service SortedChat {
     rpc Chat(ChatRequest) returns (stream ChatResponse);
+    rpc GenerateChatName(GenerateChatNameRequest) returns (GenerateChatNameResponse);
     rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
     rpc GetChatList(GetChatListRequest) returns (GetChatListResponse);
     rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
     rpc ListModel(ListModelsRequest) returns (ListModelsResponse);
     rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
+
     rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
     rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
     rpc ListDocuments(ListDocumentsRequest) returns(ListDocumentsResponse);
+    rpc SubmitGenerateEmbeddingsJob(GenerateEmbeddingRequest) returns (GenerateEmbeddingResponse);
 }
+
+service SettingService {
+    rpc GetSetting(GetSettingRequest) returns (GetSettingResponse);
+    rpc SetSetting(SetSettingRequest) returns (SetSettingResponse);
+}
+
+message Settings {
+   string OPENAI_API_KEY = 1;
+   string OPENAI_API_URL = 2;
+   string OLLAMA_URL = 3;
+}
+
+message GetSettingRequest {}
+
+message GetSettingResponse {
+    Settings settings = 1;
+}
+
+message SetSettingRequest {
+    Settings settings = 1;
+}
+
+message SetSettingResponse {
+    string message = 1;
+}
+
 
 message CreateChatRequest {
   string name = 1;
@@ -135,4 +164,30 @@ message Document {
   string file_name = 4;
   string created_at = 5;
   string updated_at = 6;
+  Embedding_Status embedding_status=7;
+}
+
+enum Embedding_Status {
+  STATUS_QUEUED = 0;
+  STATUS_IN_PROGRESS = 1;
+  STATUS_ERROR = 2;
+  STATUS_SUCCESS = 3;
+}
+
+message GenerateEmbeddingRequest {
+  string project_id = 1;
+}
+
+message GenerateEmbeddingResponse {
+  string message = 1;
+}
+
+message GenerateChatNameRequest{
+  string chat_id = 1;
+  string message = 2; //first message in new chat
+  string model = 3;
+}
+
+message GenerateChatNameResponse {
+  string chat_name = 1;
 }

@@ -7,6 +7,8 @@ import (
 type DAO interface {
 	// Chat CRUD
 	CreateChat(chatId string, name string, projectID string) error
+	GetChatName(chatId string) (string, error)
+	SaveChatName(chatId string, name string) error
 	AddChatMessage(chatId string, role string, content string) error
 	AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) error
 	GetChatMessages(chatId string) ([]ChatMessageRow, error)
@@ -24,6 +26,8 @@ type DAO interface {
 	CreateProject(id string, name string, description string, additionalData string) (string, error)
 	GetProjects() ([]ProjectRow, error)
 	FileSave(project_id string, docs_id string, file_name string, fileSize int64) error
+	UpdateEmbeddingStatus(docs_id string, status int32) error
+	FetchErrorDocs(project_id string) ([]string, error)
 	FilesList(project_id string) ([]DocumentListRow, error)
 	GetFileMetadata(docsId string) (*DocumentListRow, error)
 
@@ -31,4 +35,9 @@ type DAO interface {
 	SaveRAGChunk(chunkID, projectID, docsID string, startByte, endByte int) error
 	SaveRAGChunkEmbedding(chunkID string, embedding []float64) error
 	GetTopSimilarRAGChunks(embedding string, projectID string) ([]RAGChunkRow, error)
+}
+
+type SettingsDAO interface {
+	GetSettingValue(settingName string) (string, error)
+	SetSettingValue(settingName string, settingValue string) error
 }

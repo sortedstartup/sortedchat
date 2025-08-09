@@ -10,6 +10,8 @@ import (
 	"sortedstartup/chat/mono/util"
 	"sortedstartup/chatservice/api"
 	"sortedstartup/chatservice/proto"
+	"sortedstartup/chatservice/queue"
+	"sortedstartup/chatservice/settings"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/joho/godotenv"
@@ -40,9 +42,16 @@ func main() {
 	grpcServer := grpc.NewServer()
 	mux := http.NewServeMux()
 
-	apiServer := api.NewServer(mux)
-	apiServer.Init()
-	proto.RegisterSortedChatServer(grpcServer, apiServer)
+	queue := queue.NewInMemoryQueue()
+	settingsManager := settings.NewSettingsManager(queue)
+
+	chatServiceApi := api.NewChatService(mux, queue, settingsManager)
+	chatServiceApi.Init()
+	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
+
+	settingServiceApi := api.NewSettingService(queue)
+	settingServiceApi.Init()
+	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)

@@ -15,13 +15,14 @@ type ProjectRow struct {
 }
 
 type DocumentListRow struct {
-	ID        int64  `db:"id"`
-	ProjectID string `db:"project_id"`
-	DocsID    string `db:"docs_id"`
-	FileName  string `db:"file_name"`
-	FileSize  string `db:"file_size"`
-	CreatedAt string `db:"created_at"`
-	UpdatedAt string `db:"updated_at"`
+	ID              int64  `db:"id"`
+	ProjectID       string `db:"project_id"`
+	DocsID          string `db:"docs_id"`
+	FileName        string `db:"file_name"`
+	FileSize        string `db:"file_size"`
+	CreatedAt       string `db:"created_at"`
+	UpdatedAt       string `db:"updated_at"`
+	EmbeddingStatus int32  `db:"embedding_status"`
 }
 
 type RAGChunkRow struct {

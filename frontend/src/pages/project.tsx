@@ -5,6 +5,7 @@ import {
   Upload,
   Eye,
   MessageSquare,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
@@ -26,8 +27,12 @@ import {
   $currentChatId,
   doChat,
   $projectChatList,
+  SubmitGenerateEmbeddingsJob,
+  $isErrorDocs,
+  $isPolling,
 } from "@/store/chat";
 import { useNavigate, useParams } from "react-router-dom";
+import { Embedding_Status } from "../../proto/chatservice";
 const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
 
 export function Project() {
@@ -38,6 +43,9 @@ export function Project() {
   const projectName = useStore($currentProject);
   const currentProjectId = useStore($currentProjectId);
   const chatsList = useStore($projectChatList);
+  const isErrorDocs = useStore($isErrorDocs);
+  const isPolling = useStore($isPolling);
+
   const navigate = useNavigate();
 
   const { projectId } = useParams();
@@ -82,6 +90,16 @@ export function Project() {
     setIsDocumentsDialogOpen(open);
   };
 
+  const handleRetryEmbedding = async () => {
+    try {
+      $isErrorDocs.set(false);
+
+      await SubmitGenerateEmbeddingsJob(currentProjectId.toString());
+    } catch (error) {
+      console.error("Error retrying embedding:", error);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full mx-4 max-h-full">
       <div className="p-4 border-b border-gray-200 flex-shrink-0">
@@ -111,9 +129,33 @@ export function Project() {
                   )}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl max-h-[70vh] overflow-hidden">
-                <DialogHeader>
+              <DialogContent className="sm:max-w-2xl max-h-[70vh] overflow-hidden [&>button]:hidden">
+                <DialogHeader className="flex flex-row items-center justify-between space-y-0 mr-2">
                   <DialogTitle>Project Documents</DialogTitle>
+                  <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {fetchDocuments(currentProjectId.toString())}}
+                        disabled={isPolling}
+                        className="gap-2"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${isPolling ? 'animate-spin' : ''}`} />
+                        {isPolling ? 'Refreshing...' : 'Refresh'}
+                      </Button>
+                      
+                      {isErrorDocs ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRetryEmbedding}
+                          className="gap-2"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          Regenerate
+                        </Button>
+                      ) : null}
+                  </div>
                 </DialogHeader>
 
                 <div className="space-y-2 max-h-[50vh] overflow-auto">
@@ -121,23 +163,39 @@ export function Project() {
                     documents.map((doc: any, index: number) => (
                       <div
                         key={doc.id || index}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() =>
-                          window.open(
-                            `${API_UPLOAD_URL}/documents/${doc.docs_id}`,
-                            "_blank"
-                          )
-                        }
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                       >
-                        <div className="flex items-center gap-3">
+                        <div
+                          className="flex items-center gap-3 flex-1 cursor-pointer"
+                          onClick={() =>
+                            window.open(
+                              `${API_UPLOAD_URL}/documents/${doc.docs_id}`,
+                              "_blank"
+                            )
+                          }
+                        >
                           <FileText className="size-5 text-orange-500" />
                           <div className="flex flex-col items-start">
                             <span className="font-medium">{doc.file_name}</span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-gray-500">
+                                {doc.embedding_status === Embedding_Status.STATUS_ERROR
+                                  ? "Indexing failed, Regenerate embeddings"
+                                  : doc.embedding_status === Embedding_Status.STATUS_QUEUED
+                                  ? "Currently in queue"
+                                  : doc.embedding_status === Embedding_Status.STATUS_IN_PROGRESS
+                                  ? "Embedding in progress"
+                                  : ""}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="size-4" />
-                        </Button>
+
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="size-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))
                   ) : (

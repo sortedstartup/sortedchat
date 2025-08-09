@@ -16,3 +16,4 @@ CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
 ```
 CGO_CFLAGS="-I$(pwd)/../sqlite3" go run -tags "sqlite_fts5",dev,webkit2_41 main.go wails.go
 ```
+

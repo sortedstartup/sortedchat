@@ -161,7 +161,7 @@ jobs:
         with:
           go-version: '1.24.3'
 
-      - name: Build Go backend
+      - name: Build Go backend - desktop app and server
         working-directory: backend
         run: |
           export GOOS=${{ matrix.os }}

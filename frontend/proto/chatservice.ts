@@ -2728,11 +2728,12 @@ export class GenerateEmbeddingResponse extends pb_1.Message {
         return GenerateEmbeddingResponse.deserialize(bytes);
     }
 }
-export class ChatNameRequest extends pb_1.Message {
+export class GetChatNameRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         chat_id?: string;
         message?: string;
+        model?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -2742,6 +2743,9 @@ export class ChatNameRequest extends pb_1.Message {
             }
             if ("message" in data && data.message != undefined) {
                 this.message = data.message;
+            }
+            if ("model" in data && data.model != undefined) {
+                this.model = data.model;
             }
         }
     }
@@ -2757,16 +2761,26 @@ export class ChatNameRequest extends pb_1.Message {
     set message(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
+    get model() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set model(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
     static fromObject(data: {
         chat_id?: string;
         message?: string;
-    }): ChatNameRequest {
-        const message = new ChatNameRequest({});
+        model?: string;
+    }): GetChatNameRequest {
+        const message = new GetChatNameRequest({});
         if (data.chat_id != null) {
             message.chat_id = data.chat_id;
         }
         if (data.message != null) {
             message.message = data.message;
+        }
+        if (data.model != null) {
+            message.model = data.model;
         }
         return message;
     }
@@ -2774,12 +2788,16 @@ export class ChatNameRequest extends pb_1.Message {
         const data: {
             chat_id?: string;
             message?: string;
+            model?: string;
         } = {};
         if (this.chat_id != null) {
             data.chat_id = this.chat_id;
         }
         if (this.message != null) {
             data.message = this.message;
+        }
+        if (this.model != null) {
+            data.model = this.model;
         }
         return data;
     }
@@ -2791,11 +2809,13 @@ export class ChatNameRequest extends pb_1.Message {
             writer.writeString(1, this.chat_id);
         if (this.message.length)
             writer.writeString(2, this.message);
+        if (this.model.length)
+            writer.writeString(3, this.model);
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ChatNameRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ChatNameRequest();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetChatNameRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetChatNameRequest();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -2806,72 +2826,8 @@ export class ChatNameRequest extends pb_1.Message {
                 case 2:
                     message.message = reader.readString();
                     break;
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): ChatNameRequest {
-        return ChatNameRequest.deserialize(bytes);
-    }
-}
-export class ChatNameResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {
-        message?: string;
-    }) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") {
-            if ("message" in data && data.message != undefined) {
-                this.message = data.message;
-            }
-        }
-    }
-    get message() {
-        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
-    }
-    set message(value: string) {
-        pb_1.Message.setField(this, 1, value);
-    }
-    static fromObject(data: {
-        message?: string;
-    }): ChatNameResponse {
-        const message = new ChatNameResponse({});
-        if (data.message != null) {
-            message.message = data.message;
-        }
-        return message;
-    }
-    toObject() {
-        const data: {
-            message?: string;
-        } = {};
-        if (this.message != null) {
-            data.message = this.message;
-        }
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (this.message.length)
-            writer.writeString(1, this.message);
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ChatNameResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ChatNameResponse();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                case 1:
-                    message.message = reader.readString();
+                case 3:
+                    message.model = reader.readString();
                     break;
                 default: reader.skipField();
             }
@@ -2881,8 +2837,75 @@ export class ChatNameResponse extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): ChatNameResponse {
-        return ChatNameResponse.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): GetChatNameRequest {
+        return GetChatNameRequest.deserialize(bytes);
+    }
+}
+export class GetChatNameResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        chat_name?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("chat_name" in data && data.chat_name != undefined) {
+                this.chat_name = data.chat_name;
+            }
+        }
+    }
+    get chat_name() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set chat_name(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        chat_name?: string;
+    }): GetChatNameResponse {
+        const message = new GetChatNameResponse({});
+        if (data.chat_name != null) {
+            message.chat_name = data.chat_name;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            chat_name?: string;
+        } = {};
+        if (this.chat_name != null) {
+            data.chat_name = this.chat_name;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.chat_name.length)
+            writer.writeString(1, this.chat_name);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetChatNameResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetChatNameResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.chat_name = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): GetChatNameResponse {
+        return GetChatNameResponse.deserialize(bytes);
     }
 }
 // Server-side service class removed for client-side compatibility
@@ -2900,9 +2923,9 @@ export class SortedChatClient {
     Chat(message: ChatRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.serverStreaming(this._address + "/sortedchat.SortedChat/Chat", message, metadata || {}, SortedChatClient.Chat);
     }
-    private static GetChatName = new grpc_web_1.MethodDescriptor<ChatNameRequest, ChatNameResponse>("/sortedchat.SortedChat/GetChatName", grpc_web_1.MethodType.UNARY, ChatNameRequest, ChatNameResponse, (message: ChatNameRequest) => message.serialize(), ChatNameResponse.deserialize);
-    GetChatName(message: ChatNameRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.thenableCall<ChatNameRequest, ChatNameResponse>(this._address + "/sortedchat.SortedChat/GetChatName", message, metadata || {}, SortedChatClient.GetChatName);
+    private static GetChatName = new grpc_web_1.MethodDescriptor<GetChatNameRequest, GetChatNameResponse>("/sortedchat.SortedChat/GetChatName", grpc_web_1.MethodType.UNARY, GetChatNameRequest, GetChatNameResponse, (message: GetChatNameRequest) => message.serialize(), GetChatNameResponse.deserialize);
+    GetChatName(message: GetChatNameRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<GetChatNameRequest, GetChatNameResponse>(this._address + "/sortedchat.SortedChat/GetChatName", message, metadata || {}, SortedChatClient.GetChatName);
     }
     private static GetHistory = new grpc_web_1.MethodDescriptor<GetHistoryRequest, GetHistoryResponse>("/sortedchat.SortedChat/GetHistory", grpc_web_1.MethodType.UNARY, GetHistoryRequest, GetHistoryResponse, (message: GetHistoryRequest) => message.serialize(), GetHistoryResponse.deserialize);
     GetHistory(message: GetHistoryRequest, metadata: grpc_web_1.Metadata | null) {

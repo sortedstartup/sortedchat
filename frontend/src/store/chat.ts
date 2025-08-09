@@ -18,7 +18,7 @@ import {
   ListDocumentsRequest,
   Document,
   GenerateEmbeddingRequest,
-  ChatNameRequest,
+  GetChatNameRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -140,6 +140,11 @@ export const doChat = (msg: string,projectId: string | undefined) => {
 
   let assistantResponse = "";
 
+  if (isFirstMessage) {
+      getChatName(msg);
+    }
+
+
   // grpc call
   const stream = chat.Chat(
     ChatRequest.fromObject({
@@ -169,10 +174,6 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     addMessageToHistory(userMessage);
     addMessageToHistory(assistantMessage);
 
-    if (isFirstMessage) {
-      chatName(msg);
-    }
-
     $streamingMessage.set("");
     $currentChatMessage.set("");
   });
@@ -184,18 +185,19 @@ export const doChat = (msg: string,projectId: string | undefined) => {
   });
 };
 export const $chatName = atom<string>("");
-export const chatName = async (msg: string) => {
+export const getChatName = async (msg: string) => {
   try{
     // grpc call
     const response = await chat.GetChatName(
-      ChatNameRequest.fromObject({
+      GetChatNameRequest.fromObject({
         message: msg,
-        chat_id: $currentChatId.get()
+        chat_id: $currentChatId.get(),
+        model: $selectedModel.get()
       }),
       {}
     );
     
-    $chatName.set(response.message)
+    $chatName.set(response.chat_name)
   }
   catch(error) {
     console.error("Can't get the chat name", error)

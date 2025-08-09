@@ -37,7 +37,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SortedChatClient interface {
 	Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error)
-	GetChatName(ctx context.Context, in *ChatNameRequest, opts ...grpc.CallOption) (*ChatNameResponse, error)
+	GetChatName(ctx context.Context, in *GetChatNameRequest, opts ...grpc.CallOption) (*GetChatNameResponse, error)
 	GetHistory(ctx context.Context, in *GetHistoryRequest, opts ...grpc.CallOption) (*GetHistoryResponse, error)
 	GetChatList(ctx context.Context, in *GetChatListRequest, opts ...grpc.CallOption) (*GetChatListResponse, error)
 	CreateChat(ctx context.Context, in *CreateChatRequest, opts ...grpc.CallOption) (*CreateChatResponse, error)
@@ -76,9 +76,9 @@ func (c *sortedChatClient) Chat(ctx context.Context, in *ChatRequest, opts ...gr
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SortedChat_ChatClient = grpc.ServerStreamingClient[ChatResponse]
 
-func (c *sortedChatClient) GetChatName(ctx context.Context, in *ChatNameRequest, opts ...grpc.CallOption) (*ChatNameResponse, error) {
+func (c *sortedChatClient) GetChatName(ctx context.Context, in *GetChatNameRequest, opts ...grpc.CallOption) (*GetChatNameResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ChatNameResponse)
+	out := new(GetChatNameResponse)
 	err := c.cc.Invoke(ctx, SortedChat_GetChatName_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -181,7 +181,7 @@ func (c *sortedChatClient) SubmitGenerateEmbeddingsJob(ctx context.Context, in *
 // for forward compatibility.
 type SortedChatServer interface {
 	Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error
-	GetChatName(context.Context, *ChatNameRequest) (*ChatNameResponse, error)
+	GetChatName(context.Context, *GetChatNameRequest) (*GetChatNameResponse, error)
 	GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error)
 	GetChatList(context.Context, *GetChatListRequest) (*GetChatListResponse, error)
 	CreateChat(context.Context, *CreateChatRequest) (*CreateChatResponse, error)
@@ -204,7 +204,7 @@ type UnimplementedSortedChatServer struct{}
 func (UnimplementedSortedChatServer) Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
 }
-func (UnimplementedSortedChatServer) GetChatName(context.Context, *ChatNameRequest) (*ChatNameResponse, error) {
+func (UnimplementedSortedChatServer) GetChatName(context.Context, *GetChatNameRequest) (*GetChatNameResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChatName not implemented")
 }
 func (UnimplementedSortedChatServer) GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error) {
@@ -267,7 +267,7 @@ func _SortedChat_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
 type SortedChat_ChatServer = grpc.ServerStreamingServer[ChatResponse]
 
 func _SortedChat_GetChatName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChatNameRequest)
+	in := new(GetChatNameRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func _SortedChat_GetChatName_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: SortedChat_GetChatName_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SortedChatServer).GetChatName(ctx, req.(*ChatNameRequest))
+		return srv.(SortedChatServer).GetChatName(ctx, req.(*GetChatNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

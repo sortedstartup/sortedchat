@@ -206,22 +206,6 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 		return fmt.Errorf("failed to fetch message history: %v", err)
 	}
 
-	var messages []map[string]interface{}
-
-	if len(history) == 0 {
-		messages = append(messages, map[string]interface{}{
-			"role":    "system",
-			"content": "You are a helpful assistant",
-		})
-	}
-
-	for _, msg := range history {
-		messages = append(messages, map[string]interface{}{
-			"role":    msg.Role,
-			"content": msg.Content,
-		})
-	}
-
 	err = s.dao.AddChatMessage(chatId, "user", req.Text)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
@@ -346,7 +330,13 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 	return nil
 }
 
-func (s *ChatService) GetChatName(ctx context.Context, req *pb.ChatNameRequest) (*pb.ChatNameResponse, error) {
+const (
+	MAX_MESSAGE_LENGTH   = 500
+	START_MESSAGE_LENGTH = 250
+	END_MESSAGE_LENGTH   = 250
+)
+
+func (s *ChatService) GetChatName(ctx context.Context, req *pb.GetChatNameRequest) (*pb.GetChatNameResponse, error) {
 	chatId := req.GetChatId()
 	if chatId == "" {
 		return nil, fmt.Errorf("chat ID is required")
@@ -356,6 +346,12 @@ func (s *ChatService) GetChatName(ctx context.Context, req *pb.ChatNameRequest) 
 	if msg == "" {
 		return nil, fmt.Errorf("message is required")
 	}
+
+	model := req.GetModel()
+	if model == "" {
+		return nil, fmt.Errorf("model is required")
+	}
+	fmt.Println("model in backend:", model)
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
@@ -371,10 +367,17 @@ func (s *ChatService) GetChatName(ctx context.Context, req *pb.ChatNameRequest) 
 		return nil, fmt.Errorf("Chat name already exists: %s", name)
 	}
 
-	prompt := fmt.Sprintf("Based on the given user message give me a most appropriate chat name of 1-5 word length: %s", msg)
+	words := strings.Fields(msg)
+	if len(words) > MAX_MESSAGE_LENGTH {
+		start := strings.Join(words[:START_MESSAGE_LENGTH], " ")
+		end := strings.Join(words[len(words)-END_MESSAGE_LENGTH:], " ")
+		msg = start + end
+	}
+
+	prompt := "Based on the given user message give me a most appropriate chat name of 1-5 word length: " + msg
 
 	requestBody := map[string]interface{}{
-		"model": "gpt-4.1",
+		"model": model,
 		"messages": []map[string]string{
 			{
 				"role":    "user",
@@ -434,8 +437,8 @@ func (s *ChatService) GetChatName(ctx context.Context, req *pb.ChatNameRequest) 
 		return nil, fmt.Errorf("error while saving name: %v", err)
 	}
 
-	return &pb.ChatNameResponse{
-		Message: chatName,
+	return &pb.GetChatNameResponse{
+		ChatName: chatName,
 	}, nil
 }
 

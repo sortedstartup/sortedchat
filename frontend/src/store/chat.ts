@@ -18,6 +18,7 @@ import {
   ListDocumentsRequest,
   Document,
   GenerateEmbeddingRequest,
+  GenerateChatNameRequest,
   BranchAChatRequest,
   InnerChatListRequest,
 } from "../../proto/chatservice";
@@ -100,7 +101,7 @@ const addMessageToHistory = (message: ChatMessage) => {
 // --- state management ---
 export const createNewChat = async (projectId?: string) => {
   const requestObj: {name: string,project_id?: string} = {
-    name: "New Chat",
+    name: "",
   };
   if (projectId) {
     requestObj.project_id = projectId;
@@ -126,11 +127,25 @@ export const getChatList = (projectId?: string) => {
   });
 };
 
+const isFirstMessageInChat = (): boolean => {
+  const currentState = $currentChatMessages.get();
+  return !currentState.data || currentState.data.length === 0;
+};
+
+
+
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
 
+  const isFirstMessage = isFirstMessageInChat();
+
   let assistantResponse = "";
+
+  if (isFirstMessage) {
+      generateChatName(msg);
+    }
+
 
   // grpc call
   const stream = chat.Chat(
@@ -171,6 +186,29 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     $currentChatMessage.set("");
   });
 };
+export const $chatName = atom<string>("");
+export const generateChatName = async (msg: string) => {
+  try{
+    // grpc call
+    const response = await chat.GenerateChatName(
+      GenerateChatNameRequest.fromObject({
+        message: msg,
+        chat_id: $currentChatId.get(),
+        model: $selectedModel.get()
+      }),
+      {}
+    );
+    
+    $chatName.set(response.chat_name)
+  }
+  catch(error) {
+    console.error("Can't get the chat name", error)
+  }
+};
+
+$chatName.listen(() => {
+  getChatList();
+});
 
 $currentChatId.listen((_newValue, _oldValue) => {
   $streamingMessage.set("");

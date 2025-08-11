@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	SortedChat_Chat_FullMethodName                        = "/sortedchat.SortedChat/Chat"
+	SortedChat_GenerateChatName_FullMethodName            = "/sortedchat.SortedChat/GenerateChatName"
 	SortedChat_GetHistory_FullMethodName                  = "/sortedchat.SortedChat/GetHistory"
 	SortedChat_GetChatList_FullMethodName                 = "/sortedchat.SortedChat/GetChatList"
 	SortedChat_CreateChat_FullMethodName                  = "/sortedchat.SortedChat/CreateChat"
@@ -38,6 +39,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SortedChatClient interface {
 	Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error)
+	GenerateChatName(ctx context.Context, in *GenerateChatNameRequest, opts ...grpc.CallOption) (*GenerateChatNameResponse, error)
 	GetHistory(ctx context.Context, in *GetHistoryRequest, opts ...grpc.CallOption) (*GetHistoryResponse, error)
 	GetChatList(ctx context.Context, in *GetChatListRequest, opts ...grpc.CallOption) (*GetChatListResponse, error)
 	CreateChat(ctx context.Context, in *CreateChatRequest, opts ...grpc.CallOption) (*CreateChatResponse, error)
@@ -77,6 +79,16 @@ func (c *sortedChatClient) Chat(ctx context.Context, in *ChatRequest, opts ...gr
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SortedChat_ChatClient = grpc.ServerStreamingClient[ChatResponse]
+
+func (c *sortedChatClient) GenerateChatName(ctx context.Context, in *GenerateChatNameRequest, opts ...grpc.CallOption) (*GenerateChatNameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateChatNameResponse)
+	err := c.cc.Invoke(ctx, SortedChat_GenerateChatName_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 func (c *sortedChatClient) GetHistory(ctx context.Context, in *GetHistoryRequest, opts ...grpc.CallOption) (*GetHistoryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -193,6 +205,7 @@ func (c *sortedChatClient) InnerChatList(ctx context.Context, in *InnerChatListR
 // for forward compatibility.
 type SortedChatServer interface {
 	Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error
+	GenerateChatName(context.Context, *GenerateChatNameRequest) (*GenerateChatNameResponse, error)
 	GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error)
 	GetChatList(context.Context, *GetChatListRequest) (*GetChatListResponse, error)
 	CreateChat(context.Context, *CreateChatRequest) (*CreateChatResponse, error)
@@ -216,6 +229,9 @@ type UnimplementedSortedChatServer struct{}
 
 func (UnimplementedSortedChatServer) Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
+}
+func (UnimplementedSortedChatServer) GenerateChatName(context.Context, *GenerateChatNameRequest) (*GenerateChatNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateChatName not implemented")
 }
 func (UnimplementedSortedChatServer) GetHistory(context.Context, *GetHistoryRequest) (*GetHistoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetHistory not implemented")
@@ -281,6 +297,24 @@ func _SortedChat_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SortedChat_ChatServer = grpc.ServerStreamingServer[ChatResponse]
+
+func _SortedChat_GenerateChatName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateChatNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).GenerateChatName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_GenerateChatName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).GenerateChatName(ctx, req.(*GenerateChatNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 func _SortedChat_GetHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetHistoryRequest)
@@ -487,6 +521,10 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "sortedchat.SortedChat",
 	HandlerType: (*SortedChatServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GenerateChatName",
+			Handler:    _SortedChat_GenerateChatName_Handler,
+		},
 		{
 			MethodName: "GetHistory",
 			Handler:    _SortedChat_GetHistory_Handler,

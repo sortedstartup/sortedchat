@@ -7,11 +7,12 @@
 package proto
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -1669,6 +1670,110 @@ func (x *GenerateEmbeddingResponse) GetMessage() string {
 	return ""
 }
 
+type GenerateChatNameRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChatId        string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"` //first message in new chat
+	Model         string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateChatNameRequest) Reset() {
+	*x = GenerateChatNameRequest{}
+	mi := &file_chatservice_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateChatNameRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateChatNameRequest) ProtoMessage() {}
+
+func (x *GenerateChatNameRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateChatNameRequest.ProtoReflect.Descriptor instead.
+func (*GenerateChatNameRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *GenerateChatNameRequest) GetChatId() string {
+	if x != nil {
+		return x.ChatId
+	}
+	return ""
+}
+
+func (x *GenerateChatNameRequest) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GenerateChatNameRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+type GenerateChatNameResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChatName      string                 `protobuf:"bytes,1,opt,name=chat_name,json=chatName,proto3" json:"chat_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateChatNameResponse) Reset() {
+	*x = GenerateChatNameResponse{}
+	mi := &file_chatservice_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateChatNameResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateChatNameResponse) ProtoMessage() {}
+
+func (x *GenerateChatNameResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateChatNameResponse.ProtoReflect.Descriptor instead.
+func (*GenerateChatNameResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GenerateChatNameResponse) GetChatName() string {
+	if x != nil {
+		return x.ChatName
+	}
+	return ""
+}
+
 type BranchAChatRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	SourceChatId        string                 `protobuf:"bytes,1,opt,name=source_chat_id,json=sourceChatId,proto3" json:"source_chat_id,omitempty"`                        // Chat to branch from
@@ -1986,7 +2091,13 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\"5\n" +
 	"\x19GenerateEmbeddingResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"\xaf\x01\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"b\n" +
+	"\x17GenerateChatNameRequest\x12\x17\n" +
+	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\x14\n" +
+	"\x05model\x18\x03 \x01(\tR\x05model\"7\n" +
+	"\x18GenerateChatNameResponse\x12\x1b\n" +
+	"\tchat_name\x18\x01 \x01(\tR\bchatName\"\xaf\x01\n" +
 	"\x12BranchAChatRequest\x12$\n" +
 	"\x0esource_chat_id\x18\x01 \x01(\tR\fsourceChatId\x123\n" +
 	"\x16branch_from_message_id\x18\x02 \x01(\tR\x13branchFromMessageId\x12\x1f\n" +
@@ -2008,7 +2119,8 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x0eSTATUS_SUCCESS\x10\x032\xda\a\n" +
 	"\n" +
 	"SortedChat\x12;\n" +
-	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12K\n" +
+	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12]\n" +
+	"\x10GenerateChatName\x12#.sortedchat.GenerateChatNameRequest\x1a$.sortedchat.GenerateChatNameResponse\x12K\n" +
 	"\n" +
 	"GetHistory\x12\x1d.sortedchat.GetHistoryRequest\x1a\x1e.sortedchat.GetHistoryResponse\x12N\n" +
 	"\vGetChatList\x12\x1e.sortedchat.GetChatListRequest\x1a\x1f.sortedchat.GetChatListResponse\x12K\n" +
@@ -2076,6 +2188,8 @@ var file_chatservice_proto_goTypes = []any{
 	(*Document)(nil),                  // 29: sortedchat.Document
 	(*GenerateEmbeddingRequest)(nil),  // 30: sortedchat.GenerateEmbeddingRequest
 	(*GenerateEmbeddingResponse)(nil), // 31: sortedchat.GenerateEmbeddingResponse
+	(*GenerateChatNameRequest)(nil),   // 32: sortedchat.GenerateChatNameRequest
+	(*GenerateChatNameResponse)(nil),  // 33: sortedchat.GenerateChatNameResponse
 	(*BranchAChatRequest)(nil),        // 32: sortedchat.BranchAChatRequest
 	(*BranchAChatResponse)(nil),       // 33: sortedchat.BranchAChatResponse
 	(*InnerChatListRequest)(nil),      // 34: sortedchat.InnerChatListRequest

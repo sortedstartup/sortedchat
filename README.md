@@ -11,3 +11,9 @@ like RAG, creating and hosting web apps.
 ```
 CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
 ```
+
+# Wails Run Command(GO)
+```
+CGO_CFLAGS="-I$(pwd)/../sqlite3" go run -tags "sqlite_fts5",dev,webkit2_41 main.go wails.go
+```
+

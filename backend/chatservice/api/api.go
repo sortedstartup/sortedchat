@@ -206,22 +206,6 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 		return fmt.Errorf("failed to fetch message history: %v", err)
 	}
 
-	var messages []map[string]interface{}
-
-	if len(history) == 0 {
-		messages = append(messages, map[string]interface{}{
-			"role":    "system",
-			"content": "You are a helpful assistant",
-		})
-	}
-
-	for _, msg := range history {
-		messages = append(messages, map[string]interface{}{
-			"role":    msg.Role,
-			"content": msg.Content,
-		})
-	}
-
 	err = s.dao.AddChatMessage(chatId, "user", req.Text)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
@@ -346,6 +330,117 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 	return nil
 }
 
+const (
+	MAX_MESSAGE_LENGTH   = 500
+	START_MESSAGE_LENGTH = 250
+	END_MESSAGE_LENGTH   = 250
+)
+
+func (s *ChatService) GenerateChatName(ctx context.Context, req *pb.GenerateChatNameRequest) (*pb.GenerateChatNameResponse, error) {
+	chatId := req.GetChatId()
+	if chatId == "" {
+		return nil, fmt.Errorf("chat ID is required")
+	}
+
+	msg := req.GetMessage()
+	if msg == "" {
+		return nil, fmt.Errorf("message is required")
+	}
+
+	model := req.GetModel()
+	if model == "" {
+		return nil, fmt.Errorf("model is required")
+	}
+
+	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
+	if apiKey == "" {
+		return nil, fmt.Errorf("OpenAI API key not set")
+	}
+
+	name, err := s.dao.GetChatName(chatId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chat name: %v", err)
+	}
+
+	if name != "" {
+		return nil, fmt.Errorf("Chat name already exists: %s", name)
+	}
+
+	words := strings.Fields(msg)
+	if len(words) > MAX_MESSAGE_LENGTH {
+		start := strings.Join(words[:START_MESSAGE_LENGTH], " ")
+		end := strings.Join(words[len(words)-END_MESSAGE_LENGTH:], " ")
+		msg = start + end
+	}
+
+	prompt := "Based on the given user message give me a most appropriate chat name of 1-5 word length: " + msg
+
+	requestBody := map[string]interface{}{
+		"model": model,
+		"messages": []map[string]string{
+			{
+				"role":    "user",
+				"content": prompt,
+			},
+		},
+		"stream": false,
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %v", err)
+	}
+
+	httpReq, err := http.NewRequest("POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("OpenAI request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("OpenAI API error: %d - %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	var openAIResp struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+
+	if err := json.Unmarshal(respBody, &openAIResp); err != nil {
+		return nil, fmt.Errorf("failed to parse OpenAI response: %v", err)
+	}
+
+	if len(openAIResp.Choices) == 0 {
+		return nil, fmt.Errorf("no choices returned from OpenAI")
+	}
+
+	chatName := openAIResp.Choices[0].Message.Content
+
+	if err := s.dao.SaveChatName(chatId, chatName); err != nil {
+		return nil, fmt.Errorf("error while saving name: %v", err)
+	}
+
+	return &pb.GenerateChatNameResponse{
+		ChatName: chatName,
+	}, nil
+}
+
 func (s *ChatService) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
 	chatId := req.ChatId
 	if chatId == "" {
@@ -389,10 +484,6 @@ func (s *ChatService) GetChatList(ctx context.Context, req *pb.GetChatListReques
 
 func (s *ChatService) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
 	name := req.Name
-	if name == "" {
-		return nil, fmt.Errorf("name is required")
-	}
-
 	chatId := uuid.New().String()
 	projectID := req.GetProjectId()
 

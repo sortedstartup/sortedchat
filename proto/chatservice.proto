@@ -20,7 +20,7 @@ service SortedChat {
     rpc SubmitGenerateEmbeddingsJob(GenerateEmbeddingRequest) returns (GenerateEmbeddingResponse);
 
     rpc BranchAChat(BranchAChatRequest) returns (BranchAChatResponse);
-    rpc InnerChatList(InnerChatListRequest) returns (InnerChatListResponse);
+    rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
 }
 
 service SettingService {
@@ -216,10 +216,10 @@ message BranchAChatResponse {
   string new_chat_id = 2;              // ID of newly created branch
 }
 
-message InnerChatListRequest {
+message ListChatBranchRequest {
   string chat_id = 1;
 }
 
-message InnerChatListResponse {
-  repeated ChatInfo inner_chat_list = 1;
+message ListChatBranchResponse {
+  repeated ChatInfo branch_chat_list = 1;
 }

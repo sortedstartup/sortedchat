@@ -3266,7 +3266,7 @@ export class BranchAChatResponse extends pb_1.Message {
         return BranchAChatResponse.deserialize(bytes);
     }
 }
-export class InnerChatListRequest extends pb_1.Message {
+export class ListChatBranchRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         chat_id?: string;
@@ -3287,8 +3287,8 @@ export class InnerChatListRequest extends pb_1.Message {
     }
     static fromObject(data: {
         chat_id?: string;
-    }): InnerChatListRequest {
-        const message = new InnerChatListRequest({});
+    }): ListChatBranchRequest {
+        const message = new ListChatBranchRequest({});
         if (data.chat_id != null) {
             message.chat_id = data.chat_id;
         }
@@ -3312,8 +3312,8 @@ export class InnerChatListRequest extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): InnerChatListRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new InnerChatListRequest();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListChatBranchRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListChatBranchRequest();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -3329,44 +3329,44 @@ export class InnerChatListRequest extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): InnerChatListRequest {
-        return InnerChatListRequest.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ListChatBranchRequest {
+        return ListChatBranchRequest.deserialize(bytes);
     }
 }
-export class InnerChatListResponse extends pb_1.Message {
+export class ListChatBranchResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        inner_chat_list?: ChatInfo[];
+        branch_chat_list?: ChatInfo[];
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
-            if ("inner_chat_list" in data && data.inner_chat_list != undefined) {
-                this.inner_chat_list = data.inner_chat_list;
+            if ("branch_chat_list" in data && data.branch_chat_list != undefined) {
+                this.branch_chat_list = data.branch_chat_list;
             }
         }
     }
-    get inner_chat_list() {
+    get branch_chat_list() {
         return pb_1.Message.getRepeatedWrapperField(this, ChatInfo, 1) as ChatInfo[];
     }
-    set inner_chat_list(value: ChatInfo[]) {
+    set branch_chat_list(value: ChatInfo[]) {
         pb_1.Message.setRepeatedWrapperField(this, 1, value);
     }
     static fromObject(data: {
-        inner_chat_list?: ReturnType<typeof ChatInfo.prototype.toObject>[];
-    }): InnerChatListResponse {
-        const message = new InnerChatListResponse({});
-        if (data.inner_chat_list != null) {
-            message.inner_chat_list = data.inner_chat_list.map(item => ChatInfo.fromObject(item));
+        branch_chat_list?: ReturnType<typeof ChatInfo.prototype.toObject>[];
+    }): ListChatBranchResponse {
+        const message = new ListChatBranchResponse({});
+        if (data.branch_chat_list != null) {
+            message.branch_chat_list = data.branch_chat_list.map(item => ChatInfo.fromObject(item));
         }
         return message;
     }
     toObject() {
         const data: {
-            inner_chat_list?: ReturnType<typeof ChatInfo.prototype.toObject>[];
+            branch_chat_list?: ReturnType<typeof ChatInfo.prototype.toObject>[];
         } = {};
-        if (this.inner_chat_list != null) {
-            data.inner_chat_list = this.inner_chat_list.map((item: ChatInfo) => item.toObject());
+        if (this.branch_chat_list != null) {
+            data.branch_chat_list = this.branch_chat_list.map((item: ChatInfo) => item.toObject());
         }
         return data;
     }
@@ -3374,19 +3374,19 @@ export class InnerChatListResponse extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.inner_chat_list.length)
-            writer.writeRepeatedMessage(1, this.inner_chat_list, (item: ChatInfo) => item.serialize(writer));
+        if (this.branch_chat_list.length)
+            writer.writeRepeatedMessage(1, this.branch_chat_list, (item: ChatInfo) => item.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): InnerChatListResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new InnerChatListResponse();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListChatBranchResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListChatBranchResponse();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
-                    reader.readMessage(message.inner_chat_list, () => pb_1.Message.addToRepeatedWrapperField(message, 1, ChatInfo.deserialize(reader), ChatInfo));
+                    reader.readMessage(message.branch_chat_list, () => pb_1.Message.addToRepeatedWrapperField(message, 1, ChatInfo.deserialize(reader), ChatInfo));
                     break;
                 default: reader.skipField();
             }
@@ -3396,8 +3396,8 @@ export class InnerChatListResponse extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): InnerChatListResponse {
-        return InnerChatListResponse.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ListChatBranchResponse {
+        return ListChatBranchResponse.deserialize(bytes);
     }
 }
 // Server-side service class removed for client-side compatibility
@@ -3459,9 +3459,9 @@ export class SortedChatClient {
     BranchAChat(message: BranchAChatRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<BranchAChatRequest, BranchAChatResponse>(this._address + "/sortedchat.SortedChat/BranchAChat", message, metadata || {}, SortedChatClient.BranchAChat);
     }
-    private static InnerChatList = new grpc_web_1.MethodDescriptor<InnerChatListRequest, InnerChatListResponse>("/sortedchat.SortedChat/InnerChatList", grpc_web_1.MethodType.UNARY, InnerChatListRequest, InnerChatListResponse, (message: InnerChatListRequest) => message.serialize(), InnerChatListResponse.deserialize);
-    InnerChatList(message: InnerChatListRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.thenableCall<InnerChatListRequest, InnerChatListResponse>(this._address + "/sortedchat.SortedChat/InnerChatList", message, metadata || {}, SortedChatClient.InnerChatList);
+    private static ListChatBranch = new grpc_web_1.MethodDescriptor<ListChatBranchRequest, ListChatBranchResponse>("/sortedchat.SortedChat/ListChatBranch", grpc_web_1.MethodType.UNARY, ListChatBranchRequest, ListChatBranchResponse, (message: ListChatBranchRequest) => message.serialize(), ListChatBranchResponse.deserialize);
+    ListChatBranch(message: ListChatBranchRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<ListChatBranchRequest, ListChatBranchResponse>(this._address + "/sortedchat.SortedChat/ListChatBranch", message, metadata || {}, SortedChatClient.ListChatBranch);
     }
 }
 // Server-side service class removed for client-side compatibility

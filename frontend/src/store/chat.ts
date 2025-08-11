@@ -20,7 +20,7 @@ import {
   GenerateEmbeddingRequest,
   GenerateChatNameRequest,
   BranchAChatRequest,
-  InnerChatListRequest,
+  ListChatBranchRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -164,10 +164,10 @@ export const doChat = (msg: string,projectId: string | undefined) => {
   );
 
   stream.on("data", (res: ChatResponse) => {
-    if (res.response === "text") {
+    if (res.has_text) {
       assistantResponse += res.text;
       $streamingMessage.set(assistantResponse);
-    } else if (res.response === "summary") {
+    } else if (res.has_summary) {
       messageId = res.summary.message_id;
       console.log('Received message ID:', messageId);
     }
@@ -414,7 +414,7 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
   }
 }
 
-export const $isNewlyBranched = atom<boolean>(false);
+export const $isNewlyBranched = atom<boolean>(false); //will change this logic 
 
 export async function BranchChat(branch_from_message_id: string) {
   try {
@@ -434,7 +434,6 @@ export async function BranchChat(branch_from_message_id: string) {
       project_id: currentProjectId || "",
     }), {});
 
-    console.log('response from branch a chat', res.new_chat_id);
     
     if (res.new_chat_id) {
       toast.success("Chat branched successfully!");
@@ -451,25 +450,25 @@ export async function BranchChat(branch_from_message_id: string) {
   }
 }
 
-export const $innerChatList = atom<ChatInfo[]>([]);
+export const $listChatBranch = atom<ChatInfo[]>([]);
 
-export async function InnerChatList (chatId: string) {
+export async function ListChatBranch (chatId: string) {
   try {
-    const res = await chat.InnerChatList(InnerChatListRequest.fromObject({
+    const res = await chat.ListChatBranch(ListChatBranchRequest.fromObject({
       chat_id: chatId,
     }),{});
-    console.log('response from inner chat list', res.inner_chat_list)
-    $innerChatList.set(res.inner_chat_list);
+    console.log('response from branch chat list', res.branch_chat_list)
+    $listChatBranch.set(res.branch_chat_list);
   } catch (error) {
-    console.error('Failed to fetch inner chat list:', error);
-    $innerChatList.set([]);
+    console.error('Failed to fetch branch chat list:', error);
+    $listChatBranch.set([]);
   }
 }
 
 $currentChatId.listen((newChatId) => {
   if (newChatId) {
-    InnerChatList(newChatId);
+    ListChatBranch(newChatId);
   } else {
-    $innerChatList.set([]);
+    $listChatBranch.set([]);
   }
 });

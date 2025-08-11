@@ -759,7 +759,7 @@ func (s *ChatService) BranchAChat(ctx context.Context, req *pb.BranchAChatReques
 	}, nil
 }
 
-func (s *ChatService) InnerChatList(ctx context.Context, req *pb.InnerChatListRequest) (*pb.InnerChatListResponse, error) {
+func (s *ChatService) ListChatBranch(ctx context.Context, req *pb.ListChatBranchRequest) (*pb.ListChatBranchResponse, error) {
 	chatId := req.GetChatId()
 	if chatId == "" {
 		return nil, fmt.Errorf("Chat Id is required")
@@ -770,13 +770,20 @@ func (s *ChatService) InnerChatList(ctx context.Context, req *pb.InnerChatListRe
 		return nil, fmt.Errorf("cannot identify chat id: %w", err)
 	}
 
-	innerChats, err := s.dao.GetInnerChatList(chatId, isMain)
+	innerChats, err := s.dao.GetChatBranches(chatId, isMain)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get inner chat list: %w", err)
 	}
 
-	return &pb.InnerChatListResponse{
-		InnerChatList: innerChats,
+	var pbChats []*pb.ChatInfo
+	for _, c := range innerChats {
+		pbChats = append(pbChats, &pb.ChatInfo{
+			ChatId: c.Id,
+			Name:   c.Name,
+		})
+	}
+	return &pb.ListChatBranchResponse{
+		BranchChatList: pbChats,
 	}, nil
 }
 

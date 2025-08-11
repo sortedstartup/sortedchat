@@ -301,22 +301,23 @@ func (s *SQLiteDAO) IsMainBranch(source_chat_id string) (bool, error) {
 	return isMainBranch, err
 }
 
-func (s *SQLiteDAO) BranchChat(source_chat_id string, branch_first_message_id string, new_chat_id string, branch_name string, project_id string) error {
-	_, err := s.db.Exec(`INSERT INTO chat_list (chat_id, name, project_id, parent_chat_id, branch_point_message_id, is_main_branch)
-						 VALUES (?, ?, ?, ?, ?, FALSE)`, new_chat_id, branch_name, project_id, source_chat_id, branch_first_message_id)
+func (s *SQLiteDAO) BranchChat(source_chat_id string, parent_message_id string, new_chat_id string, branch_name string, project_id string) error {
+	_, err := s.db.Exec(`INSERT INTO chat_list (chat_id, name, project_id, parent_chat_id, parent_message_id, is_main_branch)
+						 VALUES (?, ?, ?, ?, ?, FALSE)`, new_chat_id, branch_name, project_id, source_chat_id, parent_message_id)
 	if err != nil {
 		return err
 	}
 
+	//copy messages up to branch point
 	_, err = s.db.Exec(`INSERT INTO chat_messages (chat_id, role, content, model, error, input_token_count, output_token_count, created_at)
 						SELECT ?, role, content, model, error, input_token_count, output_token_count, created_at
 						FROM chat_messages 
 						WHERE chat_id = ? AND id <= ?
-						ORDER BY id;`, new_chat_id, source_chat_id, branch_first_message_id)
+						ORDER BY id;`, new_chat_id, source_chat_id, parent_message_id)
 	return err
 }
 
-func (s *SQLiteDAO) GetInnerChatList(chatId string, isMain bool) ([]*proto.ChatInfo, error) {
+func (s *SQLiteDAO) GetChatBranches(chatId string, isMain bool) ([]ChatInfoRow, error) {
 	var chats []ChatInfoRow
 	var err error
 
@@ -335,14 +336,17 @@ func (s *SQLiteDAO) GetInnerChatList(chatId string, isMain bool) ([]*proto.ChatI
 		return nil, err
 	}
 
-	var result []*proto.ChatInfo
-	for _, c := range chats {
-		result = append(result, &proto.ChatInfo{
-			ChatId: c.Id,
-			Name:   c.Name,
-		})
-	}
-	return result, nil
+	// var chat_id string
+	// var chat_name string
+
+	// var result []*proto.ChatInfo
+	// for _, c := range chats {
+	// 	result = append(result, ChatInfoRow{
+	// 		chat_id: c.Id,
+	// 		chat_name:   c.Name,
+	// 	})
+	// }
+	return chats, nil
 }
 
 type dbSettings struct {

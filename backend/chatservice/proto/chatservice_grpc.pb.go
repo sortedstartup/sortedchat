@@ -31,7 +31,7 @@ const (
 	SortedChat_ListDocuments_FullMethodName               = "/sortedchat.SortedChat/ListDocuments"
 	SortedChat_SubmitGenerateEmbeddingsJob_FullMethodName = "/sortedchat.SortedChat/SubmitGenerateEmbeddingsJob"
 	SortedChat_BranchAChat_FullMethodName                 = "/sortedchat.SortedChat/BranchAChat"
-	SortedChat_InnerChatList_FullMethodName               = "/sortedchat.SortedChat/InnerChatList"
+	SortedChat_ListChatBranch_FullMethodName              = "/sortedchat.SortedChat/ListChatBranch"
 )
 
 // SortedChatClient is the client API for SortedChat service.
@@ -50,7 +50,7 @@ type SortedChatClient interface {
 	ListDocuments(ctx context.Context, in *ListDocumentsRequest, opts ...grpc.CallOption) (*ListDocumentsResponse, error)
 	SubmitGenerateEmbeddingsJob(ctx context.Context, in *GenerateEmbeddingRequest, opts ...grpc.CallOption) (*GenerateEmbeddingResponse, error)
 	BranchAChat(ctx context.Context, in *BranchAChatRequest, opts ...grpc.CallOption) (*BranchAChatResponse, error)
-	InnerChatList(ctx context.Context, in *InnerChatListRequest, opts ...grpc.CallOption) (*InnerChatListResponse, error)
+	ListChatBranch(ctx context.Context, in *ListChatBranchRequest, opts ...grpc.CallOption) (*ListChatBranchResponse, error)
 }
 
 type sortedChatClient struct {
@@ -190,10 +190,10 @@ func (c *sortedChatClient) BranchAChat(ctx context.Context, in *BranchAChatReque
 	return out, nil
 }
 
-func (c *sortedChatClient) InnerChatList(ctx context.Context, in *InnerChatListRequest, opts ...grpc.CallOption) (*InnerChatListResponse, error) {
+func (c *sortedChatClient) ListChatBranch(ctx context.Context, in *ListChatBranchRequest, opts ...grpc.CallOption) (*ListChatBranchResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InnerChatListResponse)
-	err := c.cc.Invoke(ctx, SortedChat_InnerChatList_FullMethodName, in, out, cOpts...)
+	out := new(ListChatBranchResponse)
+	err := c.cc.Invoke(ctx, SortedChat_ListChatBranch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ type SortedChatServer interface {
 	ListDocuments(context.Context, *ListDocumentsRequest) (*ListDocumentsResponse, error)
 	SubmitGenerateEmbeddingsJob(context.Context, *GenerateEmbeddingRequest) (*GenerateEmbeddingResponse, error)
 	BranchAChat(context.Context, *BranchAChatRequest) (*BranchAChatResponse, error)
-	InnerChatList(context.Context, *InnerChatListRequest) (*InnerChatListResponse, error)
+	ListChatBranch(context.Context, *ListChatBranchRequest) (*ListChatBranchResponse, error)
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -263,8 +263,8 @@ func (UnimplementedSortedChatServer) SubmitGenerateEmbeddingsJob(context.Context
 func (UnimplementedSortedChatServer) BranchAChat(context.Context, *BranchAChatRequest) (*BranchAChatResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BranchAChat not implemented")
 }
-func (UnimplementedSortedChatServer) InnerChatList(context.Context, *InnerChatListRequest) (*InnerChatListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method InnerChatList not implemented")
+func (UnimplementedSortedChatServer) ListChatBranch(context.Context, *ListChatBranchRequest) (*ListChatBranchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListChatBranch not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}
 func (UnimplementedSortedChatServer) testEmbeddedByValue()                    {}
@@ -496,20 +496,20 @@ func _SortedChat_BranchAChat_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SortedChat_InnerChatList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InnerChatListRequest)
+func _SortedChat_ListChatBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListChatBranchRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SortedChatServer).InnerChatList(ctx, in)
+		return srv.(SortedChatServer).ListChatBranch(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SortedChat_InnerChatList_FullMethodName,
+		FullMethod: SortedChat_ListChatBranch_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SortedChatServer).InnerChatList(ctx, req.(*InnerChatListRequest))
+		return srv.(SortedChatServer).ListChatBranch(ctx, req.(*ListChatBranchRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -566,8 +566,8 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SortedChat_BranchAChat_Handler,
 		},
 		{
-			MethodName: "InnerChatList",
-			Handler:    _SortedChat_InnerChatList_Handler,
+			MethodName: "ListChatBranch",
+			Handler:    _SortedChat_ListChatBranch_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

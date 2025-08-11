@@ -19,7 +19,7 @@ import {
   $currentChatMessage,
   $availableModels,
   BranchChat,
-  $innerChatList,
+  $listChatBranch,
 } from "@/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -55,7 +55,7 @@ export function Chat() {
   const currentChatMessage = useStore($currentChatMessage);
   const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
-  const innerChatList = useStore($innerChatList);
+  const listChatBranch = useStore($listChatBranch);
 
   const [inputValue, setInputValue] = useState("");
 
@@ -88,7 +88,7 @@ export function Chat() {
     $selectedModel.set(model);
   };
 
-  const handleBranchChat = async (chatId: string) => {
+  const goToChatBranch = async (chatId: string) => {
     try {
       navigate(`/chat/${chatId}`);
     } catch (error) {
@@ -190,16 +190,16 @@ export function Chat() {
         </ChatMessageList>
         
         {/* Inner Chat List */}
-        {innerChatList.length > 0 && (
+        {listChatBranch.length > 0 && (
           <div className="mt-4 px-2 sm:px-4">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Related Chats:</h3>
             <div className="flex flex-wrap gap-2">
-              {innerChatList.map((chat) => (
+              {listChatBranch.map((chat) => (
                 <Button
                   key={chat.chatId}
                   variant="outline"
                   size="sm"
-                  onClick={() => handleBranchChat(chat.chatId)}
+                  onClick={() => goToChatBranch(chat.chatId)}
                   className="text-xs"
                 >
                   {chat.name}

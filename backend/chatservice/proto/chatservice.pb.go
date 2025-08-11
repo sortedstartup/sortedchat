@@ -609,6 +609,7 @@ type ChatMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	MessageId     string                 `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -653,6 +654,13 @@ func (x *ChatMessage) GetRole() string {
 func (x *ChatMessage) GetContent() string {
 	if x != nil {
 		return x.Content
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
 	}
 	return ""
 }
@@ -1661,6 +1669,214 @@ func (x *GenerateEmbeddingResponse) GetMessage() string {
 	return ""
 }
 
+type BranchAChatRequest struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	SourceChatId        string                 `protobuf:"bytes,1,opt,name=source_chat_id,json=sourceChatId,proto3" json:"source_chat_id,omitempty"`                        // Chat to branch from
+	BranchFromMessageId string                 `protobuf:"bytes,2,opt,name=branch_from_message_id,json=branchFromMessageId,proto3" json:"branch_from_message_id,omitempty"` // Message ID where branch starts
+	BranchName          string                 `protobuf:"bytes,3,opt,name=branch_name,json=branchName,proto3" json:"branch_name,omitempty"`                                // Optional name for new branch
+	ProjectId           string                 `protobuf:"bytes,4,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`                                   // Project context
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *BranchAChatRequest) Reset() {
+	*x = BranchAChatRequest{}
+	mi := &file_chatservice_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BranchAChatRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BranchAChatRequest) ProtoMessage() {}
+
+func (x *BranchAChatRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BranchAChatRequest.ProtoReflect.Descriptor instead.
+func (*BranchAChatRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *BranchAChatRequest) GetSourceChatId() string {
+	if x != nil {
+		return x.SourceChatId
+	}
+	return ""
+}
+
+func (x *BranchAChatRequest) GetBranchFromMessageId() string {
+	if x != nil {
+		return x.BranchFromMessageId
+	}
+	return ""
+}
+
+func (x *BranchAChatRequest) GetBranchName() string {
+	if x != nil {
+		return x.BranchName
+	}
+	return ""
+}
+
+func (x *BranchAChatRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+type BranchAChatResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`                        // Success/error message
+	NewChatId     string                 `protobuf:"bytes,2,opt,name=new_chat_id,json=newChatId,proto3" json:"new_chat_id,omitempty"` // ID of newly created branch
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BranchAChatResponse) Reset() {
+	*x = BranchAChatResponse{}
+	mi := &file_chatservice_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BranchAChatResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BranchAChatResponse) ProtoMessage() {}
+
+func (x *BranchAChatResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BranchAChatResponse.ProtoReflect.Descriptor instead.
+func (*BranchAChatResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *BranchAChatResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *BranchAChatResponse) GetNewChatId() string {
+	if x != nil {
+		return x.NewChatId
+	}
+	return ""
+}
+
+type InnerChatListRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChatId        string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InnerChatListRequest) Reset() {
+	*x = InnerChatListRequest{}
+	mi := &file_chatservice_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InnerChatListRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InnerChatListRequest) ProtoMessage() {}
+
+func (x *InnerChatListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InnerChatListRequest.ProtoReflect.Descriptor instead.
+func (*InnerChatListRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *InnerChatListRequest) GetChatId() string {
+	if x != nil {
+		return x.ChatId
+	}
+	return ""
+}
+
+type InnerChatListResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InnerChatList []*ChatInfo            `protobuf:"bytes,1,rep,name=inner_chat_list,json=innerChatList,proto3" json:"inner_chat_list,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InnerChatListResponse) Reset() {
+	*x = InnerChatListResponse{}
+	mi := &file_chatservice_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InnerChatListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InnerChatListResponse) ProtoMessage() {}
+
+func (x *InnerChatListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InnerChatListResponse.ProtoReflect.Descriptor instead.
+func (*InnerChatListResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *InnerChatListResponse) GetInnerChatList() []*ChatInfo {
+	if x != nil {
+		return x.InnerChatList
+	}
+	return nil
+}
+
 var File_chatservice_proto protoreflect.FileDescriptor
 
 const file_chatservice_proto_rawDesc = "" +
@@ -1697,10 +1913,12 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x11GetHistoryRequest\x12\x16\n" +
 	"\x06chatId\x18\x01 \x01(\tR\x06chatId\"G\n" +
 	"\x12GetHistoryResponse\x121\n" +
-	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\";\n" +
+	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\"Z\n" +
 	"\vChatMessage\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\tR\acontent\"3\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x03 \x01(\tR\tmessageId\"3\n" +
 	"\x12GetChatListRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\"A\n" +
@@ -1768,12 +1986,26 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\"5\n" +
 	"\x19GenerateEmbeddingResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage*c\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"\xaf\x01\n" +
+	"\x12BranchAChatRequest\x12$\n" +
+	"\x0esource_chat_id\x18\x01 \x01(\tR\fsourceChatId\x123\n" +
+	"\x16branch_from_message_id\x18\x02 \x01(\tR\x13branchFromMessageId\x12\x1f\n" +
+	"\vbranch_name\x18\x03 \x01(\tR\n" +
+	"branchName\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x04 \x01(\tR\tprojectId\"O\n" +
+	"\x13BranchAChatResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x12\x1e\n" +
+	"\vnew_chat_id\x18\x02 \x01(\tR\tnewChatId\"/\n" +
+	"\x14InnerChatListRequest\x12\x17\n" +
+	"\achat_id\x18\x01 \x01(\tR\x06chatId\"U\n" +
+	"\x15InnerChatListResponse\x12<\n" +
+	"\x0finner_chat_list\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\rinnerChatList*c\n" +
 	"\x10Embedding_Status\x12\x11\n" +
 	"\rSTATUS_QUEUED\x10\x00\x12\x16\n" +
 	"\x12STATUS_IN_PROGRESS\x10\x01\x12\x10\n" +
 	"\fSTATUS_ERROR\x10\x02\x12\x12\n" +
-	"\x0eSTATUS_SUCCESS\x10\x032\xb4\x06\n" +
+	"\x0eSTATUS_SUCCESS\x10\x032\xda\a\n" +
 	"\n" +
 	"SortedChat\x12;\n" +
 	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12K\n" +
@@ -1788,7 +2020,9 @@ const file_chatservice_proto_rawDesc = "" +
 	"\rCreateProject\x12 .sortedchat.CreateProjectRequest\x1a!.sortedchat.CreateProjectResponse\x12N\n" +
 	"\vGetProjects\x12\x1e.sortedchat.GetProjectsRequest\x1a\x1f.sortedchat.GetProjectsResponse\x12T\n" +
 	"\rListDocuments\x12 .sortedchat.ListDocumentsRequest\x1a!.sortedchat.ListDocumentsResponse\x12j\n" +
-	"\x1bSubmitGenerateEmbeddingsJob\x12$.sortedchat.GenerateEmbeddingRequest\x1a%.sortedchat.GenerateEmbeddingResponse2\xaa\x01\n" +
+	"\x1bSubmitGenerateEmbeddingsJob\x12$.sortedchat.GenerateEmbeddingRequest\x1a%.sortedchat.GenerateEmbeddingResponse\x12N\n" +
+	"\vBranchAChat\x12\x1e.sortedchat.BranchAChatRequest\x1a\x1f.sortedchat.BranchAChatResponse\x12T\n" +
+	"\rInnerChatList\x12 .sortedchat.InnerChatListRequest\x1a!.sortedchat.InnerChatListResponse2\xaa\x01\n" +
 	"\x0eSettingService\x12K\n" +
 	"\n" +
 	"GetSetting\x12\x1d.sortedchat.GetSettingRequest\x1a\x1e.sortedchat.GetSettingResponse\x12K\n" +
@@ -1808,7 +2042,7 @@ func file_chatservice_proto_rawDescGZIP() []byte {
 }
 
 var file_chatservice_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_chatservice_proto_goTypes = []any{
 	(Embedding_Status)(0),             // 0: sortedchat.Embedding_Status
 	(*Settings)(nil),                  // 1: sortedchat.Settings
@@ -1842,6 +2076,10 @@ var file_chatservice_proto_goTypes = []any{
 	(*Document)(nil),                  // 29: sortedchat.Document
 	(*GenerateEmbeddingRequest)(nil),  // 30: sortedchat.GenerateEmbeddingRequest
 	(*GenerateEmbeddingResponse)(nil), // 31: sortedchat.GenerateEmbeddingResponse
+	(*BranchAChatRequest)(nil),        // 32: sortedchat.BranchAChatRequest
+	(*BranchAChatResponse)(nil),       // 33: sortedchat.BranchAChatResponse
+	(*InnerChatListRequest)(nil),      // 34: sortedchat.InnerChatListRequest
+	(*InnerChatListResponse)(nil),     // 35: sortedchat.InnerChatListResponse
 }
 var file_chatservice_proto_depIdxs = []int32{
 	1,  // 0: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
@@ -1853,35 +2091,40 @@ var file_chatservice_proto_depIdxs = []int32{
 	26, // 6: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
 	29, // 7: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
 	0,  // 8: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
-	8,  // 9: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	10, // 10: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
-	13, // 11: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
-	6,  // 12: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
-	17, // 13: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
-	19, // 14: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
-	22, // 15: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
-	24, // 16: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
-	27, // 17: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
-	30, // 18: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
-	2,  // 19: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
-	4,  // 20: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
-	9,  // 21: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	11, // 22: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
-	14, // 23: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
-	7,  // 24: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	18, // 25: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
-	21, // 26: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
-	23, // 27: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
-	25, // 28: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
-	28, // 29: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
-	31, // 30: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
-	3,  // 31: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
-	5,  // 32: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
-	21, // [21:33] is the sub-list for method output_type
-	9,  // [9:21] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	15, // 9: sortedchat.InnerChatListResponse.inner_chat_list:type_name -> sortedchat.ChatInfo
+	8,  // 10: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
+	10, // 11: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
+	13, // 12: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
+	6,  // 13: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
+	17, // 14: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
+	19, // 15: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
+	22, // 16: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
+	24, // 17: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
+	27, // 18: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
+	30, // 19: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
+	32, // 20: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
+	34, // 21: sortedchat.SortedChat.InnerChatList:input_type -> sortedchat.InnerChatListRequest
+	2,  // 22: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
+	4,  // 23: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
+	9,  // 24: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	11, // 25: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
+	14, // 26: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
+	7,  // 27: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
+	18, // 28: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
+	21, // 29: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
+	23, // 30: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
+	25, // 31: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
+	28, // 32: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
+	31, // 33: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
+	33, // 34: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
+	35, // 35: sortedchat.SortedChat.InnerChatList:output_type -> sortedchat.InnerChatListResponse
+	3,  // 36: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
+	5,  // 37: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
+	24, // [24:38] is the sub-list for method output_type
+	10, // [10:24] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_chatservice_proto_init() }
@@ -1895,7 +2138,7 @@ func file_chatservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chatservice_proto_rawDesc), len(file_chatservice_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   31,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

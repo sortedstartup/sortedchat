@@ -196,7 +196,7 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 
 	model := req.Model
 	if model == "" {
-		return fmt.Errorf("Model is required")
+		return fmt.Errorf("model is required")
 	}
 
 	// Get chat history using DAO
@@ -360,8 +360,9 @@ func (s *ChatService) GetHistory(ctx context.Context, req *pb.GetHistoryRequest)
 	var pbMessages []*pb.ChatMessage
 	for _, m := range messages {
 		pbMessages = append(pbMessages, &pb.ChatMessage{
-			Role:    m.Role,
-			Content: m.Content,
+			Role:      m.Role,
+			Content:   m.Content,
+			MessageId: m.Id,
 		})
 	}
 
@@ -619,6 +620,59 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.G
 
 	return &pb.GenerateEmbeddingResponse{
 		Message: "Embedding job submitted successfully",
+	}, nil
+}
+
+func (s *ChatService) BranchAChat(ctx context.Context, req *pb.BranchAChatRequest) (*pb.BranchAChatResponse, error) {
+
+	if req.SourceChatId == "" {
+		return nil, fmt.Errorf("parent id is required")
+	}
+
+	if req.BranchFromMessageId == "" {
+		return nil, fmt.Errorf("message id is required")
+	}
+
+	isMain, err := s.dao.IsMainBranch(req.SourceChatId)
+	if err != nil || !isMain {
+		return &pb.BranchAChatResponse{
+			Message: "Can only branch from main branch chats",
+		}, nil
+	}
+
+	newChatId := uuid.New().String()
+
+	err = s.dao.BranchChat(req.SourceChatId, req.BranchFromMessageId, newChatId, req.BranchName, req.ProjectId)
+	if err != nil {
+		return &pb.BranchAChatResponse{
+			Message: "Failed to create branch",
+		}, nil
+	}
+
+	return &pb.BranchAChatResponse{
+		Message:   "Branch created successfully",
+		NewChatId: newChatId,
+	}, nil
+}
+
+func (s *ChatService) InnerChatList(ctx context.Context, req *pb.InnerChatListRequest) (*pb.InnerChatListResponse, error) {
+	chatId := req.GetChatId()
+	if chatId == "" {
+		return nil, fmt.Errorf("Chat Id is required")
+	}
+
+	isMain, err := s.dao.IsMainBranch(chatId)
+	if err != nil {
+		return nil, fmt.Errorf("cannot identify chat id: %w", err)
+	}
+
+	innerChats, err := s.dao.GetInnerChatList(chatId, isMain)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get inner chat list: %w", err)
+	}
+
+	return &pb.InnerChatListResponse{
+		InnerChatList: innerChats,
 	}, nil
 }
 

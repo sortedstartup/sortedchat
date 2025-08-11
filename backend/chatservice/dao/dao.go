@@ -33,6 +33,10 @@ type DAO interface {
 	SaveRAGChunk(chunkID, projectID, docsID string, startByte, endByte int) error
 	SaveRAGChunkEmbedding(chunkID string, embedding []float64) error
 	GetTopSimilarRAGChunks(embedding string, projectID string) ([]RAGChunkRow, error)
+
+	IsMainBranch(source_chat_id string) (bool, error)
+	BranchChat(source_chat_id string, branch_first_message_id string, new_chat_id string, branch_name string, project_id string) error
+	GetInnerChatList(chatId string, isMain bool) ([]*proto.ChatInfo, error)
 }
 
 type SettingsDAO interface {

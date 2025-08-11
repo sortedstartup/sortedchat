@@ -17,6 +17,9 @@ service SortedChat {
     rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
     rpc ListDocuments(ListDocumentsRequest) returns(ListDocumentsResponse);
     rpc SubmitGenerateEmbeddingsJob(GenerateEmbeddingRequest) returns (GenerateEmbeddingResponse);
+
+    rpc BranchAChat(BranchAChatRequest) returns (BranchAChatResponse);
+    rpc InnerChatList(InnerChatListRequest) returns (InnerChatListResponse);
 }
 
 service SettingService {
@@ -77,6 +80,7 @@ message GetHistoryResponse {
 message ChatMessage {
   string role = 1;
   string content = 2;
+  string message_id = 3;
 }
 
 message GetChatListRequest {
@@ -179,4 +183,25 @@ message GenerateEmbeddingRequest {
 
 message GenerateEmbeddingResponse {
   string message = 1;
+}
+
+message BranchAChatRequest {
+  string source_chat_id = 1;           // Chat to branch from
+  string branch_from_message_id = 2;    // Message ID where branch starts
+  string branch_name = 3;               // Optional name for new branch
+  string project_id = 4;                // Project context
+}
+
+
+message BranchAChatResponse {
+  string message = 1;                   // Success/error message
+  string new_chat_id = 2;              // ID of newly created branch
+}
+
+message InnerChatListRequest {
+  string chat_id = 1;
+}
+
+message InnerChatListResponse {
+  repeated ChatInfo inner_chat_list = 1;
 }

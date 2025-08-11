@@ -18,6 +18,8 @@ import {
   ListDocumentsRequest,
   Document,
   GenerateEmbeddingRequest,
+  BranchAChatRequest,
+  InnerChatListRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -362,3 +364,51 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
     return "failed to submit embedding job";
   }
 }
+
+export async function BranchChat(branch_from_message_id: string) {
+  try {
+    const currentChatId = $currentChatId.get();
+    const currentProjectId = $currentProjectId.get();
+
+    const res = await chat.BranchAChat(BranchAChatRequest.fromObject({
+      source_chat_id: currentChatId,
+      branch_from_message_id: branch_from_message_id,
+      branch_name: "Branch Name",
+      project_id: currentProjectId || "",
+    }), {});
+
+    console.log('response from branch a chat', res.new_chat_id);
+    
+    if (res.new_chat_id) {
+      toast.success("Chat branched successfully!");
+      window.location.href = `/chat/${res.new_chat_id}`;
+    } else {
+      toast.error("Failed to create branch: No chat ID returned");
+    }
+  } catch (error) {
+    console.error('Failed to branch chat:', error);
+    toast.error(`Failed to branch chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+export const $innerChatList = atom<ChatInfo[]>([]);
+export async function InnerChatList (chatId: string) {
+  try {
+    const res = await chat.InnerChatList(InnerChatListRequest.fromObject({
+      chat_id: chatId,
+    }),{});
+    console.log('response from inner chat list', res.inner_chat_list)
+    $innerChatList.set(res.inner_chat_list);
+  } catch (error) {
+    console.error('Failed to fetch inner chat list:', error);
+    $innerChatList.set([]);
+  }
+}
+
+$currentChatId.listen((newChatId) => {
+  if (newChatId) {
+    InnerChatList(newChatId);
+  } else {
+    $innerChatList.set([]);
+  }
+});

@@ -10,7 +10,7 @@ type DAO interface {
 	GetChatName(chatId string) (string, error)
 	SaveChatName(chatId string, name string) error
 	AddChatMessage(chatId string, role string, content string) error
-	AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) error
+	AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error)
 	GetChatMessages(chatId string) ([]ChatMessageRow, error)
 
 	// GetChatList retrieves all chats
@@ -35,6 +35,10 @@ type DAO interface {
 	SaveRAGChunk(chunkID, projectID, docsID string, startByte, endByte int) error
 	SaveRAGChunkEmbedding(chunkID string, embedding []float64) error
 	GetTopSimilarRAGChunks(embedding string, projectID string) ([]RAGChunkRow, error)
+
+	IsMainBranch(source_chat_id string) (bool, error)
+	BranchChat(source_chat_id string, parent_message_id string, new_chat_id string, branch_name string, project_id string) error
+	GetChatBranches(chatId string, isMain bool) ([]*proto.ChatInfo, error)
 }
 
 type SettingsDAO interface {

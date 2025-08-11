@@ -19,6 +19,8 @@ import {
   Document,
   GenerateEmbeddingRequest,
   GenerateChatNameRequest,
+  BranchAChatRequest,
+  ListChatBranchRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -137,11 +139,16 @@ export const doChat = (msg: string,projectId: string | undefined) => {
   $streamingMessage.set("");
 
   const isFirstMessage = isFirstMessageInChat();
+  const isNewlyBranched = $isNewlyBranched.get();
 
   let assistantResponse = "";
+  let messageId = "";
 
-  if (isFirstMessage) {
+  if (isFirstMessage || isNewlyBranched) {
       generateChatName(msg);
+      if (isNewlyBranched) {
+        $isNewlyBranched.set(false);
+      }
     }
 
 
@@ -157,8 +164,13 @@ export const doChat = (msg: string,projectId: string | undefined) => {
   );
 
   stream.on("data", (res: ChatResponse) => {
-    assistantResponse += res.text;
-    $streamingMessage.set(assistantResponse);
+    if (res.has_text) {
+      assistantResponse += res.text;
+      $streamingMessage.set(assistantResponse);
+    } else if (res.has_summary) {
+      messageId = res.summary.message_id;
+      console.log('Received message ID:', messageId);
+    }
   });
 
   stream.on("end", () => {
@@ -169,6 +181,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     const assistantMessage = ChatMessage.fromObject({
       role: "assistant",
       content: assistantResponse,
+      message_id: messageId,
     });
 
     addMessageToHistory(userMessage);
@@ -400,3 +413,62 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
     return "failed to submit embedding job";
   }
 }
+
+export const $isNewlyBranched = atom<boolean>(false); //will change this logic 
+
+export async function BranchChat(branch_from_message_id: string) {
+  try {
+    const currentChatId = $currentChatId.get();
+    console.log('currentChatId', currentChatId);
+    const currentProjectId = $currentProjectId.get();
+
+    if (!branch_from_message_id || branch_from_message_id.trim() === "") {
+      toast.error("Invalid message ID for branching");
+      return;
+    }
+
+    const res = await chat.BranchAChat(BranchAChatRequest.fromObject({
+      source_chat_id: currentChatId,
+      branch_from_message_id: branch_from_message_id,
+      branch_name: "",
+      project_id: currentProjectId || "",
+    }), {});
+
+    
+    if (res.new_chat_id) {
+      toast.success("Chat branched successfully!");
+      console.log('Setting isNewlyBranched to true for chat:', res.new_chat_id);
+      $isNewlyBranched.set(true);
+      $currentChatId.set(res.new_chat_id);
+
+    } else {
+      toast.error("Failed to create branch: No chat ID returned");
+    }
+  } catch (error) {
+    console.error('Failed to branch chat:', error);
+    toast.error(`Failed to branch chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+export const $listChatBranch = atom<ChatInfo[]>([]);
+
+export async function ListChatBranch (chatId: string) {
+  try {
+    const res = await chat.ListChatBranch(ListChatBranchRequest.fromObject({
+      chat_id: chatId,
+    }),{});
+    console.log('response from branch chat list', res.branch_chat_list)
+    $listChatBranch.set(res.branch_chat_list);
+  } catch (error) {
+    console.error('Failed to fetch branch chat list:', error);
+    $listChatBranch.set([]);
+  }
+}
+
+$currentChatId.listen((newChatId) => {
+  if (newChatId) {
+    ListChatBranch(newChatId);
+  } else {
+    $listChatBranch.set([]);
+  }
+});

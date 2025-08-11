@@ -68,7 +68,7 @@ func (s *SQLiteDAO) AddChatMessage(chatId string, role string, content string) e
 func (s *SQLiteDAO) GetChatMessages(chatId string) ([]ChatMessageRow, error) {
 	// todo : do we need to order by time?
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content FROM chat_messages WHERE chat_id = ?", chatId)
+	err := s.db.Select(&messages, "SELECT role, content, id FROM chat_messages WHERE chat_id = ?", chatId)
 	return messages, err
 }
 
@@ -102,13 +102,17 @@ func (s *SQLiteDAO) GetChatList(projectID string) ([]*proto.ChatInfo, error) {
 	return result, nil
 }
 
-// AddChatMessageWithTokens adds a message with token counts and model info
-func (s *SQLiteDAO) AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) error {
-	_, err := s.db.Exec(`
+func (s *SQLiteDAO) AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error) {
+	result, err := s.db.Exec(`
 		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count)
 		VALUES (?, ?, ?, ?, ?, ?)`,
 		chatId, role, content, model, inputTokens, outputTokens)
-	return err
+	if err != nil {
+		return 0, err
+	}
+
+	messageId, err := result.LastInsertId()
+	return messageId, err
 }
 
 // GetModels retrieves all available models
@@ -289,6 +293,60 @@ func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string, projectID string) (
         )
     `, projectID, embedding)
 	return chunks, err
+}
+
+func (s *SQLiteDAO) IsMainBranch(source_chat_id string) (bool, error) {
+	var isMainBranch bool
+	err := s.db.Get(&isMainBranch, `SELECT is_main_branch FROM chat_list WHERE chat_id = ?`, source_chat_id)
+	return isMainBranch, err
+}
+
+func (s *SQLiteDAO) BranchChat(source_chat_id string, parent_message_id string, new_chat_id string, branch_name string, project_id string) error {
+	_, err := s.db.Exec(`INSERT INTO chat_list (chat_id, name, project_id, parent_chat_id, parent_message_id, is_main_branch)
+						 VALUES (?, ?, ?, ?, ?, FALSE)`, new_chat_id, branch_name, project_id, source_chat_id, parent_message_id)
+	if err != nil {
+		return err
+	}
+
+	//copy messages up to branch point
+	_, err = s.db.Exec(`INSERT INTO chat_messages (chat_id, role, content, model, error, input_token_count, output_token_count, created_at)
+						SELECT ?, role, content, model, error, input_token_count, output_token_count, created_at
+						FROM chat_messages 
+						WHERE chat_id = ? AND id <= ?
+						ORDER BY id;`, new_chat_id, source_chat_id, parent_message_id)
+	return err
+}
+
+func (s *SQLiteDAO) GetChatBranches(chatId string, isMain bool) ([]ChatInfoRow, error) {
+	var chats []ChatInfoRow
+	var err error
+
+	if isMain {
+		err = s.db.Select(&chats, `SELECT chat_id, name FROM chat_list WHERE parent_chat_id = ?`, chatId)
+	} else {
+		err = s.db.Select(&chats, `
+			SELECT c1.chat_id, c1.name 
+			FROM chat_list c1
+			JOIN chat_list c2 ON c1.chat_id = c2.parent_chat_id
+			WHERE c2.chat_id = ?
+		`, chatId)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// var chat_id string
+	// var chat_name string
+
+	// var result []*proto.ChatInfo
+	// for _, c := range chats {
+	// 	result = append(result, ChatInfoRow{
+	// 		chat_id: c.Id,
+	// 		chat_name:   c.Name,
+	// 	})
+	// }
+	return chats, nil
 }
 
 type dbSettings struct {

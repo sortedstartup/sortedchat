@@ -308,7 +308,9 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 			if content, ok := delta["content"].(string); ok && content != "" {
 				fullResponse.WriteString(content)
 
-				if err := stream.Send(&pb.ChatResponse{Text: content}); err != nil {
+				if err := stream.Send(&pb.ChatResponse{Response: &pb.ChatResponse_Text{
+					Text: content,
+				}}); err != nil {
 					return fmt.Errorf("failed to send stream response: %v", err)
 				}
 			}
@@ -321,9 +323,20 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 
 	assistantText := fullResponse.String()
 	if assistantText != "" {
-		err := s.dao.AddChatMessageWithTokens(chatId, "assistant", assistantText, model, inputTokens, outputTokens)
+		messageId, err := s.dao.AddChatMessageWithTokens(chatId, "assistant", assistantText, model, inputTokens, outputTokens)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
+		} else {
+			summary := &pb.MessageSummary{
+				MessageId: fmt.Sprintf("%d", messageId),
+			}
+			if err := stream.Send(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Summary{
+					Summary: summary,
+				},
+			}); err != nil {
+				return fmt.Errorf("failed to send message summary: %v", err)
+			}
 		}
 	}
 
@@ -455,8 +468,9 @@ func (s *ChatService) GetHistory(ctx context.Context, req *pb.GetHistoryRequest)
 	var pbMessages []*pb.ChatMessage
 	for _, m := range messages {
 		pbMessages = append(pbMessages, &pb.ChatMessage{
-			Role:    m.Role,
-			Content: m.Content,
+			Role:      m.Role,
+			Content:   m.Content,
+			MessageId: m.Id,
 		})
 	}
 
@@ -710,6 +724,66 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.G
 
 	return &pb.GenerateEmbeddingResponse{
 		Message: "Embedding job submitted successfully",
+	}, nil
+}
+
+func (s *ChatService) BranchAChat(ctx context.Context, req *pb.BranchAChatRequest) (*pb.BranchAChatResponse, error) {
+
+	if req.SourceChatId == "" {
+		return nil, fmt.Errorf("parent id is required")
+	}
+
+	if req.BranchFromMessageId == "" {
+		return nil, fmt.Errorf("message id is required")
+	}
+
+	isMain, err := s.dao.IsMainBranch(req.SourceChatId)
+	if err != nil || !isMain {
+		return &pb.BranchAChatResponse{
+			Message: "Can only branch from main branch chats",
+		}, nil
+	}
+
+	newChatId := uuid.New().String()
+
+	err = s.dao.BranchChat(req.SourceChatId, req.BranchFromMessageId, newChatId, req.BranchName, req.ProjectId)
+	if err != nil {
+		return &pb.BranchAChatResponse{
+			Message: "Failed to create branch",
+		}, nil
+	}
+
+	return &pb.BranchAChatResponse{
+		Message:   "Branch created successfully",
+		NewChatId: newChatId,
+	}, nil
+}
+
+func (s *ChatService) ListChatBranch(ctx context.Context, req *pb.ListChatBranchRequest) (*pb.ListChatBranchResponse, error) {
+	chatId := req.GetChatId()
+	if chatId == "" {
+		return nil, fmt.Errorf("Chat Id is required")
+	}
+
+	isMain, err := s.dao.IsMainBranch(chatId)
+	if err != nil {
+		return nil, fmt.Errorf("cannot identify chat id: %w", err)
+	}
+
+	innerChats, err := s.dao.GetChatBranches(chatId, isMain)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get inner chat list: %w", err)
+	}
+
+	var pbChats []*pb.ChatInfo
+	for _, c := range innerChats {
+		pbChats = append(pbChats, &pb.ChatInfo{
+			ChatId: c.Id,
+			Name:   c.Name,
+		})
+	}
+	return &pb.ListChatBranchResponse{
+		BranchChatList: pbChats,
 	}, nil
 }
 

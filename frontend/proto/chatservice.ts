@@ -690,15 +690,22 @@ export class ChatRequest extends pb_1.Message {
     }
 }
 export class ChatResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {
+    #one_of_decls: number[][] = [[1, 2]];
+    constructor(data?: any[] | ({} & (({
         text?: string;
-    }) {
+        summary?: never;
+    } | {
+        text?: never;
+        summary?: MessageSummary;
+    })))) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("text" in data && data.text != undefined) {
                 this.text = data.text;
+            }
+            if ("summary" in data && data.summary != undefined) {
+                this.summary = data.summary;
             }
         }
     }
@@ -706,23 +713,53 @@ export class ChatResponse extends pb_1.Message {
         return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
     }
     set text(value: string) {
-        pb_1.Message.setField(this, 1, value);
+        pb_1.Message.setOneofField(this, 1, this.#one_of_decls[0], value);
+    }
+    get has_text() {
+        return pb_1.Message.getField(this, 1) != null;
+    }
+    get summary() {
+        return pb_1.Message.getWrapperField(this, MessageSummary, 2) as MessageSummary;
+    }
+    set summary(value: MessageSummary) {
+        pb_1.Message.setOneofWrapperField(this, 2, this.#one_of_decls[0], value);
+    }
+    get has_summary() {
+        return pb_1.Message.getField(this, 2) != null;
+    }
+    get response() {
+        const cases: {
+            [index: number]: "none" | "text" | "summary";
+        } = {
+            0: "none",
+            1: "text",
+            2: "summary"
+        };
+        return cases[pb_1.Message.computeOneofCase(this, [1, 2])];
     }
     static fromObject(data: {
         text?: string;
+        summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
     }): ChatResponse {
         const message = new ChatResponse({});
         if (data.text != null) {
             message.text = data.text;
+        }
+        if (data.summary != null) {
+            message.summary = MessageSummary.fromObject(data.summary);
         }
         return message;
     }
     toObject() {
         const data: {
             text?: string;
+            summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
         } = {};
         if (this.text != null) {
             data.text = this.text;
+        }
+        if (this.summary != null) {
+            data.summary = this.summary.toObject();
         }
         return data;
     }
@@ -730,8 +767,10 @@ export class ChatResponse extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.text.length)
+        if (this.has_text)
             writer.writeString(1, this.text);
+        if (this.has_summary)
+            writer.writeMessage(2, this.summary, () => this.summary.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -744,6 +783,9 @@ export class ChatResponse extends pb_1.Message {
                 case 1:
                     message.text = reader.readString();
                     break;
+                case 2:
+                    reader.readMessage(message.summary, () => message.summary = MessageSummary.deserialize(reader));
+                    break;
                 default: reader.skipField();
             }
         }
@@ -754,6 +796,73 @@ export class ChatResponse extends pb_1.Message {
     }
     static deserializeBinary(bytes: Uint8Array): ChatResponse {
         return ChatResponse.deserialize(bytes);
+    }
+}
+export class MessageSummary extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message_id" in data && data.message_id != undefined) {
+                this.message_id = data.message_id;
+            }
+        }
+    }
+    get message_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message_id?: string;
+    }): MessageSummary {
+        const message = new MessageSummary({});
+        if (data.message_id != null) {
+            message.message_id = data.message_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message_id?: string;
+        } = {};
+        if (this.message_id != null) {
+            data.message_id = this.message_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message_id.length)
+            writer.writeString(1, this.message_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): MessageSummary {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new MessageSummary();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): MessageSummary {
+        return MessageSummary.deserialize(bytes);
     }
 }
 export class GetHistoryRequest extends pb_1.Message {
@@ -895,6 +1004,7 @@ export class ChatMessage extends pb_1.Message {
     constructor(data?: any[] | {
         role?: string;
         content?: string;
+        message_id?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -904,6 +1014,9 @@ export class ChatMessage extends pb_1.Message {
             }
             if ("content" in data && data.content != undefined) {
                 this.content = data.content;
+            }
+            if ("message_id" in data && data.message_id != undefined) {
+                this.message_id = data.message_id;
             }
         }
     }
@@ -919,9 +1032,16 @@ export class ChatMessage extends pb_1.Message {
     set content(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
+    get message_id() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set message_id(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
     static fromObject(data: {
         role?: string;
         content?: string;
+        message_id?: string;
     }): ChatMessage {
         const message = new ChatMessage({});
         if (data.role != null) {
@@ -930,18 +1050,25 @@ export class ChatMessage extends pb_1.Message {
         if (data.content != null) {
             message.content = data.content;
         }
+        if (data.message_id != null) {
+            message.message_id = data.message_id;
+        }
         return message;
     }
     toObject() {
         const data: {
             role?: string;
             content?: string;
+            message_id?: string;
         } = {};
         if (this.role != null) {
             data.role = this.role;
         }
         if (this.content != null) {
             data.content = this.content;
+        }
+        if (this.message_id != null) {
+            data.message_id = this.message_id;
         }
         return data;
     }
@@ -953,6 +1080,8 @@ export class ChatMessage extends pb_1.Message {
             writer.writeString(1, this.role);
         if (this.content.length)
             writer.writeString(2, this.content);
+        if (this.message_id.length)
+            writer.writeString(3, this.message_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -967,6 +1096,9 @@ export class ChatMessage extends pb_1.Message {
                     break;
                 case 2:
                     message.content = reader.readString();
+                    break;
+                case 3:
+                    message.message_id = reader.readString();
                     break;
                 default: reader.skipField();
             }
@@ -2908,6 +3040,366 @@ export class GenerateChatNameResponse extends pb_1.Message {
         return GenerateChatNameResponse.deserialize(bytes);
     }
 }
+export class BranchAChatRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        source_chat_id?: string;
+        branch_from_message_id?: string;
+        branch_name?: string;
+        project_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("source_chat_id" in data && data.source_chat_id != undefined) {
+                this.source_chat_id = data.source_chat_id;
+            }
+            if ("branch_from_message_id" in data && data.branch_from_message_id != undefined) {
+                this.branch_from_message_id = data.branch_from_message_id;
+            }
+            if ("branch_name" in data && data.branch_name != undefined) {
+                this.branch_name = data.branch_name;
+            }
+            if ("project_id" in data && data.project_id != undefined) {
+                this.project_id = data.project_id;
+            }
+        }
+    }
+    get source_chat_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set source_chat_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get branch_from_message_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set branch_from_message_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get branch_name() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set branch_name(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get project_id() {
+        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+    }
+    set project_id(value: string) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    static fromObject(data: {
+        source_chat_id?: string;
+        branch_from_message_id?: string;
+        branch_name?: string;
+        project_id?: string;
+    }): BranchAChatRequest {
+        const message = new BranchAChatRequest({});
+        if (data.source_chat_id != null) {
+            message.source_chat_id = data.source_chat_id;
+        }
+        if (data.branch_from_message_id != null) {
+            message.branch_from_message_id = data.branch_from_message_id;
+        }
+        if (data.branch_name != null) {
+            message.branch_name = data.branch_name;
+        }
+        if (data.project_id != null) {
+            message.project_id = data.project_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            source_chat_id?: string;
+            branch_from_message_id?: string;
+            branch_name?: string;
+            project_id?: string;
+        } = {};
+        if (this.source_chat_id != null) {
+            data.source_chat_id = this.source_chat_id;
+        }
+        if (this.branch_from_message_id != null) {
+            data.branch_from_message_id = this.branch_from_message_id;
+        }
+        if (this.branch_name != null) {
+            data.branch_name = this.branch_name;
+        }
+        if (this.project_id != null) {
+            data.project_id = this.project_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.source_chat_id.length)
+            writer.writeString(1, this.source_chat_id);
+        if (this.branch_from_message_id.length)
+            writer.writeString(2, this.branch_from_message_id);
+        if (this.branch_name.length)
+            writer.writeString(3, this.branch_name);
+        if (this.project_id.length)
+            writer.writeString(4, this.project_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): BranchAChatRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new BranchAChatRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.source_chat_id = reader.readString();
+                    break;
+                case 2:
+                    message.branch_from_message_id = reader.readString();
+                    break;
+                case 3:
+                    message.branch_name = reader.readString();
+                    break;
+                case 4:
+                    message.project_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): BranchAChatRequest {
+        return BranchAChatRequest.deserialize(bytes);
+    }
+}
+export class BranchAChatResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+        new_chat_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+            if ("new_chat_id" in data && data.new_chat_id != undefined) {
+                this.new_chat_id = data.new_chat_id;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get new_chat_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set new_chat_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        message?: string;
+        new_chat_id?: string;
+    }): BranchAChatResponse {
+        const message = new BranchAChatResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        if (data.new_chat_id != null) {
+            message.new_chat_id = data.new_chat_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+            new_chat_id?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        if (this.new_chat_id != null) {
+            data.new_chat_id = this.new_chat_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (this.new_chat_id.length)
+            writer.writeString(2, this.new_chat_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): BranchAChatResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new BranchAChatResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                case 2:
+                    message.new_chat_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): BranchAChatResponse {
+        return BranchAChatResponse.deserialize(bytes);
+    }
+}
+export class ListChatBranchRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        chat_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("chat_id" in data && data.chat_id != undefined) {
+                this.chat_id = data.chat_id;
+            }
+        }
+    }
+    get chat_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set chat_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        chat_id?: string;
+    }): ListChatBranchRequest {
+        const message = new ListChatBranchRequest({});
+        if (data.chat_id != null) {
+            message.chat_id = data.chat_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            chat_id?: string;
+        } = {};
+        if (this.chat_id != null) {
+            data.chat_id = this.chat_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.chat_id.length)
+            writer.writeString(1, this.chat_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListChatBranchRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListChatBranchRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.chat_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListChatBranchRequest {
+        return ListChatBranchRequest.deserialize(bytes);
+    }
+}
+export class ListChatBranchResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        branch_chat_list?: ChatInfo[];
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("branch_chat_list" in data && data.branch_chat_list != undefined) {
+                this.branch_chat_list = data.branch_chat_list;
+            }
+        }
+    }
+    get branch_chat_list() {
+        return pb_1.Message.getRepeatedWrapperField(this, ChatInfo, 1) as ChatInfo[];
+    }
+    set branch_chat_list(value: ChatInfo[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 1, value);
+    }
+    static fromObject(data: {
+        branch_chat_list?: ReturnType<typeof ChatInfo.prototype.toObject>[];
+    }): ListChatBranchResponse {
+        const message = new ListChatBranchResponse({});
+        if (data.branch_chat_list != null) {
+            message.branch_chat_list = data.branch_chat_list.map(item => ChatInfo.fromObject(item));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            branch_chat_list?: ReturnType<typeof ChatInfo.prototype.toObject>[];
+        } = {};
+        if (this.branch_chat_list != null) {
+            data.branch_chat_list = this.branch_chat_list.map((item: ChatInfo) => item.toObject());
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.branch_chat_list.length)
+            writer.writeRepeatedMessage(1, this.branch_chat_list, (item: ChatInfo) => item.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListChatBranchResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListChatBranchResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.branch_chat_list, () => pb_1.Message.addToRepeatedWrapperField(message, 1, ChatInfo.deserialize(reader), ChatInfo));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListChatBranchResponse {
+        return ListChatBranchResponse.deserialize(bytes);
+    }
+}
 // Server-side service class removed for client-side compatibility
 export class SortedChatClient {
     private _address: string;
@@ -2962,6 +3454,14 @@ export class SortedChatClient {
     private static SubmitGenerateEmbeddingsJob = new grpc_web_1.MethodDescriptor<GenerateEmbeddingRequest, GenerateEmbeddingResponse>("/sortedchat.SortedChat/SubmitGenerateEmbeddingsJob", grpc_web_1.MethodType.UNARY, GenerateEmbeddingRequest, GenerateEmbeddingResponse, (message: GenerateEmbeddingRequest) => message.serialize(), GenerateEmbeddingResponse.deserialize);
     SubmitGenerateEmbeddingsJob(message: GenerateEmbeddingRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<GenerateEmbeddingRequest, GenerateEmbeddingResponse>(this._address + "/sortedchat.SortedChat/SubmitGenerateEmbeddingsJob", message, metadata || {}, SortedChatClient.SubmitGenerateEmbeddingsJob);
+    }
+    private static BranchAChat = new grpc_web_1.MethodDescriptor<BranchAChatRequest, BranchAChatResponse>("/sortedchat.SortedChat/BranchAChat", grpc_web_1.MethodType.UNARY, BranchAChatRequest, BranchAChatResponse, (message: BranchAChatRequest) => message.serialize(), BranchAChatResponse.deserialize);
+    BranchAChat(message: BranchAChatRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<BranchAChatRequest, BranchAChatResponse>(this._address + "/sortedchat.SortedChat/BranchAChat", message, metadata || {}, SortedChatClient.BranchAChat);
+    }
+    private static ListChatBranch = new grpc_web_1.MethodDescriptor<ListChatBranchRequest, ListChatBranchResponse>("/sortedchat.SortedChat/ListChatBranch", grpc_web_1.MethodType.UNARY, ListChatBranchRequest, ListChatBranchResponse, (message: ListChatBranchRequest) => message.serialize(), ListChatBranchResponse.deserialize);
+    ListChatBranch(message: ListChatBranchRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<ListChatBranchRequest, ListChatBranchResponse>(this._address + "/sortedchat.SortedChat/ListChatBranch", message, metadata || {}, SortedChatClient.ListChatBranch);
     }
 }
 // Server-side service class removed for client-side compatibility

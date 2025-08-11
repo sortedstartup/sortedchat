@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
-import { CornerDownLeft, Mic } from "lucide-react";
+import { CornerDownLeft} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -88,6 +88,16 @@ export function Chat() {
     $selectedModel.set(model);
   };
 
+  const handleBranchChat = async (chatId: string) => {
+    try {
+      navigate(`/chat/${chatId}`);
+    } catch (error) {
+      console.error('Failed to navigate to chat with project:', error);
+    }
+  };
+
+  
+
   return (
     <div className="flex flex-col h-full mx-auto max-w-full w-full">
       <div className="flex-1 overflow-y-auto px-2 sm:px-4 min-h-0">
@@ -102,9 +112,9 @@ export function Chat() {
             </div>
           ) : (
             <>
-              {data?.map((message) => (
+              {data?.map((message,index) => (
                 <div
-                  key={message.message_id}
+                  key={index}
                   className={`flex flex-col ${
                     message.role === "user" ? "items-end" : "items-start"
                   }`}
@@ -128,12 +138,12 @@ export function Chat() {
                       </ChatBubbleMessage>
                     </ChatBubble>
                   </div>
-                  {message.role === "assistant" && (
+                  {message.role === "assistant" && message.message_id && (
                     <div className="ml-2 sm:ml-4 mt-2">
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => BranchChat(message.message_id || "")}
+                        onClick={() => BranchChat(message.message_id)}
                         className="text-xs"
                       >
                         Branch Chat
@@ -189,7 +199,7 @@ export function Chat() {
                   key={chat.chatId}
                   variant="outline"
                   size="sm"
-                  onClick={() => navigate(`/chat/${chat.chatId}`)}
+                  onClick={() => handleBranchChat(chat.chatId)}
                   className="text-xs"
                 >
                   {chat.name}

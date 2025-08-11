@@ -690,15 +690,22 @@ export class ChatRequest extends pb_1.Message {
     }
 }
 export class ChatResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {
+    #one_of_decls: number[][] = [[1, 2]];
+    constructor(data?: any[] | ({} & (({
         text?: string;
-    }) {
+        summary?: never;
+    } | {
+        text?: never;
+        summary?: MessageSummary;
+    })))) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("text" in data && data.text != undefined) {
                 this.text = data.text;
+            }
+            if ("summary" in data && data.summary != undefined) {
+                this.summary = data.summary;
             }
         }
     }
@@ -706,23 +713,53 @@ export class ChatResponse extends pb_1.Message {
         return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
     }
     set text(value: string) {
-        pb_1.Message.setField(this, 1, value);
+        pb_1.Message.setOneofField(this, 1, this.#one_of_decls[0], value);
+    }
+    get has_text() {
+        return pb_1.Message.getField(this, 1) != null;
+    }
+    get summary() {
+        return pb_1.Message.getWrapperField(this, MessageSummary, 2) as MessageSummary;
+    }
+    set summary(value: MessageSummary) {
+        pb_1.Message.setOneofWrapperField(this, 2, this.#one_of_decls[0], value);
+    }
+    get has_summary() {
+        return pb_1.Message.getField(this, 2) != null;
+    }
+    get response() {
+        const cases: {
+            [index: number]: "none" | "text" | "summary";
+        } = {
+            0: "none",
+            1: "text",
+            2: "summary"
+        };
+        return cases[pb_1.Message.computeOneofCase(this, [1, 2])];
     }
     static fromObject(data: {
         text?: string;
+        summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
     }): ChatResponse {
         const message = new ChatResponse({});
         if (data.text != null) {
             message.text = data.text;
+        }
+        if (data.summary != null) {
+            message.summary = MessageSummary.fromObject(data.summary);
         }
         return message;
     }
     toObject() {
         const data: {
             text?: string;
+            summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
         } = {};
         if (this.text != null) {
             data.text = this.text;
+        }
+        if (this.summary != null) {
+            data.summary = this.summary.toObject();
         }
         return data;
     }
@@ -730,8 +767,10 @@ export class ChatResponse extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.text.length)
+        if (this.has_text)
             writer.writeString(1, this.text);
+        if (this.has_summary)
+            writer.writeMessage(2, this.summary, () => this.summary.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -744,6 +783,9 @@ export class ChatResponse extends pb_1.Message {
                 case 1:
                     message.text = reader.readString();
                     break;
+                case 2:
+                    reader.readMessage(message.summary, () => message.summary = MessageSummary.deserialize(reader));
+                    break;
                 default: reader.skipField();
             }
         }
@@ -754,6 +796,73 @@ export class ChatResponse extends pb_1.Message {
     }
     static deserializeBinary(bytes: Uint8Array): ChatResponse {
         return ChatResponse.deserialize(bytes);
+    }
+}
+export class MessageSummary extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message_id" in data && data.message_id != undefined) {
+                this.message_id = data.message_id;
+            }
+        }
+    }
+    get message_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message_id?: string;
+    }): MessageSummary {
+        const message = new MessageSummary({});
+        if (data.message_id != null) {
+            message.message_id = data.message_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message_id?: string;
+        } = {};
+        if (this.message_id != null) {
+            data.message_id = this.message_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message_id.length)
+            writer.writeString(1, this.message_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): MessageSummary {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new MessageSummary();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): MessageSummary {
+        return MessageSummary.deserialize(bytes);
     }
 }
 export class GetHistoryRequest extends pb_1.Message {

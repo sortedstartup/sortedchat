@@ -10,7 +10,7 @@ type DAO interface {
 	GetChatName(chatId string) (string, error)
 	SaveChatName(chatId string, name string) error
 	AddChatMessage(chatId string, role string, content string) error
-	AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) error
+	AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error)
 	GetChatMessages(chatId string) ([]ChatMessageRow, error)
 
 	// GetChatList retrieves all chats

@@ -102,13 +102,17 @@ func (s *SQLiteDAO) GetChatList(projectID string) ([]*proto.ChatInfo, error) {
 	return result, nil
 }
 
-// AddChatMessageWithTokens adds a message with token counts and model info
-func (s *SQLiteDAO) AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) error {
-	_, err := s.db.Exec(`
+func (s *SQLiteDAO) AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error) {
+	result, err := s.db.Exec(`
 		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count)
 		VALUES (?, ?, ?, ?, ?, ?)`,
 		chatId, role, content, model, inputTokens, outputTokens)
-	return err
+	if err != nil {
+		return 0, err
+	}
+
+	messageId, err := result.LastInsertId()
+	return messageId, err
 }
 
 // GetModels retrieves all available models

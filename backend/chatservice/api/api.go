@@ -308,7 +308,9 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 			if content, ok := delta["content"].(string); ok && content != "" {
 				fullResponse.WriteString(content)
 
-				if err := stream.Send(&pb.ChatResponse{Text: content}); err != nil {
+				if err := stream.Send(&pb.ChatResponse{Response: &pb.ChatResponse_Text{
+					Text: content,
+				}}); err != nil {
 					return fmt.Errorf("failed to send stream response: %v", err)
 				}
 			}
@@ -321,9 +323,20 @@ func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServe
 
 	assistantText := fullResponse.String()
 	if assistantText != "" {
-		err := s.dao.AddChatMessageWithTokens(chatId, "assistant", assistantText, model, inputTokens, outputTokens)
+		messageId, err := s.dao.AddChatMessageWithTokens(chatId, "assistant", assistantText, model, inputTokens, outputTokens)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
+		} else {
+			summary := &pb.MessageSummary{
+				MessageId: fmt.Sprintf("%d", messageId),
+			}
+			if err := stream.Send(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Summary{
+					Summary: summary,
+				},
+			}); err != nil {
+				return fmt.Errorf("failed to send message summary: %v", err)
+			}
 		}
 	}
 

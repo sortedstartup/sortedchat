@@ -67,7 +67,14 @@ message ChatRequest {
 }
 
 message ChatResponse {
+  oneof response {
     string text = 1;
+    MessageSummary summary = 2;
+  }
+}
+
+message MessageSummary {
+  string message_id = 1;
 }
 
 message GetHistoryRequest {

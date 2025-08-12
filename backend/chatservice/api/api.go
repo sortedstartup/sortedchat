@@ -80,13 +80,13 @@ func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *sett
 }
 
 func (s *ChatServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
-	return s.service.Chat(HARDCODED_USER_ID, req, func(response *pb.ChatResponse) error {
+	return s.service.Chat(stream.Context(), HARDCODED_USER_ID, req, func(response *pb.ChatResponse) error {
 		return stream.Send(response)
 	})
 }
 
 func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateChatNameRequest) (*pb.GenerateChatNameResponse, error) {
-	chatName, err := s.service.GenerateChatName(HARDCODED_USER_ID, req.GetChatId(), req.GetMessage(), req.GetModel())
+	chatName, err := s.service.GenerateChatName(ctx, HARDCODED_USER_ID, req.GetChatId(), req.GetMessage(), req.GetModel())
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateC
 }
 
 func (s *ChatServiceAPI) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
-	history, err := s.service.GetHistory(HARDCODED_USER_ID, req.ChatId)
+	history, err := s.service.GetHistory(ctx, HARDCODED_USER_ID, req.ChatId)
 	if err != nil {
 		return nil, err
 	}
@@ -107,13 +107,8 @@ func (s *ChatServiceAPI) GetHistory(ctx context.Context, req *pb.GetHistoryReque
 	}, nil
 }
 
-type ChatRow struct {
-	ChatID string `db:"chat_id"`
-	Name   string `db:"name"`
-}
-
 func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
-	chats, err := s.service.GetChatList(HARDCODED_USER_ID, req.GetProjectId())
+	chats, err := s.service.GetChatList(ctx, HARDCODED_USER_ID, req.GetProjectId())
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +116,7 @@ func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListReq
 }
 
 func (s *ChatServiceAPI) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
-	chatId, err := s.service.CreateChat(HARDCODED_USER_ID, req.Name, req.GetProjectId())
+	chatId, err := s.service.CreateChat(ctx, HARDCODED_USER_ID, req.Name, req.GetProjectId())
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +128,7 @@ func (s *ChatServiceAPI) CreateChat(ctx context.Context, req *pb.CreateChatReque
 }
 
 func (s *ChatServiceAPI) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
-	models, err := s.service.ListModel()
+	models, err := s.service.ListModel(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +137,7 @@ func (s *ChatServiceAPI) ListModel(ctx context.Context, req *pb.ListModelsReques
 }
 
 func (s *ChatServiceAPI) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
-	results, err := s.service.SearchChat(HARDCODED_USER_ID, req.Query)
+	results, err := s.service.SearchChat(ctx, HARDCODED_USER_ID, req.Query)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +149,7 @@ func (s *ChatServiceAPI) SearchChat(ctx context.Context, req *pb.ChatSearchReque
 }
 
 func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
-	projectID, err := s.service.CreateProject(HARDCODED_USER_ID, req.Name, req.Description, req.AdditionalData)
+	projectID, err := s.service.CreateProject(ctx, HARDCODED_USER_ID, req.Name, req.Description, req.AdditionalData)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +161,7 @@ func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjec
 }
 
 func (s *ChatServiceAPI) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
-	projects, err := s.service.GetProjects(HARDCODED_USER_ID)
+	projects, err := s.service.GetProjects(ctx, HARDCODED_USER_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +182,7 @@ func (s *ChatServiceAPI) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 }
 
 func (s *ChatServiceAPI) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
-	docs, err := s.service.ListDocuments(HARDCODED_USER_ID, req.GetProjectId())
+	docs, err := s.service.ListDocuments(ctx, HARDCODED_USER_ID, req.GetProjectId())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch documents: %v", err)
 	}
@@ -211,7 +206,7 @@ func (s *ChatServiceAPI) ListDocuments(ctx context.Context, req *pb.ListDocument
 }
 
 func (s *ChatServiceAPI) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.GenerateEmbeddingRequest) (*pb.GenerateEmbeddingResponse, error) {
-	err := s.service.SubmitGenerateEmbeddingsJob(HARDCODED_USER_ID, req.GetProjectId())
+	err := s.service.SubmitGenerateEmbeddingsJob(ctx, HARDCODED_USER_ID, req.GetProjectId())
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +217,7 @@ func (s *ChatServiceAPI) SubmitGenerateEmbeddingsJob(ctx context.Context, req *p
 }
 
 func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatRequest) (*pb.BranchAChatResponse, error) {
-	newChatId, err := s.service.BranchAChat(HARDCODED_USER_ID, req.SourceChatId, req.BranchFromMessageId, req.BranchName, req.ProjectId)
+	newChatId, err := s.service.BranchAChat(ctx, HARDCODED_USER_ID, req.SourceChatId, req.BranchFromMessageId, req.BranchName, req.ProjectId)
 	if err != nil {
 		return &pb.BranchAChatResponse{
 			Message: err.Error(),
@@ -236,13 +231,21 @@ func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatReq
 }
 
 func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBranchRequest) (*pb.ListChatBranchResponse, error) {
-	branches, err := s.service.ListChatBranch(HARDCODED_USER_ID, req.GetChatId())
+	branches, err := s.service.ListChatBranch(ctx, HARDCODED_USER_ID, req.GetChatId())
 	if err != nil {
 		return nil, err
 	}
 
+	var pbChats []*pb.ChatInfo
+	for i := range branches {
+		pbChats = append(pbChats, &pb.ChatInfo{
+			ChatId: branches[i].Id,
+			Name:   branches[i].Name,
+		})
+	}
+
 	return &pb.ListChatBranchResponse{
-		BranchChatList: branches,
+		BranchChatList: pbChats,
 	}, nil
 }
 

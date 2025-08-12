@@ -39,7 +39,7 @@ func (s *ChatServiceAPI) handleUpload(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	// Use service layer to handle file upload with hardcoded user ID
-	objectID, err := s.service.UploadFile(HARDCODED_USER_ID, projectID, file, header, MaxFileSize, MaxProjectUploadSize)
+	objectID, err := s.service.UploadFile(r.Context(), HARDCODED_USER_ID, projectID, file, header, MaxFileSize, MaxProjectUploadSize)
 	if err != nil {
 		http.Error(w, "Failed to upload file: "+err.Error(), http.StatusInternalServerError)
 		return

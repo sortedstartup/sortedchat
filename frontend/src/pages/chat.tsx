@@ -202,7 +202,7 @@ export function Chat() {
                   onClick={() => goToChatBranch(chat.chatId)}
                   className="text-xs"
                 >
-                  {chat.name}
+                  {chat.name || "New Branch"}
                 </Button>
               ))}
             </div>

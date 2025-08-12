@@ -218,7 +218,11 @@ export const generateChatName = async (msg: string) => {
 };
 
 $chatName.listen(() => {
-  getChatList();
+  const currentProjectId = $currentProjectId.get();
+  getChatList(); 
+  if (currentProjectId) {
+    getChatList(currentProjectId);
+  }
 });
 
 $currentChatId.listen((_newValue, _oldValue) => {

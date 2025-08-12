@@ -314,33 +314,26 @@ func (s *SQLiteDAO) BranchChat(userID string, source_chat_id string, parent_mess
 	return err
 }
 
-func (s *SQLiteDAO) GetChatBranches(userID string, chatId string, isMain bool) ([]*proto.ChatInfo, error) {
+func (s *SQLiteDAO) GetChatBranches(userID string, chatId string, isMain bool) ([]ChatInfoRow, error) {
 	var chats []ChatInfoRow
 	var err error
 
 	if isMain {
-		err = s.db.Select(&chats, `SELECT chat_id, name FROM chat_list WHERE parent_chat_id = ? AND user_id = ?`, chatId, userID)
+		err = s.db.Select(&chats, `SELECT chat_id, name FROM chat_list WHERE parent_chat_id = ?`, chatId)
 	} else {
 		err = s.db.Select(&chats, `
 			SELECT c1.chat_id, c1.name 
 			FROM chat_list c1
-			JOIN chat_list c2 ON c1.parent_chat_id = c2.chat_id
-			WHERE c2.chat_id = ? AND c1.user_id = ? AND c2.user_id = ?
-		`, chatId, userID, userID)
+			JOIN chat_list c2 ON c1.chat_id = c2.parent_chat_id
+			WHERE c2.chat_id = ?
+		`, chatId)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*proto.ChatInfo
-	for _, c := range chats {
-		result = append(result, &proto.ChatInfo{
-			ChatId: c.Id,
-			Name:   c.Name,
-		})
-	}
-	return result, nil
+	return chats, nil
 }
 
 type dbSettings struct {

@@ -70,7 +70,7 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 	}, nil
 }
 
-func (s *ChatService) Chat(userID string, req *pb.ChatRequest, stream func(*pb.ChatResponse) error) error {
+func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatRequest, stream func(*pb.ChatResponse) error) error {
 	projectID := req.GetProjectId()
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
@@ -103,7 +103,7 @@ func (s *ChatService) Chat(userID string, req *pb.ChatRequest, stream func(*pb.C
 	userMessage := req.Text
 
 	if projectID != "" && projectID != "null" { // if this chat is in context of a project
-		chunks, err := s.retrieveSimilarChunks(context.Background(), userID, projectID, req.Text)
+		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, req.Text)
 		if err != nil {
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
@@ -237,7 +237,7 @@ const (
 	END_MESSAGE_LENGTH   = 250
 )
 
-func (s *ChatService) GenerateChatName(userID string, chatId string, message string, model string) (string, error) {
+func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatId string, message string, model string) (string, error) {
 	if chatId == "" {
 		return "", fmt.Errorf("chat ID is required")
 	}
@@ -337,7 +337,7 @@ func (s *ChatService) GenerateChatName(userID string, chatId string, message str
 	return chatName, nil
 }
 
-func (s *ChatService) GetHistory(userID string, chatId string) ([]*pb.ChatMessage, error) {
+func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId string) ([]*pb.ChatMessage, error) {
 	if chatId == "" {
 		return nil, fmt.Errorf("chat ID is required")
 	}
@@ -359,7 +359,7 @@ func (s *ChatService) GetHistory(userID string, chatId string) ([]*pb.ChatMessag
 	return pbMessages, nil
 }
 
-func (s *ChatService) GetChatList(userID string, projectID string) ([]*pb.ChatInfo, error) {
+func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID string) ([]*pb.ChatInfo, error) {
 	chats, err := s.dao.GetChatList(userID, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch chat list: %v", err)
@@ -367,7 +367,7 @@ func (s *ChatService) GetChatList(userID string, projectID string) ([]*pb.ChatIn
 	return chats, nil
 }
 
-func (s *ChatService) CreateChat(userID string, name string, projectID string) (string, error) {
+func (s *ChatService) CreateChat(ctx context.Context, userID string, name string, projectID string) (string, error) {
 	chatId := uuid.New().String()
 
 	err := s.dao.CreateChat(userID, chatId, name, projectID)
@@ -378,7 +378,7 @@ func (s *ChatService) CreateChat(userID string, name string, projectID string) (
 	return chatId, nil
 }
 
-func (s *ChatService) ListModel() ([]*pb.ModelListInfo, error) {
+func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error) {
 	models, err := s.dao.GetModels()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch models: %v", err)
@@ -395,7 +395,7 @@ func (s *ChatService) ListModel() ([]*pb.ModelListInfo, error) {
 	return pbModels, nil
 }
 
-func (s *ChatService) SearchChat(userID string, query string) ([]*pb.SearchResult, error) {
+func (s *ChatService) SearchChat(ctx context.Context, userID string, query string) ([]*pb.SearchResult, error) {
 	if query == "" {
 		return nil, fmt.Errorf("query is required")
 	}
@@ -417,7 +417,7 @@ func (s *ChatService) SearchChat(userID string, query string) ([]*pb.SearchResul
 	return pbResults, nil
 }
 
-func (s *ChatService) CreateProject(userID string, name string, description string, additionalData string) (string, error) {
+func (s *ChatService) CreateProject(ctx context.Context, userID string, name string, description string, additionalData string) (string, error) {
 	id := uuid.New().String()
 
 	if name == "" {
@@ -432,7 +432,7 @@ func (s *ChatService) CreateProject(userID string, name string, description stri
 	return projectID, nil
 }
 
-func (s *ChatService) GetProjects(userID string) ([]dao.ProjectRow, error) {
+func (s *ChatService) GetProjects(ctx context.Context, userID string) ([]dao.ProjectRow, error) {
 	projects, err := s.dao.GetProjects(userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch project list: %w", err)
@@ -441,7 +441,7 @@ func (s *ChatService) GetProjects(userID string) ([]dao.ProjectRow, error) {
 	return projects, nil
 }
 
-func (s *ChatService) ListDocuments(userID string, projectID string) ([]dao.DocumentListRow, error) {
+func (s *ChatService) ListDocuments(ctx context.Context, userID string, projectID string) ([]dao.DocumentListRow, error) {
 	docs, err := s.dao.FilesList(userID, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch documents: %v", err)
@@ -450,7 +450,7 @@ func (s *ChatService) ListDocuments(userID string, projectID string) ([]dao.Docu
 	return docs, nil
 }
 
-func (s *ChatService) UploadFile(userID string, projectID string, file multipart.File, header *multipart.FileHeader, maxFileSize int64, maxProjectSize int64) (string, error) {
+func (s *ChatService) UploadFile(ctx context.Context, userID string, projectID string, file multipart.File, header *multipart.FileHeader, maxFileSize int64, maxProjectSize int64) (string, error) {
 	if projectID == "" {
 		return "", fmt.Errorf("project_id is required")
 	}
@@ -473,7 +473,7 @@ func (s *ChatService) UploadFile(userID string, projectID string, file multipart
 	// Generate object ID and store file
 	objectID := uuid.New().String()
 
-	if err := s.store.StoreObject(context.Background(), objectID, file); err != nil {
+	if err := s.store.StoreObject(ctx, objectID, file); err != nil {
 		return "", fmt.Errorf("failed to store file: %v", err)
 	}
 
@@ -485,7 +485,7 @@ func (s *ChatService) UploadFile(userID string, projectID string, file multipart
 	// Publish embedding generation event
 	msg := GenerateEmbeddingMessage{DocsID: objectID}
 	msgBytes, _ := json.Marshal(msg)
-	err = s.queue.Publish(context.Background(), events.GENERATE_EMBEDDINGS, msgBytes)
+	err = s.queue.Publish(ctx, events.GENERATE_EMBEDDINGS, msgBytes)
 	if err != nil {
 		// Log error but don't fail the upload
 		log.Printf("Failed to publish embedding generation event: %v", err)
@@ -564,7 +564,7 @@ func (s *ChatService) retrieveSimilarChunks(ctx context.Context, userID string, 
 	return response, nil
 }
 
-func (s *ChatService) SubmitGenerateEmbeddingsJob(userID string, projectID string) error {
+func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, userID string, projectID string) error {
 	if projectID == "" {
 		return fmt.Errorf("project_id is required")
 	}
@@ -577,7 +577,7 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(userID string, projectID strin
 	for _, docsID := range docs {
 		msg := GenerateEmbeddingMessage{DocsID: docsID}
 		msgBytes, _ := json.Marshal(msg)
-		err := s.queue.Publish(context.Background(), "generate.embedding", msgBytes)
+		err := s.queue.Publish(ctx, "generate.embedding", msgBytes)
 		if err != nil {
 			return fmt.Errorf("failed to publish job: %v", err)
 		}
@@ -590,7 +590,7 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(userID string, projectID strin
 	return nil
 }
 
-func (s *ChatService) BranchAChat(userID string, sourceChatId string, branchFromMessageId string, branchName string, projectId string) (string, error) {
+func (s *ChatService) BranchAChat(ctx context.Context, userID string, sourceChatId string, branchFromMessageId string, branchName string, projectId string) (string, error) {
 	if sourceChatId == "" {
 		return "", fmt.Errorf("parent id is required")
 	}
@@ -614,7 +614,7 @@ func (s *ChatService) BranchAChat(userID string, sourceChatId string, branchFrom
 	return newChatId, nil
 }
 
-func (s *ChatService) ListChatBranch(userID string, chatId string) ([]*pb.ChatInfo, error) {
+func (s *ChatService) ListChatBranch(ctx context.Context, userID string, chatId string) ([]dao.ChatInfoRow, error) {
 	if chatId == "" {
 		return nil, fmt.Errorf("Chat Id is required")
 	}
@@ -661,7 +661,6 @@ func (s *ChatService) EmbeddingSubscriber() {
 					fmt.Printf("Failed :%v\n", err)
 					continue
 				}
-				defer f.Close()
 
 				metadata := map[string]string{
 					"project_id": docMeta.ProjectID,
@@ -678,22 +677,20 @@ func (s *ChatService) EmbeddingSubscriber() {
 					continue
 				}
 
-				// Save each chunk to rag_chunks - we need the user_id from the document
+				embeddingMap := make(map[string]rag.Embedding, len(result.Embeddings))
+				for i := range result.Embeddings {
+					embeddingMap[result.Embeddings[i].ChunkID] = result.Embeddings[i]
+				}
 				for _, chunk := range result.Chunks {
-					// For now, we use hardcoded user_id "0" - in future this should be passed through the metadata
 					userID := "0" // TODO: Get actual user_id from document metadata when user system is fully implemented
 					err := s.dao.SaveRAGChunk(userID, chunk.ID, chunk.ProjectID, chunk.DocsID, chunk.StartByte, chunk.EndByte)
 					if err != nil {
 						fmt.Printf("Failed to save chunk: %v", err)
 					}
 
-					for _, emb := range result.Embeddings {
-						if emb.ChunkID == chunk.ID {
-							err := s.dao.SaveRAGChunkEmbedding(chunk.ID, emb.Vector)
-							if err != nil {
-								fmt.Printf("Failed to save embedding: %v\n", err)
-							}
-							break
+					if emb, ok := embeddingMap[chunk.ID]; ok {
+						if err := s.dao.SaveRAGChunkEmbedding(chunk.ID, emb.Vector); err != nil {
+							fmt.Printf("Failed to save embedding: %v\n", err)
 						}
 					}
 				}

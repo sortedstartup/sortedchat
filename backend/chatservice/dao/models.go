@@ -24,6 +24,7 @@ type DocumentListRow struct {
 	CreatedAt       string `db:"created_at"`
 	UpdatedAt       string `db:"updated_at"`
 	EmbeddingStatus int32  `db:"embedding_status"`
+	User            string `db:"user_id"`
 }
 
 type RAGChunkRow struct {

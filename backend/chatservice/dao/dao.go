@@ -6,39 +6,40 @@ import (
 
 type DAO interface {
 	// Chat CRUD
-	CreateChat(chatId string, name string, projectID string) error
-	GetChatName(chatId string) (string, error)
-	SaveChatName(chatId string, name string) error
-	AddChatMessage(chatId string, role string, content string) error
-	AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error)
-	GetChatMessages(chatId string) ([]ChatMessageRow, error)
+	CreateChat(userID string, chatId string, name string, projectID string) error
+	GetChatName(userID string, chatId string) (string, error)
+	SaveChatName(userID string, chatId string, name string) error
+	AddChatMessage(userID string, chatId string, role string, content string) error
+	AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error)
+	GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error)
 
-	// GetChatList retrieves all chats
-	GetChatList(projectID string) ([]*proto.ChatInfo, error)
+	// GetChatList retrieves all chats for a user
+	GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error)
 
 	// Model operations
 	GetModels() ([]proto.ModelListInfo, error)
 
 	// Search operations
-	SearchChatMessages(query string) ([]proto.SearchResult, error)
+	SearchChatMessages(userID string, query string) ([]proto.SearchResult, error)
 
 	//Project Operations
-	CreateProject(id string, name string, description string, additionalData string) (string, error)
-	GetProjects() ([]ProjectRow, error)
-	FileSave(project_id string, docs_id string, file_name string, fileSize int64) error
+	CreateProject(userID string, id string, name string, description string, additionalData string) (string, error)
+	GetProjects(userID string) ([]ProjectRow, error)
+	FileSave(userID string, project_id string, docs_id string, file_name string, fileSize int64) error
 	UpdateEmbeddingStatus(docs_id string, status int32) error
-	FetchErrorDocs(project_id string) ([]string, error)
-	FilesList(project_id string) ([]DocumentListRow, error)
+	FetchErrorDocs(userID string, project_id string) ([]string, error)
+	FilesList(userID string, project_id string) ([]DocumentListRow, error)
 	GetFileMetadata(docsId string) (*DocumentListRow, error)
+	TotalUsedSize(userID string, projectID string) (int64, error)
 
 	// SaveRAGChunk saves a chunk to rag_chunks table
-	SaveRAGChunk(chunkID, projectID, docsID string, startByte, endByte int) error
+	SaveRAGChunk(userID string, chunkID, projectID, docsID string, startByte, endByte int) error
 	SaveRAGChunkEmbedding(chunkID string, embedding []float64) error
-	GetTopSimilarRAGChunks(embedding string, projectID string) ([]RAGChunkRow, error)
+	GetTopSimilarRAGChunks(userID string, embedding string, projectID string) ([]RAGChunkRow, error)
 
-	IsMainBranch(source_chat_id string) (bool, error)
-	BranchChat(source_chat_id string, parent_message_id string, new_chat_id string, branch_name string, project_id string) error
-	GetChatBranches(chatId string, isMain bool) ([]*proto.ChatInfo, error)
+	IsMainBranch(userID string, source_chat_id string) (bool, error)
+	BranchChat(userID string, source_chat_id string, parent_message_id string, new_chat_id string, branch_name string, project_id string) error
+	GetChatBranches(userID string, chatId string, isMain bool) ([]*proto.ChatInfo, error)
 }
 
 type SettingsDAO interface {

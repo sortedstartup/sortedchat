@@ -31,27 +31,27 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 }
 
 // CreateChat creates a new chat with the given ID and name
-func (s *SQLiteDAO) CreateChat(chatId string, name string, projectID string) error {
+func (s *SQLiteDAO) CreateChat(userID string, chatId string, name string, projectID string) error {
 	if projectID == "" || projectID == "null" {
-		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name) VALUES (?, ?)", chatId, name)
+		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name, user_id) VALUES (?, ?, ?)", chatId, name, userID)
 		return err
 	} else {
-		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name, project_id) VALUES (?, ?, ?)", chatId, name, projectID)
+		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name, project_id, user_id) VALUES (?, ?, ?, ?)", chatId, name, projectID, userID)
 		return err
 	}
 }
 
-func (s *SQLiteDAO) GetChatName(chatId string) (string, error) {
+func (s *SQLiteDAO) GetChatName(userID string, chatId string) (string, error) {
 	var name string
-	err := s.db.Get(&name, "SELECT name FROM chat_list WHERE chat_id = ?", chatId)
+	err := s.db.Get(&name, "SELECT name FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get chat name: %w", err)
 	}
 	return name, nil
 }
 
-func (s *SQLiteDAO) SaveChatName(chatId string, name string) error {
-	_, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ?", name, chatId)
+func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) error {
+	_, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ? AND user_id = ?", name, chatId, userID)
 	if err != nil {
 		return fmt.Errorf("failed to get chat name: %w", err)
 	}
@@ -59,16 +59,16 @@ func (s *SQLiteDAO) SaveChatName(chatId string, name string) error {
 }
 
 // AddChatMessage adds a message to a chat
-func (s *SQLiteDAO) AddChatMessage(chatId string, role string, content string) error {
-	_, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content) VALUES (?, ?, ?)", chatId, role, content)
+func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string) error {
+	_, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id) VALUES (?, ?, ?, ?)", chatId, role, content, userID)
 	return err
 }
 
 // GetChatMessages retrieves all messages for a given chat
-func (s *SQLiteDAO) GetChatMessages(chatId string) ([]ChatMessageRow, error) {
+func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	// todo : do we need to order by time?
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, id FROM chat_messages WHERE chat_id = ?", chatId)
+	err := s.db.Select(&messages, "SELECT role, content, id FROM chat_messages WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	return messages, err
 }
 
@@ -77,15 +77,15 @@ type ChatInfoRow struct {
 	Name string `db:"name"`
 }
 
-// GetChatList retrieves all chats
-func (s *SQLiteDAO) GetChatList(projectID string) ([]*proto.ChatInfo, error) {
+// GetChatList retrieves all chats for a user
+func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
 	var err error
 
 	if projectID == "" || projectID == "null" {
-		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL")
+		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND user_id = ?", userID)
 	} else {
-		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ?", projectID)
+		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ? AND user_id = ?", projectID, userID)
 	}
 
 	if err != nil {
@@ -102,11 +102,11 @@ func (s *SQLiteDAO) GetChatList(projectID string) ([]*proto.ChatInfo, error) {
 	return result, nil
 }
 
-func (s *SQLiteDAO) AddChatMessageWithTokens(chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error) {
+func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error) {
 	result, err := s.db.Exec(`
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count)
-		VALUES (?, ?, ?, ?, ?, ?)`,
-		chatId, role, content, model, inputTokens, outputTokens)
+		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		chatId, role, content, model, inputTokens, outputTokens, userID)
 	if err != nil {
 		return 0, err
 	}
@@ -137,7 +137,7 @@ func (s *SQLiteDAO) GetModels() ([]proto.ModelListInfo, error) {
 }
 
 // SearchChatMessages searches chat messages using FTS
-func (s *SQLiteDAO) SearchChatMessages(query string) ([]proto.SearchResult, error) {
+func (s *SQLiteDAO) SearchChatMessages(userID string, query string) ([]proto.SearchResult, error) {
 	const searchSQL = `
 		SELECT
 			cm.chat_id as chat_id,
@@ -156,7 +156,7 @@ func (s *SQLiteDAO) SearchChatMessages(query string) ([]proto.SearchResult, erro
 		JOIN
 			chat_list AS cl ON cm.chat_id = cl.chat_id
 		WHERE
-			fts.chat_messages_fts MATCH ?
+			fts.chat_messages_fts MATCH ? AND cm.user_id = ? AND cl.user_id = ?
 		GROUP BY
 			cm.chat_id, cl.name
 		ORDER BY
@@ -169,7 +169,7 @@ func (s *SQLiteDAO) SearchChatMessages(query string) ([]proto.SearchResult, erro
 		MatchedText string `db:"aggregated_snippets"`
 	}
 
-	err := s.db.Select(&rows, searchSQL, query)
+	err := s.db.Select(&rows, searchSQL, query, userID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -187,30 +187,27 @@ func (s *SQLiteDAO) SearchChatMessages(query string) ([]proto.SearchResult, erro
 }
 
 // Project CRUD
-func (s *SQLiteDAO) CreateProject(id string, name string, description string, additionalData string) (string, error) {
+func (s *SQLiteDAO) CreateProject(userID string, id string, name string, description string, additionalData string) (string, error) {
 	_, err := s.db.Exec(`
-		INSERT INTO project (id, name, description, additional_data, created_at, updated_at)
-		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-	`, id, name, description, additionalData)
-	if err != nil {
-		return "", err
-	}
+		INSERT INTO project (id, name, description, additional_data, user_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	`, id, name, description, additionalData, userID)
 	if err != nil {
 		return "", err
 	}
 	return id, nil
 }
 
-// GetProjectList retrieves all projects
-func (s *SQLiteDAO) GetProjects() ([]ProjectRow, error) {
+// GetProjectList retrieves all projects for a user
+func (s *SQLiteDAO) GetProjects(userID string) ([]ProjectRow, error) {
 	var projects []ProjectRow
-	err := s.db.Select(&projects, `SELECT id, name, description, additional_data, created_at, updated_at FROM project`)
+	err := s.db.Select(&projects, `SELECT id, name, description, additional_data, created_at, updated_at FROM project WHERE user_id = ?`, userID)
 	return projects, err
 }
 
-func (s *SQLiteDAO) FileSave(project_id string, docs_id string, file_name string, file_size int64) error {
+func (s *SQLiteDAO) FileSave(userID string, project_id string, docs_id string, file_name string, file_size int64) error {
 	size_kb := file_size / 1024
-	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name,file_size,embedding_status) VALUES (?, ?, ?, ?, ?)", project_id, docs_id, file_name, size_kb, int32(proto.Embedding_Status_STATUS_QUEUED))
+	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name,file_size,embedding_status, user_id) VALUES (?, ?, ?, ?, ?, ?)", project_id, docs_id, file_name, size_kb, int32(proto.Embedding_Status_STATUS_QUEUED), userID)
 	return err
 }
 
@@ -219,9 +216,9 @@ func (s *SQLiteDAO) UpdateEmbeddingStatus(docs_id string, status int32) error {
 	return err
 }
 
-func (s *SQLiteDAO) FetchErrorDocs(project_id string) ([]string, error) {
+func (s *SQLiteDAO) FetchErrorDocs(userID string, project_id string) ([]string, error) {
 	var docs_list []string
-	err := s.db.Select(&docs_list, "SELECT docs_id FROM project_docs WHERE project_id = ? AND embedding_status = ?", project_id, int32(proto.Embedding_Status_STATUS_ERROR))
+	err := s.db.Select(&docs_list, "SELECT docs_id FROM project_docs WHERE project_id = ? AND embedding_status = ? AND user_id = ?", project_id, int32(proto.Embedding_Status_STATUS_ERROR), userID)
 	if err != nil {
 		fmt.Print("fetchErrorDocs dao", err)
 		return nil, fmt.Errorf("failed to check embedding status: %w", err)
@@ -230,23 +227,23 @@ func (s *SQLiteDAO) FetchErrorDocs(project_id string) ([]string, error) {
 	return docs_list, nil
 }
 
-func (s *SQLiteDAO) TotalUsedSize(projectID string) (int64, error) {
+func (s *SQLiteDAO) TotalUsedSize(userID string, projectID string) (int64, error) {
 	var total int64
 	err := s.db.Get(&total, `
-		SELECT total(file_size)
+		SELECT COALESCE(SUM(file_size), 0)
 		FROM project_docs
-		WHERE project_id = ?
-	`, projectID)
+		WHERE project_id = ? AND user_id = ?
+	`, projectID, userID)
 	return total, err
 }
 
-func (s *SQLiteDAO) FilesList(project_id string) ([]DocumentListRow, error) {
+func (s *SQLiteDAO) FilesList(userID string, project_id string) ([]DocumentListRow, error) {
 	var files []DocumentListRow
 	err := s.db.Select(&files, `
 		SELECT id, project_id, docs_id, file_name, created_at, updated_at,embedding_status
 		FROM project_docs
-		WHERE project_id = ?
-	`, project_id)
+		WHERE project_id = ? AND user_id = ?
+	`, project_id, userID)
 	return files, err
 }
 
@@ -260,11 +257,11 @@ func (s *SQLiteDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
 }
 
 // SaveRAGChunk saves a chunk to rag_chunks table
-func (s *SQLiteDAO) SaveRAGChunk(chunkID, projectID, docsID string, startByte, endByte int) error {
+func (s *SQLiteDAO) SaveRAGChunk(userID string, chunkID, projectID, docsID string, startByte, endByte int) error {
 	_, err := s.db.Exec(`
-		INSERT INTO rag_chunks (id, project_id, docs_id, start_byte, end_byte)
-		VALUES (?, ?, ?, ?, ?)
-	`, chunkID, projectID, docsID, startByte, endByte)
+		INSERT INTO rag_chunks (id, project_id, docs_id, start_byte, end_byte, user_id)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, chunkID, projectID, docsID, startByte, endByte, userID)
 	return err
 }
 
@@ -278,12 +275,12 @@ func (s *SQLiteDAO) SaveRAGChunkEmbedding(chunkID string, vector []float64) erro
 	return err
 }
 
-func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string, projectID string) ([]RAGChunkRow, error) {
+func (s *SQLiteDAO) GetTopSimilarRAGChunks(userID string, embedding string, projectID string) ([]RAGChunkRow, error) {
 	var chunks []RAGChunkRow
 	err := s.db.Select(&chunks, `
         SELECT id,project_id,docs_id,start_byte,end_byte
         FROM rag_chunks
-        WHERE project_id = ?
+        WHERE project_id = ? AND user_id = ?
         AND id IN (
             SELECT id
             FROM rag_chunks_vec
@@ -291,62 +288,59 @@ func (s *SQLiteDAO) GetTopSimilarRAGChunks(embedding string, projectID string) (
             ORDER BY distance
             LIMIT 2
         )
-    `, projectID, embedding)
+    `, projectID, userID, embedding)
 	return chunks, err
 }
 
-func (s *SQLiteDAO) IsMainBranch(source_chat_id string) (bool, error) {
+func (s *SQLiteDAO) IsMainBranch(userID string, source_chat_id string) (bool, error) {
 	var isMainBranch bool
-	err := s.db.Get(&isMainBranch, `SELECT is_main_branch FROM chat_list WHERE chat_id = ?`, source_chat_id)
+	err := s.db.Get(&isMainBranch, `SELECT is_main_branch FROM chat_list WHERE chat_id = ? AND user_id = ?`, source_chat_id, userID)
 	return isMainBranch, err
 }
 
-func (s *SQLiteDAO) BranchChat(source_chat_id string, parent_message_id string, new_chat_id string, branch_name string, project_id string) error {
-	_, err := s.db.Exec(`INSERT INTO chat_list (chat_id, name, project_id, parent_chat_id, parent_message_id, is_main_branch)
-						 VALUES (?, ?, ?, ?, ?, FALSE)`, new_chat_id, branch_name, project_id, source_chat_id, parent_message_id)
+func (s *SQLiteDAO) BranchChat(userID string, source_chat_id string, parent_message_id string, new_chat_id string, branch_name string, project_id string) error {
+	_, err := s.db.Exec(`INSERT INTO chat_list (chat_id, name, project_id, parent_chat_id, parent_message_id, is_main_branch, user_id)
+						 VALUES (?, ?, ?, ?, ?, FALSE, ?)`, new_chat_id, branch_name, project_id, source_chat_id, parent_message_id, userID)
 	if err != nil {
 		return err
 	}
 
 	//copy messages up to branch point
-	_, err = s.db.Exec(`INSERT INTO chat_messages (chat_id, role, content, model, error, input_token_count, output_token_count, created_at)
-						SELECT ?, role, content, model, error, input_token_count, output_token_count, created_at
+	_, err = s.db.Exec(`INSERT INTO chat_messages (chat_id, role, content, model, error, input_token_count, output_token_count, created_at, user_id)
+						SELECT ?, role, content, model, error, input_token_count, output_token_count, created_at, ?
 						FROM chat_messages 
-						WHERE chat_id = ? AND id <= ?
-						ORDER BY id;`, new_chat_id, source_chat_id, parent_message_id)
+						WHERE chat_id = ? AND id <= ? AND user_id = ?
+						ORDER BY id;`, new_chat_id, userID, source_chat_id, parent_message_id, userID)
 	return err
 }
 
-func (s *SQLiteDAO) GetChatBranches(chatId string, isMain bool) ([]ChatInfoRow, error) {
+func (s *SQLiteDAO) GetChatBranches(userID string, chatId string, isMain bool) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
 	var err error
 
 	if isMain {
-		err = s.db.Select(&chats, `SELECT chat_id, name FROM chat_list WHERE parent_chat_id = ?`, chatId)
+		err = s.db.Select(&chats, `SELECT chat_id, name FROM chat_list WHERE parent_chat_id = ? AND user_id = ?`, chatId, userID)
 	} else {
 		err = s.db.Select(&chats, `
 			SELECT c1.chat_id, c1.name 
 			FROM chat_list c1
-			JOIN chat_list c2 ON c1.chat_id = c2.parent_chat_id
-			WHERE c2.chat_id = ?
-		`, chatId)
+			JOIN chat_list c2 ON c1.parent_chat_id = c2.chat_id
+			WHERE c2.chat_id = ? AND c1.user_id = ? AND c2.user_id = ?
+		`, chatId, userID, userID)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	// var chat_id string
-	// var chat_name string
-
-	// var result []*proto.ChatInfo
-	// for _, c := range chats {
-	// 	result = append(result, ChatInfoRow{
-	// 		chat_id: c.Id,
-	// 		chat_name:   c.Name,
-	// 	})
-	// }
-	return chats, nil
+	var result []*proto.ChatInfo
+	for _, c := range chats {
+		result = append(result, &proto.ChatInfo{
+			ChatId: c.Id,
+			Name:   c.Name,
+		})
+	}
+	return result, nil
 }
 
 type dbSettings struct {

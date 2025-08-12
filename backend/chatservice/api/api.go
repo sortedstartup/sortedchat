@@ -1,452 +1,94 @@
 package api
 
 import (
-	"bufio"
-	"bytes"
 	"context"
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"io"
 	"log"
-	"log/slog"
 	"net/http"
-	"os"
-	"strconv"
-	"strings"
 
-	"sortedstartup/chatservice/dao"
 	db "sortedstartup/chatservice/dao"
-	"sortedstartup/chatservice/events"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
-	"sortedstartup/chatservice/rag"
+	"sortedstartup/chatservice/service"
 	settings "sortedstartup/chatservice/settings"
-	"sortedstartup/chatservice/store"
 
-	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type SettingService struct {
+type SettingServiceAPI struct {
 	pb.UnimplementedSettingServiceServer
-	dao   dao.SettingsDAO
-	queue queue.Queue
+	service *service.SettingService
 }
 
-func NewSettingService(queue queue.Queue) *SettingService {
-	dao := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
-	return &SettingService{dao: dao, queue: queue}
+func NewSettingService(queue queue.Queue) *SettingServiceAPI {
+	settingService := service.NewSettingService(queue, SQLITE_DB_URL)
+	return &SettingServiceAPI{service: settingService}
 }
 
-func (s *SettingService) Init() {
-	// since right now the Setting is in chatservice so chatservice handles migrations
-	isFirstBoot, err := s.IsFirstBoot()
-	if err != nil {
-		log.Printf("Failed to check if this is first boot: %v", err)
-		return
-	}
-
-	if isFirstBoot {
-		s.SetSetting(context.Background(), &pb.SetSettingRequest{Settings: settings.DefaultSettings.ToProto()})
-	}
-
-	s.FirstBootComplete()
+func (s *SettingServiceAPI) Init() {
+	s.service.Init()
 }
 
-func (s *SettingService) FirstBootComplete() {
-	err := s.dao.SetSettingValue("is_first_boot", "1")
+func (s *SettingServiceAPI) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
+	settings, err := s.service.GetSetting(ctx)
 	if err != nil {
-		log.Printf("Failed to set is_first_boot setting: %v", err)
-	}
-}
-
-func (s *SettingService) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
-	settingsString, err := s.dao.GetSettingValue("settings")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get settings: %w", err)
-	}
-
-	//json decode the settings
-	var settings settings.Settings
-	err = json.Unmarshal([]byte(settingsString), &settings)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal settings: %w", err)
+		return nil, err
 	}
 
 	return &pb.GetSettingResponse{
-		Settings: settings.ToProto(),
+		Settings: settings,
 	}, nil
 }
 
-func (s *SettingService) SetSetting(ctx context.Context, req *pb.SetSettingRequest) (*pb.SetSettingResponse, error) {
-
-	settingsJSON, err := json.Marshal(settings.FromProto(req.Settings))
+func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRequest) (*pb.SetSettingResponse, error) {
+	err := s.service.SetSetting(ctx, req.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set settings: %w", err)
+		return nil, err
 	}
-
-	err = s.dao.SetSettingValue("settings", string(settingsJSON))
-	if err != nil {
-		return nil, fmt.Errorf("failed to set settings: %w", err)
-	}
-
-	log.Printf("Publishing event [%s], data:[%s] to reload settings", events.SETTINGS_CHANGED_EVENT, "")
-	// publish an event, any subscriber now need to reload settings from the database
-	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
 
 	return &pb.SetSettingResponse{
 		Message: "Setting Saved",
 	}, nil
 }
 
-// IsFirstBoot checks if this is the first boot by looking for the 'is_first_boot' setting
-// Returns true if the setting doesn't exist or is 0, false otherwise
-// Returns an error if there's a database error (except for sql.ErrNoRows)
-func (s *SettingService) IsFirstBoot() (bool, error) {
-	value, err := s.dao.GetSettingValue("is_first_boot")
-	if err != nil {
-		// If the setting doesn't exist, consider it first boot
-		if err == sql.ErrNoRows {
-			return true, nil
-		}
-		// For other database errors, return the error
-		return false, fmt.Errorf("error getting is_first_boot setting: %w", err)
-	}
-
-	// Try to parse the value as an integer
-	intValue, err := strconv.Atoi(value)
-	if err != nil {
-		// If we can't parse it, consider it first boot
-		log.Printf("Error parsing is_first_boot value '%s': %v", value, err)
-		return true, nil
-	}
-
-	// Return true if value is 0, false otherwise
-	return intValue == 0, nil
-}
-
-type ChatService struct {
+type ChatServiceAPI struct {
 	pb.UnimplementedSortedChatServer
-	dao                *dao.SQLiteDAO
-	store              *store.DiskObjectStore
-	queue              queue.Queue
-	pipeline           rag.RAGIndexingPipeline
-	embeddingsProvider rag.Embedder
-	settingsManager    *settings.SettingsManager
+	service *service.ChatService
 }
+
+const HARDCODED_USER_ID = "0"
 
 var SQLITE_DB_URL = "db.sqlite"
 
-func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager) *ChatService {
-
-	daoInstance, err := dao.NewSQLiteDAO(SQLITE_DB_URL)
-	if err != nil {
-		log.Fatalf("Failed to initialize DAO: %v", err)
-	}
-
-	storeInstance, err := store.NewDiskObjectStore("filestore")
-	if err != nil {
-		log.Fatalf("Failed to initialize object store: %v", err)
-	}
-
+func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager) *ChatServiceAPI {
 	settingsManager.LoadSettingsFromDB()
 
-	embeddingsProvider := &rag.OLLamaEmbedder{
-		SettingsManager: settingsManager,
-		Model:           "nomic-embed-text",
+	chatService, err := service.NewChatService(queue, settingsManager, SQLITE_DB_URL)
+	if err != nil {
+		log.Fatalf("Failed to initialize ChatService: %v", err)
 	}
 
-	pipeline := rag.NewPipeline(
-		&rag.TextExtractor{},
-		&rag.EqualSizeChunker{ChunkSize: 512},
-		embeddingsProvider,
-	)
-
-	s := &ChatService{
-		dao:                daoInstance,
-		store:              storeInstance,
-		queue:              queue,
-		pipeline:           pipeline,
-		embeddingsProvider: embeddingsProvider,
-		settingsManager:    settingsManager,
+	s := &ChatServiceAPI{
+		service: chatService,
 	}
 
 	s.registerRoutes(mux)
-
-	s.EmbeddingSubscriber()
+	chatService.EmbeddingSubscriber()
 
 	return s
 }
 
-func (s *ChatService) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
-	projectID := req.GetProjectId()
-
-	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
-	if apiKey == "" {
-		return fmt.Errorf("OpenAI API key not set")
-	}
-
-	chatId := req.ChatId
-	if chatId == "" {
-		return fmt.Errorf("Chat ID is required to maintain context")
-	}
-
-	model := req.Model
-	if model == "" {
-		return fmt.Errorf("model is required")
-	}
-
-	// Get chat history using DAO
-	history, err := s.dao.GetChatMessages(chatId)
-	if err != nil {
-		slog.Error("failed to fetch message history", "error", err)
-		return fmt.Errorf("failed to fetch message history: %v", err)
-	}
-
-	err = s.dao.AddChatMessage(chatId, "user", req.Text)
-	if err != nil {
-		return fmt.Errorf("failed to insert user message: %v", err)
-	}
-
-	userMessage := req.Text
-
-	if projectID != "" && projectID != "null" { // if this chat is in context of a project
-		chunks, err := s.retrieveSimilarChunks(context.Background(), projectID, req.Text)
-		if err != nil {
-			// TODO: user message also
-			slog.Error("failed to retrieve similar chunks", "error", err)
-		} else if len(chunks.Results) > 0 {
-			fmt.Println("Retrieved chunks:", chunks.Prompt)
-			userMessage = chunks.Prompt
-		}
-	}
-
-	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
-
-	requestBody := map[string]interface{}{
-		"model":    model,
-		"messages": history,
-		"stream":   true,
-		"stream_options": map[string]interface{}{
-			"include_usage": true,
-		},
-	}
-
-	jsonData, err := json.Marshal(requestBody)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %v", err)
-	}
-
-	httpReq, err := http.NewRequest("POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %v", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
-
-	resp, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		return fmt.Errorf("OpenAI request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("OpenAI API error: %d - %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	var fullResponse strings.Builder
-	var inputTokens, outputTokens int
-
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-
-		if line == "" {
-			continue
-		}
-
-		if !strings.HasPrefix(line, "data: ") {
-			continue
-		}
-
-		data := strings.TrimPrefix(line, "data: ")
-
-		if data == "[DONE]" {
-			break
-		}
-
-		var chunk map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
-			log.Printf("Failed to parse chunk: %v", err)
-			continue
-		}
-
-		if usage, ok := chunk["usage"].(map[string]interface{}); ok {
-			if promptTokens, ok := usage["prompt_tokens"].(float64); ok {
-				inputTokens = int(promptTokens)
-			}
-			if completionTokens, ok := usage["completion_tokens"].(float64); ok {
-				outputTokens = int(completionTokens)
-			}
-		}
-
-		choices, ok := chunk["choices"].([]interface{})
-		if !ok || len(choices) == 0 {
-			continue
-		}
-
-		choice, ok := choices[0].(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		if delta, ok := choice["delta"].(map[string]interface{}); ok {
-			if content, ok := delta["content"].(string); ok && content != "" {
-				fullResponse.WriteString(content)
-
-				if err := stream.Send(&pb.ChatResponse{Response: &pb.ChatResponse_Text{
-					Text: content,
-				}}); err != nil {
-					return fmt.Errorf("failed to send stream response: %v", err)
-				}
-			}
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading stream: %v", err)
-	}
-
-	assistantText := fullResponse.String()
-	if assistantText != "" {
-		messageId, err := s.dao.AddChatMessageWithTokens(chatId, "assistant", assistantText, model, inputTokens, outputTokens)
-		if err != nil {
-			log.Printf("Failed to insert assistant message: %v", err)
-		} else {
-			summary := &pb.MessageSummary{
-				MessageId: fmt.Sprintf("%d", messageId),
-			}
-			if err := stream.Send(&pb.ChatResponse{
-				Response: &pb.ChatResponse_Summary{
-					Summary: summary,
-				},
-			}); err != nil {
-				return fmt.Errorf("failed to send message summary: %v", err)
-			}
-		}
-	}
-
-	return nil
+func (s *ChatServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
+	return s.service.Chat(HARDCODED_USER_ID, req, func(response *pb.ChatResponse) error {
+		return stream.Send(response)
+	})
 }
 
-const (
-	MAX_MESSAGE_LENGTH   = 500
-	START_MESSAGE_LENGTH = 250
-	END_MESSAGE_LENGTH   = 250
-)
-
-func (s *ChatService) GenerateChatName(ctx context.Context, req *pb.GenerateChatNameRequest) (*pb.GenerateChatNameResponse, error) {
-	chatId := req.GetChatId()
-	if chatId == "" {
-		return nil, fmt.Errorf("chat ID is required")
-	}
-
-	msg := req.GetMessage()
-	if msg == "" {
-		return nil, fmt.Errorf("message is required")
-	}
-
-	model := req.GetModel()
-	if model == "" {
-		return nil, fmt.Errorf("model is required")
-	}
-
-	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
-	if apiKey == "" {
-		return nil, fmt.Errorf("OpenAI API key not set")
-	}
-
-	name, err := s.dao.GetChatName(chatId)
+func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateChatNameRequest) (*pb.GenerateChatNameResponse, error) {
+	chatName, err := s.service.GenerateChatName(HARDCODED_USER_ID, req.GetChatId(), req.GetMessage(), req.GetModel())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get chat name: %v", err)
-	}
-
-	if name != "" {
-		return nil, fmt.Errorf("Chat name already exists: %s", name)
-	}
-
-	words := strings.Fields(msg)
-	if len(words) > MAX_MESSAGE_LENGTH {
-		start := strings.Join(words[:START_MESSAGE_LENGTH], " ")
-		end := strings.Join(words[len(words)-END_MESSAGE_LENGTH:], " ")
-		msg = start + end
-	}
-
-	prompt := "Based on the given user message give me a most appropriate chat name of 1-5 word length: " + msg
-
-	requestBody := map[string]interface{}{
-		"model": model,
-		"messages": []map[string]string{
-			{
-				"role":    "user",
-				"content": prompt,
-			},
-		},
-		"stream": false,
-	}
-
-	jsonData, err := json.Marshal(requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %v", err)
-	}
-
-	httpReq, err := http.NewRequest("POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %v", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
-
-	resp, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("OpenAI request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("OpenAI API error: %d - %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
-	}
-
-	var openAIResp struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-	}
-
-	if err := json.Unmarshal(respBody, &openAIResp); err != nil {
-		return nil, fmt.Errorf("failed to parse OpenAI response: %v", err)
-	}
-
-	if len(openAIResp.Choices) == 0 {
-		return nil, fmt.Errorf("no choices returned from OpenAI")
-	}
-
-	chatName := openAIResp.Choices[0].Message.Content
-
-	if err := s.dao.SaveChatName(chatId, chatName); err != nil {
-		return nil, fmt.Errorf("error while saving name: %v", err)
+		return nil, err
 	}
 
 	return &pb.GenerateChatNameResponse{
@@ -454,28 +96,14 @@ func (s *ChatService) GenerateChatName(ctx context.Context, req *pb.GenerateChat
 	}, nil
 }
 
-func (s *ChatService) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
-	chatId := req.ChatId
-	if chatId == "" {
-		return nil, fmt.Errorf("chat ID is required")
-	}
-
-	messages, err := s.dao.GetChatMessages(chatId)
+func (s *ChatServiceAPI) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
+	history, err := s.service.GetHistory(HARDCODED_USER_ID, req.ChatId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch history: %v", err)
-	}
-
-	var pbMessages []*pb.ChatMessage
-	for _, m := range messages {
-		pbMessages = append(pbMessages, &pb.ChatMessage{
-			Role:      m.Role,
-			Content:   m.Content,
-			MessageId: m.Id,
-		})
+		return nil, err
 	}
 
 	return &pb.GetHistoryResponse{
-		History: pbMessages,
+		History: history,
 	}, nil
 }
 
@@ -484,25 +112,18 @@ type ChatRow struct {
 	Name   string `db:"name"`
 }
 
-func (s *ChatService) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
-	projectID := req.GetProjectId()
-
-	chats, err := s.dao.GetChatList(projectID)
+func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
+	chats, err := s.service.GetChatList(HARDCODED_USER_ID, req.GetProjectId())
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch chat list: %v", err)
+		return nil, err
 	}
 	return &pb.GetChatListResponse{Chats: chats}, nil
-
 }
 
-func (s *ChatService) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
-	name := req.Name
-	chatId := uuid.New().String()
-	projectID := req.GetProjectId()
-
-	err := s.dao.CreateChat(chatId, name, projectID)
+func (s *ChatServiceAPI) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
+	chatId, err := s.service.CreateChat(HARDCODED_USER_ID, req.Name, req.GetProjectId())
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert chat record: %w", err)
+		return nil, err
 	}
 
 	return &pb.CreateChatResponse{
@@ -511,68 +132,31 @@ func (s *ChatService) CreateChat(ctx context.Context, req *pb.CreateChatRequest)
 	}, nil
 }
 
-func (s *ChatService) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
-	models, err := s.dao.GetModels()
+func (s *ChatServiceAPI) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
+	models, err := s.service.ListModel()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch models: %v", err)
+		return nil, err
 	}
 
-	pbModels := make([]*pb.ModelListInfo, 0, len(models))
-	for _, m := range models {
-		pbModels = append(pbModels, &pb.ModelListInfo{
-			Id:    m.Id,
-			Label: m.Label,
-		})
-	}
-
-	return &pb.ListModelsResponse{Models: pbModels}, nil
+	return &pb.ListModelsResponse{Models: models}, nil
 }
 
-type ChatSearchRow struct {
-	ChatID      string `db:"chat_id"`
-	ChatName    string `db:"chat_name"`
-	MatchedText string `db:"aggregated_snippets"`
-}
-
-func (s *ChatService) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
-	query := req.Query
-	if query == "" {
-		return nil, fmt.Errorf("query is required")
-	}
-
-	results, err := s.dao.SearchChatMessages(query)
+func (s *ChatServiceAPI) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
+	results, err := s.service.SearchChat(HARDCODED_USER_ID, req.Query)
 	if err != nil {
-		return nil, fmt.Errorf("search failed: %w", err)
-	}
-
-	var pbResults []*pb.SearchResult
-	for _, result := range results {
-		pbResults = append(pbResults, &pb.SearchResult{
-			ChatId:      result.ChatId,
-			ChatName:    result.ChatName,
-			MatchedText: result.MatchedText,
-		})
+		return nil, err
 	}
 
 	return &pb.ChatSearchResponse{
-		Query:   query,
-		Results: pbResults,
+		Query:   req.Query,
+		Results: results,
 	}, nil
 }
 
-func (s *ChatService) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
-	id := uuid.New().String()
-
-	name := req.Name
-	if name == "" {
-		return nil, fmt.Errorf("name is required")
-	}
-	description := req.Description
-	additionalData := req.AdditionalData
-
-	projectID, err := s.dao.CreateProject(id, name, description, additionalData)
+func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
+	projectID, err := s.service.CreateProject(HARDCODED_USER_ID, req.Name, req.Description, req.AdditionalData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create project: %w", err)
+		return nil, err
 	}
 
 	return &pb.CreateProjectResponse{
@@ -581,10 +165,10 @@ func (s *ChatService) CreateProject(ctx context.Context, req *pb.CreateProjectRe
 	}, nil
 }
 
-func (s *ChatService) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
-	projects, err := s.dao.GetProjects()
+func (s *ChatServiceAPI) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
+	projects, err := s.service.GetProjects(HARDCODED_USER_ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch project list: %w", err)
+		return nil, err
 	}
 
 	var pbProjects []*pb.Project
@@ -602,8 +186,8 @@ func (s *ChatService) GetProjects(ctx context.Context, req *pb.GetProjectsReques
 	return &pb.GetProjectsResponse{Projects: pbProjects}, nil
 }
 
-func (s *ChatService) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
-	docs, err := s.dao.FilesList(req.GetProjectId())
+func (s *ChatServiceAPI) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
+	docs, err := s.service.ListDocuments(HARDCODED_USER_ID, req.GetProjectId())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch documents: %v", err)
 	}
@@ -624,102 +208,12 @@ func (s *ChatService) ListDocuments(ctx context.Context, req *pb.ListDocumentsRe
 	return &pb.ListDocumentsResponse{
 		Documents: result,
 	}, nil
-
 }
 
-func (s *ChatService) retrieveSimilarChunks(ctx context.Context, projectID string, query string) (*rag.Response, error) {
-	if projectID == "" || query == "" {
-		return nil, fmt.Errorf("project_id and query are required")
-	}
-
-	// TODO: tech debt, need to refactor this
-	embedding, err := s.embeddingsProvider.Embed(ctx, []rag.Chunk{
-		{
-			ID:        "0",
-			ProjectID: projectID,
-			DocsID:    "0",
-			StartByte: 0,
-			EndByte:   len(query),
-			Text:      query,
-		},
-	})
-
+func (s *ChatServiceAPI) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.GenerateEmbeddingRequest) (*pb.GenerateEmbeddingResponse, error) {
+	err := s.service.SubmitGenerateEmbeddingsJob(HARDCODED_USER_ID, req.GetProjectId())
 	if err != nil {
 		return nil, err
-	}
-	if len(embedding) == 0 {
-		return nil, fmt.Errorf("embedding could not be created")
-	}
-
-	params := rag.SearchParams{TopK: 2, ProjectID: projectID}
-	retriever := func(ctx context.Context, embedding []float64, params rag.SearchParams) ([]rag.Result, error) {
-		embBytes, err := json.Marshal(embedding)
-		if err != nil {
-			return nil, err
-		}
-		vecRows, err := s.dao.GetTopSimilarRAGChunks(string(embBytes), projectID)
-		if err != nil {
-			return nil, err
-		}
-		var results []rag.Result
-		for _, v := range vecRows {
-			_, reader, err := s.store.GetObject(ctx, v.DocsID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get object for docsID %s: %w", v.DocsID, err)
-			}
-			data, err := io.ReadAll(reader)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read object for docsID %s: %w", v.DocsID, err)
-			}
-			if v.StartByte < 0 || v.EndByte > len(data) || v.StartByte > v.EndByte {
-				return nil, fmt.Errorf("invalid chunk byte range for docsID %s: %d-%d (file size %d)", v.DocsID, v.StartByte, v.EndByte, len(data))
-			}
-			chunkText := string(data[v.StartByte:v.EndByte])
-			results = append(results, rag.Result{
-				Chunk: rag.Chunk{
-					ID:        v.ID,
-					ProjectID: v.ProjectID,
-					DocsID:    v.DocsID,
-					StartByte: v.StartByte,
-					EndByte:   v.EndByte,
-					Text:      chunkText,
-				},
-				Similarity: 0,
-			})
-		}
-		return results, nil
-	}
-	response, err := rag.BasicRetrievePipeline(ctx, retriever, rag.BasicPromptBuilder, embedding[0].Vector, query, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
-}
-
-func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.GenerateEmbeddingRequest) (*pb.GenerateEmbeddingResponse, error) {
-	projectID := req.GetProjectId()
-	if projectID == "" {
-		return nil, fmt.Errorf("project_id is required")
-	}
-
-	docs, error := s.dao.FetchErrorDocs(projectID)
-	if error != nil {
-		return nil, fmt.Errorf("failed to check embedding status: %v", error)
-	}
-
-	for _, docsID := range docs {
-		msg := GenerateEmbeddingMessage{DocsID: docsID}
-		msgBytes, _ := json.Marshal(msg)
-		err := s.queue.Publish(ctx, "generate.embedding", msgBytes)
-		if err != nil {
-			return nil, fmt.Errorf("failed to publish job: %v", err)
-		}
-
-		if updateErr := s.dao.UpdateEmbeddingStatus(docsID, int32(pb.Embedding_Status_STATUS_QUEUED)); updateErr != nil {
-			fmt.Printf("Failed to update embedding status to error: %v\n", updateErr)
-		}
-
 	}
 
 	return &pb.GenerateEmbeddingResponse{
@@ -727,29 +221,11 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.G
 	}, nil
 }
 
-func (s *ChatService) BranchAChat(ctx context.Context, req *pb.BranchAChatRequest) (*pb.BranchAChatResponse, error) {
-
-	if req.SourceChatId == "" {
-		return nil, fmt.Errorf("parent id is required")
-	}
-
-	if req.BranchFromMessageId == "" {
-		return nil, fmt.Errorf("message id is required")
-	}
-
-	isMain, err := s.dao.IsMainBranch(req.SourceChatId)
-	if err != nil || !isMain {
-		return &pb.BranchAChatResponse{
-			Message: "Can only branch from main branch chats",
-		}, nil
-	}
-
-	newChatId := uuid.New().String()
-
-	err = s.dao.BranchChat(req.SourceChatId, req.BranchFromMessageId, newChatId, req.BranchName, req.ProjectId)
+func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatRequest) (*pb.BranchAChatResponse, error) {
+	newChatId, err := s.service.BranchAChat(HARDCODED_USER_ID, req.SourceChatId, req.BranchFromMessageId, req.BranchName, req.ProjectId)
 	if err != nil {
 		return &pb.BranchAChatResponse{
-			Message: "Failed to create branch",
+			Message: err.Error(),
 		}, nil
 	}
 
@@ -759,108 +235,20 @@ func (s *ChatService) BranchAChat(ctx context.Context, req *pb.BranchAChatReques
 	}, nil
 }
 
-func (s *ChatService) ListChatBranch(ctx context.Context, req *pb.ListChatBranchRequest) (*pb.ListChatBranchResponse, error) {
-	chatId := req.GetChatId()
-	if chatId == "" {
-		return nil, fmt.Errorf("Chat Id is required")
-	}
-
-	isMain, err := s.dao.IsMainBranch(chatId)
+func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBranchRequest) (*pb.ListChatBranchResponse, error) {
+	branches, err := s.service.ListChatBranch(HARDCODED_USER_ID, req.GetChatId())
 	if err != nil {
-		return nil, fmt.Errorf("cannot identify chat id: %w", err)
+		return nil, err
 	}
 
-	innerChats, err := s.dao.GetChatBranches(chatId, isMain)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get inner chat list: %w", err)
-	}
-
-	var pbChats []*pb.ChatInfo
-	for _, c := range innerChats {
-		pbChats = append(pbChats, &pb.ChatInfo{
-			ChatId: c.Id,
-			Name:   c.Name,
-		})
-	}
 	return &pb.ListChatBranchResponse{
-		BranchChatList: pbChats,
+		BranchChatList: branches,
 	}, nil
 }
 
-func (s *ChatService) Init() {
+func (s *ChatServiceAPI) Init() {
 	//db.InitDB()
 	// TODO: handle migration for postgres also
 	db.MigrateSQLite(SQLITE_DB_URL)
 	db.SeedSqlite(SQLITE_DB_URL)
-}
-
-func (s *ChatService) EmbeddingSubscriber() {
-	go func() {
-		sub, err := s.queue.Subscribe(context.Background(), events.GENERATE_EMBEDDINGS)
-		if err != nil {
-			fmt.Printf("Failed %v\n", err)
-			return
-		}
-
-		for msg := range sub {
-			var payload GenerateEmbeddingMessage
-			if err := json.Unmarshal(msg.Data, &payload); err == nil {
-
-				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_IN_PROGRESS)); updateErr != nil {
-					fmt.Printf("Failed to update embedding status to error: %v\n", updateErr)
-				}
-
-				// Fetch project_id for docs_id
-				docMeta, err := s.dao.GetFileMetadata(payload.DocsID)
-				if err != nil {
-					fmt.Printf("Failed to fetch file metadata: %v\n", err)
-					continue
-				}
-
-				filePath := "filestore/objects/" + payload.DocsID
-				f, err := os.Open(filePath)
-				if err != nil {
-					fmt.Printf("Failed :%v\n", err)
-					continue
-				}
-				defer f.Close()
-
-				metadata := map[string]string{
-					"project_id": docMeta.ProjectID,
-					"docs_id":    payload.DocsID,
-					"source":     docMeta.FileName,
-				}
-
-				result, err := s.pipeline.RunWithChunks(context.Background(), f, "text/plain", metadata)
-				if err != nil {
-					fmt.Printf("Pipeline error: %v\n", err)
-					if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_ERROR)); updateErr != nil {
-						fmt.Printf("Failed to update embedding status to error: %v\n", updateErr)
-					}
-					continue
-				}
-
-				// Save each chunk to rag_chunks
-				for _, chunk := range result.Chunks {
-					err := s.dao.SaveRAGChunk(chunk.ID, chunk.ProjectID, chunk.DocsID, chunk.StartByte, chunk.EndByte)
-					if err != nil {
-						fmt.Printf("Failed to save chunk: %v", err)
-					}
-
-					for _, emb := range result.Embeddings {
-						if emb.ChunkID == chunk.ID {
-							err := s.dao.SaveRAGChunkEmbedding(chunk.ID, emb.Vector)
-							if err != nil {
-								fmt.Printf("Failed to save embedding: %v\n", err)
-							}
-							break
-						}
-					}
-				}
-				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_SUCCESS)); updateErr != nil {
-					fmt.Printf("Failed to update embedding status to success: %v\n", updateErr)
-				}
-			}
-		}
-	}()
 }

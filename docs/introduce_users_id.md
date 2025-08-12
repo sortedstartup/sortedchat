@@ -5,7 +5,7 @@ This document outlines the plan to introduce user ID support in the chat service
 
 ## Goals
 1. **Separate Concerns**: Split `api.go` into API layer (handling gRPC requests) and Service layer (business logic)
-2. **User Context**: Make all service methods accept a `user_id` parameter for multi-tenant support
+2. **User Context**: Make all service methods accept a `user_id` parameter for multi-user support
 3. **Database Changes**: Update database schema and DAO methods to support user isolation
 4. **Backward Compatibility**: Hardcode `user_id = "0"` in API layer to maintain existing functionality
 
@@ -111,7 +111,7 @@ All DAO methods will be updated to include `user_id` parameter and filter result
 
 ### 7. Benefits
 
-- **Multi-tenant Ready**: Foundation for multiple users
+- **Multi-user Ready**: Foundation for multiple users
 - **Clean Architecture**: Clear separation of API and business logic
 - **Data Isolation**: Users will only see their own data
 - **Backward Compatible**: Existing functionality preserved

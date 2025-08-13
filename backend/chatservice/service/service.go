@@ -26,7 +26,8 @@ import (
 )
 
 type ChatService struct {
-	dao                *dao.SQLiteDAO
+	dao                dao.DAO
+	settingsDAO        dao.SettingsDAO
 	store              *store.DiskObjectStore
 	queue              queue.Queue
 	pipeline           rag.RAGIndexingPipeline
@@ -38,10 +39,15 @@ type GenerateEmbeddingMessage struct {
 	DocsID string `json:"docs_id"`
 }
 
-func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager, sqliteURL string) (*ChatService, error) {
-	daoInstance, err := dao.NewSQLiteDAO(sqliteURL)
+func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory dao.DAOFactory) (*ChatService, error) {
+	daoInstance, err := daoFactory.CreateDAO()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize DAO: %v", err)
+	}
+
+	settingsDAOInstance, err := daoFactory.CreateSettingsDAO()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize settings DAO: %v", err)
 	}
 
 	storeInstance, err := store.NewDiskObjectStore("filestore")
@@ -62,6 +68,7 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 
 	return &ChatService{
 		dao:                daoInstance,
+		settingsDAO:        settingsDAOInstance,
 		store:              storeInstance,
 		queue:              queue,
 		pipeline:           pipeline,
@@ -590,7 +597,7 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, userID st
 	return nil
 }
 
-func (s *ChatService) BranchAChat(ctx context.Context, userID string, sourceChatId string, branchFromMessageId string, branchName string, projectId string) (string, error) {
+func (s *ChatService) BranchAChat(ctx context.Context, userID string, sourceChatId string, branchFromMessageId string, branchName string) (string, error) {
 	if sourceChatId == "" {
 		return "", fmt.Errorf("parent id is required")
 	}
@@ -606,7 +613,7 @@ func (s *ChatService) BranchAChat(ctx context.Context, userID string, sourceChat
 
 	newChatId := uuid.New().String()
 
-	err = s.dao.BranchChat(userID, sourceChatId, branchFromMessageId, newChatId, branchName, projectId)
+	err = s.dao.BranchChat(userID, sourceChatId, branchFromMessageId, newChatId, branchName)
 	if err != nil {
 		return "", fmt.Errorf("failed to create branch: %v", err)
 	}

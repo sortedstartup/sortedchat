@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 
 	db "sortedstartup/chatservice/dao"
@@ -21,8 +22,8 @@ type SettingServiceAPI struct {
 	service *service.SettingService
 }
 
-func NewSettingService(queue queue.Queue) *SettingServiceAPI {
-	settingService := service.NewSettingService(queue, SQLITE_DB_URL)
+func NewSettingService(queue queue.Queue, daoFactory db.DAOFactory) *SettingServiceAPI {
+	settingService := service.NewSettingService(queue, daoFactory)
 	return &SettingServiceAPI{service: settingService}
 }
 
@@ -59,12 +60,10 @@ type ChatServiceAPI struct {
 
 const HARDCODED_USER_ID = "0"
 
-var SQLITE_DB_URL = "db.sqlite"
-
-func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager) *ChatServiceAPI {
+func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory db.DAOFactory) *ChatServiceAPI {
 	settingsManager.LoadSettingsFromDB()
 
-	chatService, err := service.NewChatService(queue, settingsManager, SQLITE_DB_URL)
+	chatService, err := service.NewChatService(queue, settingsManager, daoFactory)
 	if err != nil {
 		log.Fatalf("Failed to initialize ChatService: %v", err)
 	}
@@ -217,7 +216,7 @@ func (s *ChatServiceAPI) SubmitGenerateEmbeddingsJob(ctx context.Context, req *p
 }
 
 func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatRequest) (*pb.BranchAChatResponse, error) {
-	newChatId, err := s.service.BranchAChat(ctx, HARDCODED_USER_ID, req.SourceChatId, req.BranchFromMessageId, req.BranchName, req.ProjectId)
+	newChatId, err := s.service.BranchAChat(ctx, HARDCODED_USER_ID, req.SourceChatId, req.BranchFromMessageId, req.BranchName)
 	if err != nil {
 		return &pb.BranchAChatResponse{
 			Message: err.Error(),
@@ -249,9 +248,26 @@ func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBra
 	}, nil
 }
 
-func (s *ChatServiceAPI) Init() {
-	//db.InitDB()
-	// TODO: handle migration for postgres also
-	db.MigrateSQLite(SQLITE_DB_URL)
-	db.SeedSqlite(SQLITE_DB_URL)
+func (s *ChatServiceAPI) Init(config *db.Config) {
+	switch config.Database.Type {
+	case db.DatabaseTypeSQLite:
+		slog.Info("Running SQLite migrations")
+		if err := db.MigrateSQLite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("Failed to migrate SQLite database: %v", err)
+		}
+		if err := db.SeedSqlite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("Failed to seed SQLite database: %v", err)
+		}
+	case db.DatabaseTypePostgres:
+		slog.Info("Running PostgreSQL migrations")
+		dsn := config.Database.Postgres.GetPostgresDSN()
+		if err := db.MigratePostgres(dsn); err != nil {
+			log.Fatalf("Failed to migrate PostgreSQL database: %v", err)
+		}
+		if err := db.SeedPostgres(dsn); err != nil {
+			log.Fatalf("Failed to seed PostgreSQL database: %v", err)
+		}
+	default:
+		log.Fatalf("Unsupported database type: %s", config.Database.Type)
+	}
 }

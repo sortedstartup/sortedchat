@@ -207,7 +207,6 @@ message BranchAChatRequest {
   string source_chat_id = 1;           // Chat to branch from
   string branch_from_message_id = 2;    // Message ID where branch starts
   string branch_name = 3;               // Optional name for new branch
-  string project_id = 4;                // Project context
 }
 
 

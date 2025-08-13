@@ -3046,7 +3046,6 @@ export class BranchAChatRequest extends pb_1.Message {
         source_chat_id?: string;
         branch_from_message_id?: string;
         branch_name?: string;
-        project_id?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -3059,9 +3058,6 @@ export class BranchAChatRequest extends pb_1.Message {
             }
             if ("branch_name" in data && data.branch_name != undefined) {
                 this.branch_name = data.branch_name;
-            }
-            if ("project_id" in data && data.project_id != undefined) {
-                this.project_id = data.project_id;
             }
         }
     }
@@ -3083,17 +3079,10 @@ export class BranchAChatRequest extends pb_1.Message {
     set branch_name(value: string) {
         pb_1.Message.setField(this, 3, value);
     }
-    get project_id() {
-        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
-    }
-    set project_id(value: string) {
-        pb_1.Message.setField(this, 4, value);
-    }
     static fromObject(data: {
         source_chat_id?: string;
         branch_from_message_id?: string;
         branch_name?: string;
-        project_id?: string;
     }): BranchAChatRequest {
         const message = new BranchAChatRequest({});
         if (data.source_chat_id != null) {
@@ -3105,9 +3094,6 @@ export class BranchAChatRequest extends pb_1.Message {
         if (data.branch_name != null) {
             message.branch_name = data.branch_name;
         }
-        if (data.project_id != null) {
-            message.project_id = data.project_id;
-        }
         return message;
     }
     toObject() {
@@ -3115,7 +3101,6 @@ export class BranchAChatRequest extends pb_1.Message {
             source_chat_id?: string;
             branch_from_message_id?: string;
             branch_name?: string;
-            project_id?: string;
         } = {};
         if (this.source_chat_id != null) {
             data.source_chat_id = this.source_chat_id;
@@ -3125,9 +3110,6 @@ export class BranchAChatRequest extends pb_1.Message {
         }
         if (this.branch_name != null) {
             data.branch_name = this.branch_name;
-        }
-        if (this.project_id != null) {
-            data.project_id = this.project_id;
         }
         return data;
     }
@@ -3141,8 +3123,6 @@ export class BranchAChatRequest extends pb_1.Message {
             writer.writeString(2, this.branch_from_message_id);
         if (this.branch_name.length)
             writer.writeString(3, this.branch_name);
-        if (this.project_id.length)
-            writer.writeString(4, this.project_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -3160,9 +3140,6 @@ export class BranchAChatRequest extends pb_1.Message {
                     break;
                 case 3:
                     message.branch_name = reader.readString();
-                    break;
-                case 4:
-                    message.project_id = reader.readString();
                     break;
                 default: reader.skipField();
             }

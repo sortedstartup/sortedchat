@@ -72,11 +72,6 @@ func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessage
 	return messages, err
 }
 
-type ChatInfoRow struct {
-	Id   string `db:"chat_id"`
-	Name string `db:"name"`
-}
-
 // GetChatList retrieves all chats for a user
 func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
@@ -341,11 +336,6 @@ func (s *SQLiteDAO) GetChatBranches(userID string, chatId string, isMain bool) (
 	}
 
 	return chats, nil
-}
-
-type dbSettings struct {
-	Name     string `db:"name" json:"name"`
-	Settings string `db:"settings" json:"settings"`
 }
 
 type SQLiteSettingsDAO struct {

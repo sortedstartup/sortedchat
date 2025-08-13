@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"regexp"
 	proto "sortedstartup/chatservice/proto"
+	"strconv"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -160,9 +163,67 @@ func (p *PostgresDAO) GetModels() ([]proto.ModelListInfo, error) {
 	return result, nil
 }
 
-// SearchChatMessages - Phase 2 implementation (returns error for Phase 1)
+// SearchChatMessages performs full text search across chat messages
 func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.SearchResult, error) {
-	return nil, errors.New("full text search not implemented in Phase 1 - will be added in Phase 2")
+	// Input validation and sanitization
+	if userID == "" || query == "" {
+		return nil, errors.New("userID and query are required")
+	}
+
+	// Sanitize query to prevent injection
+	sanitizedQuery := sanitizeFTSQuery(query)
+	if sanitizedQuery == "" {
+		return nil, errors.New("query contains no searchable terms")
+	}
+
+	sqlQuery := `
+		SELECT 
+		    cm.chat_id,
+		    cl.name AS chat_name,
+		    string_agg(
+		        CASE 
+		            WHEN length(cm.content) > 150 
+		            THEN substring(cm.content, 1, 150) || '...'
+		            ELSE cm.content
+		        END, 
+		        E'\n-----\n' 
+		        ORDER BY cm.created_at
+		    ) AS matched_text,
+		    max(ts_rank_cd(cm.content_tsvector, query)) AS relevance_score
+		FROM chat_messages cm
+		JOIN chat_list cl ON cm.chat_id = cl.chat_id
+		CROSS JOIN to_tsquery('english', $1) AS query
+		WHERE cm.user_id = $2 
+		  AND cl.user_id = $2
+		  AND cm.content_tsvector @@ query
+		GROUP BY cm.chat_id, cl.name
+		ORDER BY relevance_score DESC, cm.chat_id
+		LIMIT 20`
+
+	rows, err := p.db.Query(sqlQuery, sanitizedQuery, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute FTS query: %w", err)
+	}
+	defer rows.Close()
+
+	var results []proto.SearchResult
+	for rows.Next() {
+		var chatId, chatName, matchedText string
+		var relevanceScore float64
+
+		err := rows.Scan(&chatId, &chatName, &matchedText, &relevanceScore)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan search result: %w", err)
+		}
+
+		results = append(results, proto.SearchResult{
+			ChatId:      chatId,
+			ChatName:    chatName,
+			MatchedText: matchedText,
+		})
+	}
+
+	return results, nil
 }
 
 // Project CRUD
@@ -238,20 +299,84 @@ func (p *PostgresDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
 // SaveRAGChunk saves a chunk to rag_chunks table
 func (p *PostgresDAO) SaveRAGChunk(userID string, chunkID, projectID, docsID string, startByte, endByte int) error {
 	_, err := p.db.Exec(`
-		INSERT INTO rag_chunks (id, project_id, docs_id, start_byte, end_byte, user_id)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, chunkID, projectID, docsID, startByte, endByte, userID)
+		INSERT INTO rag_chunks (id, project_id, docs_id, start_byte, end_byte, source, user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, chunkID, projectID, docsID, startByte, endByte, docsID, userID)
 	return err
 }
 
-// SaveRAGChunkEmbedding - Phase 2 implementation (returns error for Phase 1)
+// SaveRAGChunkEmbedding stores vector embedding for a RAG chunk
 func (p *PostgresDAO) SaveRAGChunkEmbedding(chunkID string, embedding []float64) error {
-	return errors.New("vector embedding operations not implemented in Phase 1 - will be added in Phase 2")
+	// Input validation
+	if chunkID == "" {
+		return errors.New("chunkID cannot be empty")
+	}
+	if len(embedding) == 0 {
+		return errors.New("embedding cannot be empty")
+	}
+	if len(embedding) != 768 { // Validate expected dimension (768 as per CHOICE 2)
+		return fmt.Errorf("embedding dimension mismatch: expected 768, got %d", len(embedding))
+	}
+
+	// Convert to pgvector format
+	embeddingStr := vectorToString(embedding)
+
+	// Use prepared statement to prevent SQL injection
+	query := `
+		UPDATE rag_chunks 
+		SET embedding = $1, 
+		    embedding_created_at = CURRENT_TIMESTAMP 
+		WHERE id = $2`
+
+	_, err := p.db.Exec(query, embeddingStr, chunkID)
+	if err != nil {
+		return fmt.Errorf("failed to save embedding for chunk %s: %w", chunkID, err)
+	}
+
+	return nil
 }
 
-// GetTopSimilarRAGChunks - Phase 2 implementation (returns error for Phase 1)
-func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, embedding string, projectID string) ([]RAGChunkRow, error) {
-	return nil, errors.New("vector similarity search not implemented in Phase 1 - will be added in Phase 2")
+// GetTopSimilarRAGChunks retrieves most similar chunks using cosine similarity
+func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, queryEmbedding string, projectID string) ([]RAGChunkRow, error) {
+	// Input validation
+	if userID == "" || queryEmbedding == "" || projectID == "" {
+		return nil, errors.New("userID, queryEmbedding, and projectID are required")
+	}
+
+	// Validate embedding format
+	if !isValidEmbeddingFormat(queryEmbedding) {
+		return nil, errors.New("invalid embedding format")
+	}
+
+	query := `
+		SELECT id, project_id, docs_id, start_byte, end_byte, source,
+		       embedding <=> $1 as distance
+		FROM rag_chunks 
+		WHERE user_id = $2 
+		  AND project_id = $3
+		  AND embedding IS NOT NULL
+		ORDER BY embedding <=> $1  -- Cosine distance (smaller = more similar)
+		LIMIT 10`
+
+	var chunks []RAGChunkRow
+	rows, err := p.db.Query(query, queryEmbedding, userID, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query similar chunks: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var chunk RAGChunkRow
+		var distance float64
+		err := rows.Scan(&chunk.ID, &chunk.ProjectID, &chunk.DocsID,
+			&chunk.StartByte, &chunk.EndByte, &chunk.Source, &distance)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan chunk row: %w", err)
+		}
+		chunks = append(chunks, chunk)
+	}
+
+	return chunks, nil
 }
 
 func (p *PostgresDAO) IsMainBranch(userID string, source_chat_id string) (bool, error) {
@@ -313,6 +438,60 @@ func (p *PostgresDAO) GetChatBranches(userID string, chatId string, isMain bool)
 	}
 
 	return chats, nil
+}
+
+// Helper function to convert float64 slice to pgvector string format
+func vectorToString(embedding []float64) string {
+	strValues := make([]string, len(embedding))
+	for i, v := range embedding {
+		strValues[i] = strconv.FormatFloat(v, 'f', -1, 64)
+	}
+	return "[" + strings.Join(strValues, ",") + "]"
+}
+
+// Helper function to validate embedding format
+func isValidEmbeddingFormat(embedding string) bool {
+	// Basic validation: should start with [ and end with ]
+	if !strings.HasPrefix(embedding, "[") || !strings.HasSuffix(embedding, "]") {
+		return false
+	}
+
+	// Additional validation could be added here
+	return true
+}
+
+// Pre-compiled regexes for better performance
+var (
+	dangerousCharsRegex = regexp.MustCompile(`[;&|<>(){}[\]\\'"*?]`)
+	validWordRegex      = regexp.MustCompile(`^[a-zA-Z0-9]{2,}$`)
+)
+
+// sanitizeFTSQuery cleans and prepares query for PostgreSQL FTS
+func sanitizeFTSQuery(query string) string {
+	// Remove potentially dangerous characters
+	cleaned := dangerousCharsRegex.ReplaceAllString(query, " ")
+
+	// Limit query length
+	if len(cleaned) > 500 {
+		cleaned = cleaned[:500]
+	}
+
+	// Split and rejoin to create safe tsquery
+	words := strings.Fields(cleaned)
+	validWords := make([]string, 0, len(words))
+
+	for _, word := range words {
+		// Only include words with letters/numbers, min 2 chars
+		if validWordRegex.MatchString(word) {
+			validWords = append(validWords, word)
+		}
+	}
+
+	if len(validWords) == 0 {
+		return ""
+	}
+
+	return strings.Join(validWords, " & ")
 }
 
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL

@@ -45,9 +45,17 @@ func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
 	return &PostgresDAO{db: db}, nil
 }
 
+// NewPostgresDAOWithDB creates a new PostgreSQL DAO instance using a shared database connection
+func NewPostgresDAOWithDB(db *sqlx.DB) (*PostgresDAO, error) {
+	return &PostgresDAO{db: db}, nil
+}
+
 // Close closes the database connection
+// Note: When using shared connection pool, this method should not be called
+// as the connection is managed by the factory
 func (p *PostgresDAO) Close() error {
-	return p.db.Close()
+	// Do nothing - connection is managed by the factory
+	return nil
 }
 
 // CreateChat creates a new chat with the given ID and name
@@ -334,8 +342,14 @@ func NewPostgresSettingsDAO(config *PostgresConfig) (*PostgresSettingsDAO, error
 	return &PostgresSettingsDAO{db: db}, nil
 }
 
+// NewPostgresSettingsDAOWithDB creates a new PostgreSQL Settings DAO instance using a shared database connection
+func NewPostgresSettingsDAOWithDB(db *sqlx.DB) (*PostgresSettingsDAO, error) {
+	return &PostgresSettingsDAO{db: db}, nil
+}
+
 func (p *PostgresSettingsDAO) Close() error {
-	return p.db.Close()
+	// Do nothing - connection is managed by the factory
+	return nil
 }
 
 func (p *PostgresSettingsDAO) GetSettingValue(settingName string) (string, error) {

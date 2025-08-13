@@ -145,6 +145,8 @@ func loadFromEnv(k *koanf.Koanf) {
 	if maxLifetime := os.Getenv("POSTGRES_CONNECTION_MAX_LIFETIME"); maxLifetime != "" {
 		if duration, err := time.ParseDuration(maxLifetime); err == nil {
 			k.Set("database.postgres.pool.connection_max_lifetime", duration)
+		} else {
+			slog.Warn("Invalid format for POSTGRES_CONNECTION_MAX_LIFETIME, using default", "value", maxLifetime, "error", err)
 		}
 	}
 

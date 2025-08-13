@@ -3,6 +3,8 @@ package dao
 import (
 	"fmt"
 	"log/slog"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // DAOFactory interface for creating DAO instances
@@ -20,6 +22,7 @@ type SQLiteDAOFactory struct {
 // PostgresDAOFactory implements DAOFactory for PostgreSQL
 type PostgresDAOFactory struct {
 	config *Config
+	db     *sqlx.DB // Shared connection pool
 }
 
 // NewDAOFactory creates the appropriate DAO factory based on configuration
@@ -37,7 +40,35 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 			"host", config.Database.Postgres.Host,
 			"port", config.Database.Postgres.Port,
 			"database", config.Database.Postgres.Database)
-		return &PostgresDAOFactory{config: config}, nil
+
+		// Create shared connection pool
+		dsn := config.Database.Postgres.GetPostgresDSN()
+		db, err := sqlx.Open("postgres", dsn)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open PostgreSQL connection: %w", err)
+		}
+
+		// Configure connection pool
+		db.SetMaxOpenConns(config.Database.Postgres.Pool.MaxOpenConnections)
+		db.SetMaxIdleConns(config.Database.Postgres.Pool.MaxIdleConnections)
+		db.SetConnMaxLifetime(config.Database.Postgres.Pool.ConnectionMaxLifetime)
+
+		// Test the connection
+		if err := db.Ping(); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
+		}
+
+		slog.Info("PostgreSQL connection pool created successfully",
+			"host", config.Database.Postgres.Host,
+			"port", config.Database.Postgres.Port,
+			"database", config.Database.Postgres.Database,
+			"max_open_conns", config.Database.Postgres.Pool.MaxOpenConnections)
+
+		return &PostgresDAOFactory{
+			config: config,
+			db:     db,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported database type: %s", config.Database.Type)
 	}
@@ -61,14 +92,16 @@ func (f *SQLiteDAOFactory) Close() error {
 // PostgresDAOFactory implementation
 
 func (f *PostgresDAOFactory) CreateDAO() (DAO, error) {
-	return NewPostgresDAO(&f.config.Database.Postgres)
+	return NewPostgresDAOWithDB(f.db)
 }
 
 func (f *PostgresDAOFactory) CreateSettingsDAO() (SettingsDAO, error) {
-	return NewPostgresSettingsDAO(&f.config.Database.Postgres)
+	return NewPostgresSettingsDAOWithDB(f.db)
 }
 
 func (f *PostgresDAOFactory) Close() error {
-	// PostgreSQL connections are closed by individual DAOs
+	if f.db != nil {
+		return f.db.Close()
+	}
 	return nil
 }

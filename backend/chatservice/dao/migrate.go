@@ -117,7 +117,7 @@ func SeedSqlite(dbURL string) error {
 }
 
 func MigratePostgres(dbURL string) error {
-	slog.Info("Migrating PostgreSQL database", "dbURL", dbURL)
+	slog.Info("Connecting to PostgreSQL database")
 	sqlDB, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		slog.Error("error", "err", err)

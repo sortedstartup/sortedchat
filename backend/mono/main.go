@@ -76,6 +76,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create DAO factory: %v", err)
 	}
+	defer func() {
+		if err := daoFactory.Close(); err != nil {
+			log.Printf("Error closing DAO factory: %v", err)
+		}
+	}()
 
 	queue := queue.NewInMemoryQueue()
 	settingsManager := settings.NewSettingsManager(queue, daoFactory)

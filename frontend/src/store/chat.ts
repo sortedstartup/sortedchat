@@ -423,8 +423,6 @@ export const $isNewlyBranched = atom<boolean>(false); //will change this logic
 export async function BranchChat(branch_from_message_id: string) {
   try {
     const currentChatId = $currentChatId.get();
-    console.log('currentChatId', currentChatId);
-    const currentProjectId = $currentProjectId.get();
 
     if (!branch_from_message_id || branch_from_message_id.trim() === "") {
       toast.error("Invalid message ID for branching");
@@ -434,8 +432,7 @@ export async function BranchChat(branch_from_message_id: string) {
     const res = await chat.BranchAChat(BranchAChatRequest.fromObject({
       source_chat_id: currentChatId,
       branch_from_message_id: branch_from_message_id,
-      branch_name: "",
-      project_id: currentProjectId || "",
+      branch_name: ""
     }), {});
 
     

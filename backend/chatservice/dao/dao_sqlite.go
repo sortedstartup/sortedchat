@@ -298,9 +298,16 @@ func (s *SQLiteDAO) IsMainBranch(userID string, source_chat_id string) (bool, er
 	return isMainBranch, err
 }
 
-func (s *SQLiteDAO) BranchChat(userID string, source_chat_id string, parent_message_id string, new_chat_id string, branch_name string, project_id string) error {
-	_, err := s.db.Exec(`INSERT INTO chat_list (chat_id, name, project_id, parent_chat_id, parent_message_id, is_main_branch, user_id)
-						 VALUES (?, ?, ?, ?, ?, FALSE, ?)`, new_chat_id, branch_name, project_id, source_chat_id, parent_message_id, userID)
+func (s *SQLiteDAO) BranchChat(userID string, source_chat_id string, parent_message_id string, new_chat_id string, branch_name string) error {
+	// Use CTE to find project_id from source chat and insert the new branch chat
+	_, err := s.db.Exec(`WITH source_chat AS (
+							SELECT project_id 
+							FROM chat_list 
+							WHERE chat_id = ? AND user_id = ?
+						)
+						INSERT INTO chat_list (chat_id, name, project_id, parent_chat_id, parent_message_id, is_main_branch, user_id)
+						SELECT ?, ?, COALESCE(source_chat.project_id, NULL), ?, ?, FALSE, ?
+						FROM source_chat`, source_chat_id, userID, new_chat_id, branch_name, source_chat_id, parent_message_id, userID)
 	if err != nil {
 		return err
 	}

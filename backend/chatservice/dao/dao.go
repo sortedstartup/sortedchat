@@ -38,8 +38,8 @@ type DAO interface {
 	GetTopSimilarRAGChunks(userID string, embedding string, projectID string) ([]RAGChunkRow, error)
 
 	IsMainBranch(userID string, source_chat_id string) (bool, error)
-	BranchChat(userID string, source_chat_id string, parent_message_id string, new_chat_id string, branch_name string, project_id string) error
-	GetChatBranches(userID string, chatId string, isMain bool) ([]*proto.ChatInfo, error)
+	BranchChat(userID string, source_chat_id string, parent_message_id string, new_chat_id string, branch_name string) error
+	GetChatBranches(userID string, chatId string, isMain bool) ([]ChatInfoRow, error)
 }
 
 type SettingsDAO interface {

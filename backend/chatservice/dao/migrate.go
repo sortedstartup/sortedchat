@@ -10,8 +10,10 @@ import (
 	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/database/sqlite"
 
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -27,7 +29,13 @@ var sqliteMigrationFiles embed.FS
 //go:embed db/sqlite/scripts/seed
 var sqliteSeedFiles embed.FS
 
-func MigrateDB_UsingConnection(sqlDB *sql.DB, files embed.FS, directoryInFS string, migrationsTable string) error {
+//go:embed db/postgres/scripts/migrations
+var postgresMigrationFiles embed.FS
+
+//go:embed db/postgres/scripts/seed
+var postgresSeedFiles embed.FS
+
+func MigrateDB_UsingConnection_SQLite(sqlDB *sql.DB, files embed.FS, directoryInFS string, migrationsTable string) error {
 	_files, err := iofs.New(files, directoryInFS)
 	if err != nil {
 		log.Fatal(err)
@@ -55,24 +63,79 @@ func MigrateDB_UsingConnection(sqlDB *sql.DB, files embed.FS, directoryInFS stri
 	return nil
 }
 
+func MigrateDB_UsingConnection_Postgres(sqlDB *sql.DB, files embed.FS, directoryInFS string, migrationsTable string) error {
+	_files, err := iofs.New(files, directoryInFS)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dbInstance, err := postgres.WithInstance(sqlDB, &postgres.Config{MigrationsTable: migrationsTable})
+	if err != nil {
+		slog.Error("error", "err", err)
+		return err
+	}
+
+	m, err := migrate.NewWithInstance("iofs", _files, "DUMMY", dbInstance)
+
+	if err != nil {
+		slog.Error("error", "err", err)
+		return fmt.Errorf("failed creating new migration: %w", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		slog.Error("error", "err", err)
+		return fmt.Errorf("failed while migrating: %w", err)
+	}
+
+	return nil
+}
+
 func MigrateSQLite(dbURL string) error {
-	slog.Info("Migrating database", "dbURL", dbURL)
+	slog.Info("Migrating SQLite database", "dbURL", dbURL)
 	sqlite_vec.Auto()
 	sqlDB, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		slog.Error("error", "err", err)
+		return err
 	}
+	defer sqlDB.Close()
 
-	return MigrateDB_UsingConnection(sqlDB, sqliteMigrationFiles, "db/sqlite/scripts/migrations", MIGRATION_TABLE)
+	return MigrateDB_UsingConnection_SQLite(sqlDB, sqliteMigrationFiles, "db/sqlite/scripts/migrations", MIGRATION_TABLE)
 }
 
 func SeedSqlite(dbURL string) error {
-	slog.Info("Seeding database", "dbURL", dbURL)
+	slog.Info("Seeding SQLite database", "dbURL", dbURL)
 	sqlite_vec.Auto()
 	sqlDB, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		slog.Error("error", "err", err)
+		return err
 	}
+	defer sqlDB.Close()
 
-	return MigrateDB_UsingConnection(sqlDB, sqliteSeedFiles, "db/sqlite/scripts/seed", SEED_MIGRATION_TABLE)
+	return MigrateDB_UsingConnection_SQLite(sqlDB, sqliteSeedFiles, "db/sqlite/scripts/seed", SEED_MIGRATION_TABLE)
+}
+
+func MigratePostgres(dbURL string) error {
+	slog.Info("Migrating PostgreSQL database", "dbURL", dbURL)
+	sqlDB, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		slog.Error("error", "err", err)
+		return err
+	}
+	defer sqlDB.Close()
+
+	return MigrateDB_UsingConnection_Postgres(sqlDB, postgresMigrationFiles, "db/postgres/scripts/migrations", "chatservice_postgres_migrations")
+}
+
+func SeedPostgres(dbURL string) error {
+	slog.Info("Seeding PostgreSQL database", "dbURL", dbURL)
+	sqlDB, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		slog.Error("error", "err", err)
+		return err
+	}
+	defer sqlDB.Close()
+
+	return MigrateDB_UsingConnection_Postgres(sqlDB, postgresSeedFiles, "db/postgres/scripts/seed", "chatservice_postgres_seed")
 }

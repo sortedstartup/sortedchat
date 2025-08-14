@@ -207,15 +207,13 @@ func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.S
 
 	var results []proto.SearchResult
 	for rows.Next() {
-		fmt.Println("rows.Next()")
+
 		var chatId, chatName, matchedText string
 
 		err := rows.Scan(&chatId, &chatName, &matchedText)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan search result: %w", err)
 		}
-
-		slog.Info("Search result", "chatId", chatId, "chatName", chatName, "matchedText", matchedText)
 
 		results = append(results, proto.SearchResult{
 			ChatId:      chatId,
@@ -224,7 +222,6 @@ func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.S
 		})
 	}
 
-	// slog.Info("Search result", "chatId", chatId, "chatName", chatName, "matchedText", matchedText)
 	return results, nil
 }
 

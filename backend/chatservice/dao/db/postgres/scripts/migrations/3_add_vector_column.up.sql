@@ -8,7 +8,9 @@ ALTER TABLE rag_chunks ADD COLUMN embedding vector(768);
 CREATE INDEX idx_rag_chunks_embedding_hnsw 
     ON rag_chunks USING hnsw (embedding vector_cosine_ops)
     WITH (m = 16, ef_construction = 64);
+    -- m:  how connected the HNSW graph is. Higher means more accuracy + more memory.
+    -- ef_construction: how many neighbors to consider during construction. Higher means more accuracy + more time.
 
 -- Add metadata for vector operations
-ALTER TABLE rag_chunks ADD COLUMN embedding_model TEXT DEFAULT 'text-embedding-3-small';
+ALTER TABLE rag_chunks ADD COLUMN embedding_model TEXT;
 ALTER TABLE rag_chunks ADD COLUMN embedding_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;

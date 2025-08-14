@@ -177,44 +177,45 @@ func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.S
 	}
 
 	sqlQuery := `
-		SELECT 
-		    cm.chat_id,
-		    cl.name AS chat_name,
-		    string_agg(
-		        CASE 
-		            WHEN length(cm.content) > 150 
-		            THEN substring(cm.content, 1, 150) || '...'
-		            ELSE cm.content
-		        END, 
-		        E'\n-----\n' 
-		        ORDER BY cm.created_at
-		    ) AS matched_text,
-		    max(ts_rank_cd(cm.content_tsvector, query)) AS relevance_score
+		SELECT
+			cm.chat_id,
+			cl.name AS chat_name,
+			string_agg(
+				CASE
+					WHEN length(cm.content) > 150
+					THEN left(cm.content, 150) || '...'
+					ELSE cm.content
+				END,
+				E'\n-----\n'
+				ORDER BY cm.created_at
+			) AS matched_text
 		FROM chat_messages cm
 		JOIN chat_list cl ON cm.chat_id = cl.chat_id
-		CROSS JOIN to_tsquery('english', $1) AS query
-		WHERE cm.user_id = $2 
-		  AND cl.user_id = $2
-		  AND cm.content_tsvector @@ query
+		WHERE cm.user_id = $2
+		AND cl.user_id = $2
+		AND cm.content_tsvector @@ to_tsquery('english', $1)
 		GROUP BY cm.chat_id, cl.name
-		ORDER BY relevance_score DESC, cm.chat_id
+		ORDER BY max(ts_rank_cd(cm.content_tsvector, to_tsquery('english', $1))) DESC, cm.chat_id
 		LIMIT 20`
 
 	rows, err := p.db.Query(sqlQuery, sanitizedQuery, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute FTS query: %w", err)
 	}
+	fmt.Println("rows", rows)
 	defer rows.Close()
 
 	var results []proto.SearchResult
 	for rows.Next() {
+		fmt.Println("rows.Next()")
 		var chatId, chatName, matchedText string
-		var relevanceScore float64
 
-		err := rows.Scan(&chatId, &chatName, &matchedText, &relevanceScore)
+		err := rows.Scan(&chatId, &chatName, &matchedText)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan search result: %w", err)
 		}
+
+		slog.Info("Search result", "chatId", chatId, "chatName", chatName, "matchedText", matchedText)
 
 		results = append(results, proto.SearchResult{
 			ChatId:      chatId,
@@ -223,6 +224,7 @@ func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.S
 		})
 	}
 
+	// slog.Info("Search result", "chatId", chatId, "chatName", chatName, "matchedText", matchedText)
 	return results, nil
 }
 
@@ -299,9 +301,9 @@ func (p *PostgresDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
 // SaveRAGChunk saves a chunk to rag_chunks table
 func (p *PostgresDAO) SaveRAGChunk(userID string, chunkID, projectID, docsID string, startByte, endByte int) error {
 	_, err := p.db.Exec(`
-		INSERT INTO rag_chunks (id, project_id, docs_id, start_byte, end_byte, source, user_id)
+		INSERT INTO rag_chunks (id, project_id, docs_id, start_byte, end_byte, user_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`, chunkID, projectID, docsID, startByte, endByte, docsID, userID)
+	`, chunkID, projectID, docsID, startByte, endByte, userID)
 	return err
 }
 
@@ -349,14 +351,13 @@ func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, queryEmbedding strin
 	}
 
 	query := `
-		SELECT id, project_id, docs_id, start_byte, end_byte, source,
-		       embedding <=> $1 as distance
-		FROM rag_chunks 
-		WHERE user_id = $2 
-		  AND project_id = $3
-		  AND embedding IS NOT NULL
-		ORDER BY embedding <=> $1  -- Cosine distance (smaller = more similar)
-		LIMIT 10`
+		SELECT id, project_id, docs_id, start_byte, end_byte
+    FROM rag_chunks 
+    WHERE user_id = $2 
+      AND project_id = $3
+      AND embedding IS NOT NULL
+    ORDER BY embedding <=> $1  -- Cosine distance (smaller = more similar)
+    LIMIT 10`
 
 	var chunks []RAGChunkRow
 	rows, err := p.db.Query(query, queryEmbedding, userID, projectID)
@@ -367,9 +368,9 @@ func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, queryEmbedding strin
 
 	for rows.Next() {
 		var chunk RAGChunkRow
-		var distance float64
+
 		err := rows.Scan(&chunk.ID, &chunk.ProjectID, &chunk.DocsID,
-			&chunk.StartByte, &chunk.EndByte, &chunk.Source, &distance)
+			&chunk.StartByte, &chunk.EndByte)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan chunk row: %w", err)
 		}
@@ -456,7 +457,23 @@ func isValidEmbeddingFormat(embedding string) bool {
 		return false
 	}
 
-	// Additional validation could be added here
+	// Trim brackets and check content
+	content := embedding[1 : len(embedding)-1]
+	if content == "" {
+		return true // An empty vector `[]` is valid.
+	}
+
+	parts := strings.Split(content, ",")
+	for _, part := range parts {
+		trimmedPart := strings.TrimSpace(part)
+		if trimmedPart == "" {
+			return false // Disallow empty elements like in "[1,,2]"
+		}
+		if _, err := strconv.ParseFloat(trimmedPart, 64); err != nil {
+			return false // Each part must be a valid float
+		}
+	}
+
 	return true
 }
 

@@ -114,7 +114,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		if err != nil {
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
-			fmt.Println("Retrieved chunks:", chunks.Prompt)
 			userMessage = chunks.Prompt
 		}
 	}

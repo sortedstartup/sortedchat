@@ -299,7 +299,7 @@ func (p *PostgresDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
 func (p *PostgresDAO) SaveRAGChunk(userID string, chunkID, projectID, docsID string, startByte, endByte int) error {
 	_, err := p.db.Exec(`
 		INSERT INTO rag_chunks (id, project_id, docs_id, start_byte, end_byte, user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6)
 	`, chunkID, projectID, docsID, startByte, endByte, userID)
 	return err
 }

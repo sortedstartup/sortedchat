@@ -21,6 +21,9 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	inferenceApi "sortedstartup/inferenceservice/api"
+	infereceProto "sortedstartup/inferenceservice/proto"
 )
 
 const (
@@ -67,6 +70,10 @@ func main() {
 	settingServiceApi := api.NewSettingService(queue)
 	settingServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
+
+	inferenceServiceApi := inferenceApi.NewInferenceService()
+	inferenceServiceApi.Init()
+	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)

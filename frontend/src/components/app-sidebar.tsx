@@ -35,6 +35,8 @@ import {
   createProject,
   getProjectList,
 } from "@/store/chat";
+import remarkGfm from "remark-gfm";
+import ReactMarkdown from "react-markdown";
 
 export function AppSidebar() {
   const projectsList = useStore($projectList);
@@ -177,7 +179,9 @@ export function AppSidebar() {
                                 Chat: {result.chat_name || "Unnamed Chat"}
                               </div>
                               <div className="text-gray-900 dark:text-white line-clamp-2">
-                                {result.matched_text}
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {result.matched_text}
+                                </ReactMarkdown>
                               </div>
                             </div>
                           ))

@@ -72,11 +72,6 @@ func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessage
 	return messages, err
 }
 
-type ChatInfoRow struct {
-	Id   string `db:"chat_id"`
-	Name string `db:"name"`
-}
-
 // GetChatList retrieves all chats for a user
 func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
@@ -139,29 +134,29 @@ func (s *SQLiteDAO) GetModels() ([]proto.ModelListInfo, error) {
 // SearchChatMessages searches chat messages using FTS
 func (s *SQLiteDAO) SearchChatMessages(userID string, query string) ([]proto.SearchResult, error) {
 	const searchSQL = `
-		SELECT
-			cm.chat_id as chat_id,
-			cl.name AS chat_name,
-			GROUP_CONCAT(
-				CASE
-					WHEN LENGTH(cm.content) > 100 THEN SUBSTR(cm.content, 1, 100) || '...'
-					ELSE cm.content
-				END,
-				'\n-----\n'
-			) AS aggregated_snippets
-		FROM
-			chat_messages_fts AS fts
-		JOIN
-			chat_messages AS cm ON fts.rowid = cm.id
-		JOIN
-			chat_list AS cl ON cm.chat_id = cl.chat_id
-		WHERE
-			fts.chat_messages_fts MATCH ? AND cm.user_id = ? AND cl.user_id = ?
-		GROUP BY
-			cm.chat_id, cl.name
-		ORDER BY
-			cm.chat_id;
-	`
+        SELECT
+            cm.chat_id as chat_id,
+            cl.name AS chat_name,
+            GROUP_CONCAT(
+                CASE
+                    WHEN LENGTH(cm.content) > 100 THEN SUBSTR(cm.content, 1, 100) || '...'
+                    ELSE cm.content
+                END,
+                char(10) || '---' || char(10)
+            ) AS aggregated_snippets
+        FROM
+            chat_messages_fts AS fts
+        JOIN
+            chat_messages AS cm ON fts.rowid = cm.id
+        JOIN
+            chat_list AS cl ON cm.chat_id = cl.chat_id
+        WHERE
+            fts.chat_messages_fts MATCH ? AND cm.user_id = ? AND cl.user_id = ?
+        GROUP BY
+            cm.chat_id, cl.name
+        ORDER BY
+            cm.chat_id;
+    `
 
 	var rows []struct {
 		ChatID      string `db:"chat_id"`
@@ -341,11 +336,6 @@ func (s *SQLiteDAO) GetChatBranches(userID string, chatId string, isMain bool) (
 	}
 
 	return chats, nil
-}
-
-type dbSettings struct {
-	Name     string `db:"name" json:"name"`
-	Settings string `db:"settings" json:"settings"`
 }
 
 type SQLiteSettingsDAO struct {

@@ -257,7 +257,7 @@ onMount($availableModels, () => {
 
 // -- search --
 export const $searchResults = atom<SearchResult[]>([]);
-export const $searchText = atom<string>("elon");
+export const $searchText = atom<string>("");
 
 $searchText.listen((newValue, oldValue) => {
    if (newValue !== oldValue) {

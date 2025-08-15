@@ -606,18 +606,34 @@ func (s *ChatService) BranchAChat(ctx context.Context, userID string, sourceChat
 		return "", fmt.Errorf("message id is required")
 	}
 
-	isMain, err := s.dao.IsMainBranch(userID, sourceChatId)
-	if err != nil || !isMain {
-		return "", fmt.Errorf("can only branch from main branch chats")
+	// Verify the source chat exists and belongs to the user
+	chatExists, err := s.dao.ChatExists(userID, sourceChatId)
+	if err != nil {
+		return "", fmt.Errorf("failed to verify source chat: %v", err)
+	}
+
+	if !chatExists {
+		return "", fmt.Errorf("source chat not found or access denied")
+	}
+
+	// Verify the message exists in the accessible chat hierarchy
+	messageExists, err := s.dao.MessageExistsInChatHierarchy(userID, sourceChatId, branchFromMessageId)
+	if err != nil {
+		return "", fmt.Errorf("failed to verify message: %v", err)
+	}
+
+	if !messageExists {
+		return "", fmt.Errorf("message not found in accessible chat history")
 	}
 
 	newChatId := uuid.New().String()
+	fmt.Println("newChatId", newChatId)
 
 	err = s.dao.BranchChat(userID, sourceChatId, branchFromMessageId, newChatId, branchName)
 	if err != nil {
 		return "", fmt.Errorf("failed to create branch: %v", err)
 	}
-
+	fmt.Println("newChatId", newChatId)
 	return newChatId, nil
 }
 

@@ -12,6 +12,8 @@ type DAO interface {
 	AddChatMessage(userID string, chatId string, role string, content string) error
 	AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error)
 	GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error)
+	ChatExists(userID string, chatId string) (bool, error)
+	MessageExistsInChatHierarchy(userID string, chatId string, messageId string) (bool, error)
 
 	// GetChatList retrieves all chats for a user
 	GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error)

@@ -64,12 +64,101 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 	return err
 }
 
-// GetChatMessages retrieves all messages for a given chat
+// GetChatMessages now retrieves messages from the current chat and all its parent chats up to their respective branch points
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
-	// todo : do we need to order by time?
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, id FROM chat_messages WHERE chat_id = ? AND user_id = ?", chatId, userID)
+
+	// Use recursive CTE to get messages from the entire chat hierarchy
+	err := s.db.Select(&messages, `
+		WITH RECURSIVE chat_hierarchy AS (
+			-- Base case: start with the requested chat
+			SELECT 
+				chat_id,
+				parent_chat_id,
+				parent_message_id,
+				0 as level
+			FROM chat_list 
+			WHERE chat_id = ? AND user_id = ?
+			
+			UNION ALL
+			
+			-- Recursive case: get parent chats
+			SELECT 
+				cl.chat_id,
+				cl.parent_chat_id,
+				cl.parent_message_id,
+				ch.level + 1 as level
+			FROM chat_list cl
+			INNER JOIN chat_hierarchy ch ON cl.chat_id = ch.parent_chat_id
+			WHERE cl.user_id = ?
+		)
+		SELECT 
+			cm.role,
+			cm.content,
+			cm.id
+		FROM chat_messages cm
+		INNER JOIN chat_hierarchy ch ON cm.chat_id = ch.chat_id
+		WHERE cm.user_id = ? AND (
+			-- For the current chat (level 0), include all messages
+			ch.level = 0
+			OR 
+			-- For parent chats, only include messages up to and including the branch point
+			(ch.level > 0 AND cm.id <= (SELECT CAST(parent_message_id AS INTEGER) FROM chat_hierarchy WHERE level = 0))
+		)
+		ORDER BY cm.created_at, cm.id`,
+		chatId, userID, userID, userID)
+
 	return messages, err
+}
+
+// ChatExists checks if a chat exists and belongs to the user
+func (s *SQLiteDAO) ChatExists(userID string, chatId string) (bool, error) {
+	var exists bool
+	err := s.db.Get(&exists,
+		"SELECT EXISTS(SELECT 1 FROM chat_list WHERE chat_id = ? AND user_id = ?)",
+		chatId, userID)
+	return exists, err
+}
+
+// MessageExistsInChatHierarchy checks if a message exists in the accessible chat hierarchy
+func (s *SQLiteDAO) MessageExistsInChatHierarchy(userID string, chatId string, messageId string) (bool, error) {
+	var exists bool
+	err := s.db.Get(&exists, `
+		WITH RECURSIVE chat_hierarchy AS (
+			-- Base case: start with the source chat
+			SELECT 
+				chat_id,
+				parent_chat_id,
+				parent_message_id,
+				0 as level
+			FROM chat_list 
+			WHERE chat_id = ? AND user_id = ?
+			
+			UNION ALL
+			
+			-- Recursive case: get parent chats
+			SELECT 
+				cl.chat_id,
+				cl.parent_chat_id,
+				cl.parent_message_id,
+				ch.level + 1 as level
+			FROM chat_list cl
+			INNER JOIN chat_hierarchy ch ON cl.chat_id = ch.parent_chat_id
+			WHERE cl.user_id = ?
+		)
+		SELECT EXISTS(
+			SELECT 1 
+			FROM chat_messages cm
+			INNER JOIN chat_hierarchy ch ON cm.chat_id = ch.chat_id
+			WHERE cm.id = ? AND cm.user_id = ?
+			AND (
+				ch.level = 0 -- Current chat, any message is valid
+				OR (ch.level > 0 AND cm.id <= ch.parent_message_id) -- Parent chats, only up to branch point
+			)
+		)`,
+		chatId, userID, userID, messageId, userID)
+
+	return exists, err
 }
 
 type ChatInfoRow struct {
@@ -292,32 +381,25 @@ func (s *SQLiteDAO) GetTopSimilarRAGChunks(userID string, embedding string, proj
 	return chunks, err
 }
 
-func (s *SQLiteDAO) IsMainBranch(userID string, source_chat_id string) (bool, error) {
-	var isMainBranch bool
-	err := s.db.Get(&isMainBranch, `SELECT is_main_branch FROM chat_list WHERE chat_id = ? AND user_id = ?`, source_chat_id, userID)
-	return isMainBranch, err
+func (s *SQLiteDAO) IsMainBranch(userID string, chatId string) (bool, error) {
+	var isMain bool
+	err := s.db.Get(&isMain, "SELECT is_main_branch FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	return isMain, err
 }
 
-func (s *SQLiteDAO) BranchChat(userID string, source_chat_id string, parent_message_id string, new_chat_id string, branch_name string) error {
+func (s *SQLiteDAO) BranchChat(userID string, sourceChatId string, parentMessageId string, newChatId string, branchName string) error {
 	// Use CTE to find project_id from source chat and insert the new branch chat
-	_, err := s.db.Exec(`WITH source_chat AS (
-							SELECT project_id 
-							FROM chat_list 
-							WHERE chat_id = ? AND user_id = ?
-						)
-						INSERT INTO chat_list (chat_id, name, project_id, parent_chat_id, parent_message_id, is_main_branch, user_id)
-						SELECT ?, ?, COALESCE(source_chat.project_id, NULL), ?, ?, FALSE, ?
-						FROM source_chat`, source_chat_id, userID, new_chat_id, branch_name, source_chat_id, parent_message_id, userID)
-	if err != nil {
-		return err
-	}
+	_, err := s.db.Exec(`
+		WITH source_chat AS (
+			SELECT project_id 
+			FROM chat_list 
+			WHERE chat_id = ? AND user_id = ?
+		)
+		INSERT INTO chat_list (chat_id, name, project_id, parent_chat_id, parent_message_id, is_main_branch, user_id)
+		SELECT ?, ?, COALESCE(source_chat.project_id, NULL), ?, ?, FALSE, ?
+		FROM source_chat`,
+		sourceChatId, userID, newChatId, branchName, sourceChatId, parentMessageId, userID)
 
-	//copy messages up to branch point
-	_, err = s.db.Exec(`INSERT INTO chat_messages (chat_id, role, content, model, error, input_token_count, output_token_count, created_at, user_id)
-						SELECT ?, role, content, model, error, input_token_count, output_token_count, created_at, ?
-						FROM chat_messages 
-						WHERE chat_id = ? AND id <= ? AND user_id = ?
-						ORDER BY id;`, new_chat_id, userID, source_chat_id, parent_message_id, userID)
 	return err
 }
 

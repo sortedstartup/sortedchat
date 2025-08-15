@@ -202,7 +202,6 @@ func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.S
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute FTS query: %w", err)
 	}
-	fmt.Println("rows", rows)
 	defer rows.Close()
 
 	var results []proto.SearchResult

@@ -5,11 +5,30 @@ package sortedchat;
 option go_package = "sortedstartup/inferenceservice/proto";
 
 service InferenceService {
-    rpc Infer(InferRequest) returns (stream InferResponse);
+  rpc DownloadModel(DownloadModelRequest) returns (DownloadModelResponse);
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
 }
 
-message InferRequest {
+message Model {
+  string id = 1;
+  string name = 2;
+  string status = 4;
+  string progress = 5;
+  bool is_downloadable = 6;
+  bool is_downloaded = 7;
+}
+  
+message DownloadModelRequest {
+  string model_name = 1;
 }
 
-message InferResponse {
+message DownloadModelResponse {
+  string message = 1;
+}
+
+message ListModelsRequest {
+}
+
+message ListModelsResponse {
+  repeated Model models = 1;
 }

@@ -113,7 +113,7 @@ func main() {
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 
 	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
-	inferenceServiceApi.Init()
+	inferenceServiceApi.Init(inferenceConfig)
 	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 
 	// Enable reflection, TODO: may be remove in production ?

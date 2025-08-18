@@ -1,7 +1,10 @@
 package api
 
 import (
+	"log"
+	"log/slog"
 	"sortedstartup/inferenceservice/dao"
+	db "sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
 	"sortedstartup/inferenceservice/service"
 
@@ -28,9 +31,26 @@ func (s *InferenceServiceAPI) Infer(req *pb.InferRequest, stream grpc.ServerStre
 	return s.service.Infer(stream.Context(), "dummy")
 }
 
-func (s *InferenceServiceAPI) Init() {
-	//db.InitDB()
-	// TODO: handle migration for postgres also
-	// db.MigrateSQLite(SQLITE_DB_URL)
-	// db.SeedSqlite(SQLITE_DB_URL)
+func (s *InferenceServiceAPI) Init(config *dao.Config) {
+	switch config.Database.Type {
+	case db.DatabaseTypeSQLite:
+		slog.Info("InferenceService: Running SQLite migrations")
+		if err := db.MigrateSQLite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("InferenceService: Failed to migrate SQLite database: %v", err)
+		}
+		if err := db.SeedSqlite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("InferenceService: Failed to seed SQLite database: %v", err)
+		}
+	case db.DatabaseTypePostgres:
+		slog.Info("InferenceService: Running PostgreSQL migrations")
+		dsn := config.Database.Postgres.GetPostgresDSN()
+		if err := db.MigratePostgres(dsn); err != nil {
+			log.Fatalf("InferenceService: Failed to migrate PostgreSQL database: %v", err)
+		}
+		if err := db.SeedPostgres(dsn); err != nil {
+			log.Fatalf("InferenceService: Failed to seed PostgreSQL database: %v", err)
+		}
+	default:
+		log.Fatalf("InferenceService: Unsupported database type: %s", config.Database.Type)
+	}
 }

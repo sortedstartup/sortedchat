@@ -27,3 +27,27 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 func (d *SQLiteDAO) Infer(dummy string) error {
 	return nil
 }
+
+func (d *SQLiteDAO) DownloadModel(userID string, modelName string, url string) error {
+	return nil
+}
+
+func (d *SQLiteDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status FROM inference_model_metadata WHERE name = ?`
+
+	var model ModelMetadata
+	err := d.db.Get(&model, query, modelName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model, nil
+}
+
+func (d *SQLiteDAO) UpdateModelProgress(id string, progress *DownloadProgress) error {
+	isDownloaded := progress.Status == StatusCompleted
+	query := `UPDATE inference_model_metadata SET progress = ?, is_downloaded = ?, status = ? WHERE id = ?`
+
+	_, err := d.db.Exec(query, progress.ToJSON(), isDownloaded, progress.Status, id)
+	return err
+}

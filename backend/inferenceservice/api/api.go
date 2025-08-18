@@ -1,14 +1,13 @@
 package api
 
 import (
+	"context"
 	"log"
 	"log/slog"
 	"sortedstartup/inferenceservice/dao"
 	db "sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
 	"sortedstartup/inferenceservice/service"
-
-	"google.golang.org/grpc"
 )
 
 type InferenceServiceAPI struct {
@@ -17,6 +16,8 @@ type InferenceServiceAPI struct {
 }
 
 var SQLITE_DB_URL = "db.sqlite"
+
+const HARDCODED_USER_ID = "0"
 
 func NewInferenceServiceAPI(daoFactory dao.DAOFactory) *InferenceServiceAPI {
 
@@ -27,8 +28,18 @@ func NewInferenceServiceAPI(daoFactory dao.DAOFactory) *InferenceServiceAPI {
 	return s
 }
 
-func (s *InferenceServiceAPI) Infer(req *pb.InferRequest, stream grpc.ServerStreamingServer[pb.InferResponse]) error {
-	return s.service.Infer(stream.Context(), "dummy")
+func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.DownloadModelRequest) (*pb.DownloadModelResponse, error) {
+	err := s.service.DownloadModel(ctx, HARDCODED_USER_ID, req.GetModelName())
+	if err != nil {
+		return &pb.DownloadModelResponse{
+			Message: "Failed to start download: " + err.Error(),
+		}, err
+	}
+
+	message := "Download started successfully"
+	return &pb.DownloadModelResponse{
+		Message: message,
+	}, nil
 }
 
 func (s *InferenceServiceAPI) Init(config *dao.Config) {

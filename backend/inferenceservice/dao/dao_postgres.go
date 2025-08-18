@@ -50,3 +50,27 @@ func NewPostgresDAOWithDB(db *sqlx.DB) (*PostgresDAO, error) {
 func (d *PostgresDAO) Infer(dummy string) error {
 	return nil
 }
+
+func (d *PostgresDAO) DownloadModel(userID string, modelName string, url string) error {
+	return nil
+}
+
+func (d *PostgresDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status FROM inference_model_metadata WHERE name = $1`
+
+	var model ModelMetadata
+	err := d.db.Get(&model, query, modelName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model, nil
+}
+
+func (d *PostgresDAO) UpdateModelProgress(id string, progress *DownloadProgress) error {
+	isDownloaded := progress.Status == StatusCompleted
+	query := `UPDATE inference_model_metadata SET progress = $1, is_downloaded = $2, status = $3 WHERE id = $4`
+
+	_, err := d.db.Exec(query, progress.ToJSON(), isDownloaded, progress.Status, id)
+	return err
+}

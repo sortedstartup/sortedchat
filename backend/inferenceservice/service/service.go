@@ -1,14 +1,25 @@
 package service
 
-import "context"
+import (
+	"context"
+	"log"
+	"sortedstartup/inferenceservice/dao"
+)
 
 type InferenceService struct {
+	dao dao.DAO
 }
 
-func NewInferenceService() *InferenceService {
-	return &InferenceService{}
+func NewInferenceService(daoFactory dao.DAOFactory) *InferenceService {
+	dao, err := daoFactory.CreateDAO()
+	if err != nil {
+		log.Fatalf("Failed to create DAO: %v", err)
+	}
+	return &InferenceService{
+		dao: dao,
+	}
 }
 
-func (s *InferenceService) Infer(ctx context.Context) error {
-	return nil
+func (s *InferenceService) Infer(ctx context.Context, dummy string) error {
+	return s.dao.Infer(dummy)
 }

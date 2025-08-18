@@ -1,5 +1,5 @@
 package dao
 
-type InferenceDAO interface {
+type DAO interface {
 	Infer(dummy string) error
 }

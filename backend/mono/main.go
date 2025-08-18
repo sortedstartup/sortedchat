@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	inferenceApi "sortedstartup/inferenceservice/api"
+	inferenceDao "sortedstartup/inferenceservice/dao"
 	infereceProto "sortedstartup/inferenceservice/proto"
 )
 
@@ -85,6 +86,21 @@ func main() {
 		}
 	}()
 
+	inferenceConfig, err := inferenceDao.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	inferenceDaoFactory, err := inferenceDao.NewDAOFactory(inferenceConfig)
+	if err != nil {
+		log.Fatalf("Failed to create DAO factory: %v", err)
+	}
+	defer func() {
+		if err := inferenceDaoFactory.Close(); err != nil {
+			log.Printf("Error closing DAO factory: %v", err)
+		}
+	}()
+
 	queue := queue.NewInMemoryQueue()
 	settingsManager := settings.NewSettingsManager(queue, daoFactory)
 
@@ -96,7 +112,7 @@ func main() {
 	settingServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 
-	inferenceServiceApi := inferenceApi.NewInferenceService()
+	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
 	inferenceServiceApi.Init()
 	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 

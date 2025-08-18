@@ -1,6 +1,7 @@
 package api
 
 import (
+	"sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
 	"sortedstartup/inferenceservice/service"
 
@@ -14,17 +15,17 @@ type InferenceServiceAPI struct {
 
 var SQLITE_DB_URL = "db.sqlite"
 
-func NewInferenceService() *InferenceServiceAPI {
+func NewInferenceServiceAPI(daoFactory dao.DAOFactory) *InferenceServiceAPI {
 
 	s := &InferenceServiceAPI{
-		service: service.NewInferenceService(),
+		service: service.NewInferenceService(daoFactory),
 	}
 
 	return s
 }
 
 func (s *InferenceServiceAPI) Infer(req *pb.InferRequest, stream grpc.ServerStreamingServer[pb.InferResponse]) error {
-	return s.service.Infer(stream.Context())
+	return s.service.Infer(stream.Context(), "dummy")
 }
 
 func (s *InferenceServiceAPI) Init() {

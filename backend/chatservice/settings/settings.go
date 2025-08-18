@@ -54,13 +54,31 @@ type SettingsManager struct {
 	dao      dao.SettingsDAO
 }
 
-func NewSettingsManager(queue queue.Queue) *SettingsManager {
-	dao := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
+func NewSettingsManager(queue queue.Queue, daoFactory dao.DAOFactory) *SettingsManager {
+	settingsDAO, err := daoFactory.CreateSettingsDAO()
+	if err != nil {
+		log.Fatalf("Failed to create settings DAO: %v", err)
+	}
 
 	cm := &SettingsManager{
 		settings: &Settings{},
 		queue:    queue,
-		dao:      dao,
+		dao:      settingsDAO,
+	}
+
+	cm.StartSettingsChangedSubscriber()
+	return cm
+}
+
+// Legacy constructor for backward compatibility
+func NewSettingsManagerWithSQLite(queue queue.Queue) *SettingsManager {
+	// Create a simple SQLite settings DAO directly
+	settingsDAO := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
+
+	cm := &SettingsManager{
+		settings: &Settings{},
+		queue:    queue,
+		dao:      settingsDAO,
 	}
 
 	cm.StartSettingsChangedSubscriber()

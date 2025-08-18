@@ -20,9 +20,12 @@ type SettingService struct {
 	queue queue.Queue
 }
 
-func NewSettingService(queue queue.Queue, sqliteURL string) *SettingService {
-	dao := dao.NewSQLiteSettingsDAO(sqliteURL)
-	return &SettingService{dao: dao, queue: queue}
+func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingService {
+	settingsDAO, err := daoFactory.CreateSettingsDAO()
+	if err != nil {
+		log.Fatalf("Failed to create settings DAO: %v", err)
+	}
+	return &SettingService{dao: settingsDAO, queue: queue}
 }
 
 func (s *SettingService) Init() {

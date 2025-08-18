@@ -1,0 +1,15 @@
+database:
+  type: "postgres"  # or "sqlite"
+  postgres:
+    host: "localhost"
+    port: 5432
+    database: "sortedchat_dev"
+    username: "postgres"
+    password: "password"
+    ssl_mode: "disable"
+    pool:
+      max_open_connections: 25
+      max_idle_connections: 5
+      connection_max_lifetime: "5m"
+  sqlite:
+    url: "db.sqlite"

@@ -33,4 +33,15 @@ type RAGChunkRow struct {
 	DocsID    string `db:"docs_id"`
 	StartByte int    `db:"start_byte"`
 	EndByte   int    `db:"end_byte"`
+	Source    string `db:"source"`
+}
+
+type ChatInfoRow struct {
+	Id   string `db:"chat_id"`
+	Name string `db:"name"`
+}
+
+type dbSettings struct {
+	Name     string `db:"name"`
+	Settings string `db:"settings"`
 }

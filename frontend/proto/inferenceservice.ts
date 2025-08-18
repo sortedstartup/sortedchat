@@ -7,94 +7,19 @@
 import * as pb_1 from "google-protobuf";
 import * as grpc_1 from "grpc-web";
 import * as grpc_web_1 from "grpc-web";
-export class InferRequest extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {}) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") { }
-    }
-    static fromObject(data: {}): InferRequest {
-        const message = new InferRequest({});
-        return message;
-    }
-    toObject() {
-        const data: {} = {};
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): InferRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new InferRequest();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): InferRequest {
-        return InferRequest.deserialize(bytes);
-    }
-}
-export class InferResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {}) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") { }
-    }
-    static fromObject(data: {}): InferResponse {
-        const message = new InferResponse({});
-        return message;
-    }
-    toObject() {
-        const data: {} = {};
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): InferResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new InferResponse();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): InferResponse {
-        return InferResponse.deserialize(bytes);
-    }
-}
 export class Model extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         id?: string;
         name?: string;
         url?: string;
-        status?: ModelStatus;
-        progress?: number;
+        provider?: string;
+        input_token_cost?: number;
+        output_token_cost?: number;
+        progress?: string;
+        is_downloaded?: boolean;
+        is_downloadable?: boolean;
+        status?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -108,11 +33,26 @@ export class Model extends pb_1.Message {
             if ("url" in data && data.url != undefined) {
                 this.url = data.url;
             }
-            if ("status" in data && data.status != undefined) {
-                this.status = data.status;
+            if ("provider" in data && data.provider != undefined) {
+                this.provider = data.provider;
+            }
+            if ("input_token_cost" in data && data.input_token_cost != undefined) {
+                this.input_token_cost = data.input_token_cost;
+            }
+            if ("output_token_cost" in data && data.output_token_cost != undefined) {
+                this.output_token_cost = data.output_token_cost;
             }
             if ("progress" in data && data.progress != undefined) {
                 this.progress = data.progress;
+            }
+            if ("is_downloaded" in data && data.is_downloaded != undefined) {
+                this.is_downloaded = data.is_downloaded;
+            }
+            if ("is_downloadable" in data && data.is_downloadable != undefined) {
+                this.is_downloadable = data.is_downloadable;
+            }
+            if ("status" in data && data.status != undefined) {
+                this.status = data.status;
             }
         }
     }
@@ -134,24 +74,59 @@ export class Model extends pb_1.Message {
     set url(value: string) {
         pb_1.Message.setField(this, 3, value);
     }
-    get status() {
-        return pb_1.Message.getFieldWithDefault(this, 4, ModelStatus.PENDING) as ModelStatus;
+    get provider() {
+        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
     }
-    set status(value: ModelStatus) {
+    set provider(value: string) {
         pb_1.Message.setField(this, 4, value);
     }
-    get progress() {
+    get input_token_cost() {
         return pb_1.Message.getFieldWithDefault(this, 5, 0) as number;
     }
-    set progress(value: number) {
+    set input_token_cost(value: number) {
         pb_1.Message.setField(this, 5, value);
+    }
+    get output_token_cost() {
+        return pb_1.Message.getFieldWithDefault(this, 6, 0) as number;
+    }
+    set output_token_cost(value: number) {
+        pb_1.Message.setField(this, 6, value);
+    }
+    get progress() {
+        return pb_1.Message.getFieldWithDefault(this, 7, "") as string;
+    }
+    set progress(value: string) {
+        pb_1.Message.setField(this, 7, value);
+    }
+    get is_downloaded() {
+        return pb_1.Message.getFieldWithDefault(this, 8, false) as boolean;
+    }
+    set is_downloaded(value: boolean) {
+        pb_1.Message.setField(this, 8, value);
+    }
+    get is_downloadable() {
+        return pb_1.Message.getFieldWithDefault(this, 9, false) as boolean;
+    }
+    set is_downloadable(value: boolean) {
+        pb_1.Message.setField(this, 9, value);
+    }
+    get status() {
+        return pb_1.Message.getFieldWithDefault(this, 10, 0) as number;
+    }
+    set status(value: number) {
+        pb_1.Message.setField(this, 10, value);
     }
     static fromObject(data: {
         id?: string;
         name?: string;
         url?: string;
-        status?: ModelStatus;
-        progress?: number;
+        provider?: string;
+        input_token_cost?: number;
+        output_token_cost?: number;
+        progress?: string;
+        is_downloaded?: boolean;
+        is_downloadable?: boolean;
+        status?: number;
     }): Model {
         const message = new Model({});
         if (data.id != null) {
@@ -163,11 +138,26 @@ export class Model extends pb_1.Message {
         if (data.url != null) {
             message.url = data.url;
         }
-        if (data.status != null) {
-            message.status = data.status;
+        if (data.provider != null) {
+            message.provider = data.provider;
+        }
+        if (data.input_token_cost != null) {
+            message.input_token_cost = data.input_token_cost;
+        }
+        if (data.output_token_cost != null) {
+            message.output_token_cost = data.output_token_cost;
         }
         if (data.progress != null) {
             message.progress = data.progress;
+        }
+        if (data.is_downloaded != null) {
+            message.is_downloaded = data.is_downloaded;
+        }
+        if (data.is_downloadable != null) {
+            message.is_downloadable = data.is_downloadable;
+        }
+        if (data.status != null) {
+            message.status = data.status;
         }
         return message;
     }
@@ -176,8 +166,13 @@ export class Model extends pb_1.Message {
             id?: string;
             name?: string;
             url?: string;
-            status?: ModelStatus;
-            progress?: number;
+            provider?: string;
+            input_token_cost?: number;
+            output_token_cost?: number;
+            progress?: string;
+            is_downloaded?: boolean;
+            is_downloadable?: boolean;
+            status?: number;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -188,11 +183,26 @@ export class Model extends pb_1.Message {
         if (this.url != null) {
             data.url = this.url;
         }
-        if (this.status != null) {
-            data.status = this.status;
+        if (this.provider != null) {
+            data.provider = this.provider;
+        }
+        if (this.input_token_cost != null) {
+            data.input_token_cost = this.input_token_cost;
+        }
+        if (this.output_token_cost != null) {
+            data.output_token_cost = this.output_token_cost;
         }
         if (this.progress != null) {
             data.progress = this.progress;
+        }
+        if (this.is_downloaded != null) {
+            data.is_downloaded = this.is_downloaded;
+        }
+        if (this.is_downloadable != null) {
+            data.is_downloadable = this.is_downloadable;
+        }
+        if (this.status != null) {
+            data.status = this.status;
         }
         return data;
     }
@@ -206,10 +216,20 @@ export class Model extends pb_1.Message {
             writer.writeString(2, this.name);
         if (this.url.length)
             writer.writeString(3, this.url);
-        if (this.status != ModelStatus.PENDING)
-            writer.writeEnum(4, this.status);
-        if (this.progress != 0)
-            writer.writeFloat(5, this.progress);
+        if (this.provider.length)
+            writer.writeString(4, this.provider);
+        if (this.input_token_cost != 0)
+            writer.writeDouble(5, this.input_token_cost);
+        if (this.output_token_cost != 0)
+            writer.writeDouble(6, this.output_token_cost);
+        if (this.progress.length)
+            writer.writeString(7, this.progress);
+        if (this.is_downloaded != false)
+            writer.writeBool(8, this.is_downloaded);
+        if (this.is_downloadable != false)
+            writer.writeBool(9, this.is_downloadable);
+        if (this.status != 0)
+            writer.writeInt32(10, this.status);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -229,10 +249,25 @@ export class Model extends pb_1.Message {
                     message.url = reader.readString();
                     break;
                 case 4:
-                    message.status = reader.readEnum();
+                    message.provider = reader.readString();
                     break;
                 case 5:
-                    message.progress = reader.readFloat();
+                    message.input_token_cost = reader.readDouble();
+                    break;
+                case 6:
+                    message.output_token_cost = reader.readDouble();
+                    break;
+                case 7:
+                    message.progress = reader.readString();
+                    break;
+                case 8:
+                    message.is_downloaded = reader.readBool();
+                    break;
+                case 9:
+                    message.is_downloadable = reader.readBool();
+                    break;
+                case 10:
+                    message.status = reader.readInt32();
                     break;
                 default: reader.skipField();
             }
@@ -245,12 +280,6 @@ export class Model extends pb_1.Message {
     static deserializeBinary(bytes: Uint8Array): Model {
         return Model.deserialize(bytes);
     }
-}
-export enum ModelStatus {
-    PENDING = 0,
-    DOWNLOADING = 1,
-    COMPLETED = 2,
-    FAILED = 3
 }
 export class DownloadModelRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
@@ -386,6 +415,113 @@ export class DownloadModelResponse extends pb_1.Message {
         return DownloadModelResponse.deserialize(bytes);
     }
 }
+export class ListModelsRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {}) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") { }
+    }
+    static fromObject(data: {}): ListModelsRequest {
+        const message = new ListModelsRequest({});
+        return message;
+    }
+    toObject() {
+        const data: {} = {};
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelsRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelsRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListModelsRequest {
+        return ListModelsRequest.deserialize(bytes);
+    }
+}
+export class ListModelsResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        models?: Model[];
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("models" in data && data.models != undefined) {
+                this.models = data.models;
+            }
+        }
+    }
+    get models() {
+        return pb_1.Message.getRepeatedWrapperField(this, Model, 1) as Model[];
+    }
+    set models(value: Model[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 1, value);
+    }
+    static fromObject(data: {
+        models?: ReturnType<typeof Model.prototype.toObject>[];
+    }): ListModelsResponse {
+        const message = new ListModelsResponse({});
+        if (data.models != null) {
+            message.models = data.models.map(item => Model.fromObject(item));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            models?: ReturnType<typeof Model.prototype.toObject>[];
+        } = {};
+        if (this.models != null) {
+            data.models = this.models.map((item: Model) => item.toObject());
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.models.length)
+            writer.writeRepeatedMessage(1, this.models, (item: Model) => item.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelsResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelsResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.models, () => pb_1.Message.addToRepeatedWrapperField(message, 1, Model.deserialize(reader), Model));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListModelsResponse {
+        return ListModelsResponse.deserialize(bytes);
+    }
+}
 // Server-side service class removed for client-side compatibility
 export class InferenceServiceClient {
     private _address: string;
@@ -400,5 +536,9 @@ export class InferenceServiceClient {
     private static DownloadModel = new grpc_web_1.MethodDescriptor<DownloadModelRequest, DownloadModelResponse>("/sortedchat.InferenceService/DownloadModel", grpc_web_1.MethodType.UNARY, DownloadModelRequest, DownloadModelResponse, (message: DownloadModelRequest) => message.serialize(), DownloadModelResponse.deserialize);
     DownloadModel(message: DownloadModelRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<DownloadModelRequest, DownloadModelResponse>(this._address + "/sortedchat.InferenceService/DownloadModel", message, metadata || {}, InferenceServiceClient.DownloadModel);
+    }
+    private static ListModels = new grpc_web_1.MethodDescriptor<ListModelsRequest, ListModelsResponse>("/sortedchat.InferenceService/ListModels", grpc_web_1.MethodType.SERVER_STREAMING, ListModelsRequest, ListModelsResponse, (message: ListModelsRequest) => message.serialize(), ListModelsResponse.deserialize);
+    ListModels(message: ListModelsRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.serverStreaming(this._address + "/sortedchat.InferenceService/ListModels", message, metadata || {}, InferenceServiceClient.ListModels);
     }
 }

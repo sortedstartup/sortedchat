@@ -6,16 +6,20 @@ option go_package = "sortedstartup/inferenceservice/proto";
 
 service InferenceService {
   rpc DownloadModel(DownloadModelRequest) returns (DownloadModelResponse);
-  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+  rpc ListModels(ListModelsRequest) returns (stream ListModelsResponse);
 }
 
 message Model {
   string id = 1;
   string name = 2;
-  string status = 4;
-  string progress = 5;
-  bool is_downloadable = 6;
-  bool is_downloaded = 7;
+  string url = 3;
+  string provider = 4;
+  double input_token_cost = 5;
+  double output_token_cost = 6;
+  string progress = 7;
+  bool is_downloaded = 8;
+  bool is_downloadable = 9;
+  int32 status = 10;
 }
   
 message DownloadModelRequest {

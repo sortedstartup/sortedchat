@@ -44,6 +44,7 @@ type DAO interface {
 	Infer(dummy string) error
 	DownloadModel(userID string, modelName string, url string) error
 	GetModelByName(modelName string) (*ModelMetadata, error)
+	GetAllModels() ([]*ModelMetadata, error)
 	UpdateModelProgress(id string, progress *DownloadProgress) error
 }
 

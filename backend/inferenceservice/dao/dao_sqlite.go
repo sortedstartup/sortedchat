@@ -44,6 +44,18 @@ func (d *SQLiteDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
 	return &model, nil
 }
 
+func (d *SQLiteDAO) GetAllModels() ([]*ModelMetadata, error) {
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status FROM inference_model_metadata ORDER BY name`
+
+	var models []*ModelMetadata
+	err := d.db.Select(&models, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return models, nil
+}
+
 func (d *SQLiteDAO) UpdateModelProgress(id string, progress *DownloadProgress) error {
 	isDownloaded := progress.Status == StatusCompleted
 	query := `UPDATE inference_model_metadata SET progress = ?, is_downloaded = ?, status = ? WHERE id = ?`

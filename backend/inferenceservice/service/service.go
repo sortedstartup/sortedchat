@@ -187,3 +187,68 @@ func (pw *ProgressWriter) updateProgress() {
 		pw.onProgress(progressData)
 	}
 }
+
+// ListModels returns all models and streams updates for downloading models
+func (s *InferenceService) ListModels(ctx context.Context, sendModels func([]*dao.ModelMetadata) error) error {
+	// Get all models initially
+	models, err := s.dao.GetAllModels()
+	if err != nil {
+		return fmt.Errorf("failed to get models: %w", err)
+	}
+
+	// Send initial list
+	if err := sendModels(models); err != nil {
+		return err
+	}
+
+	// Check if any models are downloading
+	hasDownloadingModels := false
+	for _, model := range models {
+		if model.Status == dao.StatusDownloading {
+			hasDownloadingModels = true
+			break
+		}
+	}
+
+	// If no downloading models, we're done
+	if !hasDownloadingModels {
+		return nil
+	}
+
+	// Stream updates every 3 seconds for downloading models
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			// Get updated models
+			updatedModels, err := s.dao.GetAllModels()
+			if err != nil {
+				log.Printf("Error getting updated models: %v", err)
+				continue
+			}
+
+			// Check if any models are still downloading
+			stillDownloading := false
+			for _, model := range updatedModels {
+				if model.Status == dao.StatusDownloading {
+					stillDownloading = true
+					break
+				}
+			}
+
+			// Send updated models
+			if err := sendModels(updatedModels); err != nil {
+				return err
+			}
+
+			// If no models are downloading anymore, stop streaming
+			if !stillDownloading {
+				return nil
+			}
+		}
+	}
+}

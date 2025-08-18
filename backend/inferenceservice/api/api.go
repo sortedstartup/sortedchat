@@ -42,6 +42,32 @@ func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.Downloa
 	}, nil
 }
 
+func (s *InferenceServiceAPI) ListModels(req *pb.ListModelsRequest, stream pb.InferenceService_ListModelsServer) error {
+	return s.service.ListModels(stream.Context(), func(models []*dao.ModelMetadata) error {
+		// Convert DAO models to protobuf models
+		pbModels := make([]*pb.Model, len(models))
+		for i, model := range models {
+			pbModels[i] = &pb.Model{
+				Id:              model.ID,
+				Name:            model.Name,
+				Url:             model.URL,
+				Provider:        model.Provider,
+				InputTokenCost:  model.InputTokenCost,
+				OutputTokenCost: model.OutputTokenCost,
+				Progress:        model.Progress,
+				IsDownloaded:    model.IsDownloaded,
+				IsDownloadable:  model.IsDownloadable,
+				Status:          int32(model.Status),
+			}
+		}
+
+		// Send the response
+		return stream.Send(&pb.ListModelsResponse{
+			Models: pbModels,
+		})
+	})
+}
+
 func (s *InferenceServiceAPI) Init(config *dao.Config) {
 	switch config.Database.Type {
 	case db.DatabaseTypeSQLite:

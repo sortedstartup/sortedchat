@@ -23,6 +23,10 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	inferenceApi "sortedstartup/inferenceservice/api"
+	inferenceDao "sortedstartup/inferenceservice/dao"
+	infereceProto "sortedstartup/inferenceservice/proto"
 )
 
 const (
@@ -82,6 +86,21 @@ func main() {
 		}
 	}()
 
+	inferenceConfig, err := inferenceDao.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	inferenceDaoFactory, err := inferenceDao.NewDAOFactory(inferenceConfig)
+	if err != nil {
+		log.Fatalf("Failed to create DAO factory: %v", err)
+	}
+	defer func() {
+		if err := inferenceDaoFactory.Close(); err != nil {
+			log.Printf("Error closing DAO factory: %v", err)
+		}
+	}()
+
 	queue := queue.NewInMemoryQueue()
 	settingsManager := settings.NewSettingsManager(queue, daoFactory)
 
@@ -92,6 +111,10 @@ func main() {
 	settingServiceApi := api.NewSettingService(queue, daoFactory)
 	settingServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
+
+	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
+	inferenceServiceApi.Init(inferenceConfig)
+	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)

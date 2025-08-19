@@ -7,12 +7,14 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
 
 	"sortedstartup/chat/mono/util"
 	"sortedstartup/chatservice/api"
+	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
 	"sortedstartup/chatservice/settings"
@@ -21,6 +23,10 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	inferenceApi "sortedstartup/inferenceservice/api"
+	inferenceDao "sortedstartup/inferenceservice/dao"
+	infereceProto "sortedstartup/inferenceservice/proto"
 )
 
 const (
@@ -57,16 +63,58 @@ func main() {
 	grpcServer := grpc.NewServer()
 	mux := http.NewServeMux()
 
-	queue := queue.NewInMemoryQueue()
-	settingsManager := settings.NewSettingsManager(queue)
+	// Load configuration
+	config, err := dao.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
-	chatServiceApi := api.NewChatService(mux, queue, settingsManager)
-	chatServiceApi.Init()
+	slog.Info("Application configuration loaded",
+		"database_type", config.Database.Type,
+		"postgres_host", config.Database.Postgres.Host,
+		"postgres_port", config.Database.Postgres.Port,
+		"sqlite_url", config.Database.SQLite.URL)
+
+	// Create DAO factory
+	daoFactory, err := dao.NewDAOFactory(config)
+	if err != nil {
+		log.Fatalf("Failed to create DAO factory: %v", err)
+	}
+	defer func() {
+		if err := daoFactory.Close(); err != nil {
+			log.Printf("Error closing DAO factory: %v", err)
+		}
+	}()
+
+	inferenceConfig, err := inferenceDao.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	inferenceDaoFactory, err := inferenceDao.NewDAOFactory(inferenceConfig)
+	if err != nil {
+		log.Fatalf("Failed to create DAO factory: %v", err)
+	}
+	defer func() {
+		if err := inferenceDaoFactory.Close(); err != nil {
+			log.Printf("Error closing DAO factory: %v", err)
+		}
+	}()
+
+	queue := queue.NewInMemoryQueue()
+	settingsManager := settings.NewSettingsManager(queue, daoFactory)
+
+	chatServiceApi := api.NewChatService(mux, queue, settingsManager, daoFactory)
+	chatServiceApi.Init(config)
 	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
 
-	settingServiceApi := api.NewSettingService(queue)
+	settingServiceApi := api.NewSettingService(queue, daoFactory)
 	settingServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
+
+	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
+	inferenceServiceApi.Init(inferenceConfig)
+	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)

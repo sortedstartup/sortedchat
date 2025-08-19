@@ -1860,7 +1860,6 @@ type BranchAChatRequest struct {
 	SourceChatId        string                 `protobuf:"bytes,1,opt,name=source_chat_id,json=sourceChatId,proto3" json:"source_chat_id,omitempty"`                        // Chat to branch from
 	BranchFromMessageId string                 `protobuf:"bytes,2,opt,name=branch_from_message_id,json=branchFromMessageId,proto3" json:"branch_from_message_id,omitempty"` // Message ID where branch starts
 	BranchName          string                 `protobuf:"bytes,3,opt,name=branch_name,json=branchName,proto3" json:"branch_name,omitempty"`                                // Optional name for new branch
-	ProjectId           string                 `protobuf:"bytes,4,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`                                   // Project context
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -1912,13 +1911,6 @@ func (x *BranchAChatRequest) GetBranchFromMessageId() string {
 func (x *BranchAChatRequest) GetBranchName() string {
 	if x != nil {
 		return x.BranchName
-	}
-	return ""
-}
-
-func (x *BranchAChatRequest) GetProjectId() string {
-	if x != nil {
-		return x.ProjectId
 	}
 	return ""
 }
@@ -2184,14 +2176,12 @@ const file_chatservice_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x14\n" +
 	"\x05model\x18\x03 \x01(\tR\x05model\"7\n" +
 	"\x18GenerateChatNameResponse\x12\x1b\n" +
-	"\tchat_name\x18\x01 \x01(\tR\bchatName\"\xaf\x01\n" +
+	"\tchat_name\x18\x01 \x01(\tR\bchatName\"\x90\x01\n" +
 	"\x12BranchAChatRequest\x12$\n" +
 	"\x0esource_chat_id\x18\x01 \x01(\tR\fsourceChatId\x123\n" +
 	"\x16branch_from_message_id\x18\x02 \x01(\tR\x13branchFromMessageId\x12\x1f\n" +
 	"\vbranch_name\x18\x03 \x01(\tR\n" +
-	"branchName\x12\x1d\n" +
-	"\n" +
-	"project_id\x18\x04 \x01(\tR\tprojectId\"O\n" +
+	"branchName\"O\n" +
 	"\x13BranchAChatResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12\x1e\n" +
 	"\vnew_chat_id\x18\x02 \x01(\tR\tnewChatId\"0\n" +

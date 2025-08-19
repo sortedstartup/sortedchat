@@ -137,6 +137,11 @@ func (s *InferenceService) downloadModelFromURL(modelID string, modelName string
 	}
 	s.dao.UpdateModelProgress(modelID, completedProgress)
 
+	// Update the filestore_id in the database to point to the downloaded file
+	if err := s.dao.UpdateModelFileStoreID(modelID, filePath); err != nil {
+		log.Printf("Warning: Failed to update filestore_id for model %s: %v", modelName, err)
+	}
+
 	log.Printf("Successfully downloaded model %s to %s", modelName, filePath)
 	return nil
 }

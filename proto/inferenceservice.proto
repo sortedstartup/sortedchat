@@ -9,6 +9,13 @@ service InferenceService {
   rpc ListLLMModels(ListLLMModelsRequest) returns (stream ListLLMModelsResponse);
 }
 
+message DownloadProgress {
+  int64 file_size = 1;    // Total file size in bytes
+  int32 status = 2;       // Status constant (0-4)
+  int32 progress = 3;     // Progress percentage (0-100)
+  int64 speed = 4;        // Download speed in kilobytes per second
+}
+
 message Model {
   string id = 1;
   string name = 2;
@@ -16,10 +23,11 @@ message Model {
   string provider = 4;
   double input_token_cost = 5;
   double output_token_cost = 6;
-  string progress = 7;
+  DownloadProgress progress = 7;
   bool is_downloaded = 8;
   bool is_downloadable = 9;
   int32 status = 10;
+  string filestore_id = 11;  // File path for downloadable models, null for non-downloadable
 }
   
 message DownloadModelRequest {

@@ -22,20 +22,23 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
     }
   };
 
-  // Parse download progress data
-  const parseProgressData = () => {
-    if (!model.progress) return null;
+  const getProgressData = () => {
+    try {
+      if (!model.progress) return null;
 
-    const progressData = JSON.parse(model.progress);
-    return {
-      filesize: progressData.filesize || 0,
-      status: progressData.status || 0,
-      progress: progressData.progress || 0,
-      speed: progressData.speed || 0
-    };
+      return {
+        filesize: model.progress.file_size || 0,
+        status: model.progress.status || 0,
+        progress: model.progress.progress || 0,
+        speed: model.progress.speed || 0
+      };
+    } catch (error) {
+      console.error('Error getting progress data:', error);
+      return null;
+    }
   };
 
-  const progressData = parseProgressData();
+  const progressData = getProgressData();
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';

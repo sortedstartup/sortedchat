@@ -21,23 +21,19 @@ export const downloadModel = async (modelName: string) => {
         const res = await client.DownloadModel(req, {});
         console.log(res.message);
         
-        const updatedDownloading = new Set($downloadingModels.get());
-        updatedDownloading.delete(modelName);
-        $downloadingModels.set(updatedDownloading);
-        
         await ListLLMModels();
         
         return res;
     } catch (error) {
+        console.error('Download failed:', error);
+        throw error;
+    } finally {
         const updatedDownloading = new Set($downloadingModels.get());
         updatedDownloading.delete(modelName);
         $downloadingModels.set(updatedDownloading);
-        
-        throw error;
     }
 }
 
-// List all LLM models
 export const ListLLMModels = async () => {
     $isLoadingModels.set(true);
     

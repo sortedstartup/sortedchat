@@ -21,6 +21,74 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type DownloadProgress struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileSize      int64                  `protobuf:"varint,1,opt,name=file_size,json=fileSize,proto3" json:"file_size,omitempty"` // Total file size in bytes
+	Status        int32                  `protobuf:"varint,2,opt,name=status,proto3" json:"status,omitempty"`                     // Status constant (0-4)
+	Progress      int32                  `protobuf:"varint,3,opt,name=progress,proto3" json:"progress,omitempty"`                 // Progress percentage (0-100)
+	Speed         int64                  `protobuf:"varint,4,opt,name=speed,proto3" json:"speed,omitempty"`                       // Download speed in kilobytes per second
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadProgress) Reset() {
+	*x = DownloadProgress{}
+	mi := &file_inferenceservice_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadProgress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadProgress) ProtoMessage() {}
+
+func (x *DownloadProgress) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadProgress.ProtoReflect.Descriptor instead.
+func (*DownloadProgress) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *DownloadProgress) GetFileSize() int64 {
+	if x != nil {
+		return x.FileSize
+	}
+	return 0
+}
+
+func (x *DownloadProgress) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *DownloadProgress) GetProgress() int32 {
+	if x != nil {
+		return x.Progress
+	}
+	return 0
+}
+
+func (x *DownloadProgress) GetSpeed() int64 {
+	if x != nil {
+		return x.Speed
+	}
+	return 0
+}
+
 type Model struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -29,17 +97,18 @@ type Model struct {
 	Provider        string                 `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
 	InputTokenCost  float64                `protobuf:"fixed64,5,opt,name=input_token_cost,json=inputTokenCost,proto3" json:"input_token_cost,omitempty"`
 	OutputTokenCost float64                `protobuf:"fixed64,6,opt,name=output_token_cost,json=outputTokenCost,proto3" json:"output_token_cost,omitempty"`
-	Progress        string                 `protobuf:"bytes,7,opt,name=progress,proto3" json:"progress,omitempty"`
+	Progress        *DownloadProgress      `protobuf:"bytes,7,opt,name=progress,proto3" json:"progress,omitempty"`
 	IsDownloaded    bool                   `protobuf:"varint,8,opt,name=is_downloaded,json=isDownloaded,proto3" json:"is_downloaded,omitempty"`
 	IsDownloadable  bool                   `protobuf:"varint,9,opt,name=is_downloadable,json=isDownloadable,proto3" json:"is_downloadable,omitempty"`
 	Status          int32                  `protobuf:"varint,10,opt,name=status,proto3" json:"status,omitempty"`
+	FilestoreId     string                 `protobuf:"bytes,11,opt,name=filestore_id,json=filestoreId,proto3" json:"filestore_id,omitempty"` // File path for downloadable models, null for non-downloadable
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Model) Reset() {
 	*x = Model{}
-	mi := &file_inferenceservice_proto_msgTypes[0]
+	mi := &file_inferenceservice_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -51,7 +120,7 @@ func (x *Model) String() string {
 func (*Model) ProtoMessage() {}
 
 func (x *Model) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[0]
+	mi := &file_inferenceservice_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -64,7 +133,7 @@ func (x *Model) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Model.ProtoReflect.Descriptor instead.
 func (*Model) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{0}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Model) GetId() string {
@@ -109,11 +178,11 @@ func (x *Model) GetOutputTokenCost() float64 {
 	return 0
 }
 
-func (x *Model) GetProgress() string {
+func (x *Model) GetProgress() *DownloadProgress {
 	if x != nil {
 		return x.Progress
 	}
-	return ""
+	return nil
 }
 
 func (x *Model) GetIsDownloaded() bool {
@@ -137,6 +206,13 @@ func (x *Model) GetStatus() int32 {
 	return 0
 }
 
+func (x *Model) GetFilestoreId() string {
+	if x != nil {
+		return x.FilestoreId
+	}
+	return ""
+}
+
 type DownloadModelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ModelName     string                 `protobuf:"bytes,1,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
@@ -146,7 +222,7 @@ type DownloadModelRequest struct {
 
 func (x *DownloadModelRequest) Reset() {
 	*x = DownloadModelRequest{}
-	mi := &file_inferenceservice_proto_msgTypes[1]
+	mi := &file_inferenceservice_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -158,7 +234,7 @@ func (x *DownloadModelRequest) String() string {
 func (*DownloadModelRequest) ProtoMessage() {}
 
 func (x *DownloadModelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[1]
+	mi := &file_inferenceservice_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -171,7 +247,7 @@ func (x *DownloadModelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadModelRequest.ProtoReflect.Descriptor instead.
 func (*DownloadModelRequest) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{1}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *DownloadModelRequest) GetModelName() string {
@@ -190,7 +266,7 @@ type DownloadModelResponse struct {
 
 func (x *DownloadModelResponse) Reset() {
 	*x = DownloadModelResponse{}
-	mi := &file_inferenceservice_proto_msgTypes[2]
+	mi := &file_inferenceservice_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -202,7 +278,7 @@ func (x *DownloadModelResponse) String() string {
 func (*DownloadModelResponse) ProtoMessage() {}
 
 func (x *DownloadModelResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[2]
+	mi := &file_inferenceservice_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -215,7 +291,7 @@ func (x *DownloadModelResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadModelResponse.ProtoReflect.Descriptor instead.
 func (*DownloadModelResponse) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{2}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DownloadModelResponse) GetMessage() string {
@@ -233,7 +309,7 @@ type ListLLMModelsRequest struct {
 
 func (x *ListLLMModelsRequest) Reset() {
 	*x = ListLLMModelsRequest{}
-	mi := &file_inferenceservice_proto_msgTypes[3]
+	mi := &file_inferenceservice_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -245,7 +321,7 @@ func (x *ListLLMModelsRequest) String() string {
 func (*ListLLMModelsRequest) ProtoMessage() {}
 
 func (x *ListLLMModelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[3]
+	mi := &file_inferenceservice_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -258,7 +334,7 @@ func (x *ListLLMModelsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLLMModelsRequest.ProtoReflect.Descriptor instead.
 func (*ListLLMModelsRequest) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{3}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{4}
 }
 
 type ListLLMModelsResponse struct {
@@ -270,7 +346,7 @@ type ListLLMModelsResponse struct {
 
 func (x *ListLLMModelsResponse) Reset() {
 	*x = ListLLMModelsResponse{}
-	mi := &file_inferenceservice_proto_msgTypes[4]
+	mi := &file_inferenceservice_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -282,7 +358,7 @@ func (x *ListLLMModelsResponse) String() string {
 func (*ListLLMModelsResponse) ProtoMessage() {}
 
 func (x *ListLLMModelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[4]
+	mi := &file_inferenceservice_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -295,7 +371,7 @@ func (x *ListLLMModelsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLLMModelsResponse.ProtoReflect.Descriptor instead.
 func (*ListLLMModelsResponse) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{4}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListLLMModelsResponse) GetModels() []*Model {
@@ -310,19 +386,25 @@ var File_inferenceservice_proto protoreflect.FileDescriptor
 const file_inferenceservice_proto_rawDesc = "" +
 	"\n" +
 	"\x16inferenceservice.proto\x12\n" +
-	"sortedchat\"\xb1\x02\n" +
+	"sortedchat\"y\n" +
+	"\x10DownloadProgress\x12\x1b\n" +
+	"\tfile_size\x18\x01 \x01(\x03R\bfileSize\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\x05R\x06status\x12\x1a\n" +
+	"\bprogress\x18\x03 \x01(\x05R\bprogress\x12\x14\n" +
+	"\x05speed\x18\x04 \x01(\x03R\x05speed\"\xf2\x02\n" +
 	"\x05Model\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x10\n" +
 	"\x03url\x18\x03 \x01(\tR\x03url\x12\x1a\n" +
 	"\bprovider\x18\x04 \x01(\tR\bprovider\x12(\n" +
 	"\x10input_token_cost\x18\x05 \x01(\x01R\x0einputTokenCost\x12*\n" +
-	"\x11output_token_cost\x18\x06 \x01(\x01R\x0foutputTokenCost\x12\x1a\n" +
-	"\bprogress\x18\a \x01(\tR\bprogress\x12#\n" +
+	"\x11output_token_cost\x18\x06 \x01(\x01R\x0foutputTokenCost\x128\n" +
+	"\bprogress\x18\a \x01(\v2\x1c.sortedchat.DownloadProgressR\bprogress\x12#\n" +
 	"\ris_downloaded\x18\b \x01(\bR\fisDownloaded\x12'\n" +
 	"\x0fis_downloadable\x18\t \x01(\bR\x0eisDownloadable\x12\x16\n" +
 	"\x06status\x18\n" +
-	" \x01(\x05R\x06status\"5\n" +
+	" \x01(\x05R\x06status\x12!\n" +
+	"\ffilestore_id\x18\v \x01(\tR\vfilestoreId\"5\n" +
 	"\x14DownloadModelRequest\x12\x1d\n" +
 	"\n" +
 	"model_name\x18\x01 \x01(\tR\tmodelName\"1\n" +
@@ -347,25 +429,27 @@ func file_inferenceservice_proto_rawDescGZIP() []byte {
 	return file_inferenceservice_proto_rawDescData
 }
 
-var file_inferenceservice_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_inferenceservice_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_inferenceservice_proto_goTypes = []any{
-	(*Model)(nil),                 // 0: sortedchat.Model
-	(*DownloadModelRequest)(nil),  // 1: sortedchat.DownloadModelRequest
-	(*DownloadModelResponse)(nil), // 2: sortedchat.DownloadModelResponse
-	(*ListLLMModelsRequest)(nil),  // 3: sortedchat.ListLLMModelsRequest
-	(*ListLLMModelsResponse)(nil), // 4: sortedchat.ListLLMModelsResponse
+	(*DownloadProgress)(nil),      // 0: sortedchat.DownloadProgress
+	(*Model)(nil),                 // 1: sortedchat.Model
+	(*DownloadModelRequest)(nil),  // 2: sortedchat.DownloadModelRequest
+	(*DownloadModelResponse)(nil), // 3: sortedchat.DownloadModelResponse
+	(*ListLLMModelsRequest)(nil),  // 4: sortedchat.ListLLMModelsRequest
+	(*ListLLMModelsResponse)(nil), // 5: sortedchat.ListLLMModelsResponse
 }
 var file_inferenceservice_proto_depIdxs = []int32{
-	0, // 0: sortedchat.ListLLMModelsResponse.models:type_name -> sortedchat.Model
-	1, // 1: sortedchat.InferenceService.DownloadModel:input_type -> sortedchat.DownloadModelRequest
-	3, // 2: sortedchat.InferenceService.ListLLMModels:input_type -> sortedchat.ListLLMModelsRequest
-	2, // 3: sortedchat.InferenceService.DownloadModel:output_type -> sortedchat.DownloadModelResponse
-	4, // 4: sortedchat.InferenceService.ListLLMModels:output_type -> sortedchat.ListLLMModelsResponse
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 0: sortedchat.Model.progress:type_name -> sortedchat.DownloadProgress
+	1, // 1: sortedchat.ListLLMModelsResponse.models:type_name -> sortedchat.Model
+	2, // 2: sortedchat.InferenceService.DownloadModel:input_type -> sortedchat.DownloadModelRequest
+	4, // 3: sortedchat.InferenceService.ListLLMModels:input_type -> sortedchat.ListLLMModelsRequest
+	3, // 4: sortedchat.InferenceService.DownloadModel:output_type -> sortedchat.DownloadModelResponse
+	5, // 5: sortedchat.InferenceService.ListLLMModels:output_type -> sortedchat.ListLLMModelsResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_inferenceservice_proto_init() }
@@ -379,7 +463,7 @@ func file_inferenceservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_inferenceservice_proto_rawDesc), len(file_inferenceservice_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

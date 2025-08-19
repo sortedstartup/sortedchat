@@ -7,6 +7,142 @@
 import * as pb_1 from "google-protobuf";
 import * as grpc_1 from "grpc-web";
 import * as grpc_web_1 from "grpc-web";
+export class DownloadProgress extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        file_size?: number;
+        status?: number;
+        progress?: number;
+        speed?: number;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("file_size" in data && data.file_size != undefined) {
+                this.file_size = data.file_size;
+            }
+            if ("status" in data && data.status != undefined) {
+                this.status = data.status;
+            }
+            if ("progress" in data && data.progress != undefined) {
+                this.progress = data.progress;
+            }
+            if ("speed" in data && data.speed != undefined) {
+                this.speed = data.speed;
+            }
+        }
+    }
+    get file_size() {
+        return pb_1.Message.getFieldWithDefault(this, 1, 0) as number;
+    }
+    set file_size(value: number) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get status() {
+        return pb_1.Message.getFieldWithDefault(this, 2, 0) as number;
+    }
+    set status(value: number) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get progress() {
+        return pb_1.Message.getFieldWithDefault(this, 3, 0) as number;
+    }
+    set progress(value: number) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get speed() {
+        return pb_1.Message.getFieldWithDefault(this, 4, 0) as number;
+    }
+    set speed(value: number) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    static fromObject(data: {
+        file_size?: number;
+        status?: number;
+        progress?: number;
+        speed?: number;
+    }): DownloadProgress {
+        const message = new DownloadProgress({});
+        if (data.file_size != null) {
+            message.file_size = data.file_size;
+        }
+        if (data.status != null) {
+            message.status = data.status;
+        }
+        if (data.progress != null) {
+            message.progress = data.progress;
+        }
+        if (data.speed != null) {
+            message.speed = data.speed;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            file_size?: number;
+            status?: number;
+            progress?: number;
+            speed?: number;
+        } = {};
+        if (this.file_size != null) {
+            data.file_size = this.file_size;
+        }
+        if (this.status != null) {
+            data.status = this.status;
+        }
+        if (this.progress != null) {
+            data.progress = this.progress;
+        }
+        if (this.speed != null) {
+            data.speed = this.speed;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.file_size != 0)
+            writer.writeInt64(1, this.file_size);
+        if (this.status != 0)
+            writer.writeInt32(2, this.status);
+        if (this.progress != 0)
+            writer.writeInt32(3, this.progress);
+        if (this.speed != 0)
+            writer.writeInt64(4, this.speed);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): DownloadProgress {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new DownloadProgress();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.file_size = reader.readInt64();
+                    break;
+                case 2:
+                    message.status = reader.readInt32();
+                    break;
+                case 3:
+                    message.progress = reader.readInt32();
+                    break;
+                case 4:
+                    message.speed = reader.readInt64();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): DownloadProgress {
+        return DownloadProgress.deserialize(bytes);
+    }
+}
 export class Model extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -16,10 +152,11 @@ export class Model extends pb_1.Message {
         provider?: string;
         input_token_cost?: number;
         output_token_cost?: number;
-        progress?: string;
+        progress?: DownloadProgress;
         is_downloaded?: boolean;
         is_downloadable?: boolean;
         status?: number;
+        filestore_id?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -53,6 +190,9 @@ export class Model extends pb_1.Message {
             }
             if ("status" in data && data.status != undefined) {
                 this.status = data.status;
+            }
+            if ("filestore_id" in data && data.filestore_id != undefined) {
+                this.filestore_id = data.filestore_id;
             }
         }
     }
@@ -93,10 +233,13 @@ export class Model extends pb_1.Message {
         pb_1.Message.setField(this, 6, value);
     }
     get progress() {
-        return pb_1.Message.getFieldWithDefault(this, 7, "") as string;
+        return pb_1.Message.getWrapperField(this, DownloadProgress, 7) as DownloadProgress;
     }
-    set progress(value: string) {
-        pb_1.Message.setField(this, 7, value);
+    set progress(value: DownloadProgress) {
+        pb_1.Message.setWrapperField(this, 7, value);
+    }
+    get has_progress() {
+        return pb_1.Message.getField(this, 7) != null;
     }
     get is_downloaded() {
         return pb_1.Message.getFieldWithDefault(this, 8, false) as boolean;
@@ -116,6 +259,12 @@ export class Model extends pb_1.Message {
     set status(value: number) {
         pb_1.Message.setField(this, 10, value);
     }
+    get filestore_id() {
+        return pb_1.Message.getFieldWithDefault(this, 11, "") as string;
+    }
+    set filestore_id(value: string) {
+        pb_1.Message.setField(this, 11, value);
+    }
     static fromObject(data: {
         id?: string;
         name?: string;
@@ -123,10 +272,11 @@ export class Model extends pb_1.Message {
         provider?: string;
         input_token_cost?: number;
         output_token_cost?: number;
-        progress?: string;
+        progress?: ReturnType<typeof DownloadProgress.prototype.toObject>;
         is_downloaded?: boolean;
         is_downloadable?: boolean;
         status?: number;
+        filestore_id?: string;
     }): Model {
         const message = new Model({});
         if (data.id != null) {
@@ -148,7 +298,7 @@ export class Model extends pb_1.Message {
             message.output_token_cost = data.output_token_cost;
         }
         if (data.progress != null) {
-            message.progress = data.progress;
+            message.progress = DownloadProgress.fromObject(data.progress);
         }
         if (data.is_downloaded != null) {
             message.is_downloaded = data.is_downloaded;
@@ -158,6 +308,9 @@ export class Model extends pb_1.Message {
         }
         if (data.status != null) {
             message.status = data.status;
+        }
+        if (data.filestore_id != null) {
+            message.filestore_id = data.filestore_id;
         }
         return message;
     }
@@ -169,10 +322,11 @@ export class Model extends pb_1.Message {
             provider?: string;
             input_token_cost?: number;
             output_token_cost?: number;
-            progress?: string;
+            progress?: ReturnType<typeof DownloadProgress.prototype.toObject>;
             is_downloaded?: boolean;
             is_downloadable?: boolean;
             status?: number;
+            filestore_id?: string;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -193,7 +347,7 @@ export class Model extends pb_1.Message {
             data.output_token_cost = this.output_token_cost;
         }
         if (this.progress != null) {
-            data.progress = this.progress;
+            data.progress = this.progress.toObject();
         }
         if (this.is_downloaded != null) {
             data.is_downloaded = this.is_downloaded;
@@ -203,6 +357,9 @@ export class Model extends pb_1.Message {
         }
         if (this.status != null) {
             data.status = this.status;
+        }
+        if (this.filestore_id != null) {
+            data.filestore_id = this.filestore_id;
         }
         return data;
     }
@@ -222,14 +379,16 @@ export class Model extends pb_1.Message {
             writer.writeDouble(5, this.input_token_cost);
         if (this.output_token_cost != 0)
             writer.writeDouble(6, this.output_token_cost);
-        if (this.progress.length)
-            writer.writeString(7, this.progress);
+        if (this.has_progress)
+            writer.writeMessage(7, this.progress, () => this.progress.serialize(writer));
         if (this.is_downloaded != false)
             writer.writeBool(8, this.is_downloaded);
         if (this.is_downloadable != false)
             writer.writeBool(9, this.is_downloadable);
         if (this.status != 0)
             writer.writeInt32(10, this.status);
+        if (this.filestore_id.length)
+            writer.writeString(11, this.filestore_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -258,7 +417,7 @@ export class Model extends pb_1.Message {
                     message.output_token_cost = reader.readDouble();
                     break;
                 case 7:
-                    message.progress = reader.readString();
+                    reader.readMessage(message.progress, () => message.progress = DownloadProgress.deserialize(reader));
                     break;
                 case 8:
                     message.is_downloaded = reader.readBool();
@@ -268,6 +427,9 @@ export class Model extends pb_1.Message {
                     break;
                 case 10:
                     message.status = reader.readInt32();
+                    break;
+                case 11:
+                    message.filestore_id = reader.readString();
                     break;
                 default: reader.skipField();
             }

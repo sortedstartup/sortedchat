@@ -31,14 +31,11 @@ func NewInferenceServiceAPI(daoFactory dao.DAOFactory) *InferenceServiceAPI {
 func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.DownloadModelRequest) (*pb.DownloadModelResponse, error) {
 	err := s.service.DownloadModel(ctx, HARDCODED_USER_ID, req.GetModelName())
 	if err != nil {
-		return &pb.DownloadModelResponse{
-			Message: "Failed to start download: " + err.Error(),
-		}, err
+		return nil, err
 	}
 
-	message := "Download started successfully"
 	return &pb.DownloadModelResponse{
-		Message: message,
+		Message: "Download started successfully",
 	}, nil
 }
 
@@ -47,6 +44,34 @@ func (s *InferenceServiceAPI) ListLLMModels(req *pb.ListLLMModelsRequest, stream
 		// Convert DAO models to protobuf models
 		pbModels := make([]*pb.Model, len(models))
 		for i, model := range models {
+			// Convert JSON progress string to DownloadProgress proto structure
+			var progressProto *pb.DownloadProgress
+			if model.Progress != "" {
+				if progress, err := dao.FromJSON(model.Progress); err == nil {
+					progressProto = &pb.DownloadProgress{
+						FileSize: progress.FileSize,
+						Status:   int32(progress.Status),
+						Progress: int32(progress.Progress),
+						Speed:    progress.Speed,
+					}
+				}
+			}
+			if progressProto == nil {
+				// Default progress for models without progress data
+				progressProto = &pb.DownloadProgress{
+					FileSize: 0,
+					Status:   int32(model.Status),
+					Progress: 0,
+					Speed:    0,
+				}
+			}
+
+			// Convert filestore_id pointer to string
+			filestoreID := ""
+			if model.FileStoreID != nil {
+				filestoreID = *model.FileStoreID
+			}
+
 			pbModels[i] = &pb.Model{
 				Id:              model.ID,
 				Name:            model.Name,
@@ -54,10 +79,11 @@ func (s *InferenceServiceAPI) ListLLMModels(req *pb.ListLLMModelsRequest, stream
 				Provider:        model.Provider,
 				InputTokenCost:  model.InputTokenCost,
 				OutputTokenCost: model.OutputTokenCost,
-				Progress:        model.Progress,
+				Progress:        progressProto,
 				IsDownloaded:    model.IsDownloaded,
 				IsDownloadable:  model.IsDownloadable,
 				Status:          int32(model.Status),
+				FilestoreId:     filestoreID,
 			}
 		}
 

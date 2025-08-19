@@ -225,26 +225,26 @@ func (x *DownloadModelResponse) GetMessage() string {
 	return ""
 }
 
-type ListModelsRequest struct {
+type ListLLMModelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListModelsRequest) Reset() {
-	*x = ListModelsRequest{}
+func (x *ListLLMModelsRequest) Reset() {
+	*x = ListLLMModelsRequest{}
 	mi := &file_inferenceservice_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListModelsRequest) String() string {
+func (x *ListLLMModelsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListModelsRequest) ProtoMessage() {}
+func (*ListLLMModelsRequest) ProtoMessage() {}
 
-func (x *ListModelsRequest) ProtoReflect() protoreflect.Message {
+func (x *ListLLMModelsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_inferenceservice_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -256,32 +256,32 @@ func (x *ListModelsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListModelsRequest.ProtoReflect.Descriptor instead.
-func (*ListModelsRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListLLMModelsRequest.ProtoReflect.Descriptor instead.
+func (*ListLLMModelsRequest) Descriptor() ([]byte, []int) {
 	return file_inferenceservice_proto_rawDescGZIP(), []int{3}
 }
 
-type ListModelsResponse struct {
+type ListLLMModelsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Models        []*Model               `protobuf:"bytes,1,rep,name=models,proto3" json:"models,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListModelsResponse) Reset() {
-	*x = ListModelsResponse{}
+func (x *ListLLMModelsResponse) Reset() {
+	*x = ListLLMModelsResponse{}
 	mi := &file_inferenceservice_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListModelsResponse) String() string {
+func (x *ListLLMModelsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListModelsResponse) ProtoMessage() {}
+func (*ListLLMModelsResponse) ProtoMessage() {}
 
-func (x *ListModelsResponse) ProtoReflect() protoreflect.Message {
+func (x *ListLLMModelsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_inferenceservice_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -293,12 +293,12 @@ func (x *ListModelsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListModelsResponse.ProtoReflect.Descriptor instead.
-func (*ListModelsResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListLLMModelsResponse.ProtoReflect.Descriptor instead.
+func (*ListLLMModelsResponse) Descriptor() ([]byte, []int) {
 	return file_inferenceservice_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *ListModelsResponse) GetModels() []*Model {
+func (x *ListLLMModelsResponse) GetModels() []*Model {
 	if x != nil {
 		return x.Models
 	}
@@ -327,14 +327,13 @@ const file_inferenceservice_proto_rawDesc = "" +
 	"\n" +
 	"model_name\x18\x01 \x01(\tR\tmodelName\"1\n" +
 	"\x15DownloadModelResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"\x13\n" +
-	"\x11ListModelsRequest\"?\n" +
-	"\x12ListModelsResponse\x12)\n" +
-	"\x06models\x18\x01 \x03(\v2\x11.sortedchat.ModelR\x06models2\xb7\x01\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"\x16\n" +
+	"\x14ListLLMModelsRequest\"B\n" +
+	"\x15ListLLMModelsResponse\x12)\n" +
+	"\x06models\x18\x01 \x03(\v2\x11.sortedchat.ModelR\x06models2\xc0\x01\n" +
 	"\x10InferenceService\x12T\n" +
-	"\rDownloadModel\x12 .sortedchat.DownloadModelRequest\x1a!.sortedchat.DownloadModelResponse\x12M\n" +
-	"\n" +
-	"ListModels\x12\x1d.sortedchat.ListModelsRequest\x1a\x1e.sortedchat.ListModelsResponse0\x01B&Z$sortedstartup/inferenceservice/protob\x06proto3"
+	"\rDownloadModel\x12 .sortedchat.DownloadModelRequest\x1a!.sortedchat.DownloadModelResponse\x12V\n" +
+	"\rListLLMModels\x12 .sortedchat.ListLLMModelsRequest\x1a!.sortedchat.ListLLMModelsResponse0\x01B&Z$sortedstartup/inferenceservice/protob\x06proto3"
 
 var (
 	file_inferenceservice_proto_rawDescOnce sync.Once
@@ -353,15 +352,15 @@ var file_inferenceservice_proto_goTypes = []any{
 	(*Model)(nil),                 // 0: sortedchat.Model
 	(*DownloadModelRequest)(nil),  // 1: sortedchat.DownloadModelRequest
 	(*DownloadModelResponse)(nil), // 2: sortedchat.DownloadModelResponse
-	(*ListModelsRequest)(nil),     // 3: sortedchat.ListModelsRequest
-	(*ListModelsResponse)(nil),    // 4: sortedchat.ListModelsResponse
+	(*ListLLMModelsRequest)(nil),  // 3: sortedchat.ListLLMModelsRequest
+	(*ListLLMModelsResponse)(nil), // 4: sortedchat.ListLLMModelsResponse
 }
 var file_inferenceservice_proto_depIdxs = []int32{
-	0, // 0: sortedchat.ListModelsResponse.models:type_name -> sortedchat.Model
+	0, // 0: sortedchat.ListLLMModelsResponse.models:type_name -> sortedchat.Model
 	1, // 1: sortedchat.InferenceService.DownloadModel:input_type -> sortedchat.DownloadModelRequest
-	3, // 2: sortedchat.InferenceService.ListModels:input_type -> sortedchat.ListModelsRequest
+	3, // 2: sortedchat.InferenceService.ListLLMModels:input_type -> sortedchat.ListLLMModelsRequest
 	2, // 3: sortedchat.InferenceService.DownloadModel:output_type -> sortedchat.DownloadModelResponse
-	4, // 4: sortedchat.InferenceService.ListModels:output_type -> sortedchat.ListModelsResponse
+	4, // 4: sortedchat.InferenceService.ListLLMModels:output_type -> sortedchat.ListLLMModelsResponse
 	3, // [3:5] is the sub-list for method output_type
 	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

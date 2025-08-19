@@ -415,15 +415,15 @@ export class DownloadModelResponse extends pb_1.Message {
         return DownloadModelResponse.deserialize(bytes);
     }
 }
-export class ListModelsRequest extends pb_1.Message {
+export class ListLLMModelsRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {}) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") { }
     }
-    static fromObject(data: {}): ListModelsRequest {
-        const message = new ListModelsRequest({});
+    static fromObject(data: {}): ListLLMModelsRequest {
+        const message = new ListLLMModelsRequest({});
         return message;
     }
     toObject() {
@@ -437,8 +437,8 @@ export class ListModelsRequest extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelsRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelsRequest();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListLLMModelsRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListLLMModelsRequest();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -451,11 +451,11 @@ export class ListModelsRequest extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): ListModelsRequest {
-        return ListModelsRequest.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ListLLMModelsRequest {
+        return ListLLMModelsRequest.deserialize(bytes);
     }
 }
-export class ListModelsResponse extends pb_1.Message {
+export class ListLLMModelsResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         models?: Model[];
@@ -476,8 +476,8 @@ export class ListModelsResponse extends pb_1.Message {
     }
     static fromObject(data: {
         models?: ReturnType<typeof Model.prototype.toObject>[];
-    }): ListModelsResponse {
-        const message = new ListModelsResponse({});
+    }): ListLLMModelsResponse {
+        const message = new ListLLMModelsResponse({});
         if (data.models != null) {
             message.models = data.models.map(item => Model.fromObject(item));
         }
@@ -501,8 +501,8 @@ export class ListModelsResponse extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListModelsResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListModelsResponse();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListLLMModelsResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListLLMModelsResponse();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -518,8 +518,8 @@ export class ListModelsResponse extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): ListModelsResponse {
-        return ListModelsResponse.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ListLLMModelsResponse {
+        return ListLLMModelsResponse.deserialize(bytes);
     }
 }
 // Server-side service class removed for client-side compatibility
@@ -537,8 +537,8 @@ export class InferenceServiceClient {
     DownloadModel(message: DownloadModelRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<DownloadModelRequest, DownloadModelResponse>(this._address + "/sortedchat.InferenceService/DownloadModel", message, metadata || {}, InferenceServiceClient.DownloadModel);
     }
-    private static ListModels = new grpc_web_1.MethodDescriptor<ListModelsRequest, ListModelsResponse>("/sortedchat.InferenceService/ListModels", grpc_web_1.MethodType.SERVER_STREAMING, ListModelsRequest, ListModelsResponse, (message: ListModelsRequest) => message.serialize(), ListModelsResponse.deserialize);
-    ListModels(message: ListModelsRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.serverStreaming(this._address + "/sortedchat.InferenceService/ListModels", message, metadata || {}, InferenceServiceClient.ListModels);
+    private static ListLLMModels = new grpc_web_1.MethodDescriptor<ListLLMModelsRequest, ListLLMModelsResponse>("/sortedchat.InferenceService/ListLLMModels", grpc_web_1.MethodType.SERVER_STREAMING, ListLLMModelsRequest, ListLLMModelsResponse, (message: ListLLMModelsRequest) => message.serialize(), ListLLMModelsResponse.deserialize);
+    ListLLMModels(message: ListLLMModelsRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.serverStreaming(this._address + "/sortedchat.InferenceService/ListLLMModels", message, metadata || {}, InferenceServiceClient.ListLLMModels);
     }
 }

@@ -1,4 +1,4 @@
-import { Search, Plus, Folder, MessageCircle, Settings } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -121,6 +121,10 @@ export function AppSidebar() {
 
   const handleSettingsClick = () => {
     navigate("/setting");
+  };
+
+  const handleModelsClick = () => {
+    navigate("/model");
   };
 
   return (
@@ -287,6 +291,21 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </div>
+
+        <div className="mt-auto border-t border-gray-200 dark:border-gray-700 pt-2">
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleModelsClick}>
+                    <Brain />
+                    <span>Models</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

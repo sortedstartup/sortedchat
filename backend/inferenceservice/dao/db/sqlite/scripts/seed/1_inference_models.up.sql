@@ -11,4 +11,5 @@ INSERT INTO inference_model_metadata (id, name, url, provider, input_token_cost,
    ('claude-3.5-haiku', 'claude-3.5-haiku', 'https://api.anthropic.com/v1/messages', 'claude', 0.01, 0.01,'',FALSE,FALSE,0),
    ('claude-3.7-sonnet', 'claude-3.7-haiku', 'https://api.anthropic.com/v1/messages', 'claude', 0.01, 0.01,'',FALSE,FALSE,0),
    ('claude-4-sonnet', 'claude-4-sonnet', 'https://api.anthropic.com/v1/messages', 'claude', 0.01, 0.01,'',FALSE,FALSE,0),
-   ('tinyLLama-1.1B-Chat-v1.0-GGUF', 'tinyLLama-1.1B-Chat-v1.0-GGUF','https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q8_0.gguf?download=true', 'TheBloke', 0.01, 0.01,'',FALSE,TRUE,0);
+   ('tinyLLama-1.1B-Chat-v1.0-GGUF', 'tinyLLama-1.1B-Chat-v1.0-GGUF','https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q8_0.gguf?download=true', 'TheBloke', 0.01, 0.01,'',FALSE,TRUE,0),
+   ('SmolLM-135M-GGUF', 'SmolLM-135M-GGUF','https://huggingface.co/QuantFactory/SmolLM-135M-GGUF/resolve/main/SmolLM-135M.Q8_0.gguf?download=true', 'QuantFactory', 0.01, 0.01,'',FALSE,TRUE,0);

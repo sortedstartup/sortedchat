@@ -4,6 +4,7 @@ import { Project } from "./pages/project";
 import { Home } from "./pages/home";
 import { Layout } from "./layout";
 import SettingsPage from "./pages/setting";
+import Model from "./pages/model";
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,10 @@ const router = createBrowserRouter([
       {
         path: "setting",
         element: <SettingsPage />,
+      },
+      {
+        path: "model",
+        element: <Model />,
       },
       {
         path: "*",

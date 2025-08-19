@@ -6,7 +6,7 @@ option go_package = "sortedstartup/inferenceservice/proto";
 
 service InferenceService {
   rpc DownloadModel(DownloadModelRequest) returns (DownloadModelResponse);
-  rpc ListModels(ListModelsRequest) returns (stream ListModelsResponse);
+  rpc ListLLMModels(ListLLMModelsRequest) returns (stream ListLLMModelsResponse);
 }
 
 message Model {
@@ -30,9 +30,9 @@ message DownloadModelResponse {
   string message = 1;
 }
 
-message ListModelsRequest {
+message ListLLMModelsRequest {
 }
 
-message ListModelsResponse {
+message ListLLMModelsResponse {
   repeated Model models = 1;
 }

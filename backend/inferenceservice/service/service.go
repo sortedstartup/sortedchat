@@ -37,6 +37,14 @@ func (s *InferenceService) DownloadModel(ctx context.Context, userID string, mod
 		return fmt.Errorf("model %s is not downloadable", modelName)
 	}
 
+	if model.Status == dao.StatusDownloading {
+		return fmt.Errorf("model %s is already downloading", modelName)
+	}
+
+	if model.Status == dao.StatusCompleted {
+		return fmt.Errorf("model %s is already downloaded", modelName)
+	}
+
 	// Start download in goroutine
 	go func() {
 		if err := s.downloadModelFromURL(model.ID, model.Name, model.URL); err != nil {
@@ -189,7 +197,7 @@ func (pw *ProgressWriter) updateProgress() {
 }
 
 // ListModels returns all models and streams updates for downloading models
-func (s *InferenceService) ListModels(ctx context.Context, sendModels func([]*dao.ModelMetadata) error) error {
+func (s *InferenceService) ListLLMModels(ctx context.Context, sendModels func([]*dao.ModelMetadata) error) error {
 	// Get all models initially
 	models, err := s.dao.GetAllModels()
 	if err != nil {

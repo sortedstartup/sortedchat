@@ -42,8 +42,8 @@ func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.Downloa
 	}, nil
 }
 
-func (s *InferenceServiceAPI) ListModels(req *pb.ListModelsRequest, stream pb.InferenceService_ListModelsServer) error {
-	return s.service.ListModels(stream.Context(), func(models []*dao.ModelMetadata) error {
+func (s *InferenceServiceAPI) ListLLMModels(req *pb.ListLLMModelsRequest, stream pb.InferenceService_ListLLMModelsServer) error {
+	return s.service.ListLLMModels(stream.Context(), func(models []*dao.ModelMetadata) error {
 		// Convert DAO models to protobuf models
 		pbModels := make([]*pb.Model, len(models))
 		for i, model := range models {
@@ -62,7 +62,7 @@ func (s *InferenceServiceAPI) ListModels(req *pb.ListModelsRequest, stream pb.In
 		}
 
 		// Send the response
-		return stream.Send(&pb.ListModelsResponse{
+		return stream.Send(&pb.ListLLMModelsResponse{
 			Models: pbModels,
 		})
 	})

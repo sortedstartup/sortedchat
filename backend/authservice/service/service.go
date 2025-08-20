@@ -54,62 +54,46 @@ func NewAuthService() *AuthService {
 
 	// Create the callback HTML template
 	callbackHTML := `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Authentication Success</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Success - SortedChat</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f9fafb;
             margin: 0;
-            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .container {
             text-align: center;
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            color: #374151;
         }
-        .button {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            text-decoration: none;
-            display: inline-block;
+        h1 {
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
         }
-        .button:hover {
-            background-color: #0056b3;
+        p {
+            color: #6b7280;
+            margin: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Authentication Successful!</h2>
-        <p>You have been successfully authenticated.</p>
-        <button class="button" onclick="continueToApp()">Continue to Main App</button>
+        <h1>Authentication Successful!</h1>
+        <p>Redirecting...</p>
     </div>
     
     <script>
-        function continueToApp() {
-            // Set JWT token in localStorage
-            localStorage.setItem('sortedchat.jwt', '{{.JWT}}');
-            console.log('JWT token set in localStorage:', '{{.JWT}}');
-            
-            // Wait for 5 seconds, then redirect to main app
-            console.log('Waiting 5 seconds before redirecting...');
-            setTimeout(function() {
-                console.log('Redirecting to main app...');
-                window.location.href = '/';
-            }, 5000);
-        }
+        // Set JWT token in localStorage and redirect immediately
+        localStorage.setItem('sortedchat.jwt', '{{.JWT}}');
+        console.log('JWT token set in localStorage');
+        window.location.href = '/';
     </script>
 </body>
 </html>`

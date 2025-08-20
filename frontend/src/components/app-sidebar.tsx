@@ -1,4 +1,4 @@
-import { Search, Plus, Folder, MessageCircle, Settings } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -35,6 +35,7 @@ import {
   createProject,
   getProjectList,
 } from "@/store/chat";
+import { authActions, $auth } from "@/auth/store/auth";
 import remarkGfm from "remark-gfm";
 import ReactMarkdown from "react-markdown";
 
@@ -42,6 +43,7 @@ export function AppSidebar() {
   const projectsList = useStore($projectList);
   const chatsList = useStore($chatList);
   const searchResults = useStore($searchResults);
+  const auth = useStore($auth);
   
   const [projectName, setProjectName] = useState("");
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
@@ -121,6 +123,11 @@ export function AppSidebar() {
 
   const handleSettingsClick = () => {
     navigate("/setting");
+  };
+
+  const handleLogout = () => {
+    authActions.clearToken();
+    navigate("/login");
   };
 
   return (
@@ -300,6 +307,12 @@ export function AppSidebar() {
                   <SidebarMenuButton onClick={handleSettingsClick}>
                     <Settings />
                     <span>Settings</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleLogout} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                    <LogOut />
+                    <span>Logout {auth.user?.email && `(${auth.user.email})`}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

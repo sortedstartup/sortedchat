@@ -98,7 +98,7 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 // GetChatMessages retrieves all messages for a given chat
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := p.db.Select(&messages, "SELECT role, content, id, document_references FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
+	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	return messages, err
 }
 
@@ -130,11 +130,20 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string) ([]*proto.Cha
 func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string) (int64, error) {
 	// PostgreSQL doesn't have LastInsertId(), so we use RETURNING
 	var messageId int64
+	var referencesValue interface{}
+
+	// Handle JSON insertion for JSONB field
+	if references == "" {
+		referencesValue = nil
+	} else {
+		referencesValue = references
+	}
+
 	err := p.db.Get(&messageId, `
 		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id`,
-		chatId, role, content, model, inputTokens, outputTokens, userID, references)
+		chatId, role, content, model, inputTokens, outputTokens, userID, referencesValue)
 	if err != nil {
 		return 0, err
 	}

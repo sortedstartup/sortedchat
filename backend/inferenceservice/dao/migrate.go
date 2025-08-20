@@ -125,7 +125,7 @@ func MigratePostgres(dbURL string) error {
 	}
 	defer sqlDB.Close()
 
-	return MigrateDB_UsingConnection_Postgres(sqlDB, postgresMigrationFiles, "db/postgres/scripts/migrations", "chatservice_postgres_migrations")
+	return MigrateDB_UsingConnection_Postgres(sqlDB, postgresMigrationFiles, "db/postgres/scripts/migrations", MIGRATION_TABLE)
 }
 
 func SeedPostgres(dbURL string) error {
@@ -137,5 +137,5 @@ func SeedPostgres(dbURL string) error {
 	}
 	defer sqlDB.Close()
 
-	return MigrateDB_UsingConnection_Postgres(sqlDB, postgresSeedFiles, "db/postgres/scripts/seed", "inferenceservice_postgres_seed")
+	return MigrateDB_UsingConnection_Postgres(sqlDB, postgresSeedFiles, "db/postgres/scripts/seed", SEED_MIGRATION_TABLE)
 }

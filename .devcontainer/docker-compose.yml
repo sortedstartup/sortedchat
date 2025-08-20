@@ -7,16 +7,20 @@ services:
     # ports:
     #   - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:password@database:5432/devdb
+      - POSTGRES_DATABASE=devdb
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_HOST=database
+      - DB_TYPE=postgres
     command: sleep infinity
     depends_on:
       - database
 
   database:
-    image: postgres:latest
+    image: pgvector/pgvector:pg17
     environment:
-      POSTGRES_DB: devdb
-      POSTGRES_USER: postgres
+      POSTGRES_DATABASE: devdb
+      POSTGRES_USERNAME: postgres
       POSTGRES_PASSWORD: password
     # ports:
     #   - "5432:5432"

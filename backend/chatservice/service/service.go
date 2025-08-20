@@ -112,9 +112,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 	if projectID != "" && projectID != "null" { // if this chat is in context of a project
 		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, req.Text)
-		if err == nil && len(chunks.Results) > 0 {
-			fmt.Println("Retrieved chunks:", chunks.Prompt, "First chunk DocsID:", chunks.Results[0].Chunk.DocsID)
-		}
 		if err != nil {
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
@@ -417,7 +414,6 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			MessageId: m.Id,
 		}
 
-		// Parse document references if they exist
 		if m.DocumentReferences != "" {
 			var references []*pb.DocumentReference
 			if err := json.Unmarshal([]byte(m.DocumentReferences), &references); err == nil {

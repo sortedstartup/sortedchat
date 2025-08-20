@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"sortedstartup/chat/mono/util"
@@ -23,6 +24,10 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	authApi "sortedstartup/authservice/api"
+	authService "sortedstartup/authservice/service"
+	auth "sortedstartup/common/auth"
 
 	inferenceApi "sortedstartup/inferenceservice/api"
 	inferenceDao "sortedstartup/inferenceservice/dao"
@@ -60,7 +65,19 @@ func main() {
 		log.Fatalf("Failed to listen on %s: %v", grpcAddr, err)
 	}
 
-	grpcServer := grpc.NewServer()
+	// Adding Interceptors
+	// Create JWT validator
+	jwtSecret := []byte(os.Getenv("APP_JWT_SECRET"))
+	issuer := os.Getenv("APP_ISSUER") // Should match your auth service issuer
+	validator := auth.NewJWTValidator(jwtSecret, issuer)
+
+	// Create gRPC auth interceptor
+	authInterceptor := auth.NewGRPCAuthInterceptor(validator, true) // requireAuth = true
+
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(authInterceptor.UnaryInterceptor()),
+		grpc.StreamInterceptor(authInterceptor.StreamInterceptor()),
+	)
 	mux := http.NewServeMux()
 
 	// Load configuration
@@ -115,6 +132,10 @@ func main() {
 	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
 	inferenceServiceApi.Init(inferenceConfig)
 	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
+
+	authService := authService.NewAuthService()
+	authServiceApi := authApi.NewAuthServiceAPI(mux, authService)
+	authServiceApi.Init()
 
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)

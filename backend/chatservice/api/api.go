@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"sortedstartup/chatservice/queue"
 	"sortedstartup/chatservice/service"
 	settings "sortedstartup/chatservice/settings"
+	"sortedstartup/common/auth"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -148,6 +150,15 @@ func (s *ChatServiceAPI) SearchChat(ctx context.Context, req *pb.ChatSearchReque
 }
 
 func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
+	userClaims, ok := auth.GetUserFromContext(ctx)
+	userID, ok := auth.GetUserIDFromContext(ctx)
+	fmt.Printf("userClaims %+v\n", userClaims)
+	fmt.Println("userID", userID)
+
+	if !ok {
+		return nil, status.Errorf(codes.Unauthenticated, "user ID not found in context")
+	}
+
 	projectID, err := s.service.CreateProject(ctx, HARDCODED_USER_ID, req.Name, req.Description, req.AdditionalData)
 	if err != nil {
 		return nil, err

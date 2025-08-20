@@ -23,8 +23,45 @@ import {
   ListChatBranchRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
+import { type UnaryInterceptor } from "grpc-web";
 
-var chat = new SortedChatClient(import.meta.env.VITE_API_URL);
+// JWT Token management
+const getJWTToken = (): string | null => {
+  try {
+    const token = localStorage.getItem('sortedchat.jwt');
+    console.debug('Retrieved JWT token from localStorage:', token ? 'Token found' : 'No token');
+    return token;
+  } catch (error) {
+    console.debug('Error retrieving JWT token from localStorage:', error);
+    return null;
+  }
+};
+
+// Unary interceptor to add JWT token to all requests
+const jwtUnaryInterceptor: UnaryInterceptor<any, any> = {
+  intercept: (request, invoker) => {
+    const metadata = request.getMetadata();
+    const token = getJWTToken();
+    
+    if (token) {
+      metadata["authorization"] = `Bearer ${token}`;
+      console.debug('Added JWT token to request metadata for method:', request.getMethodDescriptor().getName());
+    } else {
+      console.debug('No JWT token available for request:', request.getMethodDescriptor().getName());
+    }
+    
+    return invoker(request);
+  },
+};
+
+// Create chat client with JWT authentication
+var chat = new SortedChatClient(
+  import.meta.env.VITE_API_URL,
+  {},
+  {
+    unaryInterceptors: [jwtUnaryInterceptor],
+  }
+);
 
 // --- stores ---
 export const $chatList = atom<ChatInfo[]>([]);

@@ -70,9 +70,16 @@ message ChatResponse {
   oneof response {
     string text = 1;
     MessageSummary summary = 2;
+    DocumentReference document_reference = 3; 
   }
 }
-
+message DocumentReference {
+  string docs_id = 1;
+  string file_name = 2;
+  string chunk_text = 3;
+  int32 start_byte = 4;
+  int32 end_byte = 5;
+}
 message MessageSummary {
   string message_id = 1;
 }
@@ -89,6 +96,7 @@ message ChatMessage {
   string role = 1;
   string content = 2;
   string message_id = 3;
+  repeated DocumentReference references = 4; 
 }
 
 message GetChatListRequest {

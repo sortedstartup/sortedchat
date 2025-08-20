@@ -66,9 +66,8 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 
 // GetChatMessages retrieves all messages for a given chat
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
-	// todo : do we need to order by time?
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, id FROM chat_messages WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references FROM chat_messages WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	return messages, err
 }
 
@@ -97,11 +96,11 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatI
 	return result, nil
 }
 
-func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error) {
+func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string) (int64, error) {
 	result, err := s.db.Exec(`
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		chatId, role, content, model, inputTokens, outputTokens, userID)
+		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		chatId, role, content, model, inputTokens, outputTokens, userID, references)
 	if err != nil {
 		return 0, err
 	}

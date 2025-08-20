@@ -21,6 +21,7 @@ import {
   GenerateChatNameRequest,
   BranchAChatRequest,
   ListChatBranchRequest,
+  DocumentReference, // Already imported
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -40,6 +41,10 @@ export const $currentChatMessages = atom<{
   loading: false,
   error: null,
 });
+
+// Add new stores for document references
+export const $currentDocumentReferences = atom<DocumentReference[]>([]);
+export const $showDocumentReferences = atom<boolean>(false);
 
 export const fetchChatMessages = async (chatId: string) => {
   if (!chatId) return;
@@ -61,6 +66,26 @@ export const fetchChatMessages = async (chatId: string) => {
       loading: false,
       error: null,
     });
+
+    // Extract document references from chat history
+    const allReferences: DocumentReference[] = [];
+    if (res.history) {
+      res.history.forEach(message => {
+        if (message.references && message.references.length > 0) {
+          allReferences.push(...message.references);
+        }
+      });
+    }
+    
+    // Set document references if any exist
+    if (allReferences.length > 0) {
+      $currentDocumentReferences.set(allReferences);
+      $showDocumentReferences.set(true);
+    } else {
+      $currentDocumentReferences.set([]);
+      $showDocumentReferences.set(false);
+    }
+
   } catch (error) {
     console.error("Failed to fetch chat messages:", error);
     $currentChatMessages.set({
@@ -81,6 +106,9 @@ $currentChatId.listen((newChatId) => {
       loading: false,
       error: null,
     });
+    // Clear document references when no chat is selected
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
   }
 });
 
@@ -115,7 +143,6 @@ export const createNewChat = async (projectId?: string) => {
   return response.chat_id;
 };
 
-
 export const $projectChatList = atom<ChatInfo[]>([]);   
 export const getChatList = (projectId?: string) => {
   const requestObj: GetChatListRequest = projectId
@@ -132,17 +159,17 @@ const isFirstMessageInChat = (): boolean => {
   return !currentState.data || currentState.data.length === 0;
 };
 
-
-
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
+  // Don't reset document references here as they accumulate during the chat
 
   const isFirstMessage = isFirstMessageInChat();
   const isNewlyBranched = $isNewlyBranched.get();
 
   let assistantResponse = "";
   let messageId = "";
+  let currentChatReferences: DocumentReference[] = []; // Track references for this specific chat
 
   if (isFirstMessage || isNewlyBranched) {
       generateChatName(msg);
@@ -150,7 +177,6 @@ export const doChat = (msg: string,projectId: string | undefined) => {
         $isNewlyBranched.set(false);
       }
     }
-
 
   // grpc call
   const stream = chat.Chat(
@@ -170,6 +196,23 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
       console.log('Received message ID:', messageId);
+    } else if (res.has_document_reference) {
+      // Handle document reference
+      const docRef = res.document_reference;
+      console.log('Received document reference:', docRef.file_name, `Bytes ${docRef.start_byte}-${docRef.end_byte}`);
+      
+      // Add each chunk reference (don't avoid duplicates since we want all chunks)
+      currentChatReferences.push(docRef);
+      
+      // Update the store for real-time display
+      $currentDocumentReferences.set([...currentChatReferences]);
+      $showDocumentReferences.set(true);
+      
+      // Only show toast for the first chunk of each document
+      const existingDocsIds = currentChatReferences.slice(0, -1).map(ref => ref.docs_id);
+      if (!existingDocsIds.includes(docRef.docs_id)) {
+        toast.info(`Found relevant document: ${docRef.file_name}`);
+      }
     }
   });
 
@@ -178,10 +221,12 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       role: "user",
       content: msg,
     });
+    
     const assistantMessage = ChatMessage.fromObject({
       role: "assistant",
       content: assistantResponse,
       message_id: messageId,
+      references: currentChatReferences, // Add references to the assistant message
     });
 
     addMessageToHistory(userMessage);
@@ -189,6 +234,11 @@ export const doChat = (msg: string,projectId: string | undefined) => {
 
     $streamingMessage.set("");
     $currentChatMessage.set("");
+    
+    // Log all document references for this chat
+    if (currentChatReferences.length > 0) {
+      console.log('Document references for this chat:', currentChatReferences);
+    }
   });
 
   stream.on("error", (err: Error) => {
@@ -197,6 +247,25 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     $currentChatMessage.set("");
   });
 };
+
+// Add helper functions to control document references visibility
+export const hideDocumentReferences = () => {
+  $showDocumentReferences.set(false);
+};
+
+export const showDocumentReferencesPanel = () => {
+  $showDocumentReferences.set(true);
+};
+
+// Clear document references when changing chats
+$currentChatId.listen((_newValue, _oldValue) => {
+  $streamingMessage.set("");
+  $currentChatMessage.set("");
+  // Don't clear document references here as they'll be set by fetchChatMessages
+});
+
+// ... rest of your existing code remains the same ...
+
 export const $chatName = atom<string>("");
 export const generateChatName = async (msg: string) => {
   try{
@@ -223,11 +292,6 @@ $chatName.listen(() => {
   if (currentProjectId) {
     getChatList(currentProjectId);
   }
-});
-
-$currentChatId.listen((_newValue, _oldValue) => {
-  $streamingMessage.set("");
-  $currentChatMessage.set("");
 });
 
 // load chat history of first use
@@ -282,9 +346,8 @@ export const getSearchResults = async () => {
     console.error("failed", err);
   }
 };
-// -- search --
-// -- Project --
 
+// -- Project --
 export const $currentProject = atom<string>("");
 export const $projectList = atom<Project[]>([]);
 export const $currentProjectId = atom<string>("");
@@ -336,7 +399,6 @@ onMount($projectList, () => {
   };
 });
 
-
 export const $documents = atom<Document[]>([]);
 
 export async function fetchDocuments(projectId: string) {
@@ -352,6 +414,7 @@ export async function fetchDocuments(projectId: string) {
     $documents.set([]);
   }
 }
+
 $currentProjectId.listen((projectId) => {
   if (typeof projectId === "string" && projectId != "") {
     fetchDocuments(projectId);
@@ -371,8 +434,10 @@ $currentProjectId.listen((newProjectId) => {
     $chatList.set([]);
   }
 });
+
 export const $isErrorDocs = atom<boolean>(false);
 export const $isPolling = atom<boolean>(false);
+
 $documents.listen((documents) => {
   const hasErrorDocs = documents.some(doc => doc.embedding_status === 2);
   $isErrorDocs.set(hasErrorDocs);
@@ -384,7 +449,6 @@ $documents.listen((documents) => {
     }
   }
 });
-
 
 export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<String> => {
   try {
@@ -418,7 +482,7 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
   }
 }
 
-export const $isNewlyBranched = atom<boolean>(false); //will change this logic 
+export const $isNewlyBranched = atom<boolean>(false);
 
 export async function BranchChat(branch_from_message_id: string) {
   try {
@@ -435,7 +499,6 @@ export async function BranchChat(branch_from_message_id: string) {
       branch_name: ""
     }), {});
 
-    
     if (res.new_chat_id) {
       toast.success("Chat branched successfully!");
       console.log('Setting isNewlyBranched to true for chat:', res.new_chat_id);

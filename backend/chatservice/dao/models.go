@@ -1,9 +1,10 @@
 package dao
 
 type ChatMessageRow struct {
-	Role    string `db:"role" json:"role"`
-	Content string `db:"content" json:"content"`
-	Id      string `db:"id" json:"id"`
+	Role               string `db:"role" json:"role"`
+	Content            string `db:"content" json:"content"`
+	Id                 string `db:"id" json:"id"`
+	DocumentReferences string `db:"document_references" json:"document_references"`
 }
 
 type ProjectRow struct {

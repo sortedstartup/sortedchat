@@ -108,13 +108,60 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	userMessage := req.Text
+	var documentReferences []*pb.DocumentReference
 
 	if projectID != "" && projectID != "null" { // if this chat is in context of a project
 		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, req.Text)
+		if err == nil && len(chunks.Results) > 0 {
+			fmt.Println("Retrieved chunks:", chunks.Prompt, "First chunk DocsID:", chunks.Results[0].Chunk.DocsID)
+		}
 		if err != nil {
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
 			userMessage = chunks.Prompt
+
+			// Group chunks by document ID
+			docChunksMap := make(map[string][]rag.Result)
+			for _, result := range chunks.Results {
+				docChunksMap[result.Chunk.DocsID] = append(docChunksMap[result.Chunk.DocsID], result)
+			}
+
+			// Create individual document references for each chunk
+			for docsID, docChunks := range docChunksMap {
+				// Get document metadata (same for all chunks from this doc)
+				docMeta, err := s.dao.GetFileMetadata(docsID)
+				if err != nil {
+					slog.Error("failed to get document metadata", "error", err, "docs_id", docsID)
+					continue
+				}
+
+				// Create separate document reference for each chunk
+				for _, chunkResult := range docChunks {
+					chunk := chunkResult.Chunk
+
+					docRef := &pb.DocumentReference{
+						DocsId:    docsID,
+						FileName:  docMeta.FileName,
+						ChunkText: strings.ToValidUTF8(chunk.Text, ""),
+						StartByte: int32(chunk.StartByte),
+						EndByte:   int32(chunk.EndByte),
+					}
+					documentReferences = append(documentReferences, docRef)
+				}
+			}
+
+			// Send all document references at once AFTER processing all chunks
+			for _, docRef := range documentReferences {
+				response := &pb.ChatResponse{
+					Response: &pb.ChatResponse_DocumentReference{
+						DocumentReference: docRef,
+					},
+				}
+
+				if err := stream(response); err != nil {
+					return fmt.Errorf("failed to send document reference: %v", err)
+				}
+			}
 		}
 	}
 
@@ -217,7 +264,16 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 	assistantText := fullResponse.String()
 	if assistantText != "" {
-		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens)
+		var referencesJSON string
+		if len(documentReferences) > 0 {
+			referencesBytes, err := json.Marshal(documentReferences)
+			if err != nil {
+				slog.Error("failed to marshal document references", "error", err)
+			} else {
+				referencesJSON = string(referencesBytes)
+			}
+		}
+		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
@@ -355,11 +411,21 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 
 	var pbMessages []*pb.ChatMessage
 	for _, m := range messages {
-		pbMessages = append(pbMessages, &pb.ChatMessage{
+		pbMessage := &pb.ChatMessage{
 			Role:      m.Role,
 			Content:   m.Content,
 			MessageId: m.Id,
-		})
+		}
+
+		// Parse document references if they exist
+		if m.DocumentReferences != "" {
+			var references []*pb.DocumentReference
+			if err := json.Unmarshal([]byte(m.DocumentReferences), &references); err == nil {
+				pbMessage.References = references
+			}
+		}
+
+		pbMessages = append(pbMessages, pbMessage)
 	}
 
 	return pbMessages, nil

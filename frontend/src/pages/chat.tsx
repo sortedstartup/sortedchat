@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
-import { CornerDownLeft} from "lucide-react";
+import { CornerDownLeft, FileText, Eye } from "lucide-react"; // Add FileText and Eye icons
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -20,6 +20,7 @@ import {
   $availableModels,
   BranchChat,
   $listChatBranch,
+  $currentDocumentReferences, // Add this import
 } from "@/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -29,6 +30,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"; // Add Dialog imports
 
 export function Chat() {
   const { projectId, chatId } = useParams();
@@ -50,14 +58,15 @@ export function Chat() {
   }, [chatId, navigate]);
 
   const { data, loading } = useStore($currentChatMessages);
-
   const streamingMessage = useStore($streamingMessage);
   const currentChatMessage = useStore($currentChatMessage);
   const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
   const listChatBranch = useStore($listChatBranch);
+  const currentDocumentReferences = useStore($currentDocumentReferences); // Add this
 
   const [inputValue, setInputValue] = useState("");
+  const [expandedChunks, setExpandedChunks] = useState<Record<string, Set<number>>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -71,7 +80,7 @@ export function Chat() {
 
   const handleSend = () => {
     if (inputValue.trim()) {
-      doChat(inputValue,projectId);
+      doChat(inputValue, projectId);
       setInputValue("");
       setTimeout(scrollToBottom, 100);
     }
@@ -96,7 +105,149 @@ export function Chat() {
     }
   };
 
-  
+  // Function to render document references for a message
+  const renderDocumentReferences = (references: any[]) => {
+    if (!references || references.length === 0) return null;
+
+    // Group references by docs_id and file_name
+    type GroupedRef = {
+      docs_id: string;
+      file_name: string;
+      chunks: Array<{
+        chunk_text: string;
+        start_byte: number;
+        end_byte: number;
+      }>;
+    };
+
+    const groupedRefs = references.reduce((acc, ref) => {
+      const key = `${ref.docs_id}-${ref.file_name}`;
+      if (!acc[key]) {
+        acc[key] = {
+          docs_id: ref.docs_id,
+          file_name: ref.file_name,
+          chunks: []
+        };
+      }
+      acc[key].chunks.push({
+        chunk_text: ref.chunk_text,
+        start_byte: ref.start_byte,
+        end_byte: ref.end_byte
+      });
+      return acc;
+    }, {} as Record<string, GroupedRef>);
+
+    // Helper functions
+    const getPreviewText = (text: string) => {
+      const lines = text.trim().split('\n');
+      if (lines.length <= 4) return text;
+      return lines.slice(0, 4).join('\n');
+    };
+
+    const isTextTruncated = (text: string) => {
+      const lines = text.trim().split('\n');
+      return lines.length > 4;
+    };
+
+    const toggleChunk = (docsId: string, chunkIndex: number) => {
+      const currentExpanded = expandedChunks[docsId] || new Set();
+      const newExpanded = new Set(currentExpanded);
+      
+      if (newExpanded.has(chunkIndex)) {
+        newExpanded.delete(chunkIndex);
+      } else {
+        newExpanded.add(chunkIndex);
+      }
+      
+      setExpandedChunks(prev => ({
+        ...prev,
+        [docsId]: newExpanded
+      }));
+    };
+
+    // Function to render chunks modal for a specific document
+    const renderChunksModal = (docsId: string, fileName: string, chunks: Array<{chunk_text: string, start_byte: number, end_byte: number}>) => {
+      const currentExpanded = expandedChunks[docsId] || new Set();
+
+      return (
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              <FileText className="inline h-5 w-5 mr-2" />
+              Document Chunks: {fileName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-gray-500 mb-4">
+            Showing {chunks.length} chunk{chunks.length > 1 ? 's' : ''} used to generate this response
+          </div>
+          <div className="max-h-[60vh] overflow-auto space-y-4">
+            {chunks.map((chunk, index) => {
+              const isExpanded = currentExpanded.has(index);
+              const isTruncated = isTextTruncated(chunk.chunk_text);
+              const displayText = isExpanded ? chunk.chunk_text.trim() : getPreviewText(chunk.chunk_text);
+
+              return (
+                <div key={index}>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-xs text-gray-600 font-medium">
+                        Bytes {chunk.start_byte} - {chunk.end_byte}
+                      </div>
+                      {isTruncated && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleChunk(docsId, index)}
+                          className="text-xs h-6 px-2 text-blue-600 hover:text-blue-800"
+                        >
+                          {isExpanded ? 'Show Less' : 'Show More'}
+                        </Button>
+                      )}
+                    </div>
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {displayText}
+                    </div>
+                  </div>
+                  {index < chunks.length - 1 && (
+                    <hr className="my-4 border-gray-300" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      );
+    };
+
+    return (
+      <div className="mt-2 ml-2 sm:ml-4">
+        <div className="text-xs text-gray-500 mb-1">Sources:</div>
+        <div className="flex flex-wrap gap-1">
+          {(Object.values(groupedRefs) as GroupedRef[]).map((docGroup, index) => (
+            <Dialog key={`${docGroup.docs_id}-${index}`}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-6 px-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  {docGroup.file_name}
+                  {docGroup.chunks.length > 1 && (
+                    <span className="ml-1 bg-blue-200 text-blue-800 px-1 rounded text-xs">
+                      {docGroup.chunks.length}
+                    </span>
+                  )}
+                  <Eye className="h-3 w-3 ml-1" />
+                </Button>
+              </DialogTrigger>
+              {renderChunksModal(docGroup.docs_id, docGroup.file_name, docGroup.chunks)}
+            </Dialog>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-full mx-auto max-w-full w-full">
@@ -112,7 +263,7 @@ export function Chat() {
             </div>
           ) : (
             <>
-              {data?.map((message,index) => (
+              {data?.map((message, index) => (
                 <div
                   key={index}
                   className={`flex flex-col ${
@@ -138,6 +289,12 @@ export function Chat() {
                       </ChatBubbleMessage>
                     </ChatBubble>
                   </div>
+                  
+                  {/* Show document references for assistant messages */}
+                  {message.role === "assistant" && message.references && (
+                    renderDocumentReferences(message.references)
+                  )}
+                  
                   {message.role === "assistant" && message.message_id && (
                     <div className="ml-2 sm:ml-4 mt-2">
                       <Button 
@@ -170,6 +327,7 @@ export function Chat() {
               )}
 
               {streamingMessage && streamingMessage.trim() && (
+                <div className="flex flex-col items-start">
                 <div className="flex justify-start">
                   <ChatBubble
                     variant="received"
@@ -182,6 +340,12 @@ export function Chat() {
                       </ReactMarkdown>
                     </ChatBubbleMessage>
                   </ChatBubble>
+                  </div>
+                  
+                  {/* Show document references for currently streaming message */}
+                  {currentDocumentReferences.length > 0 && (
+                    renderDocumentReferences(currentDocumentReferences)
+                  )}
                 </div>
               )}
               <div ref={messagesEndRef} />

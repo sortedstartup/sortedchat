@@ -320,7 +320,7 @@ onMount($chatList, () => {
 });
 
 export const $availableModels = atom<ModelListInfo[]>([]);
-export const $selectedModel = atom<string>("gpt-4.1");
+export const $selectedModel = atom<string>("gpt-5-nano");
 
 export const fetchAvailableModels = async () => {
   try {
@@ -383,8 +383,10 @@ export const createProject = async (
     );
     $currentProjectId.set(response.project_id);
     await getProjectList();
+    return response.project_id;
   } catch (error) {
     console.error("failed", error);
+    throw error;
   }
 };
 

@@ -7,7 +7,7 @@ import {
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
 import { CornerDownLeft, FileText, Eye } from "lucide-react"; // Add FileText and Eye icons
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -39,6 +39,70 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"; // Add Dialog imports
 import type { RAGDocumentReference } from "proto/chatservice";
+
+// Collapsible Chunks Display Component
+function ChunksDisplay({ chunks }: { chunks: any[] | undefined }) {
+  const [expandedChunks, setExpandedChunks] = useState<Set<number>>(new Set());
+
+  const toggleChunk = (index: number) => {
+    const newExpanded = new Set(expandedChunks);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedChunks(newExpanded);
+  };
+
+  if (!chunks || chunks.length === 0) {
+    return (
+      <div className="text-gray-500 text-center p-4">
+        No chunks available
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-h-[60vh] overflow-auto space-y-4">
+      {chunks.map((chunk: any, index: number) => {
+        const isExpanded = expandedChunks.has(index);
+        const chunkText = chunk.chunk_text || 'No content available';
+        const lines = chunkText.split('\n');
+        const shouldTruncate = lines.length > 4;
+        const displayText = shouldTruncate && !isExpanded 
+          ? lines.slice(0, 4).join('\n') 
+          : chunkText;
+
+        return (
+          <div key={index} className="bg-gray-50 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-xs text-gray-600 font-medium">
+                Bytes {chunk.start_byte || 0} - {chunk.end_byte || 0}
+              </div>
+              <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                Similarity: {chunk.simillarity?.toFixed(3) || 'N/A'}
+              </div>
+            </div>
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">
+              {displayText}
+              {shouldTruncate && !isExpanded && (
+                <span className="text-gray-400">...</span>
+              )}
+            </div>
+            {shouldTruncate && (
+              <button
+                onClick={() => toggleChunk(index)}
+                className="mt-2 text-xs text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+              >
+                {isExpanded ? 'Show less' : `Show more (${lines.length - 4} more lines)`}
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Chat() {
   const { projectId, chatId } = useParams();
@@ -138,7 +202,7 @@ export function Chat() {
             >
               <FileText className="h-3 w-3 mr-1" />
               {docRef.file_name}
-              {docRef.Chunks && docRef.Chunks.length > 1 && (
+              {docRef.Chunks && docRef.Chunks.length > 0 && (
                 <span className="ml-1 bg-blue-200 text-blue-800 px-1 rounded text-xs">
                   {docRef.Chunks.length}
                 </span>
@@ -355,27 +419,7 @@ export function Chat() {
                 <br />
                 Showing {ragDocumentDetails.data.Chunks?.length || 0} chunk{(ragDocumentDetails.data.Chunks?.length || 0) > 1 ? 's' : ''} used to generate this response
               </div>
-              <div className="max-h-[60vh] overflow-auto space-y-4">
-                {ragDocumentDetails.data.Chunks?.map((chunk: any, index: number) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="text-xs text-gray-600 font-medium">
-                        Bytes {chunk.start_byte || 0} - {chunk.end_byte || 0}
-                      </div>
-                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                        Similarity: {chunk.simillarity?.toFixed(3) || 'N/A'}
-                      </div>
-                    </div>
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {chunk.chunk_text || 'No content available'}
-                    </div>
-                  </div>
-                )) || (
-                  <div className="text-gray-500 text-center p-4">
-                    No chunks available
-                  </div>
-                )}
-              </div>
+              <ChunksDisplay chunks={ragDocumentDetails.data.Chunks} />
             </div>
           )}
         </DialogContent>

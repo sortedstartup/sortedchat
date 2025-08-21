@@ -2,15 +2,19 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"html/template"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
+	"sortedstartup/authservice/dao"
+	db "sortedstartup/authservice/dao"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
 
@@ -26,9 +30,10 @@ type AuthService struct {
 	appIssuer    string
 
 	callbackTemplate *template.Template
+	userService      *UserService
 }
 
-func NewAuthService() *AuthService {
+func NewAuthService(userService *UserService) *AuthService {
 
 	ctx := context.Background()
 	// OIDC discovery
@@ -113,6 +118,7 @@ func NewAuthService() *AuthService {
 		tokenTTL:         24 * time.Hour,
 		appIssuer:        os.Getenv("APP_ISSUER"),
 		callbackTemplate: callbackTemplate,
+		userService:      userService,
 	}
 }
 
@@ -173,27 +179,34 @@ func (s *AuthService) OAuthCallbackHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Upsert user (stub). In real app: look up by Sub, create if missing.
-	userID := claims.Sub
-	roles := []string{"user"}
+	// Upsert user using UserService
+	oAuthProvider := "google"
+	oAuthUserID := claims.Sub
+	roles := "user" // Convert to string for DAO
+	isFederated := true
+
+	userID, err := s.userService.CreateUserIfNotExists(claims.Email, roles, oAuthProvider, oAuthUserID, isFederated)
+	if err != nil {
+		slog.Error("user creation failed", "error", err)
+		http.Error(w, "user creation failed", http.StatusInternalServerError)
+		return
+	}
 
 	// Mint your app JWT
 	now := time.Now()
-	fmt.Println("issuer", s.appIssuer)
 	appJWT, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"iss":   s.appIssuer,
 		"sub":   userID,
 		"email": claims.Email,
-		"roles": roles,
+		"roles": []string{roles}, // Convert back to array for JWT
 		"iat":   now.Unix(),
 		"exp":   now.Add(s.tokenTTL).Unix(),
 	}).SignedString(s.appJWTSecret)
 	if err != nil {
+		slog.Error("jwt issue failed", "error", err)
 		http.Error(w, "jwt issue failed", http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Println("Issuing new app jwt: ", appJWT)
 
 	// Return HTML page with JWT embedded in JavaScript
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -215,4 +228,52 @@ func (s *AuthService) GetAuthURL() string {
 	// In a production app, you should generate a random state and store it
 	// for validation in the callback
 	return s.oauthCfg.AuthCodeURL("state", oauth2.AccessTypeOffline)
+}
+
+type UserService struct {
+	dao dao.UserDAO
+}
+
+func NewUserService(dao dao.UserDAO) *UserService {
+	return &UserService{dao: dao}
+}
+
+func (u *UserService) Init(config *dao.Config) {
+	switch config.Database.Type {
+	case db.DatabaseTypeSQLite:
+		slog.Info("UserService: Running SQLite migrations")
+		if err := db.MigrateSQLite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("UserService: Failed to migrate SQLite database: %v", err)
+		}
+		if err := db.SeedSqlite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("UserService: Failed to seed SQLite database: %v", err)
+		}
+	case db.DatabaseTypePostgres:
+		slog.Info("UserService: Running PostgreSQL migrations")
+		dsn := config.Database.Postgres.GetPostgresDSN()
+		if err := db.MigratePostgres(dsn); err != nil {
+			log.Fatalf("UserService: Failed to migrate PostgreSQL database: %v", err)
+		}
+		if err := db.SeedPostgres(dsn); err != nil {
+			log.Fatalf("UserService: Failed to seed PostgreSQL database: %v", err)
+		}
+	default:
+		log.Fatalf("UserService: Unsupported database type: %s", config.Database.Type)
+	}
+}
+
+// GenerateNewUserID generates a new unique user ID using UUID
+func GenerateNewUserID() string {
+	return uuid.New().String()
+}
+
+func (u *UserService) DoesUserExist(userID string) (bool, error) {
+	return u.dao.DoesUserExist(userID)
+}
+
+func (u *UserService) CreateUserIfNotExists(email, roles, oAuthProvider, oAuthUserID string, isFederated bool) (string, error) {
+	// Generate a new user ID
+	userID := GenerateNewUserID()
+
+	return u.dao.CreateUserIfNotExists(userID, email, roles, oAuthProvider, oAuthUserID, isFederated)
 }

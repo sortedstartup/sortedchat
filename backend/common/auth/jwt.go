@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // UserClaims represents the user information extracted from JWT
@@ -133,6 +135,14 @@ func GetUserFromContext(ctx context.Context) (*UserClaims, bool) {
 func GetUserIDFromContext(ctx context.Context) (string, bool) {
 	userID, ok := ctx.Value(UserIDKey).(string)
 	return userID, ok
+}
+
+func GetUserIDFromContext_WithError(ctx context.Context) (string, error) {
+	userID, ok := GetUserIDFromContext(ctx)
+	if !ok {
+		return "", status.Errorf(codes.Unauthenticated, "user ID not found")
+	}
+	return userID, nil
 }
 
 // GetUserEmailFromContext extracts user email from context

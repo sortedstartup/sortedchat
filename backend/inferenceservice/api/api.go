@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 	"log/slog"
+	"sortedstartup/common/auth"
 	"sortedstartup/inferenceservice/dao"
 	db "sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
@@ -28,7 +29,11 @@ func NewInferenceServiceAPI(daoFactory dao.DAOFactory) *InferenceServiceAPI {
 }
 
 func (s *InferenceServiceAPI) Infer(req *pb.InferRequest, stream grpc.ServerStreamingServer[pb.InferResponse]) error {
-	return s.service.Infer(stream.Context(), "dummy")
+	userID, err := auth.GetUserIDFromContext_WithError(stream.Context())
+	if err != nil {
+		return err
+	}
+	return s.service.Infer(stream.Context(), userID)
 }
 
 func (s *InferenceServiceAPI) Init(config *dao.Config) {

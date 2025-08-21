@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { File, Folder, RotateCcw } from "lucide-react";
+import { getJWTToken } from "@/lib/auth";
+
 
 export type FileItem = {
   id: string;
@@ -47,10 +49,21 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     formData.append("file", fileItem.file, fileItem.path);
     formData.append("project_id", currentProjectId.toString());
 
-      const res = await fetch(uploadUrl, {
-        method: "POST",
-        body: formData,
-      });
+    // Prepare headers with JWT token
+    const headers: Record<string, string> = {};
+    const token = getJWTToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+      console.debug('Added JWT token to file upload request');
+    } else {
+      console.debug('No JWT token available for file upload request');
+    }
+
+    const res = await fetch(uploadUrl, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
 
       if (res.ok) {
         const updated: FileItem = { ...fileItem, status: "success" };

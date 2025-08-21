@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	authApi "sortedstartup/authservice/api"
+	authDao "sortedstartup/authservice/dao"
 	authService "sortedstartup/authservice/service"
 	auth "sortedstartup/common/auth"
 
@@ -74,15 +75,42 @@ func main() {
 	// Create gRPC auth interceptor
 	authInterceptor := auth.NewGRPCAuthInterceptor(validator, true) // requireAuth = true
 
+	// Skip authentication for certain gRPC methods
+	authInterceptor.SkipMethods([]string{
+		"/grpc.health.v1.Health/Check",
+	})
+
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(authInterceptor.UnaryInterceptor()),
 		grpc.StreamInterceptor(authInterceptor.StreamInterceptor()),
 	)
+
+	// Create HTTP auth middleware
+	authMiddleware := auth.NewHTTPAuthMiddleware(validator, false) // requireAuth = false for flexibility
+
+	// Skip authentication for certain paths
+	authMiddleware.SkipPaths([]string{
+		"/health",
+		"/login",
+		"/auth/callback",
+		"/",
+		"/index.html",
+	})
+
+	// Skip authentication for path prefixes
+	authMiddleware.SkipPrefixes([]string{
+		"/public/",
+		"/auth/",
+		"/static/",
+		"/assets/",
+	})
+
 	mux := http.NewServeMux()
 
 	// Load configuration
 	config, err := dao.LoadConfig()
 	if err != nil {
+		slog.Error("Failed to load configuration", "error", err)
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
@@ -95,6 +123,7 @@ func main() {
 	// Create DAO factory
 	daoFactory, err := dao.NewDAOFactory(config)
 	if err != nil {
+		slog.Error("Failed to create DAO factory", "error", err)
 		log.Fatalf("Failed to create DAO factory: %v", err)
 	}
 	defer func() {
@@ -114,6 +143,7 @@ func main() {
 	}
 	defer func() {
 		if err := inferenceDaoFactory.Close(); err != nil {
+			slog.Error("Error closing DAO factory", "error", err)
 			log.Printf("Error closing DAO factory: %v", err)
 		}
 	}()
@@ -133,7 +163,27 @@ func main() {
 	inferenceServiceApi.Init(inferenceConfig)
 	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 
-	authService := authService.NewAuthService()
+	authConfig, err := authDao.LoadConfig()
+	if err != nil {
+		slog.Error("Failed to load configuration", "error", err)
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	authDaoFactory, err := authDao.NewDAOFactory(authConfig)
+	if err != nil {
+		slog.Error("Failed to create user service DAO", "error", err)
+		log.Fatalf("Failed to create user service DAO: %v", err)
+	}
+
+	userServiceDao, err := authDaoFactory.CreateDAO()
+	if err != nil {
+		slog.Error("Failed to create user service DAO", "error", err)
+		log.Fatalf("Failed to create user service DAO: %v", err)
+	}
+
+	userService := authService.NewUserService(userServiceDao)
+	userService.Init(authConfig)
+	authService := authService.NewAuthService(userService)
 	authServiceApi := authApi.NewAuthServiceAPI(mux, authService)
 	authServiceApi.Init()
 
@@ -146,6 +196,7 @@ func main() {
 	// serve static UI
 	publicFS, err := fs.Sub(staticUIFS, "public")
 	if err != nil {
+		slog.Error("Failed to create sub FS", "error", err)
 		log.Fatalf("Failed to create sub FS: %v", err)
 	}
 	staticUI := http.FileServer(http.FS(publicFS))
@@ -171,6 +222,7 @@ func main() {
 			// File doesn't exist, serve index.html for SPA routing
 			indexFile, indexErr := publicFS.Open("index.html")
 			if indexErr != nil {
+				slog.Error("index.html not found", "error", indexErr)
 				http.Error(w, "index.html not found", http.StatusNotFound)
 				return
 			}
@@ -187,6 +239,7 @@ func main() {
 			// Read the index.html content
 			content, readErr := io.ReadAll(indexFile)
 			if readErr != nil {
+				slog.Error("failed to read index.html", "error", readErr)
 				http.Error(w, "failed to read index.html", http.StatusInternalServerError)
 				return
 			}
@@ -203,12 +256,19 @@ func main() {
 		// File exists, serve it normally
 		staticUI.ServeHTTP(w, r)
 	}
+
+	// Add health endpoint (public, no auth required)
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
 	mux.HandleFunc("/", httpHandler)
 
-	// HTTP server with CORS
+	// HTTP server with CORS and auth middleware
 	httpServer := &http.Server{
 		Addr:    httpAddr,
-		Handler: util.EnableCORS(mux),
+		Handler: util.EnableCORS(authMiddleware.Middleware(mux)),
 	}
 
 	// Run both servers in parallel
@@ -231,6 +291,7 @@ func main() {
 		log.Println("Running in server-only mode")
 		err := <-serverErr
 		if err != nil {
+			slog.Error("Server error", "error", err)
 			log.Fatalf("Server error: %v", err)
 		}
 	}

@@ -75,8 +75,9 @@ func (Embedding_Status) EnumDescriptor() ([]byte, []int) {
 
 type RAGDocumentReferenceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ProjectId     string                 `protobuf:"bytes,1,opt,name=projectId,proto3" json:"projectId,omitempty"`
-	DocId         string                 `protobuf:"bytes,2,opt,name=docId,proto3" json:"docId,omitempty"`
+	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	DocId         string                 `protobuf:"bytes,3,opt,name=docId,proto3" json:"docId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -109,6 +110,13 @@ func (x *RAGDocumentReferenceRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use RAGDocumentReferenceRequest.ProtoReflect.Descriptor instead.
 func (*RAGDocumentReferenceRequest) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *RAGDocumentReferenceRequest) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
 }
 
 func (x *RAGDocumentReferenceRequest) GetProjectId() string {
@@ -2415,10 +2423,13 @@ var File_chatservice_proto protoreflect.FileDescriptor
 const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"\x11chatservice.proto\x12\n" +
-	"sortedchat\"Q\n" +
-	"\x1bRAGDocumentReferenceRequest\x12\x1c\n" +
-	"\tprojectId\x18\x01 \x01(\tR\tprojectId\x12\x14\n" +
-	"\x05docId\x18\x02 \x01(\tR\x05docId\"^\n" +
+	"sortedchat\"q\n" +
+	"\x1bRAGDocumentReferenceRequest\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x12\x14\n" +
+	"\x05docId\x18\x03 \x01(\tR\x05docId\"^\n" +
 	"\x1cRAGDocumentReferenceResponse\x12>\n" +
 	"\treference\x18\x01 \x01(\v2 .sortedchat.RAGDocumentReferenceR\treference\"u\n" +
 	"\bSettings\x12$\n" +

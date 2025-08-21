@@ -21,6 +21,8 @@ import {
   BranchChat,
   $listChatBranch,
   $currentDocumentReferences, // Add this import
+  $ragDocumentDetails,
+  fetchRAGDocumentReference,
 } from "@/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -35,8 +37,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"; // Add Dialog imports
+import type { RAGDocumentReference } from "proto/chatservice";
 
 export function Chat() {
   const { projectId, chatId } = useParams();
@@ -64,9 +66,14 @@ export function Chat() {
   const selectedModel = useStore($selectedModel);
   const listChatBranch = useStore($listChatBranch);
   const currentDocumentReferences = useStore($currentDocumentReferences); // Add this
+  const ragDocumentDetails = useStore($ragDocumentDetails);
 
   const [inputValue, setInputValue] = useState("");
-  const [expandedChunks, setExpandedChunks] = useState<Record<string, Set<number>>>({});
+  const [selectedDocumentForDetails, setSelectedDocumentForDetails] = useState<{
+    messageId: string;
+    docId: string;
+    fileName: string;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -106,147 +113,57 @@ export function Chat() {
   };
 
   // Function to render document references for a message
-  const renderDocumentReferences = (references: any[]) => {
+  const renderDocumentReferences = (references: RAGDocumentReference[], messageId?: string) => {
     if (!references || references.length === 0) return null;
-
-    // Group references by docs_id and file_name
-    type GroupedRef = {
-      docs_id: string;
-      file_name: string;
-      chunks: Array<{
-        chunk_text: string;
-        start_byte: number;
-        end_byte: number;
-      }>;
-    };
-
-    const groupedRefs = references.reduce((acc, ref) => {
-      const key = `${ref.docs_id}-${ref.file_name}`;
-      if (!acc[key]) {
-        acc[key] = {
-          docs_id: ref.docs_id,
-          file_name: ref.file_name,
-          chunks: []
-        };
-      }
-      acc[key].chunks.push({
-        chunk_text: ref.chunk_text,
-        start_byte: ref.start_byte,
-        end_byte: ref.end_byte
-      });
-      return acc;
-    }, {} as Record<string, GroupedRef>);
-
-    // Helper functions
-    const getPreviewText = (text: string) => {
-      const lines = text.trim().split('\n');
-      if (lines.length <= 4) return text;
-      return lines.slice(0, 4).join('\n');
-    };
-
-    const isTextTruncated = (text: string) => {
-      const lines = text.trim().split('\n');
-      return lines.length > 4;
-    };
-
-    const toggleChunk = (docsId: string, chunkIndex: number) => {
-      const currentExpanded = expandedChunks[docsId] || new Set();
-      const newExpanded = new Set(currentExpanded);
-      
-      if (newExpanded.has(chunkIndex)) {
-        newExpanded.delete(chunkIndex);
-      } else {
-        newExpanded.add(chunkIndex);
-      }
-      
-      setExpandedChunks(prev => ({
-        ...prev,
-        [docsId]: newExpanded
-      }));
-    };
-
-    // Function to render chunks modal for a specific document
-    const renderChunksModal = (docsId: string, fileName: string, chunks: Array<{chunk_text: string, start_byte: number, end_byte: number}>) => {
-      const currentExpanded = expandedChunks[docsId] || new Set();
-
-      return (
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="text-lg">
-              <FileText className="inline h-5 w-5 mr-2" />
-              Document Chunks: {fileName}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="text-sm text-gray-500 mb-4">
-            Showing {chunks.length} chunk{chunks.length > 1 ? 's' : ''} used to generate this response
-          </div>
-          <div className="max-h-[60vh] overflow-auto space-y-4">
-            {chunks.map((chunk, index) => {
-              const isExpanded = currentExpanded.has(index);
-              const isTruncated = isTextTruncated(chunk.chunk_text);
-              const displayText = isExpanded ? chunk.chunk_text.trim() : getPreviewText(chunk.chunk_text);
-
-              return (
-                <div key={index}>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="text-xs text-gray-600 font-medium">
-                        Bytes {chunk.start_byte} - {chunk.end_byte}
-                      </div>
-                      {isTruncated && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleChunk(docsId, index)}
-                          className="text-xs h-6 px-2 text-blue-600 hover:text-blue-800"
-                        >
-                          {isExpanded ? 'Show Less' : 'Show More'}
-                        </Button>
-                      )}
-                    </div>
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {displayText}
-                    </div>
-                  </div>
-                  {index < chunks.length - 1 && (
-                    <hr className="my-4 border-gray-300" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </DialogContent>
-      );
-    };
 
     return (
       <div className="mt-2 ml-2 sm:ml-4">
         <div className="text-xs text-gray-500 mb-1">Sources:</div>
         <div className="flex flex-wrap gap-1">
-          {(Object.values(groupedRefs) as GroupedRef[]).map((docGroup, index) => (
-            <Dialog key={`${docGroup.docs_id}-${index}`}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-6 px-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                >
-                  <FileText className="h-3 w-3 mr-1" />
-                  {docGroup.file_name}
-                  {docGroup.chunks.length > 0 && (
-                    <span className="ml-1 bg-blue-200 text-blue-800 px-1 rounded text-xs">
-                      {docGroup.chunks.length}
-                    </span>
-                  )}
-                  <Eye className="h-3 w-3 ml-1" />
-                </Button>
-              </DialogTrigger>
-              {renderChunksModal(docGroup.docs_id, docGroup.file_name, docGroup.chunks)}
-            </Dialog>
+          {references.map((docRef, index) => (
+            <Button
+              key={`${docRef.doc_id}-${index}`}
+              variant="outline"
+              size="sm"
+              className="text-xs h-6 px-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+              onClick={() => {
+                console.log('Button clicked:', { 
+                  messageId, 
+                  docId: docRef.doc_id, 
+                  fileName: docRef.file_name,
+                  docRef 
+                });
+                messageId && handleViewRAGDetails(messageId, docRef.doc_id, docRef.file_name);
+              }}
+            >
+              <FileText className="h-3 w-3 mr-1" />
+              {docRef.file_name}
+              {docRef.Chunks && docRef.Chunks.length > 1 && (
+                <span className="ml-1 bg-blue-200 text-blue-800 px-1 rounded text-xs">
+                  {docRef.Chunks.length}
+                </span>
+              )}
+              <Eye className="h-3 w-3 ml-1" />
+            </Button>
           ))}
         </div>
       </div>
     );
+  };
+
+  // Function to handle fetching detailed RAG document references
+  const handleViewRAGDetails = async (messageId: string, docId: string, fileName: string) => {
+    if (!projectId || !messageId) {
+      console.error("Project ID and message ID are required");
+      return;
+    }
+
+    try {
+      setSelectedDocumentForDetails({ messageId, docId, fileName });
+      await fetchRAGDocumentReference(messageId, projectId, docId);
+    } catch (error) {
+      console.error("Failed to fetch RAG details:", error);
+    }
   };
 
   return (
@@ -292,7 +209,7 @@ export function Chat() {
                   
                   {/* Show document references for assistant messages */}
                   {message.role === "assistant" && message.references && (
-                    renderDocumentReferences(message.references)
+                    renderDocumentReferences(message.references, message.message_id)
                   )}
                   
                   {message.role === "assistant" && message.message_id && (
@@ -408,6 +325,61 @@ export function Chat() {
           </div>
         </div>
       </div>
+
+      {/* RAG Document Details Dialog */}
+      <Dialog open={!!selectedDocumentForDetails} onOpenChange={() => setSelectedDocumentForDetails(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              <FileText className="inline h-5 w-5 mr-2" />
+              Document Chunks: {selectedDocumentForDetails?.fileName}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {ragDocumentDetails.loading && (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-sm text-gray-500">Loading document details...</div>
+            </div>
+          )}
+          
+          {ragDocumentDetails.error && (
+            <div className="text-red-600 text-sm p-4 bg-red-50 rounded">
+              Error: {ragDocumentDetails.error}
+            </div>
+          )}
+          
+          {ragDocumentDetails.data && (
+            <div>
+              <div className="text-sm text-gray-500 mb-4">
+                {/* Requested: {selectedDocumentForDetails?.docId} | Received: {ragDocumentDetails.data.doc_id} */}
+                <br />
+                Showing {ragDocumentDetails.data.Chunks?.length || 0} chunk{(ragDocumentDetails.data.Chunks?.length || 0) > 1 ? 's' : ''} used to generate this response
+              </div>
+              <div className="max-h-[60vh] overflow-auto space-y-4">
+                {ragDocumentDetails.data.Chunks?.map((chunk: any, index: number) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-xs text-gray-600 font-medium">
+                        Bytes {chunk.start_byte || 0} - {chunk.end_byte || 0}
+                      </div>
+                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                        Similarity: {chunk.simillarity?.toFixed(3) || 'N/A'}
+                      </div>
+                    </div>
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {chunk.chunk_text || 'No content available'}
+                    </div>
+                  </div>
+                )) || (
+                  <div className="text-gray-500 text-center p-4">
+                    No chunks available
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

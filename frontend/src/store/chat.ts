@@ -21,7 +21,9 @@ import {
   GenerateChatNameRequest,
   BranchAChatRequest,
   ListChatBranchRequest,
-  DocumentReference, // Already imported
+  RAGDocumentReference as DocumentReference, // Alias for backward compatibility
+  RAGDocumentReferenceRequest,
+  RAGDocumentReference,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -45,6 +47,17 @@ export const $currentChatMessages = atom<{
 // Add new stores for document references
 export const $currentDocumentReferences = atom<DocumentReference[]>([]);
 export const $showDocumentReferences = atom<boolean>(false);
+
+// Store for detailed RAG document references
+export const $ragDocumentDetails = atom<{
+  data: RAGDocumentReference | null;
+  loading: boolean;
+  error: string | null;
+}>({
+  data: null,
+  loading: false,
+  error: null,
+});
 
 export const fetchChatMessages = async (chatId: string) => {
   if (!chatId) return;
@@ -162,14 +175,13 @@ const isFirstMessageInChat = (): boolean => {
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
-  // Don't reset document references here as they accumulate during the chat
 
   const isFirstMessage = isFirstMessageInChat();
   const isNewlyBranched = $isNewlyBranched.get();
 
   let assistantResponse = "";
   let messageId = "";
-  let currentChatReferences: DocumentReference[] = []; // Track references for this specific chat
+  let currentChatReferences: any[] = []; // Track references for this specific chat
 
   if (isFirstMessage || isNewlyBranched) {
       generateChatName(msg);
@@ -197,12 +209,22 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       messageId = res.summary.message_id;
       console.log('Received message ID:', messageId);
     } else if (res.has_document_reference) {
-      // Handle document reference
-      const docRef = res.document_reference;
-      console.log('Received document reference:', docRef.file_name, `Bytes ${docRef.start_byte}-${docRef.end_byte}`);
+      const docRefList = res.document_reference;
       
-      // Add each chunk reference (don't avoid duplicates since we want all chunks)
-      currentChatReferences.push(docRef);
+      if (docRefList.summary) {
+        for (const summary of docRefList.summary) {
+          
+          const placeholderRef = {
+            doc_id: summary.doc_id,
+            file_name: summary.file_name,
+            chunk_text: `${summary.chunkCount} chunks available`,
+            start_byte: 0,
+            end_byte: 0
+          };
+          
+          currentChatReferences.push(placeholderRef);
+        }
+      }
       
       // Update the store for real-time display
       $currentDocumentReferences.set([...currentChatReferences]);
@@ -259,7 +281,6 @@ $currentChatId.listen((_newValue, _oldValue) => {
   // Don't clear document references here as they'll be set by fetchChatMessages
 });
 
-// ... rest of your existing code remains the same ...
 
 export const $chatName = atom<string>("");
 export const generateChatName = async (msg: string) => {
@@ -531,3 +552,48 @@ $currentChatId.listen((newChatId) => {
     $listChatBranch.set([]);
   }
 });
+
+// Function to fetch detailed RAG document references for a message
+export const fetchRAGDocumentReference = async (messageId: string, projectId: string, docId?: string) => {
+  if (!messageId) {
+    console.error("Message ID is required to fetch RAG document references");
+    return;
+  }
+
+  $ragDocumentDetails.set({
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  try {
+    console.log('Fetching RAG document reference for message:', messageId, 'project:', projectId, 'docId:', docId);
+    const request = RAGDocumentReferenceRequest.fromObject({
+      message_id: messageId,
+      project_id: projectId,
+      docId: docId || "", // Optional filter by specific document
+    });
+
+    const response = await chat.GetRAGDocumentReference(request, {});
+    
+    $ragDocumentDetails.set({
+      data: response.reference || null,
+      loading: false,
+      error: null,
+    });
+
+    return response.reference;
+  } catch (error) {
+    console.error('Failed to fetch RAG document reference:', error);
+    const errorMessage = (error as Error).message || 'Failed to fetch document reference';
+    
+    $ragDocumentDetails.set({
+      data: null,
+      loading: false,
+      error: errorMessage,
+    });
+
+    toast.error(`Failed to fetch document details: ${errorMessage}`);
+    throw error;
+  }
+};

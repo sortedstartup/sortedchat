@@ -16,39 +16,53 @@ export enum Embedding_Status {
 export class RAGDocumentReferenceRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        projectId?: string;
+        message_id?: string;
+        project_id?: string;
         docId?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
-            if ("projectId" in data && data.projectId != undefined) {
-                this.projectId = data.projectId;
+            if ("message_id" in data && data.message_id != undefined) {
+                this.message_id = data.message_id;
+            }
+            if ("project_id" in data && data.project_id != undefined) {
+                this.project_id = data.project_id;
             }
             if ("docId" in data && data.docId != undefined) {
                 this.docId = data.docId;
             }
         }
     }
-    get projectId() {
+    get message_id() {
         return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
     }
-    set projectId(value: string) {
+    set message_id(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
-    get docId() {
+    get project_id() {
         return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
     }
-    set docId(value: string) {
+    set project_id(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
+    get docId() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set docId(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
     static fromObject(data: {
-        projectId?: string;
+        message_id?: string;
+        project_id?: string;
         docId?: string;
     }): RAGDocumentReferenceRequest {
         const message = new RAGDocumentReferenceRequest({});
-        if (data.projectId != null) {
-            message.projectId = data.projectId;
+        if (data.message_id != null) {
+            message.message_id = data.message_id;
+        }
+        if (data.project_id != null) {
+            message.project_id = data.project_id;
         }
         if (data.docId != null) {
             message.docId = data.docId;
@@ -57,11 +71,15 @@ export class RAGDocumentReferenceRequest extends pb_1.Message {
     }
     toObject() {
         const data: {
-            projectId?: string;
+            message_id?: string;
+            project_id?: string;
             docId?: string;
         } = {};
-        if (this.projectId != null) {
-            data.projectId = this.projectId;
+        if (this.message_id != null) {
+            data.message_id = this.message_id;
+        }
+        if (this.project_id != null) {
+            data.project_id = this.project_id;
         }
         if (this.docId != null) {
             data.docId = this.docId;
@@ -72,10 +90,12 @@ export class RAGDocumentReferenceRequest extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.projectId.length)
-            writer.writeString(1, this.projectId);
+        if (this.message_id.length)
+            writer.writeString(1, this.message_id);
+        if (this.project_id.length)
+            writer.writeString(2, this.project_id);
         if (this.docId.length)
-            writer.writeString(2, this.docId);
+            writer.writeString(3, this.docId);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -86,9 +106,12 @@ export class RAGDocumentReferenceRequest extends pb_1.Message {
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
-                    message.projectId = reader.readString();
+                    message.message_id = reader.readString();
                     break;
                 case 2:
+                    message.project_id = reader.readString();
+                    break;
+                case 3:
                     message.docId = reader.readString();
                     break;
                 default: reader.skipField();

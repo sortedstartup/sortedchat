@@ -26,8 +26,9 @@ service SortedChat {
 }
 
 message RAGDocumentReferenceRequest{
-  string projectId = 1;
-  string docId = 2;  
+  string message_id = 1;
+  string project_id = 2;
+  string docId = 3;  
 }
 
 message RAGDocumentReferenceResponse {
@@ -101,7 +102,6 @@ message RAGDocumentReference {
   string doc_id = 1;
   string file_name = 2;
   repeated Chunk Chunks  = 3;
-
   message Chunk  {
     string chunk_text = 3;
     int32 start_byte = 4;

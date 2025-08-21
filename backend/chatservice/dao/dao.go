@@ -40,6 +40,10 @@ type DAO interface {
 	IsMainBranch(userID string, source_chat_id string) (bool, error)
 	BranchChat(userID string, source_chat_id string, parent_message_id string, new_chat_id string, branch_name string) error
 	GetChatBranches(userID string, chatId string, isMain bool) ([]ChatInfoRow, error)
+
+	// RAG Document Reference methods
+	GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error)
+	UpdateChatMessageDocumentReferences(userID string, messageID string, documentReferences string) error
 }
 
 type SettingsDAO interface {

@@ -109,22 +109,6 @@ export const fetchChatMessages = async (chatId: string) => {
   }
 };
 
-// Auto-fetch when chat ID changes
-$currentChatId.listen((newChatId) => {
-  if (newChatId) {
-    fetchChatMessages(newChatId);
-  } else {
-    $currentChatMessages.set({
-      data: undefined,
-      loading: false,
-      error: null,
-    });
-    // Clear document references when no chat is selected
-    $currentDocumentReferences.set([]);
-    $showDocumentReferences.set(false);
-  }
-});
-
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
 
@@ -273,14 +257,6 @@ export const hideDocumentReferences = () => {
 export const showDocumentReferencesPanel = () => {
   $showDocumentReferences.set(true);
 };
-
-// Clear document references when changing chats
-$currentChatId.listen((_newValue, _oldValue) => {
-  $streamingMessage.set("");
-  $currentChatMessage.set("");
-  // Don't clear document references here as they'll be set by fetchChatMessages
-});
-
 
 export const $chatName = atom<string>("");
 export const generateChatName = async (msg: string) => {
@@ -548,10 +524,28 @@ export async function ListChatBranch (chatId: string) {
 }
 
 $currentChatId.listen((newChatId) => {
+  $streamingMessage.set("");
+  $currentChatMessage.set("");
+
+  // fetch branch chat list
   if (newChatId) {
     ListChatBranch(newChatId);
   } else {
     $listChatBranch.set([]);
+  }
+
+  // fetch chat messages
+  if (newChatId) {
+    fetchChatMessages(newChatId);
+  } else {
+    $currentChatMessages.set({
+      data: undefined,
+      loading: false,
+      error: null,
+    });
+    // Clear document references when no chat is selected
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
   }
 });
 

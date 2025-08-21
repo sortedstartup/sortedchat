@@ -5,6 +5,7 @@ type ChatMessageRow struct {
 	Content            string `db:"content" json:"content"`
 	Id                 string `db:"id" json:"id"`
 	DocumentReferences string `db:"document_references" json:"document_references"`
+	RagEnabled         bool   `db:"rag_enabled" json:"rag_enabled"`
 }
 
 type ProjectRow struct {

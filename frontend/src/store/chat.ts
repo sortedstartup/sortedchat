@@ -21,7 +21,8 @@ import {
   GenerateChatNameRequest,
   BranchAChatRequest,
   ListChatBranchRequest,
-  DocumentReference, // Already imported
+  DocumentReference,
+  ProjectContext, // Already imported
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -45,6 +46,9 @@ export const $currentChatMessages = atom<{
 // Add new stores for document references
 export const $currentDocumentReferences = atom<DocumentReference[]>([]);
 export const $showDocumentReferences = atom<boolean>(false);
+
+// Add RAG enabled store
+export const $ragEnabled = atom<boolean>(true);
 
 export const fetchChatMessages = async (chatId: string) => {
   if (!chatId) return;
@@ -110,6 +114,13 @@ $currentChatId.listen((newChatId) => {
     $currentDocumentReferences.set([]);
     $showDocumentReferences.set(false);
   }
+});
+
+// Reset RAG enabled state when switching chats
+$currentChatId.listen((_newChatId) => {
+  // Reset RAG enabled to true by default for project chats
+  // This will be overridden by doChat logic for regular chats
+  $ragEnabled.set(true);
 });
 
 export const $currentChatMessage = atom<string>("");
@@ -178,13 +189,19 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       }
     }
 
+  // Get RAG enabled state - use stored value for project chats, false for regular chats
+  const ragEnabled = projectId ? $ragEnabled.get() : false;
+
   // grpc call
   const stream = chat.Chat(
     ChatRequest.fromObject({
       text: msg,
       chatId: $currentChatId.get(),
       model: $selectedModel.get(),
-      project_id: projectId || "",
+      project_context: ProjectContext.fromObject({
+        project_id: projectId || "",
+        rag_enabled: ragEnabled,
+      }),
     }),
     {}
   );
@@ -220,6 +237,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     const userMessage = ChatMessage.fromObject({
       role: "user",
       content: msg,
+      rag_enabled: ragEnabled, // Set the rag_enabled field based on the current state
     });
     
     const assistantMessage = ChatMessage.fromObject({
@@ -227,6 +245,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       content: assistantResponse,
       message_id: messageId,
       references: currentChatReferences, // Add references to the assistant message
+      rag_enabled: ragEnabled, // Set the rag_enabled field based on the current state
     });
 
     addMessageToHistory(userMessage);
@@ -235,16 +254,23 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     $streamingMessage.set("");
     $currentChatMessage.set("");
     
-    // Log all document references for this chat
-    if (currentChatReferences.length > 0) {
-      console.log('Document references for this chat:', currentChatReferences);
+    // Reset RAG toggle to enabled for project chats after message completion
+    // This allows users to easily send RAG-enabled messages by default
+    if (projectId) {
+      $ragEnabled.set(true);
     }
+    
   });
 
   stream.on("error", (err: Error) => {
     console.error("Stream error:", err);
     $streamingMessage.set("");
     $currentChatMessage.set("");
+    
+    // Reset RAG enabled to true for project chats even on error
+    if (projectId) {
+      $ragEnabled.set(true);
+    }
   });
 };
 
@@ -255,6 +281,17 @@ export const hideDocumentReferences = () => {
 
 export const showDocumentReferencesPanel = () => {
   $showDocumentReferences.set(true);
+};
+
+// Add function to toggle RAG enabled state
+export const toggleRagEnabled = () => {
+  const currentState = $ragEnabled.get();
+  $ragEnabled.set(!currentState);
+};
+
+// Add function to set RAG enabled state for project chats
+export const setRagEnabledForProject = (enabled: boolean) => {
+  $ragEnabled.set(enabled);
 };
 
 // Clear document references when changing chats

@@ -78,7 +78,10 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 }
 
 func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatRequest, stream func(*pb.ChatResponse) error) error {
-	projectID := req.GetProjectId()
+	projectID := req.GetProjectContext().GetProjectId()
+	ragEnabled := req.GetProjectContext().GetRagEnabled()
+
+	slog.Info("Chat request", "project_id", projectID, "rag_enabled", ragEnabled)
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
@@ -102,7 +105,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("failed to fetch message history: %v", err)
 	}
 
-	err = s.dao.AddChatMessage(userID, chatId, "user", req.Text)
+	err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, ragEnabled)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
 	}
@@ -110,11 +113,12 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	userMessage := req.Text
 	var documentReferences []*pb.DocumentReference
 
-	if projectID != "" && projectID != "null" { // if this chat is in context of a project
+	if projectID != "" && projectID != "null" && ragEnabled { // if this chat is in context of a project
 		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, req.Text)
 		if err != nil {
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
+			fmt.Println("in project id section")
 			userMessage = chunks.Prompt
 
 			// Group chunks by document ID
@@ -270,7 +274,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				referencesJSON = string(referencesBytes)
 			}
 		}
-		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON)
+		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON, ragEnabled)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
@@ -409,9 +413,10 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 	var pbMessages []*pb.ChatMessage
 	for _, m := range messages {
 		pbMessage := &pb.ChatMessage{
-			Role:      m.Role,
-			Content:   m.Content,
-			MessageId: m.Id,
+			Role:       m.Role,
+			Content:    m.Content,
+			MessageId:  m.Id,
+			RagEnabled: m.RagEnabled,
 		}
 
 		if m.DocumentReferences != "" {

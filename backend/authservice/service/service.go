@@ -9,8 +9,7 @@ import (
 	"os"
 	"time"
 
-	"sortedstartup/authservice/dao"
-	db "sortedstartup/authservice/dao"
+	dao "sortedstartup/authservice/dao"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
@@ -240,21 +239,21 @@ func NewUserService(dao dao.UserDAO) *UserService {
 
 func (u *UserService) Init(config *dao.Config) {
 	switch config.Database.Type {
-	case db.DatabaseTypeSQLite:
+	case dao.DatabaseTypeSQLite:
 		slog.Info("UserService: Running SQLite migrations")
-		if err := db.MigrateSQLite(config.Database.SQLite.URL); err != nil {
+		if err := dao.MigrateSQLite(config.Database.SQLite.URL); err != nil {
 			log.Fatalf("UserService: Failed to migrate SQLite database: %v", err)
 		}
-		if err := db.SeedSqlite(config.Database.SQLite.URL); err != nil {
+		if err := dao.SeedSqlite(config.Database.SQLite.URL); err != nil {
 			log.Fatalf("UserService: Failed to seed SQLite database: %v", err)
 		}
-	case db.DatabaseTypePostgres:
+	case dao.DatabaseTypePostgres:
 		slog.Info("UserService: Running PostgreSQL migrations")
 		dsn := config.Database.Postgres.GetPostgresDSN()
-		if err := db.MigratePostgres(dsn); err != nil {
+		if err := dao.MigratePostgres(dsn); err != nil {
 			log.Fatalf("UserService: Failed to migrate PostgreSQL database: %v", err)
 		}
-		if err := db.SeedPostgres(dsn); err != nil {
+		if err := dao.SeedPostgres(dsn); err != nil {
 			log.Fatalf("UserService: Failed to seed PostgreSQL database: %v", err)
 		}
 	default:

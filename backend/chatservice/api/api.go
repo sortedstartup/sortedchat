@@ -303,7 +303,7 @@ func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBra
 func (s *ChatServiceAPI) Init(config *db.Config) {
 	switch config.Database.Type {
 	case db.DatabaseTypeSQLite:
-		slog.Info("ChatService: Running SQLite migrations")
+		slog.Info("ChatService: Running SQLite migrations ")
 		if err := db.MigrateSQLite(config.Database.SQLite.URL); err != nil {
 			log.Fatalf("ChatService: Failed to migrate SQLite database: %v", err)
 		}

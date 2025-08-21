@@ -225,11 +225,6 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       $currentDocumentReferences.set([...currentChatReferences]);
       $showDocumentReferences.set(true);
       
-      // Only show toast for the first chunk of each document
-      const existingDocsIds = currentChatReferences.slice(0, -1).map(ref => ref.docs_id);
-      if (!existingDocsIds.includes(docRef.docs_id)) {
-        toast.info(`Found relevant document: ${docRef.file_name}`);
-      }
     }
   });
 

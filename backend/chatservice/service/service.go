@@ -81,8 +81,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	projectID := req.GetProjectContext().GetProjectId()
 	ragEnabled := req.GetProjectContext().GetRagEnabled()
 
-	slog.Info("Chat request", "project_id", projectID, "rag_enabled", ragEnabled)
-
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
 		return fmt.Errorf("OpenAI API key not set")
@@ -118,7 +116,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		if err != nil {
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
-			fmt.Println("in project id section")
 			userMessage = chunks.Prompt
 
 			// Group chunks by document ID

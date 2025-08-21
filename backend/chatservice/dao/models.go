@@ -1,9 +1,10 @@
 package dao
 
 type ChatMessageRow struct {
-	Role    string `db:"role" json:"role"`
-	Content string `db:"content" json:"content"`
-	Id      string `db:"id" json:"id"`
+	Role               string `db:"role" json:"role"`
+	Content            string `db:"content" json:"content"`
+	Id                 string `db:"id" json:"id"`
+	DocumentReferences string `db:"document_references" json:"document_references"`
 }
 
 type ProjectRow struct {
@@ -28,12 +29,13 @@ type DocumentListRow struct {
 }
 
 type RAGChunkRow struct {
-	ID        string `db:"id"`
-	ProjectID string `db:"project_id"`
-	DocsID    string `db:"docs_id"`
-	StartByte int    `db:"start_byte"`
-	EndByte   int    `db:"end_byte"`
-	Source    string `db:"source"`
+	ID         string  `db:"id"`
+	ProjectID  string  `db:"project_id"`
+	DocsID     string  `db:"docs_id"`
+	StartByte  int     `db:"start_byte"`
+	EndByte    int     `db:"end_byte"`
+	Source     *string `db:"source"`
+	Similarity float64 `db:"similarity"`
 }
 
 type ChatInfoRow struct {

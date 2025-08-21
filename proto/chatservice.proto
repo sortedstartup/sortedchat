@@ -14,6 +14,8 @@ service SortedChat {
     rpc ListModel(ListModelsRequest) returns (ListModelsResponse);
     rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
 
+    rpc GetRAGDocumentReference (RAGDocumentReferenceRequest) returns (RAGDocumentReferenceResponse);
+
     rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
     rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
     rpc ListDocuments(ListDocumentsRequest) returns(ListDocumentsResponse);
@@ -21,6 +23,16 @@ service SortedChat {
 
     rpc BranchAChat(BranchAChatRequest) returns (BranchAChatResponse);
     rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
+}
+
+message RAGDocumentReferenceRequest{
+  string message_id = 1;
+  string project_id = 2;
+  string docId = 3;  
+}
+
+message RAGDocumentReferenceResponse {
+  RAGDocumentReference reference = 1;
 }
 
 service SettingService {
@@ -69,7 +81,32 @@ message ChatRequest {
 message ChatResponse {
   oneof response {
     string text = 1;
+    // was introduced to send message id, because it is generated server side
+    // sending one of the multiple oneof's help us do all of this in one streaming API call
     MessageSummary summary = 2;
+    RAGDocumentReferenceSummaryList document_reference = 3; 
+  }
+}
+
+// TODO: reasonable limits from server side, limit to 10 (constant in server side) docs
+message RAGDocumentReferenceSummaryList {
+  repeated Summary summary = 1;
+  message Summary {
+    string doc_id = 1;
+    string file_name = 2;
+    int32 chunkCount = 3;
+  }
+}
+
+message RAGDocumentReference {
+  string doc_id = 1;
+  string file_name = 2;
+  repeated Chunk Chunks  = 3;
+  message Chunk  {
+    string chunk_text = 3;
+    int32 start_byte = 4;
+    int32 end_byte = 5;
+    float simillarity = 6; 
   }
 }
 
@@ -89,6 +126,7 @@ message ChatMessage {
   string role = 1;
   string content = 2;
   string message_id = 3;
+  repeated RAGDocumentReference references = 4; 
 }
 
 message GetChatListRequest {

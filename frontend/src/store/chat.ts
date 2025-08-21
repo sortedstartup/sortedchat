@@ -21,6 +21,9 @@ import {
   GenerateChatNameRequest,
   BranchAChatRequest,
   ListChatBranchRequest,
+  RAGDocumentReference as DocumentReference, // Alias for backward compatibility
+  RAGDocumentReferenceRequest,
+  RAGDocumentReference,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 
@@ -37,6 +40,21 @@ export const $currentChatMessages = atom<{
   error: string | null;
 }>({
   data: undefined,
+  loading: false,
+  error: null,
+});
+
+// Add new stores for document references
+export const $currentDocumentReferences = atom<DocumentReference[]>([]);
+export const $showDocumentReferences = atom<boolean>(false);
+
+// Store for detailed RAG document references
+export const $ragDocumentDetails = atom<{
+  data: RAGDocumentReference | null;
+  loading: boolean;
+  error: string | null;
+}>({
+  data: null,
   loading: false,
   error: null,
 });
@@ -61,6 +79,26 @@ export const fetchChatMessages = async (chatId: string) => {
       loading: false,
       error: null,
     });
+
+    // Extract document references from chat history
+    const allReferences: DocumentReference[] = [];
+    if (res.history) {
+      res.history.forEach(message => {
+        if (message.references && message.references.length > 0) {
+          allReferences.push(...message.references);
+        }
+      });
+    }
+    
+    // Set document references if any exist
+    if (allReferences.length > 0) {
+      $currentDocumentReferences.set(allReferences);
+      $showDocumentReferences.set(true);
+    } else {
+      $currentDocumentReferences.set([]);
+      $showDocumentReferences.set(false);
+    }
+
   } catch (error) {
     console.error("Failed to fetch chat messages:", error);
     $currentChatMessages.set({
@@ -70,19 +108,6 @@ export const fetchChatMessages = async (chatId: string) => {
     });
   }
 };
-
-// Auto-fetch when chat ID changes
-$currentChatId.listen((newChatId) => {
-  if (newChatId) {
-    fetchChatMessages(newChatId);
-  } else {
-    $currentChatMessages.set({
-      data: undefined,
-      loading: false,
-      error: null,
-    });
-  }
-});
 
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
@@ -115,7 +140,6 @@ export const createNewChat = async (projectId?: string) => {
   return response.chat_id;
 };
 
-
 export const $projectChatList = atom<ChatInfo[]>([]);   
 export const getChatList = (projectId?: string) => {
   const requestObj: GetChatListRequest = projectId
@@ -132,8 +156,6 @@ const isFirstMessageInChat = (): boolean => {
   return !currentState.data || currentState.data.length === 0;
 };
 
-
-
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
@@ -143,6 +165,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
 
   let assistantResponse = "";
   let messageId = "";
+  let currentChatReferences: any[] = []; // Track references for this specific chat
 
   if (isFirstMessage || isNewlyBranched) {
       generateChatName(msg);
@@ -150,7 +173,6 @@ export const doChat = (msg: string,projectId: string | undefined) => {
         $isNewlyBranched.set(false);
       }
     }
-
 
   // grpc call
   const stream = chat.Chat(
@@ -170,6 +192,28 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
       console.log('Received message ID:', messageId);
+    } else if (res.has_document_reference) {
+      const docRefList = res.document_reference;
+      
+      if (docRefList.summary) {
+        for (const summary of docRefList.summary) {
+          
+          const placeholderRef = {
+            doc_id: summary.doc_id,
+            file_name: summary.file_name,
+            chunk_text: `${summary.chunkCount} chunks available`,
+            start_byte: 0,
+            end_byte: 0
+          };
+          
+          currentChatReferences.push(placeholderRef);
+        }
+      }
+      
+      // Update the store for real-time display
+      $currentDocumentReferences.set([...currentChatReferences]);
+      $showDocumentReferences.set(true);
+      
     }
   });
 
@@ -178,10 +222,12 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       role: "user",
       content: msg,
     });
+    
     const assistantMessage = ChatMessage.fromObject({
       role: "assistant",
       content: assistantResponse,
       message_id: messageId,
+      references: currentChatReferences, // Add references to the assistant message
     });
 
     addMessageToHistory(userMessage);
@@ -189,6 +235,11 @@ export const doChat = (msg: string,projectId: string | undefined) => {
 
     $streamingMessage.set("");
     $currentChatMessage.set("");
+    
+    // Log all document references for this chat
+    if (currentChatReferences.length > 0) {
+      console.log('Document references for this chat:', currentChatReferences);
+    }
   });
 
   stream.on("error", (err: Error) => {
@@ -197,6 +248,16 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     $currentChatMessage.set("");
   });
 };
+
+// Add helper functions to control document references visibility
+export const hideDocumentReferences = () => {
+  $showDocumentReferences.set(false);
+};
+
+export const showDocumentReferencesPanel = () => {
+  $showDocumentReferences.set(true);
+};
+
 export const $chatName = atom<string>("");
 export const generateChatName = async (msg: string) => {
   try{
@@ -225,11 +286,6 @@ $chatName.listen(() => {
   }
 });
 
-$currentChatId.listen((_newValue, _oldValue) => {
-  $streamingMessage.set("");
-  $currentChatMessage.set("");
-});
-
 // load chat history of first use
 onMount($chatList, () => {
   getChatList();
@@ -240,7 +296,7 @@ onMount($chatList, () => {
 });
 
 export const $availableModels = atom<ModelListInfo[]>([]);
-export const $selectedModel = atom<string>("gpt-4.1");
+export const $selectedModel = atom<string>("gpt-5-nano");
 
 export const fetchAvailableModels = async () => {
   try {
@@ -282,9 +338,8 @@ export const getSearchResults = async () => {
     console.error("failed", err);
   }
 };
-// -- search --
-// -- Project --
 
+// -- Project --
 export const $currentProject = atom<string>("");
 export const $projectList = atom<Project[]>([]);
 export const $currentProjectId = atom<string>("");
@@ -304,8 +359,10 @@ export const createProject = async (
     );
     $currentProjectId.set(response.project_id);
     await getProjectList();
+    return response.project_id;
   } catch (error) {
     console.error("failed", error);
+    throw error;
   }
 };
 
@@ -336,7 +393,6 @@ onMount($projectList, () => {
   };
 });
 
-
 export const $documents = atom<Document[]>([]);
 
 export async function fetchDocuments(projectId: string) {
@@ -352,6 +408,7 @@ export async function fetchDocuments(projectId: string) {
     $documents.set([]);
   }
 }
+
 $currentProjectId.listen((projectId) => {
   if (typeof projectId === "string" && projectId != "") {
     fetchDocuments(projectId);
@@ -371,8 +428,10 @@ $currentProjectId.listen((newProjectId) => {
     $chatList.set([]);
   }
 });
+
 export const $isErrorDocs = atom<boolean>(false);
 export const $isPolling = atom<boolean>(false);
+
 $documents.listen((documents) => {
   const hasErrorDocs = documents.some(doc => doc.embedding_status === 2);
   $isErrorDocs.set(hasErrorDocs);
@@ -384,7 +443,6 @@ $documents.listen((documents) => {
     }
   }
 });
-
 
 export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<String> => {
   try {
@@ -418,7 +476,7 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
   }
 }
 
-export const $isNewlyBranched = atom<boolean>(false); //will change this logic 
+export const $isNewlyBranched = atom<boolean>(false);
 
 export async function BranchChat(branch_from_message_id: string) {
   try {
@@ -435,7 +493,6 @@ export async function BranchChat(branch_from_message_id: string) {
       branch_name: ""
     }), {});
 
-    
     if (res.new_chat_id) {
       toast.success("Chat branched successfully!");
       console.log('Setting isNewlyBranched to true for chat:', res.new_chat_id);
@@ -467,9 +524,72 @@ export async function ListChatBranch (chatId: string) {
 }
 
 $currentChatId.listen((newChatId) => {
+  $streamingMessage.set("");
+  $currentChatMessage.set("");
+
+  // fetch branch chat list
   if (newChatId) {
     ListChatBranch(newChatId);
   } else {
     $listChatBranch.set([]);
   }
+
+  // fetch chat messages
+  if (newChatId) {
+    fetchChatMessages(newChatId);
+  } else {
+    $currentChatMessages.set({
+      data: undefined,
+      loading: false,
+      error: null,
+    });
+    // Clear document references when no chat is selected
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
+  }
 });
+
+// Function to fetch detailed RAG document references for a message
+export const fetchRAGDocumentReference = async (messageId: string, projectId: string, docId?: string) => {
+  if (!messageId) {
+    console.error("Message ID is required to fetch RAG document references");
+    return;
+  }
+
+  $ragDocumentDetails.set({
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  try {
+    console.log('Fetching RAG document reference for message:', messageId, 'project:', projectId, 'docId:', docId);
+    const request = RAGDocumentReferenceRequest.fromObject({
+      message_id: messageId,
+      project_id: projectId,
+      docId: docId || "", // Optional filter by specific document
+    });
+
+    const response = await chat.GetRAGDocumentReference(request, {});
+    
+    $ragDocumentDetails.set({
+      data: response.reference || null,
+      loading: false,
+      error: null,
+    });
+
+    return response.reference;
+  } catch (error) {
+    console.error('Failed to fetch RAG document reference:', error);
+    const errorMessage = (error as Error).message || 'Failed to fetch document reference';
+    
+    $ragDocumentDetails.set({
+      data: null,
+      loading: false,
+      error: errorMessage,
+    });
+
+    toast.error(`Failed to fetch document details: ${errorMessage}`);
+    throw error;
+  }
+};

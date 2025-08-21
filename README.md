@@ -37,3 +37,6 @@ export POSTGRES_PASSWORD=dev_password
 export POSTGRES_DATABASE=sortedchat_dev
 export POSTGRES_PORT=5432
 export POSTGRES_USERNAME=postgres
+
+# Connect to postgres manually
+psql -h database -p 5432 -U postgres -W postgres

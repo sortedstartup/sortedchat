@@ -272,17 +272,19 @@ func (s *SQLiteDAO) SaveRAGChunkEmbedding(chunkID string, vector []float64) erro
 func (s *SQLiteDAO) GetTopSimilarRAGChunks(userID string, embedding string, projectID string) ([]RAGChunkRow, error) {
 	var chunks []RAGChunkRow
 	err := s.db.Select(&chunks, `
-        SELECT id,project_id,docs_id,start_byte,end_byte
-        FROM rag_chunks
-        WHERE project_id = ? AND user_id = ?
-        AND id IN (
-            SELECT id
-            FROM rag_chunks_vec
-            WHERE embedding MATCH ?
-            ORDER BY distance
-            LIMIT 2
-        )
-    `, projectID, userID, embedding)
+			SELECT 
+			rc.id,
+			rc.project_id,
+			rc.docs_id,
+			rc.start_byte,
+			rc.end_byte,
+			vec_distance_cosine(rcv.embedding, ?) AS similarity
+			FROM rag_chunks rc
+			JOIN rag_chunks_vec rcv ON rc.id = rcv.id
+			WHERE rc.project_id = ? AND rc.user_id = ?
+			ORDER BY similarity
+			LIMIT 2
+    `, embedding, projectID, userID)
 	return chunks, err
 }
 
@@ -374,4 +376,26 @@ func (s *SQLiteSettingsDAO) SetSettingValue(settingName string, settingValue str
 		return fmt.Errorf("failed to upsert settings: %w", err)
 	}
 	return nil
+}
+
+// GetChatMessageByID retrieves a specific chat message by its ID
+func (s *SQLiteDAO) GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error) {
+	var message ChatMessageRow
+	err := s.db.Get(&message, `
+		SELECT role, content, id, COALESCE(document_references, '') as document_references 
+		FROM chat_messages 
+		WHERE id = ? AND user_id = ?`, messageID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &message, nil
+}
+
+// UpdateChatMessageDocumentReferences updates the document references for a specific message
+func (s *SQLiteDAO) UpdateChatMessageDocumentReferences(userID string, messageID string, documentReferences string) error {
+	_, err := s.db.Exec(`
+		UPDATE chat_messages 
+		SET document_references = ? 
+		WHERE id = ? AND user_id = ?`, documentReferences, messageID, userID)
+	return err
 }

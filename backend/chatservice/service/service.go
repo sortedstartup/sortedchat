@@ -199,6 +199,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	var fullResponse strings.Builder
 	var inputTokens, outputTokens int
 
+	// Streaming response from LLM API
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -270,6 +271,9 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				referencesJSON = string(referencesBytes)
 			}
 		}
+
+		// TODO: we dont save streaming response, if stream is killed we loose the message.
+		// TODO : scope for optimization, can be 1 sql call internally
 		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)

@@ -356,13 +356,13 @@ func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, queryEmbedding strin
 	}
 
 	query := `
-		SELECT id, project_id, docs_id, start_byte, end_byte,(embedding <=> $1) AS similarity
+		SELECT id, project_id, docs_id, start_byte, end_byte,1-(embedding <=> $1) AS similarity
     FROM rag_chunks 
     WHERE user_id = $2 
       AND project_id = $3
       AND embedding IS NOT NULL
     ORDER BY embedding <=> $1  -- Cosine distance (smaller = more similar)
-    LIMIT 10`
+    LIMIT 2`
 
 	var chunks []RAGChunkRow
 	rows, err := p.db.Query(query, queryEmbedding, userID, projectID)

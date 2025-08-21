@@ -63,14 +63,14 @@ function ChunksDisplay({ chunks }: { chunks: any[] | undefined }) {
   }
 
   return (
-    <div className="max-h-[60vh] overflow-auto space-y-4">
+    <div className="max-h-[60vh] overflow-auto space-y-4 w-full">
       {chunks.map((chunk: any, index: number) => {
         const isExpanded = expandedChunks.has(index);
         const chunkText = chunk.chunk_text || 'No content available';
-        const lines = chunkText.split('\n');
-        const shouldTruncate = lines.length > 4;
+        const words = chunkText.split(/\s+/);
+        const shouldTruncate = words.length > 20;
         const displayText = shouldTruncate && !isExpanded 
-          ? lines.slice(0, 4).join('\n') 
+          ? words.slice(0, 20).join(' ') 
           : chunkText;
 
         return (
@@ -94,7 +94,7 @@ function ChunksDisplay({ chunks }: { chunks: any[] | undefined }) {
                 onClick={() => toggleChunk(index)}
                 className="mt-2 text-xs text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
               >
-                {isExpanded ? 'Show less' : `Show more (${lines.length - 4} more lines)`}
+                {isExpanded ? 'Show less' : 'Show more'}
               </button>
             )}
           </div>
@@ -392,7 +392,7 @@ export function Chat() {
 
       {/* RAG Document Details Dialog */}
       <Dialog open={!!selectedDocumentForDetails} onOpenChange={() => setSelectedDocumentForDetails(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+        <DialogContent className="max-w-[60vw] max-h-[80vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="text-lg">
               <FileText className="inline h-5 w-5 mr-2" />
@@ -415,7 +415,6 @@ export function Chat() {
           {ragDocumentDetails.data && (
             <div>
               <div className="text-sm text-gray-500 mb-4">
-                {/* Requested: {selectedDocumentForDetails?.docId} | Received: {ragDocumentDetails.data.doc_id} */}
                 <br />
                 Showing {ragDocumentDetails.data.Chunks?.length || 0} chunk{(ragDocumentDetails.data.Chunks?.length || 0) > 1 ? 's' : ''} used to generate this response
               </div>

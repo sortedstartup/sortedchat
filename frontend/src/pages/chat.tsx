@@ -247,7 +247,7 @@ export function Chat() {
                 >
                   <FileText className="h-3 w-3 mr-1" />
                   {docGroup.file_name}
-                  {docGroup.chunks.length > 1 && (
+                  {docGroup.chunks.length > 0 && (
                     <span className="ml-1 bg-blue-200 text-blue-800 px-1 rounded text-xs">
                       {docGroup.chunks.length}
                     </span>

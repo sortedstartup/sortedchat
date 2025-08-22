@@ -117,11 +117,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("failed to fetch message history: %v", err)
 	}
 
-	err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, ragEnabled)
-	if err != nil {
-		return fmt.Errorf("failed to insert user message: %v", err)
-	}
-
 	userMessage := req.Text
 	var ragChunks []rag.Result
 
@@ -186,12 +181,12 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		} else {
 			referencesJSON = string(referencesBytes)
 		}
-		_, err = s.dao.AddChatMessageWithTokens(userID, chatId, "user", req.Text, "", 0, 0, referencesJSON)
+		_, err = s.dao.AddChatMessageWithTokens(userID, chatId, "user", req.Text, "", 0, 0, referencesJSON, ragEnabled)
 		if err != nil {
 			return fmt.Errorf("failed to insert user message with references: %v", err)
 		}
 	} else {
-		err = s.dao.AddChatMessage(userID, chatId, "user", req.Text)
+		err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, ragEnabled)
 		if err != nil {
 			return fmt.Errorf("failed to insert user message: %v", err)
 		}

@@ -58,7 +58,8 @@ export function Project() {
     if (projectId) {
       $currentProjectId.set(projectId);
       fetchDocuments(projectId);
-      setRagEnabledForProject(true); // Set RAG enabled for the project by default
+     
+      setRagEnabledForProject(true);
     }
   }, [projectId]);
 

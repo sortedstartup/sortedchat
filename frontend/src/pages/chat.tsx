@@ -41,10 +41,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"; // Add Dialog imports
-import type { RAGDocumentReference } from "proto/chatservice";
+import type { RAGDocumentReference, RAGDocumentReferenceChunk } from "proto/chatservice";
 
 // Collapsible Chunks Display Component
-function ChunksDisplay({ chunks }: { chunks: any[] | undefined }) {
+function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undefined }) {
   const [expandedChunks, setExpandedChunks] = useState<Set<number>>(new Set());
 
   const toggleChunk = (index: number) => {
@@ -67,7 +67,7 @@ function ChunksDisplay({ chunks }: { chunks: any[] | undefined }) {
 
   return (
     <div className="max-h-[60vh] overflow-auto space-y-4 w-full">
-      {chunks.map((chunk: any, index: number) => {
+      {chunks.map((chunk: RAGDocumentReferenceChunk, index: number) => {
         const isExpanded = expandedChunks.has(index);
         const chunkText = chunk.chunk_text || 'No content available';
         const words = chunkText.split(/\s+/);

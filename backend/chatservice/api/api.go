@@ -300,6 +300,10 @@ func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBra
 	}, nil
 }
 
+func (s *ChatServiceAPI) GetRAGDocumentReference(ctx context.Context, req *pb.RAGDocumentReferenceRequest) (*pb.RAGDocumentReferenceResponse, error) {
+	return s.service.GetRAGDocumentReference(ctx, HARDCODED_USER_ID, req)
+}
+
 func (s *ChatServiceAPI) Init(config *db.Config) {
 	switch config.Database.Type {
 	case db.DatabaseTypeSQLite:

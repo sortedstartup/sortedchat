@@ -7,21 +7,43 @@ services:
     # ports:
     #   - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:password@database:5432/devdb
+      - POSTGRES_DATABASE=devdb
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=database
+      - DB_TYPE=postgres
     command: sleep infinity
     depends_on:
       - database
 
   database:
-    image: postgres:latest
+    image: pgvector/pgvector:pg17
+    # To configure correct environment variables refere to this page : https://hub.docker.com/_/postgres
     environment:
-      POSTGRES_DB: devdb
+      POSTGRES_DATABASE: devdb
+      POSTGRES_DB: devdb 
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: postgres
     # ports:
     #   - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  ollama:
+    image: ollama/ollama
+    # ports:
+    #   - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    entrypoint: >
+      /bin/sh -c "
+        ollama serve &
+        sleep 5 &&
+        ollama pull nomic-embed-text &&
+        wait
+      "
+
 volumes:
   postgres_data:
+  ollama_data:

@@ -99,10 +99,18 @@ export function AppSidebar() {
   };
 
   const handleCreateProject = async () => {
-    await createProject(projectName, "description");
-    await getProjectList();
-    setProjectName("");
-    setIsProjectDialogOpen(false);
+    try {
+      const projectId = await createProject(projectName, "description");
+      await getProjectList();
+      setProjectName("");
+      setIsProjectDialogOpen(false);
+      // Navigate to the newly created project
+      if (projectId) {
+        navigate(`/project/${projectId}`);
+      }
+    } catch (error) {
+      console.error("Failed to create project:", error);
+    }
   };
 
   const handleCancelProject = () => {

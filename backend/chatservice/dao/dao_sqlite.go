@@ -339,6 +339,45 @@ func (s *SQLiteDAO) GetChatBranches(userID string, chatId string, isMain bool) (
 	return chats, nil
 }
 
+func (s *SQLiteDAO) DeleteDocument(userID string, projectID string, docID string) error {
+	// Start a transaction to ensure all operations succeed or fail together
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Delete from rag_chunks_vec first (embeddings)
+	_, err = tx.Exec("DELETE FROM rag_chunks_vec WHERE id IN (SELECT id FROM rag_chunks WHERE project_id = ? AND docs_id = ? AND user_id = ?)", projectID, docID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete from rag_chunks_vec: %w", err)
+	}
+
+	// Delete from rag_chunks (document chunks)
+	_, err = tx.Exec("DELETE FROM rag_chunks WHERE project_id = ? AND docs_id = ? AND user_id = ?", projectID, docID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete from rag_chunks: %w", err)
+	}
+
+	// Delete from project_docs (document metadata)
+	_, err = tx.Exec("DELETE FROM project_docs WHERE project_id = ? AND docs_id = ? AND user_id = ?", projectID, docID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete from project_docs: %w", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 type SQLiteSettingsDAO struct {
 	db *sqlx.DB
 }

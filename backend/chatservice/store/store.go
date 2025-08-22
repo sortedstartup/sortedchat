@@ -82,3 +82,8 @@ func (d *DiskObjectStore) GetObject(ctx context.Context, objectID string) (strin
 	// Return objectID as name since we don't store original names
 	return objectID, file, nil
 }
+
+func (d *DiskObjectStore) DeleteObject(ctx context.Context, objectID string) error {
+	objectPath := filepath.Join(d.basePath, "objects", objectID)
+	return os.Remove(objectPath)
+}

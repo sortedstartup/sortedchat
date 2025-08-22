@@ -6,6 +6,7 @@ import {
   Eye,
   MessageSquare,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
@@ -33,6 +34,7 @@ import {
   $ragEnabled, // Add RAG enabled store
   toggleRagEnabled, // Add toggle function
   setRagEnabledForProject, // Add set function
+  deleteDocument,
 } from "@/store/chat";
 import { useNavigate, useParams } from "react-router-dom";
 import { Embedding_Status } from "../../proto/chatservice";
@@ -94,6 +96,14 @@ export function Project() {
 
   const handleDocumentsDialogClose = (open: boolean) => {
     setIsDocumentsDialogOpen(open);
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    try {
+      await deleteDocument(currentProjectId.toString(), docId);
+    } catch (error) {
+      console.error("Error deleting document:", error);
+    }
   };
 
   const handleRetryEmbedding = async () => {
@@ -171,15 +181,7 @@ export function Project() {
                         key={doc.id || index}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                       >
-                        <div
-                          className="flex items-center gap-3 flex-1 cursor-pointer"
-                          onClick={() =>
-                            window.open(
-                              `${API_UPLOAD_URL}/documents/${doc.docs_id}`,
-                              "_blank"
-                            )
-                          }
-                        >
+                        <div className="flex items-center gap-3 flex-1 cursor-pointer">
                           <FileText className="size-5 text-orange-500" />
                           <div className="flex flex-col items-start">
                             <span className="font-medium">{doc.file_name}</span>
@@ -198,8 +200,27 @@ export function Project() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              window.open(
+                                `${API_UPLOAD_URL}/documents/${doc.docs_id}`,
+                                "_blank"
+                              );
+                            }}
+                          >
                             <Eye className="size-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              handleDeleteDocument(doc.docs_id);
+                            }}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="size-4" />
                           </Button>
                         </div>
                       </div>

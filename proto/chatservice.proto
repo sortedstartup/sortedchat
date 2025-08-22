@@ -15,6 +15,7 @@ service SortedChat {
     rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
 
     rpc GetRAGDocumentReference (RAGDocumentReferenceRequest) returns (RAGDocumentReferenceResponse);
+    rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse);
 
     rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
     rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
@@ -23,6 +24,14 @@ service SortedChat {
 
     rpc BranchAChat(BranchAChatRequest) returns (BranchAChatResponse);
     rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
+}
+message DeleteDocumentRequest {
+  string project_id = 1;
+  string doc_id = 2;
+}
+
+message DeleteDocumentResponse {
+  string message = 1;
 }
 
 message RAGDocumentReferenceRequest{

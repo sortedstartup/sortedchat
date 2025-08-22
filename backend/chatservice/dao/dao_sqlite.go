@@ -67,7 +67,7 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 // GetChatMessages retrieves all messages for a given chat
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled FROM chat_messages WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
 	return messages, err
 }
 

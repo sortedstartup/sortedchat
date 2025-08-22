@@ -301,7 +301,11 @@ func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBra
 }
 
 func (s *ChatServiceAPI) GetRAGDocumentReference(ctx context.Context, req *pb.RAGDocumentReferenceRequest) (*pb.RAGDocumentReferenceResponse, error) {
-	return s.service.GetRAGDocumentReference(ctx, HARDCODED_USER_ID, req)
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.service.GetRAGDocumentReference(ctx, userID, req)
 }
 
 func (s *ChatServiceAPI) Init(config *db.Config) {

@@ -136,14 +136,13 @@ jobs:
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-arm64-packages.txt') }}
 
-      - name: Enable arm64 multiarch
-        if: matrix.os == 'linux' && matrix.arch == 'arm64'
-        run: |
-          sudo dpkg --add-architecture arm64
-        
       - name: Pin apt architectures to right mirrors
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |
+            set -euo pipefail
+            sudo dpkg --add-architecture arm64
+        
+            # 1) Add deb822 sources with explicit Architectures=
             sudo tee /etc/apt/sources.list.d/ubuntu-arm64.sources >/dev/null <<'EOF'
             Types: deb
             URIs: http://ports.ubuntu.com/ubuntu-ports
@@ -171,9 +170,18 @@ jobs:
             Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
             EOF
         
-            sudo mv /etc/apt/sources.list /etc/apt/sources.list.disabled || true
-            sudo apt-get update -o Acquire::Retries=3
+            # 2) Disable ONLY Ubuntu legacy .list files so they don't serve arm64
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list; do
+              if [ -f "$f" ] && grep -Eq '(security|archive|azure\.archive)\.ubuntu\.com|/ubuntu( |/)' "$f"; then
+                sudo mv "$f" "$f.disabled"
+              fi
+            done
         
+            # (Optional) Show what's active for debugging
+            echo "=== Active sources ==="
+            grep -R . /etc/apt/sources.list.d --include="*.sources" -n || true
+        
+            sudo apt-get update -o Acquire::Retries=3  
       
       - name: Setup ARM64 cross-compilation environment
         if: matrix.os == 'linux' && matrix.arch == 'arm64'

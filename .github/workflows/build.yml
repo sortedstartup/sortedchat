@@ -40,6 +40,10 @@ jobs:
           if-no-files-found: error
           retention-days: 10
 
+      - name: Clean the UI build
+        working-directory: frontend
+        run: rm -rf dist
+
       - name: Build frontend in production mode
         working-directory: frontend
         run: pnpm run build --mode production
@@ -80,6 +84,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Ensure public directory exists
+        run: |
+          mkdir -p backend/mono/frontend-build-wails/dist
+          mkdir -p backend/mono/public
+
       - name: Download frontend build (production)
         uses: actions/download-artifact@v4
         with:
@@ -92,10 +101,6 @@ jobs:
           name: frontend-build-standalone
           path: backend/mono/frontend-build-wails/dist
 
-      - name: Ensure public directory exists
-        run: |
-          mkdir -p backend/mono/frontend-build-wails/dist
-          mkdir -p backend/mono/public
 
       - name: Cache Go modules
         uses: actions/cache@v4

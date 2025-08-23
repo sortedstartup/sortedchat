@@ -188,11 +188,10 @@ jobs:
 
             # GUI deps for target (arm64)
             sudo apt-get install -y \
-              libgtk-3-dev:arm64 \
-              libwebkit2gtk-4.1-dev:arm64 \
-              libayatana-appindicator3-dev:arm64 \
-              librsvg2-dev:arm64 \
-              libglib2.0-dev:arm64 libglib2.0-dev-bin:arm64
+                gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config \
+                libgtk-3-dev:arm64 libwebkit2gtk-4.1-dev:arm64 \
+                libayatana-appindicator3-dev:arm64 librsvg2-dev:arm64 \
+                libglib2.0-dev:arm64 libglib2.0-dev-bin python3-packaging
 
       - name: Set up Go
         uses: actions/setup-go@v5

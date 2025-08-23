@@ -32,13 +32,26 @@ jobs:
         working-directory: frontend
         run: pnpm run build --mode standalone
 
-      - name: Upload frontend build
+      - name: Upload frontend build (standalone)
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-build
+          name: frontend-build-standalone
           path: frontend/dist/
           if-no-files-found: error
           retention-days: 10
+
+      - name: Build frontend in production mode
+        working-directory: frontend
+        run: pnpm run build --mode production
+
+      - name: Upload frontend build (production)
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-production
+          path: frontend/dist/
+          if-no-files-found: error
+          retention-days: 10
+
 
   build-go:
     name: Build Go backend
@@ -67,16 +80,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download frontend build
+      - name: Download frontend build (production)
         uses: actions/download-artifact@v4
         with:
-          name: frontend-build
+          name: frontend-build-production
           path: backend/mono/public
 
-      - name: Download frontend build to Wails directory
+      - name: Download frontend build (standalone) to Wails directory
         uses: actions/download-artifact@v4
         with:
-          name: frontend-build
+          name: frontend-build-standalone
           path: backend/mono/frontend-build-wails/dist
 
       - name: Ensure public directory exists

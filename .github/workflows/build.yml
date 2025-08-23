@@ -91,10 +91,10 @@ jobs:
           name: frontend-build-production
           path: backend/mono/public
 
-      - name: Download frontend build (production) to Wails directory
+      - name: Download frontend build (standalone) to Wails directory
         uses: actions/download-artifact@v4
         with:
-          name: frontend-build-production
+          name: frontend-build-standalone
           path: backend/mono/frontend-build-wails/dist
 
 
@@ -141,32 +141,31 @@ jobs:
         run: |
           set -euo pipefail
 
-          sudo dpkg --add-architecture arm64
-
           # 0) Disable everything we don't control (safe even if empty)
           sudo mkdir -p /etc/apt/disabled
           sudo mv /etc/apt/sources.list.d/* /etc/apt/disabled/ 2>/dev/null || true
           [ -f /etc/apt/sources.sources ] && sudo mv /etc/apt/sources.sources /etc/apt/disabled/ || true
+          
+          sudo dpkg --add-architecture arm64
 
-          # 1) Replace /etc/apt/sources.list with clean amd64-only Ubuntu mirrors
+          # Canonical mirrors for both arches
           sudo tee /etc/apt/sources.list >/dev/null <<'EOF'
           deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
           deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
           deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
           deb [arch=amd64] http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+
+          deb [arch=arm64] http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
+          deb [arch=arm64] http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
+          deb [arch=arm64] http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+          deb [arch=arm64] http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
           EOF
 
-          # 2) Add arm64-only Ubuntu Ports
-          sudo tee /etc/apt/sources.list.d/arm64-ports.list >/dev/null <<'EOF'
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-backports main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse
-          EOF
 
           # 3) refresh indexes
           sudo apt-get update
 
+          sudo apt-get install -y libglib2.0-dev-bin:arm64 libglib2.0-dev-bin-linux:arm64
           
           # Install cross-compiler and build tools
           sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)

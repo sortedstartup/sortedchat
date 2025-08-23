@@ -135,7 +135,19 @@ jobs:
             /var/cache/apt/archives/*.deb
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-arm64-packages.txt') }}
-            
+
+      - name: Add arm64 ports source
+        if: matrix.os == 'linux' && matrix.arch == 'arm64'
+        run: |
+          sudo tee /etc/apt/sources.list.d/ubuntu-arm64.sources >/dev/null <<'EOF'
+          Types: deb
+          URIs: http://ports.ubuntu.com/ubuntu-ports
+          Suites: noble noble-updates noble-backports noble-security
+          Components: main restricted universe multiverse
+          Architectures: arm64
+          EOF
+          sudo apt-get update
+        
       - name: Setup ARM64 cross-compilation environment
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |

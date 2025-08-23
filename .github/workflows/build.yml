@@ -148,7 +148,7 @@ jobs:
           
           sudo dpkg --add-architecture arm64
 
-          # Canonical mirrors for both arches
+          # Canonical mirrors for both arches (no ports.ubuntu.com)
           sudo tee /etc/apt/sources.list >/dev/null <<'EOF'
           deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
           deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
@@ -161,15 +161,14 @@ jobs:
           deb [arch=arm64] http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
           EOF
 
-
           # 3) refresh indexes
           sudo apt-get update
 
-          sudo apt-get install -y libglib2.0-dev-bin:arm64 libglib2.0-dev-bin-linux:arm64
-          
+          # Install GLib split dev tools first (fix unmet deps)
+          sudo apt-get install -y libglib2.0-dev:arm64 libglib2.0-dev-bin:arm64 libglib2.0-dev-bin-linux:arm64
+
           # Install cross-compiler and build tools
           sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
-          
 
       - name: Set up Go
         uses: actions/setup-go@v5

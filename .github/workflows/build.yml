@@ -40,10 +40,6 @@ jobs:
           if-no-files-found: error
           retention-days: 10
 
-      - name: Clean the UI build
-        working-directory: frontend
-        run: rm -rf dist
-
       - name: Build frontend in production mode
         working-directory: frontend
         run: pnpm run build --mode production
@@ -95,10 +91,10 @@ jobs:
           name: frontend-build-production
           path: backend/mono/public
 
-      - name: Download frontend build (standalone) to Wails directory
+      - name: Download frontend build (production) to Wails directory
         uses: actions/download-artifact@v4
         with:
-          name: frontend-build-standalone
+          name: frontend-build-production
           path: backend/mono/frontend-build-wails/dist
 
 

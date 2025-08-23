@@ -204,7 +204,6 @@ func (f *FakeOAuthProvider) oidcDiscoveryHandler(w http.ResponseWriter, r *http.
 }
 
 func (f *FakeOAuthProvider) jwksHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Info("jwksHandler")
 
 	// Convert RSA public key to JWK format with proper base64url encoding
 	// Ensure N is correctly encoded (should be big-endian)

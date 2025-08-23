@@ -196,7 +196,7 @@ func (s *AuthService) OAuthCallbackHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Debug the raw ID token before verification
-	slog.Info("Attempting to verify ID token", "rawIDToken_length", len(rawIDToken), "rawIDToken_prefix", rawIDToken[:min(100, len(rawIDToken))])
+	slog.Debug("Attempting to verify ID token", "rawIDToken_length", len(rawIDToken), "rawIDToken_prefix", rawIDToken[:min(100, len(rawIDToken))])
 
 	// Verify ID token (signature, iss, aud, exp)
 	idToken, err := s.verifier.Verify(ctx, rawIDToken)
@@ -217,7 +217,7 @@ func (s *AuthService) OAuthCallbackHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Success case - log it!
-	slog.Info("🎉 ID token verification SUCCEEDED!", "subject", idToken.Subject, "issuer", idToken.Issuer)
+	slog.Debug("ID token verification SUCCEEDED!", "subject", idToken.Subject, "issuer", idToken.Issuer)
 	// Nonce binding check (recommended)
 	if idToken.Nonce != "" { // && idToken.Nonce != tmp.nonce {
 		slog.Error("nonce mismatch", "nonce", idToken.Nonce)

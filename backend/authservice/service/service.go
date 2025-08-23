@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -244,8 +245,16 @@ func (s *AuthService) OAuthCallbackHandler(w http.ResponseWriter, r *http.Reques
 	oAuthUserID := claims.Sub
 	roles := "user" // Convert to string for DAO
 	isFederated := true
+	email := claims.Email
 
-	userID, err := s.userService.CreateUserIfNotExists(claims.Email, roles, oAuthProvider, oAuthUserID, isFederated)
+	// Check if email is in the allowlist
+	if !isEmailAllowed(email) {
+		slog.Warn("Login attempt from unauthorized email", "email", email)
+		http.Error(w, "Access denied: Your email is not authorized to access this application", http.StatusForbidden)
+		return
+	}
+
+	userID, err := s.userService.CreateUserIfNotExists(email, roles, oAuthProvider, oAuthUserID, isFederated)
 	if err != nil {
 		slog.Error("user creation failed", "error", err)
 		http.Error(w, "user creation failed", http.StatusInternalServerError)
@@ -374,4 +383,27 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// isEmailAllowed checks if the given email is in the allowlist from ALLOWED_LOGIN_EMAILS env variable
+// The environment variable should contain comma-separated email addresses
+// If ALLOWED_LOGIN_EMAILS is not set or empty, all emails are allowed
+func isEmailAllowed(email string) bool {
+	allowedEmails := os.Getenv("ALLOWED_LOGIN_EMAILS")
+
+	// If no allowlist is configured, allow all emails
+	if allowedEmails == "" {
+		return true
+	}
+
+	// Split the comma-separated list and check each email
+	emails := strings.Split(allowedEmails, ",")
+	for _, allowedEmail := range emails {
+		// Trim whitespace and compare (case-insensitive)
+		if strings.TrimSpace(strings.ToLower(allowedEmail)) == strings.ToLower(email) {
+			return true
+		}
+	}
+
+	return false
 }

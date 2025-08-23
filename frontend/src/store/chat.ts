@@ -26,8 +26,14 @@ import {
   RAGDocumentReference,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
+import { createAuthenticatedClientOptions } from "../lib/auth";
 
-var chat = new SortedChatClient(import.meta.env.VITE_API_URL);
+// Create chat client with JWT authentication
+var chat = new SortedChatClient(
+  import.meta.env.VITE_API_URL,
+  {},
+  createAuthenticatedClientOptions()
+);
 
 // --- stores ---
 export const $chatList = atom<ChatInfo[]>([]);

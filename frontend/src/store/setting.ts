@@ -8,8 +8,14 @@ import {
   SettingServiceClient,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
+import { createAuthenticatedClientOptions } from "../lib/auth";
 
-const client = new SettingServiceClient(import.meta.env.VITE_API_URL);
+// Create settings client with JWT authentication
+const client = new SettingServiceClient(
+  import.meta.env.VITE_API_URL,
+  {},
+  createAuthenticatedClientOptions()
+);
 
 export const $settings = atom<Settings>(new Settings({}));
 

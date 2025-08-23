@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"sortedstartup/authservice/service"
 )
@@ -11,12 +12,22 @@ type AuthServiceAPI struct {
 }
 
 func NewAuthServiceAPI(mux *http.ServeMux, service *service.AuthService) *AuthServiceAPI {
-	return &AuthServiceAPI{mux: mux, service: service}
+	return &AuthServiceAPI{
+		mux:     mux,
+		service: service,
+	}
 }
 
-func (a *AuthServiceAPI) Init() {
+func (a *AuthServiceAPI) initCore() {
 	a.mux.HandleFunc("/callback", a.service.OAuthCallbackHandler)
 	a.mux.HandleFunc("/login", a.loginHandler)
+	a.mux.HandleFunc("/oauth-config", a.oAuthConfigHandler)
+}
+
+func (a *AuthServiceAPI) oAuthConfigHandler(w http.ResponseWriter, r *http.Request) {
+	// Get the OAuth configuration from the service
+	config := a.service.GetOAuthConfigForFrontend()
+	json.NewEncoder(w).Encode(config)
 }
 
 func (a *AuthServiceAPI) loginHandler(w http.ResponseWriter, r *http.Request) {

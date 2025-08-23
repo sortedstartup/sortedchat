@@ -24,8 +24,7 @@ export function LoginPage() {
     try {
       // Get configuration from Vite environment variables
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URL || 
-                         `${window.location.origin}/api/authservice/callback`;
+      const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URL;
 
       if (!clientId) {
         setError('Google OAuth is not configured.');
@@ -43,7 +42,8 @@ export function LoginPage() {
         state: 'state', // In production, this should be a random value for CSRF protection
       });
 
-      const googleOAuthURL = `https://accounts.google.com/o/oauth2/v2/auth?${googleOAuthParams.toString()}`;
+      const googleOAuthURL = `${import.meta.env.VITE_GOOGLE_OAUTH_URL}?${googleOAuthParams.toString()}`;
+      // const googleOAuthURL = `https://accounts.google.com/o/oauth2/v2/auth?${googleOAuthParams.toString()}`;
       
       console.log('Redirecting to Google OAuth:', googleOAuthURL);
       

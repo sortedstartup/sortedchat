@@ -68,9 +68,20 @@ func main() {
 
 	// Adding Interceptors
 	// Create JWT validator
-	jwtSecret := []byte(os.Getenv("APP_JWT_SECRET"))
+	jwtSecret := os.Getenv("APP_JWT_SECRET")
 	issuer := os.Getenv("APP_ISSUER") // Should match your auth service issuer
-	validator := auth.NewJWTValidator(jwtSecret, issuer)
+
+	// Use build tag specific defaults
+	defaultJwtSecret, defaultIssuer := getJWTDefaults()
+	if jwtSecret == "" {
+		jwtSecret = defaultJwtSecret
+	}
+
+	if issuer == "" {
+		issuer = defaultIssuer
+	}
+
+	validator := auth.NewJWTValidator([]byte(jwtSecret), issuer)
 
 	// Create gRPC auth interceptor
 	authInterceptor := auth.NewGRPCAuthInterceptor(validator, true) // requireAuth = true

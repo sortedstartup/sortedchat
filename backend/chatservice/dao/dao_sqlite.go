@@ -59,15 +59,15 @@ func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) erro
 }
 
 // AddChatMessage adds a message to a chat
-func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string) error {
-	_, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id) VALUES (?, ?, ?, ?)", chatId, role, content, userID)
+func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) error {
+	_, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES (?, ?, ?, ?, ?)", chatId, role, content, userID, ragEnabled)
 	return err
 }
 
 // GetChatMessages retrieves all messages for a given chat
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references FROM chat_messages WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
 	return messages, err
 }
 
@@ -96,11 +96,11 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatI
 	return result, nil
 }
 
-func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string) (int64, error) {
+func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (int64, error) {
 	result, err := s.db.Exec(`
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		chatId, role, content, model, inputTokens, outputTokens, userID, references)
+		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references, rag_enabled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		chatId, role, content, model, inputTokens, outputTokens, userID, references, ragEnabled)
 	if err != nil {
 		return 0, err
 	}

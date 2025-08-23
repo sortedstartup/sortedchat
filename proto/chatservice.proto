@@ -71,11 +71,16 @@ message CreateChatResponse {
   string chat_id = 2;
 }
 
+message ProjectContext {
+  string project_id = 1;
+  bool rag_enabled = 2;
+}
+
 message ChatRequest {
     string text = 1;
     string chatId = 2;
     string model = 3;
-    string project_id = 4;
+    ProjectContext project_context = 4;
 }
 
 message ChatResponse {
@@ -126,7 +131,8 @@ message ChatMessage {
   string role = 1;
   string content = 2;
   string message_id = 3;
-  repeated RAGDocumentReference references = 4; 
+  repeated RAGDocumentReference references = 4;
+  bool rag_enabled = 5;
 }
 
 message GetChatListRequest {

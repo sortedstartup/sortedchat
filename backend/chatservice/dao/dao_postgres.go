@@ -90,15 +90,15 @@ func (p *PostgresDAO) SaveChatName(userID string, chatId string, name string) er
 }
 
 // AddChatMessage adds a message to a chat
-func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string) error {
-	_, err := p.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id) VALUES ($1, $2, $3, $4)", chatId, role, content, userID)
+func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) error {
+	_, err := p.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES ($1, $2, $3, $4, $5)", chatId, role, content, userID, ragEnabled)
 	return err
 }
 
 // GetChatMessages retrieves all messages for a given chat
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
+	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	return messages, err
 }
 
@@ -127,7 +127,7 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string) ([]*proto.Cha
 	return result, nil
 }
 
-func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string) (int64, error) {
+func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (int64, error) {
 	// PostgreSQL doesn't have LastInsertId(), so we use RETURNING
 	var messageId int64
 	var referencesValue interface{}
@@ -140,10 +140,10 @@ func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, rol
 	}
 
 	err := p.db.Get(&messageId, `
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references, rag_enabled)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id`,
-		chatId, role, content, model, inputTokens, outputTokens, userID, referencesValue)
+		chatId, role, content, model, inputTokens, outputTokens, userID, referencesValue, ragEnabled)
 	if err != nil {
 		return 0, err
 	}

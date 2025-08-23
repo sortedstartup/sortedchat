@@ -736,13 +736,103 @@ export class CreateChatResponse extends pb_1.Message {
         return CreateChatResponse.deserialize(bytes);
     }
 }
+export class ProjectContext extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        project_id?: string;
+        rag_enabled?: boolean;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("project_id" in data && data.project_id != undefined) {
+                this.project_id = data.project_id;
+            }
+            if ("rag_enabled" in data && data.rag_enabled != undefined) {
+                this.rag_enabled = data.rag_enabled;
+            }
+        }
+    }
+    get project_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set project_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get rag_enabled() {
+        return pb_1.Message.getFieldWithDefault(this, 2, false) as boolean;
+    }
+    set rag_enabled(value: boolean) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        project_id?: string;
+        rag_enabled?: boolean;
+    }): ProjectContext {
+        const message = new ProjectContext({});
+        if (data.project_id != null) {
+            message.project_id = data.project_id;
+        }
+        if (data.rag_enabled != null) {
+            message.rag_enabled = data.rag_enabled;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            project_id?: string;
+            rag_enabled?: boolean;
+        } = {};
+        if (this.project_id != null) {
+            data.project_id = this.project_id;
+        }
+        if (this.rag_enabled != null) {
+            data.rag_enabled = this.rag_enabled;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.project_id.length)
+            writer.writeString(1, this.project_id);
+        if (this.rag_enabled != false)
+            writer.writeBool(2, this.rag_enabled);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ProjectContext {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ProjectContext();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.project_id = reader.readString();
+                    break;
+                case 2:
+                    message.rag_enabled = reader.readBool();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ProjectContext {
+        return ProjectContext.deserialize(bytes);
+    }
+}
 export class ChatRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         text?: string;
         chatId?: string;
         model?: string;
-        project_id?: string;
+        project_context?: ProjectContext;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -756,8 +846,8 @@ export class ChatRequest extends pb_1.Message {
             if ("model" in data && data.model != undefined) {
                 this.model = data.model;
             }
-            if ("project_id" in data && data.project_id != undefined) {
-                this.project_id = data.project_id;
+            if ("project_context" in data && data.project_context != undefined) {
+                this.project_context = data.project_context;
             }
         }
     }
@@ -779,17 +869,20 @@ export class ChatRequest extends pb_1.Message {
     set model(value: string) {
         pb_1.Message.setField(this, 3, value);
     }
-    get project_id() {
-        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+    get project_context() {
+        return pb_1.Message.getWrapperField(this, ProjectContext, 4) as ProjectContext;
     }
-    set project_id(value: string) {
-        pb_1.Message.setField(this, 4, value);
+    set project_context(value: ProjectContext) {
+        pb_1.Message.setWrapperField(this, 4, value);
+    }
+    get has_project_context() {
+        return pb_1.Message.getField(this, 4) != null;
     }
     static fromObject(data: {
         text?: string;
         chatId?: string;
         model?: string;
-        project_id?: string;
+        project_context?: ReturnType<typeof ProjectContext.prototype.toObject>;
     }): ChatRequest {
         const message = new ChatRequest({});
         if (data.text != null) {
@@ -801,8 +894,8 @@ export class ChatRequest extends pb_1.Message {
         if (data.model != null) {
             message.model = data.model;
         }
-        if (data.project_id != null) {
-            message.project_id = data.project_id;
+        if (data.project_context != null) {
+            message.project_context = ProjectContext.fromObject(data.project_context);
         }
         return message;
     }
@@ -811,7 +904,7 @@ export class ChatRequest extends pb_1.Message {
             text?: string;
             chatId?: string;
             model?: string;
-            project_id?: string;
+            project_context?: ReturnType<typeof ProjectContext.prototype.toObject>;
         } = {};
         if (this.text != null) {
             data.text = this.text;
@@ -822,8 +915,8 @@ export class ChatRequest extends pb_1.Message {
         if (this.model != null) {
             data.model = this.model;
         }
-        if (this.project_id != null) {
-            data.project_id = this.project_id;
+        if (this.project_context != null) {
+            data.project_context = this.project_context.toObject();
         }
         return data;
     }
@@ -837,8 +930,8 @@ export class ChatRequest extends pb_1.Message {
             writer.writeString(2, this.chatId);
         if (this.model.length)
             writer.writeString(3, this.model);
-        if (this.project_id.length)
-            writer.writeString(4, this.project_id);
+        if (this.has_project_context)
+            writer.writeMessage(4, this.project_context, () => this.project_context.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -858,7 +951,7 @@ export class ChatRequest extends pb_1.Message {
                     message.model = reader.readString();
                     break;
                 case 4:
-                    message.project_id = reader.readString();
+                    reader.readMessage(message.project_context, () => message.project_context = ProjectContext.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -1650,6 +1743,7 @@ export class ChatMessage extends pb_1.Message {
         content?: string;
         message_id?: string;
         references?: RAGDocumentReference[];
+        rag_enabled?: boolean;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [4], this.#one_of_decls);
@@ -1665,6 +1759,9 @@ export class ChatMessage extends pb_1.Message {
             }
             if ("references" in data && data.references != undefined) {
                 this.references = data.references;
+            }
+            if ("rag_enabled" in data && data.rag_enabled != undefined) {
+                this.rag_enabled = data.rag_enabled;
             }
         }
     }
@@ -1692,11 +1789,18 @@ export class ChatMessage extends pb_1.Message {
     set references(value: RAGDocumentReference[]) {
         pb_1.Message.setRepeatedWrapperField(this, 4, value);
     }
+    get rag_enabled() {
+        return pb_1.Message.getFieldWithDefault(this, 5, false) as boolean;
+    }
+    set rag_enabled(value: boolean) {
+        pb_1.Message.setField(this, 5, value);
+    }
     static fromObject(data: {
         role?: string;
         content?: string;
         message_id?: string;
         references?: ReturnType<typeof RAGDocumentReference.prototype.toObject>[];
+        rag_enabled?: boolean;
     }): ChatMessage {
         const message = new ChatMessage({});
         if (data.role != null) {
@@ -1711,6 +1815,9 @@ export class ChatMessage extends pb_1.Message {
         if (data.references != null) {
             message.references = data.references.map(item => RAGDocumentReference.fromObject(item));
         }
+        if (data.rag_enabled != null) {
+            message.rag_enabled = data.rag_enabled;
+        }
         return message;
     }
     toObject() {
@@ -1719,6 +1826,7 @@ export class ChatMessage extends pb_1.Message {
             content?: string;
             message_id?: string;
             references?: ReturnType<typeof RAGDocumentReference.prototype.toObject>[];
+            rag_enabled?: boolean;
         } = {};
         if (this.role != null) {
             data.role = this.role;
@@ -1731,6 +1839,9 @@ export class ChatMessage extends pb_1.Message {
         }
         if (this.references != null) {
             data.references = this.references.map((item: RAGDocumentReference) => item.toObject());
+        }
+        if (this.rag_enabled != null) {
+            data.rag_enabled = this.rag_enabled;
         }
         return data;
     }
@@ -1746,6 +1857,8 @@ export class ChatMessage extends pb_1.Message {
             writer.writeString(3, this.message_id);
         if (this.references.length)
             writer.writeRepeatedMessage(4, this.references, (item: RAGDocumentReference) => item.serialize(writer));
+        if (this.rag_enabled != false)
+            writer.writeBool(5, this.rag_enabled);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1766,6 +1879,9 @@ export class ChatMessage extends pb_1.Message {
                     break;
                 case 4:
                     reader.readMessage(message.references, () => pb_1.Message.addToRepeatedWrapperField(message, 4, RAGDocumentReference.deserialize(reader), RAGDocumentReference));
+                    break;
+                case 5:
+                    message.rag_enabled = reader.readBool();
                     break;
                 default: reader.skipField();
             }

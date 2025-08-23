@@ -92,7 +92,8 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 }
 
 func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatRequest, stream func(*pb.ChatResponse) error) error {
-	projectID := req.GetProjectId()
+	projectID := req.GetProjectContext().GetProjectId()
+	ragEnabled := req.GetProjectContext().GetRagEnabled()
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
@@ -120,7 +121,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	var ragChunks []rag.Result
 
 	// First, check if this chat is in context of a project and retrieve similar chunks
-	if projectID != "" && projectID != "null" { // if this chat is in context of a project
+	if projectID != "" && projectID != "null" && ragEnabled { // if this chat is in context of a project
 		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, req.Text)
 		if err != nil {
 			slog.Error("failed to retrieve similar chunks", "error", err)
@@ -180,12 +181,12 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		} else {
 			referencesJSON = string(referencesBytes)
 		}
-		_, err = s.dao.AddChatMessageWithTokens(userID, chatId, "user", req.Text, "", 0, 0, referencesJSON)
+		_, err = s.dao.AddChatMessageWithTokens(userID, chatId, "user", req.Text, "", 0, 0, referencesJSON, ragEnabled)
 		if err != nil {
 			return fmt.Errorf("failed to insert user message with references: %v", err)
 		}
 	} else {
-		err = s.dao.AddChatMessage(userID, chatId, "user", req.Text)
+		err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, ragEnabled)
 		if err != nil {
 			return fmt.Errorf("failed to insert user message: %v", err)
 		}
@@ -305,7 +306,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 		// TODO: we dont save streaming response, if stream is killed we loose the message.
 		// TODO : scope for optimization, can be 1 sql call internally
-		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON)
+		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON, ragEnabled)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
@@ -444,9 +445,10 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 	var pbMessages []*pb.ChatMessage
 	for _, m := range messages {
 		pbMessage := &pb.ChatMessage{
-			Role:      m.Role,
-			Content:   m.Content,
-			MessageId: m.Id,
+			Role:       m.Role,
+			Content:    m.Content,
+			MessageId:  m.Id,
+			RagEnabled: m.RagEnabled,
 		}
 
 		if m.DocumentReferences != "" {

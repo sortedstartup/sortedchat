@@ -21,7 +21,8 @@ import {
   GenerateChatNameRequest,
   BranchAChatRequest,
   ListChatBranchRequest,
-  RAGDocumentReference as DocumentReference, // Alias for backward compatibility
+  RAGDocumentReference as DocumentReference,
+  ProjectContext, // Alias for backward compatibility
   RAGDocumentReferenceRequest,
   RAGDocumentReference,
 } from "../../proto/chatservice";
@@ -53,6 +54,9 @@ export const $currentChatMessages = atom<{
 // Add new stores for document references
 export const $currentDocumentReferences = atom<DocumentReference[]>([]);
 export const $showDocumentReferences = atom<boolean>(false);
+
+// Add RAG enabled store
+export const $ragEnabled = atom<boolean>(true);
 
 // Store for detailed RAG document references
 export const $ragDocumentDetails = atom<{
@@ -180,13 +184,25 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       }
     }
 
+  // Get RAG enabled state - use stored value for project chats, false for regular chats
+  const ragEnabled = projectId ? $ragEnabled.get() : false;
+  
+  // Clear document references if RAG is disabled
+  if (!ragEnabled) {
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
+  }
+
   // grpc call
   const stream = chat.Chat(
     ChatRequest.fromObject({
       text: msg,
       chatId: $currentChatId.get(),
       model: $selectedModel.get(),
-      project_id: projectId || "",
+      project_context: ProjectContext.fromObject({
+        project_id: projectId || "",
+        rag_enabled: ragEnabled,
+      }),
     }),
     {}
   );
@@ -198,21 +214,20 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
       console.log('Received message ID:', messageId);
-    } else if (res.has_document_reference) {
+    } else if (res.has_document_reference && ragEnabled) {
+      // Only process document references if RAG is enabled
       const docRefList = res.document_reference;
       
       if (docRefList.summary) {
         for (const summary of docRefList.summary) {
           
-          const placeholderRef = {
+          const docRef = {
             doc_id: summary.doc_id,
             file_name: summary.file_name,
-            chunk_text: `${summary.chunkCount} chunks available`,
-            start_byte: 0,
-            end_byte: 0
+            Chunks: Array(summary.chunkCount).fill({}) // Create array with chunk count
           };
           
-          currentChatReferences.push(placeholderRef);
+          currentChatReferences.push(docRef);
         }
       }
       
@@ -227,13 +242,15 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     const userMessage = ChatMessage.fromObject({
       role: "user",
       content: msg,
+      rag_enabled: ragEnabled, // Set the rag_enabled field based on the current state
     });
     
     const assistantMessage = ChatMessage.fromObject({
       role: "assistant",
       content: assistantResponse,
       message_id: messageId,
-      references: currentChatReferences, // Add references to the assistant message
+      references: ragEnabled ? currentChatReferences : [], // Only add references if RAG is enabled
+      rag_enabled: ragEnabled, // Set the rag_enabled field based on the current state
     });
 
     addMessageToHistory(userMessage);
@@ -242,16 +259,28 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     $streamingMessage.set("");
     $currentChatMessage.set("");
     
-    // Log all document references for this chat
-    if (currentChatReferences.length > 0) {
-      console.log('Document references for this chat:', currentChatReferences);
+    // Clear document references if RAG is disabled
+    if (!ragEnabled) {
+      $currentDocumentReferences.set([]);
+      $showDocumentReferences.set(false);
     }
+    
+    // Reset RAG to enabled for project chats after message completion
+    if (projectId) {
+      $ragEnabled.set(true);
+    }
+    
   });
 
   stream.on("error", (err: Error) => {
     console.error("Stream error:", err);
     $streamingMessage.set("");
     $currentChatMessage.set("");
+    
+    // Reset RAG to enabled for project chats even on error
+    if (projectId) {
+      $ragEnabled.set(true);
+    }
   });
 };
 
@@ -262,6 +291,29 @@ export const hideDocumentReferences = () => {
 
 export const showDocumentReferencesPanel = () => {
   $showDocumentReferences.set(true);
+};
+
+// Add function to toggle RAG enabled state
+export const toggleRagEnabled = () => {
+  const currentState = $ragEnabled.get();
+  $ragEnabled.set(!currentState);
+  
+  // Clear document references if RAG is being disabled
+  if (currentState) {
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
+  }
+};
+
+// Add function to set RAG enabled state for project chats
+export const setRagEnabledForProject = (enabled: boolean) => {
+  $ragEnabled.set(enabled);
+  
+  // Clear document references if RAG is being disabled
+  if (!enabled) {
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
+  }
 };
 
 export const $chatName = atom<string>("");

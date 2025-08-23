@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
-import { CornerDownLeft, FileText, Eye } from "lucide-react"; // Add FileText and Eye icons
+import { CornerDownLeft, FileText, Eye, FileX } from "lucide-react"; // Add FileText, Eye, and FileX icons
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -21,6 +21,9 @@ import {
   BranchChat,
   $listChatBranch,
   $currentDocumentReferences, // Add this import
+  $ragEnabled, // Add RAG enabled store
+  toggleRagEnabled, // Add toggle function
+  setRagEnabledForProject, // Add set function
   $ragDocumentDetails,
   fetchRAGDocumentReference,
 } from "@/store/chat";
@@ -38,10 +41,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"; // Add Dialog imports
-import type { RAGDocumentReference } from "proto/chatservice";
+import type { RAGDocumentReference, RAGDocumentReferenceChunk } from "proto/chatservice";
 
 // Collapsible Chunks Display Component
-function ChunksDisplay({ chunks }: { chunks: any[] | undefined }) {
+function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undefined }) {
   const [expandedChunks, setExpandedChunks] = useState<Set<number>>(new Set());
 
   const toggleChunk = (index: number) => {
@@ -64,7 +67,7 @@ function ChunksDisplay({ chunks }: { chunks: any[] | undefined }) {
 
   return (
     <div className="max-h-[60vh] overflow-auto space-y-4 w-full">
-      {chunks.map((chunk: any, index: number) => {
+      {chunks.map((chunk: RAGDocumentReferenceChunk, index: number) => {
         const isExpanded = expandedChunks.has(index);
         const chunkText = chunk.chunk_text || 'No content available';
         const words = chunkText.split(/\s+/);
@@ -123,6 +126,14 @@ export function Chat() {
     return () => unsub();
   }, [chatId, navigate]);
 
+  // Set RAG enabled based on whether this is a project chat or regular chat
+  useEffect(() => {
+    if (!projectId) {
+      setRagEnabledForProject(false); // Disable RAG for regular chats
+    }
+    // For project chats, preserve the user's current RAG preference
+  }, [projectId]);
+
   const { data, loading } = useStore($currentChatMessages);
   const streamingMessage = useStore($streamingMessage);
   const currentChatMessage = useStore($currentChatMessage);
@@ -130,6 +141,7 @@ export function Chat() {
   const selectedModel = useStore($selectedModel);
   const listChatBranch = useStore($listChatBranch);
   const currentDocumentReferences = useStore($currentDocumentReferences); // Add this
+  const ragEnabled = useStore($ragEnabled); // Add RAG enabled state
   const ragDocumentDetails = useStore($ragDocumentDetails);
 
   const [inputValue, setInputValue] = useState("");
@@ -148,6 +160,8 @@ export function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [data, streamingMessage, currentChatMessage]);
+
+
 
   const handleSend = () => {
     if (inputValue.trim()) {
@@ -263,10 +277,17 @@ export function Chat() {
                       />
                       <ChatBubbleMessage
                         variant={message.role === "user" ? "sent" : "received"}
+                        className="relative"
                       >
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {message.content}
                         </ReactMarkdown>
+                        {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}
+                        {projectId && message.role === "assistant" && !message.rag_enabled && (
+                          <div className="absolute top-1 right-1 bg-white/80 rounded p-1" title="RAG not enabled for this message">
+                            <FileX className="h-3 w-3 text-red-500" />
+                          </div>
+                        )}
                       </ChatBubbleMessage>
                     </ChatBubble>
                   </div>
@@ -309,18 +330,24 @@ export function Chat() {
 
               {streamingMessage && streamingMessage.trim() && (
                 <div className="flex flex-col items-start">
-                <div className="flex justify-start">
-                  <ChatBubble
-                    variant="received"
-                    className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] ml-2 sm:ml-4"
-                  >
-                    <ChatBubbleAvatar fallback="AI" />
-                    <ChatBubbleMessage variant="received">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {streamingMessage}
-                      </ReactMarkdown>
-                    </ChatBubbleMessage>
-                  </ChatBubble>
+                  <div className="flex justify-start">
+                    <ChatBubble
+                      variant="received"
+                      className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] ml-2 sm:ml-4"
+                    >
+                      <ChatBubbleAvatar fallback="AI" />
+                      <ChatBubbleMessage variant="received" className="relative">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {streamingMessage}
+                        </ReactMarkdown>
+                        {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}
+                        {projectId && !ragEnabled && (
+                          <div className="absolute top-1 right-1 bg-white/80 rounded p-1" title="RAG not enabled for this message">
+                            <FileX className="h-3 w-3 text-red-500" />
+                          </div>
+                        )}
+                      </ChatBubbleMessage>
+                    </ChatBubble>
                   </div>
                   
                   {/* Show document references for currently streaming message */}
@@ -356,6 +383,21 @@ export function Chat() {
       </div>
 
       <div className="flex-shrink-0 bg-background p-2 sm:p-4 border-t">
+        {/* RAG Toggle for Project Chats */}
+        {projectId && (
+          <div className="flex items-center mb-2 px-1">
+            <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={ragEnabled}
+                onChange={toggleRagEnabled}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Enable RAG (Retrieval-Augmented Generation)</span>
+            </label>
+          </div>
+        )}
+        
         <div className="relative rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring p-1">
           <ChatInput
             placeholder="Type your message here..."

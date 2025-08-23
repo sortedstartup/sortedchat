@@ -136,23 +136,48 @@ jobs:
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-arm64-packages.txt') }}
 
-      - name: Add arm64 ports source
+      - name: Enable arm64 multiarch
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |
-          sudo tee /etc/apt/sources.list.d/ubuntu-arm64.sources >/dev/null <<'EOF'
-          Types: deb
-          URIs: http://ports.ubuntu.com/ubuntu-ports
-          Suites: noble noble-updates noble-backports noble-security
-          Components: main restricted universe multiverse
-          Architectures: arm64
-          EOF
-          sudo apt-get update
+          sudo dpkg --add-architecture arm64
         
+      - name: Pin apt architectures to right mirrors
+        if: matrix.os == 'linux' && matrix.arch == 'arm64'
+        run: |
+            sudo tee /etc/apt/sources.list.d/ubuntu-arm64.sources >/dev/null <<'EOF'
+            Types: deb
+            URIs: http://ports.ubuntu.com/ubuntu-ports
+            Suites: noble noble-updates noble-backports noble-security
+            Components: main restricted universe multiverse
+            Architectures: arm64
+            Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+            EOF
+        
+            sudo tee /etc/apt/sources.list.d/ubuntu-amd64.sources >/dev/null <<'EOF'
+            Types: deb
+            URIs: http://azure.archive.ubuntu.com/ubuntu
+            Suites: noble noble-updates noble-backports
+            Components: main restricted universe multiverse
+            Architectures: amd64
+            Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+            EOF
+        
+            sudo tee /etc/apt/sources.list.d/ubuntu-amd64-security.sources >/dev/null <<'EOF'
+            Types: deb
+            URIs: http://security.ubuntu.com/ubuntu
+            Suites: noble-security
+            Components: main restricted universe multiverse
+            Architectures: amd64
+            Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+            EOF
+        
+            sudo mv /etc/apt/sources.list /etc/apt/sources.list.disabled || true
+            sudo apt-get update -o Acquire::Retries=3
+        
+      
       - name: Setup ARM64 cross-compilation environment
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |
-            # Enable multiarch & refresh
-            sudo dpkg --add-architecture arm64
             sudo apt-get update
 
             # Toolchain + pkg-config

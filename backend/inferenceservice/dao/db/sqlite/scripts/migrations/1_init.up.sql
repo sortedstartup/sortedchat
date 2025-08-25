@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS inference_model_metadata (
+CREATE TABLE IF NOT EXISTS inferenceservice_models_metadata (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     url TEXT NOT NULL,

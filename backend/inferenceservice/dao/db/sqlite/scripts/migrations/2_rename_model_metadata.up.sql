@@ -1,1 +1,0 @@
-ALTER TABLE inference_model_metadata RENAME TO inferenceservice_models_metadata;

@@ -437,6 +437,94 @@ func (x *GetLLMModelsResponse) GetModels() []*Model {
 	return nil
 }
 
+type CancelDownloadRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ModelName     string                 `protobuf:"bytes,1,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelDownloadRequest) Reset() {
+	*x = CancelDownloadRequest{}
+	mi := &file_inferenceservice_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelDownloadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelDownloadRequest) ProtoMessage() {}
+
+func (x *CancelDownloadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelDownloadRequest.ProtoReflect.Descriptor instead.
+func (*CancelDownloadRequest) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CancelDownloadRequest) GetModelName() string {
+	if x != nil {
+		return x.ModelName
+	}
+	return ""
+}
+
+type CancelDownloadResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelDownloadResponse) Reset() {
+	*x = CancelDownloadResponse{}
+	mi := &file_inferenceservice_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelDownloadResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelDownloadResponse) ProtoMessage() {}
+
+func (x *CancelDownloadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelDownloadResponse.ProtoReflect.Descriptor instead.
+func (*CancelDownloadResponse) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CancelDownloadResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 var File_inferenceservice_proto protoreflect.FileDescriptor
 
 const file_inferenceservice_proto_rawDesc = "" +
@@ -468,17 +556,23 @@ const file_inferenceservice_proto_rawDesc = "" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"\x15\n" +
 	"\x13GetLLMModelsRequest\"A\n" +
 	"\x14GetLLMModelsResponse\x12)\n" +
-	"\x06models\x18\x01 \x03(\v2\x11.sortedchat.ModelR\x06models*S\n" +
+	"\x06models\x18\x01 \x03(\v2\x11.sortedchat.ModelR\x06models\"6\n" +
+	"\x15CancelDownloadRequest\x12\x1d\n" +
+	"\n" +
+	"model_name\x18\x01 \x01(\tR\tmodelName\"2\n" +
+	"\x16CancelDownloadResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage*S\n" +
 	"\x0eDownloadStatus\x12\b\n" +
 	"\x04NONE\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\x0f\n" +
 	"\vDOWNLOADING\x10\x02\x12\r\n" +
 	"\tCOMPLETED\x10\x03\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x042\xbd\x01\n" +
+	"\x06FAILED\x10\x042\x96\x02\n" +
 	"\x10InferenceService\x12T\n" +
 	"\rDownloadModel\x12 .sortedchat.DownloadModelRequest\x1a!.sortedchat.DownloadModelResponse\x12S\n" +
-	"\fGetLLMModels\x12\x1f.sortedchat.GetLLMModelsRequest\x1a .sortedchat.GetLLMModelsResponse0\x01B&Z$sortedstartup/inferenceservice/protob\x06proto3"
+	"\fGetLLMModels\x12\x1f.sortedchat.GetLLMModelsRequest\x1a .sortedchat.GetLLMModelsResponse0\x01\x12W\n" +
+	"\x0eCancelDownload\x12!.sortedchat.CancelDownloadRequest\x1a\".sortedchat.CancelDownloadResponseB&Z$sortedstartup/inferenceservice/protob\x06proto3"
 
 var (
 	file_inferenceservice_proto_rawDescOnce sync.Once
@@ -493,15 +587,17 @@ func file_inferenceservice_proto_rawDescGZIP() []byte {
 }
 
 var file_inferenceservice_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_inferenceservice_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_inferenceservice_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_inferenceservice_proto_goTypes = []any{
-	(DownloadStatus)(0),           // 0: sortedchat.DownloadStatus
-	(*DownloadProgress)(nil),      // 1: sortedchat.DownloadProgress
-	(*Model)(nil),                 // 2: sortedchat.Model
-	(*DownloadModelRequest)(nil),  // 3: sortedchat.DownloadModelRequest
-	(*DownloadModelResponse)(nil), // 4: sortedchat.DownloadModelResponse
-	(*GetLLMModelsRequest)(nil),   // 5: sortedchat.GetLLMModelsRequest
-	(*GetLLMModelsResponse)(nil),  // 6: sortedchat.GetLLMModelsResponse
+	(DownloadStatus)(0),            // 0: sortedchat.DownloadStatus
+	(*DownloadProgress)(nil),       // 1: sortedchat.DownloadProgress
+	(*Model)(nil),                  // 2: sortedchat.Model
+	(*DownloadModelRequest)(nil),   // 3: sortedchat.DownloadModelRequest
+	(*DownloadModelResponse)(nil),  // 4: sortedchat.DownloadModelResponse
+	(*GetLLMModelsRequest)(nil),    // 5: sortedchat.GetLLMModelsRequest
+	(*GetLLMModelsResponse)(nil),   // 6: sortedchat.GetLLMModelsResponse
+	(*CancelDownloadRequest)(nil),  // 7: sortedchat.CancelDownloadRequest
+	(*CancelDownloadResponse)(nil), // 8: sortedchat.CancelDownloadResponse
 }
 var file_inferenceservice_proto_depIdxs = []int32{
 	0, // 0: sortedchat.DownloadProgress.status:type_name -> sortedchat.DownloadStatus
@@ -510,10 +606,12 @@ var file_inferenceservice_proto_depIdxs = []int32{
 	2, // 3: sortedchat.GetLLMModelsResponse.models:type_name -> sortedchat.Model
 	3, // 4: sortedchat.InferenceService.DownloadModel:input_type -> sortedchat.DownloadModelRequest
 	5, // 5: sortedchat.InferenceService.GetLLMModels:input_type -> sortedchat.GetLLMModelsRequest
-	4, // 6: sortedchat.InferenceService.DownloadModel:output_type -> sortedchat.DownloadModelResponse
-	6, // 7: sortedchat.InferenceService.GetLLMModels:output_type -> sortedchat.GetLLMModelsResponse
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
+	7, // 6: sortedchat.InferenceService.CancelDownload:input_type -> sortedchat.CancelDownloadRequest
+	4, // 7: sortedchat.InferenceService.DownloadModel:output_type -> sortedchat.DownloadModelResponse
+	6, // 8: sortedchat.InferenceService.GetLLMModels:output_type -> sortedchat.GetLLMModelsResponse
+	8, // 9: sortedchat.InferenceService.CancelDownload:output_type -> sortedchat.CancelDownloadResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
@@ -530,7 +628,7 @@ func file_inferenceservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_inferenceservice_proto_rawDesc), len(file_inferenceservice_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

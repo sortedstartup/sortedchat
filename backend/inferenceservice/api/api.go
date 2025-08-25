@@ -93,6 +93,17 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 	})
 }
 
+func (s *InferenceServiceAPI) CancelDownload(ctx context.Context, req *pb.CancelDownloadRequest) (*pb.CancelDownloadResponse, error) {
+	err := s.service.CancelDownload(ctx, HARDCODED_USER_ID, req.GetModelName())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.CancelDownloadResponse{
+		Message: "Download cancelled successfully",
+	}, nil
+}
+
 func (s *InferenceServiceAPI) Init(config *dao.Config) {
 	switch config.Database.Type {
 	case dao.DatabaseTypeSQLite:

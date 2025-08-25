@@ -691,6 +691,140 @@ export class GetLLMModelsResponse extends pb_1.Message {
         return GetLLMModelsResponse.deserialize(bytes);
     }
 }
+export class CancelDownloadRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        model_name?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("model_name" in data && data.model_name != undefined) {
+                this.model_name = data.model_name;
+            }
+        }
+    }
+    get model_name() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set model_name(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        model_name?: string;
+    }): CancelDownloadRequest {
+        const message = new CancelDownloadRequest({});
+        if (data.model_name != null) {
+            message.model_name = data.model_name;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            model_name?: string;
+        } = {};
+        if (this.model_name != null) {
+            data.model_name = this.model_name;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.model_name.length)
+            writer.writeString(1, this.model_name);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CancelDownloadRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CancelDownloadRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.model_name = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CancelDownloadRequest {
+        return CancelDownloadRequest.deserialize(bytes);
+    }
+}
+export class CancelDownloadResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message?: string;
+    }): CancelDownloadResponse {
+        const message = new CancelDownloadResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CancelDownloadResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CancelDownloadResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CancelDownloadResponse {
+        return CancelDownloadResponse.deserialize(bytes);
+    }
+}
 // Server-side service class removed for client-side compatibility
 export class InferenceServiceClient {
     private _address: string;
@@ -709,5 +843,9 @@ export class InferenceServiceClient {
     private static GetLLMModels = new grpc_web_1.MethodDescriptor<GetLLMModelsRequest, GetLLMModelsResponse>("/sortedchat.InferenceService/GetLLMModels", grpc_web_1.MethodType.SERVER_STREAMING, GetLLMModelsRequest, GetLLMModelsResponse, (message: GetLLMModelsRequest) => message.serialize(), GetLLMModelsResponse.deserialize);
     GetLLMModels(message: GetLLMModelsRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.serverStreaming(this._address + "/sortedchat.InferenceService/GetLLMModels", message, metadata || {}, InferenceServiceClient.GetLLMModels);
+    }
+    private static CancelDownload = new grpc_web_1.MethodDescriptor<CancelDownloadRequest, CancelDownloadResponse>("/sortedchat.InferenceService/CancelDownload", grpc_web_1.MethodType.UNARY, CancelDownloadRequest, CancelDownloadResponse, (message: CancelDownloadRequest) => message.serialize(), CancelDownloadResponse.deserialize);
+    CancelDownload(message: CancelDownloadRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<CancelDownloadRequest, CancelDownloadResponse>(this._address + "/sortedchat.InferenceService/CancelDownload", message, metadata || {}, InferenceServiceClient.CancelDownload);
     }
 }

@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	InferenceService_DownloadModel_FullMethodName = "/sortedchat.InferenceService/DownloadModel"
-	InferenceService_GetLLMModels_FullMethodName  = "/sortedchat.InferenceService/GetLLMModels"
+	InferenceService_DownloadModel_FullMethodName  = "/sortedchat.InferenceService/DownloadModel"
+	InferenceService_GetLLMModels_FullMethodName   = "/sortedchat.InferenceService/GetLLMModels"
+	InferenceService_CancelDownload_FullMethodName = "/sortedchat.InferenceService/CancelDownload"
 )
 
 // InferenceServiceClient is the client API for InferenceService service.
@@ -29,6 +30,7 @@ const (
 type InferenceServiceClient interface {
 	DownloadModel(ctx context.Context, in *DownloadModelRequest, opts ...grpc.CallOption) (*DownloadModelResponse, error)
 	GetLLMModels(ctx context.Context, in *GetLLMModelsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetLLMModelsResponse], error)
+	CancelDownload(ctx context.Context, in *CancelDownloadRequest, opts ...grpc.CallOption) (*CancelDownloadResponse, error)
 }
 
 type inferenceServiceClient struct {
@@ -68,12 +70,23 @@ func (c *inferenceServiceClient) GetLLMModels(ctx context.Context, in *GetLLMMod
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type InferenceService_GetLLMModelsClient = grpc.ServerStreamingClient[GetLLMModelsResponse]
 
+func (c *inferenceServiceClient) CancelDownload(ctx context.Context, in *CancelDownloadRequest, opts ...grpc.CallOption) (*CancelDownloadResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CancelDownloadResponse)
+	err := c.cc.Invoke(ctx, InferenceService_CancelDownload_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InferenceServiceServer is the server API for InferenceService service.
 // All implementations must embed UnimplementedInferenceServiceServer
 // for forward compatibility.
 type InferenceServiceServer interface {
 	DownloadModel(context.Context, *DownloadModelRequest) (*DownloadModelResponse, error)
 	GetLLMModels(*GetLLMModelsRequest, grpc.ServerStreamingServer[GetLLMModelsResponse]) error
+	CancelDownload(context.Context, *CancelDownloadRequest) (*CancelDownloadResponse, error)
 	mustEmbedUnimplementedInferenceServiceServer()
 }
 
@@ -89,6 +102,9 @@ func (UnimplementedInferenceServiceServer) DownloadModel(context.Context, *Downl
 }
 func (UnimplementedInferenceServiceServer) GetLLMModels(*GetLLMModelsRequest, grpc.ServerStreamingServer[GetLLMModelsResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method GetLLMModels not implemented")
+}
+func (UnimplementedInferenceServiceServer) CancelDownload(context.Context, *CancelDownloadRequest) (*CancelDownloadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelDownload not implemented")
 }
 func (UnimplementedInferenceServiceServer) mustEmbedUnimplementedInferenceServiceServer() {}
 func (UnimplementedInferenceServiceServer) testEmbeddedByValue()                          {}
@@ -140,6 +156,24 @@ func _InferenceService_GetLLMModels_Handler(srv interface{}, stream grpc.ServerS
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type InferenceService_GetLLMModelsServer = grpc.ServerStreamingServer[GetLLMModelsResponse]
 
+func _InferenceService_CancelDownload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelDownloadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InferenceServiceServer).CancelDownload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InferenceService_CancelDownload_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InferenceServiceServer).CancelDownload(ctx, req.(*CancelDownloadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InferenceService_ServiceDesc is the grpc.ServiceDesc for InferenceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -150,6 +184,10 @@ var InferenceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DownloadModel",
 			Handler:    _InferenceService_DownloadModel_Handler,
+		},
+		{
+			MethodName: "CancelDownload",
+			Handler:    _InferenceService_CancelDownload_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

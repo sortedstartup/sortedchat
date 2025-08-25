@@ -13,7 +13,8 @@ import (
 )
 
 type InferenceService struct {
-	dao dao.DAO
+	dao                dao.DAO
+	downloadingCancels map[string]context.CancelFunc
 }
 
 func NewInferenceService(daoFactory dao.DAOFactory) *InferenceService {
@@ -22,7 +23,8 @@ func NewInferenceService(daoFactory dao.DAOFactory) *InferenceService {
 		log.Fatalf("Failed to create DAO: %v", err)
 	}
 	return &InferenceService{
-		dao: dao,
+		dao:                dao,
+		downloadingCancels: make(map[string]context.CancelFunc),
 	}
 }
 
@@ -45,9 +47,12 @@ func (s *InferenceService) DownloadModel(ctx context.Context, userID string, mod
 		return fmt.Errorf("model %s is already downloaded", modelName)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	s.downloadingCancels[modelName] = cancel
+
 	// Start download in goroutine
 	go func() {
-		if err := s.downloadModelFromURL(model.ID, model.Name, model.URL); err != nil {
+		if err := s.downloadModelFromURL(ctx, model.ID, model.Name, model.URL); err != nil {
 			log.Printf("Failed to download model %s: %v", model.Name, err)
 			// Update status to failed
 			failedProgress := &dao.DownloadProgress{
@@ -63,8 +68,16 @@ func (s *InferenceService) DownloadModel(ctx context.Context, userID string, mod
 	return nil
 }
 
-func (s *InferenceService) downloadModelFromURL(modelID string, modelName string, url string) error {
+func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID string, modelName string, url string) error {
 	log.Printf("Starting download of model %s from %s", modelName, url)
+
+	select {
+	case <-ctx.Done():
+		// Handle cancellation: cleanup, update status, etc.
+		return ctx.Err()
+	default:
+		// Continue download
+	}
 
 	// Update status to downloading
 	downloadingProgress := &dao.DownloadProgress{
@@ -264,4 +277,33 @@ func (s *InferenceService) GetLLMModels(ctx context.Context, sendModels func([]*
 			}
 		}
 	}
+}
+
+func (s *InferenceService) CancelDownload(ctx context.Context, userID string, modelName string) error {
+	// Get model metadata from database
+	model, err := s.dao.GetModelByName(modelName)
+	if err != nil {
+		return fmt.Errorf("model not found: %w", err)
+	}
+
+	if model.Status != dao.StatusDownloading {
+		return fmt.Errorf("model %s is not downloading", modelName)
+	}
+
+	// Update status to cancelled
+	cancelledProgress := &dao.DownloadProgress{
+		FileSize: 0,
+		Status:   dao.StatusFailed,
+		Progress: 0,
+		Speed:    0,
+	}
+	s.dao.UpdateModelProgress(model.ID, cancelledProgress)
+
+	if cancel, ok := s.downloadingCancels[modelName]; ok {
+		cancel() // This cancels the context
+		delete(s.downloadingCancels, modelName)
+	}
+
+	log.Printf("Download cancelled for model %s", modelName)
+	return nil
 }

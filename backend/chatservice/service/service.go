@@ -25,6 +25,20 @@ import (
 	"github.com/google/uuid"
 )
 
+// RAGDocumentChunk represents a chunk within a document
+type RAGDocumentChunk struct {
+	StartByte  int     `json:"startByte"`
+	EndByte    int     `json:"endByte"`
+	ChunkText  string  `json:"chunk_text"`
+	Similarity float64 `json:"similarity"`
+}
+
+// RAGDocumentJSON represents a document with its chunks for JSON storage
+type RAGDocumentJSON struct {
+	DocID  string             `json:"doc_id"`
+	Chunks []RAGDocumentChunk `json:"chunks"`
+}
+
 type ChatService struct {
 	dao                dao.DAO
 	settingsDAO        dao.SettingsDAO
@@ -78,7 +92,8 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 }
 
 func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatRequest, stream func(*pb.ChatResponse) error) error {
-	projectID := req.GetProjectId()
+	projectID := req.GetProjectContext().GetProjectId()
+	ragEnabled := req.GetProjectContext().GetRagEnabled()
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
@@ -102,19 +117,78 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("failed to fetch message history: %v", err)
 	}
 
-	err = s.dao.AddChatMessage(userID, chatId, "user", req.Text)
-	if err != nil {
-		return fmt.Errorf("failed to insert user message: %v", err)
-	}
-
 	userMessage := req.Text
+	var ragChunks []rag.Result
 
-	if projectID != "" && projectID != "null" { // if this chat is in context of a project
+	// First, check if this chat is in context of a project and retrieve similar chunks
+	if projectID != "" && projectID != "null" && ragEnabled { // if this chat is in context of a project
 		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, req.Text)
 		if err != nil {
 			slog.Error("failed to retrieve similar chunks", "error", err)
 		} else if len(chunks.Results) > 0 {
 			userMessage = chunks.Prompt
+			ragChunks = chunks.Results
+
+			// Group chunks by document ID to create summary
+			docChunksMap := make(map[string][]rag.Result)
+			for _, result := range chunks.Results {
+				docChunksMap[result.Chunk.DocsID] = append(docChunksMap[result.Chunk.DocsID], result)
+			}
+
+			// Create document reference summary list for streaming
+			var summaries []*pb.RAGDocumentReferenceSummaryList_Summary
+			for docsID, docChunks := range docChunksMap {
+				// Get document metadata
+				docMeta, err := s.dao.GetFileMetadata(docsID)
+				if err != nil {
+					slog.Error("failed to get document metadata", "error", err, "docs_id", docsID)
+					continue
+				}
+
+				summary := &pb.RAGDocumentReferenceSummaryList_Summary{
+					DocId:      docsID,
+					FileName:   docMeta.FileName,
+					ChunkCount: int32(len(docChunks)),
+				}
+				summaries = append(summaries, summary)
+			}
+
+			// Send document reference summary
+			if len(summaries) > 0 {
+				response := &pb.ChatResponse{
+					Response: &pb.ChatResponse_DocumentReference{
+						DocumentReference: &pb.RAGDocumentReferenceSummaryList{
+							Summary: summaries,
+						},
+					},
+				}
+
+				if err := stream(response); err != nil {
+					return fmt.Errorf("failed to send document reference summary: %v", err)
+				}
+			}
+		}
+	}
+
+	// Save user message with RAG document references if available
+	if len(ragChunks) > 0 {
+		// Create the RAG JSON structure from chunks
+		ragDocuments := s.createRAGDocumentJSONFromChunks(ragChunks)
+		referencesBytes, err := json.Marshal(ragDocuments)
+		var referencesJSON string
+		if err != nil {
+			slog.Error("failed to marshal RAG document references for user message", "error", err)
+		} else {
+			referencesJSON = string(referencesBytes)
+		}
+		_, err = s.dao.AddChatMessageWithTokens(userID, chatId, "user", req.Text, "", 0, 0, referencesJSON, ragEnabled)
+		if err != nil {
+			return fmt.Errorf("failed to insert user message with references: %v", err)
+		}
+	} else {
+		err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, ragEnabled)
+		if err != nil {
+			return fmt.Errorf("failed to insert user message: %v", err)
 		}
 	}
 
@@ -155,6 +229,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	var fullResponse strings.Builder
 	var inputTokens, outputTokens int
 
+	// Streaming response from LLM API
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -217,7 +292,21 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 	assistantText := fullResponse.String()
 	if assistantText != "" {
-		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens)
+		var referencesJSON string
+		if len(ragChunks) > 0 {
+			// Create the new JSON structure as requested
+			ragDocuments := s.createRAGDocumentJSONFromChunks(ragChunks)
+			referencesBytes, err := json.Marshal(ragDocuments)
+			if err != nil {
+				slog.Error("failed to marshal RAG document references", "error", err)
+			} else {
+				referencesJSON = string(referencesBytes)
+			}
+		}
+
+		// TODO: we dont save streaming response, if stream is killed we loose the message.
+		// TODO : scope for optimization, can be 1 sql call internally
+		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON, ragEnabled)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
@@ -355,11 +444,49 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 
 	var pbMessages []*pb.ChatMessage
 	for _, m := range messages {
-		pbMessages = append(pbMessages, &pb.ChatMessage{
-			Role:      m.Role,
-			Content:   m.Content,
-			MessageId: m.Id,
-		})
+		pbMessage := &pb.ChatMessage{
+			Role:       m.Role,
+			Content:    m.Content,
+			MessageId:  m.Id,
+			RagEnabled: m.RagEnabled,
+		}
+
+		if m.DocumentReferences != "" {
+			var ragDocuments []RAGDocumentJSON
+			if err := json.Unmarshal([]byte(m.DocumentReferences), &ragDocuments); err == nil {
+				// Convert RAGDocumentJSON to pb.RAGDocumentReference
+				var references []*pb.RAGDocumentReference
+				for _, doc := range ragDocuments {
+					// Get document metadata
+					docMeta, err := s.dao.GetFileMetadata(doc.DocID)
+					if err != nil {
+						slog.Error("failed to get document metadata in history", "error", err, "docs_id", doc.DocID)
+						continue
+					}
+
+					// Convert chunks to proto format
+					var protoChunks []*pb.RAGDocumentReference_Chunk
+					for _, chunk := range doc.Chunks {
+						protoChunks = append(protoChunks, &pb.RAGDocumentReference_Chunk{
+							ChunkText:   chunk.ChunkText,
+							StartByte:   int32(chunk.StartByte),
+							EndByte:     int32(chunk.EndByte),
+							Simillarity: float32(chunk.Similarity),
+						})
+					}
+
+					reference := &pb.RAGDocumentReference{
+						DocId:    doc.DocID,
+						FileName: docMeta.FileName,
+						Chunks:   protoChunks,
+					}
+					references = append(references, reference)
+				}
+				pbMessage.References = references
+			}
+		}
+
+		pbMessages = append(pbMessages, pbMessage)
 	}
 
 	return pbMessages, nil
@@ -538,6 +665,7 @@ func (s *ChatService) retrieveSimilarChunks(ctx context.Context, userID string, 
 		for _, v := range vecRows {
 			_, reader, err := s.store.GetObject(ctx, v.DocsID)
 			if err != nil {
+
 				return nil, fmt.Errorf("failed to get object for docsID %s: %w", v.DocsID, err)
 			}
 			data, err := io.ReadAll(reader)
@@ -557,7 +685,7 @@ func (s *ChatService) retrieveSimilarChunks(ctx context.Context, userID string, 
 					EndByte:   v.EndByte,
 					Text:      chunkText,
 				},
-				Similarity: 0,
+				Similarity: v.Similarity * 100,
 			})
 		}
 		return results, nil
@@ -706,4 +834,128 @@ func (s *ChatService) EmbeddingSubscriber() {
 			}
 		}
 	}()
+}
+
+// createRAGDocumentJSONFromChunks converts RAG chunks to the requested JSON structure
+func (s *ChatService) createRAGDocumentJSONFromChunks(ragChunks []rag.Result) []RAGDocumentJSON {
+	// Group chunks by document ID
+	docChunksMap := make(map[string][]RAGDocumentChunk)
+
+	for _, result := range ragChunks {
+		chunk := RAGDocumentChunk{
+			StartByte:  result.Chunk.StartByte,
+			EndByte:    result.Chunk.EndByte,
+			ChunkText:  strings.ToValidUTF8(result.Chunk.Text, ""),
+			Similarity: result.Similarity,
+		}
+		docChunksMap[result.Chunk.DocsID] = append(docChunksMap[result.Chunk.DocsID], chunk)
+	}
+
+	// Convert to the final structure
+	var ragDocuments []RAGDocumentJSON
+	for docID, chunks := range docChunksMap {
+		ragDocuments = append(ragDocuments, RAGDocumentJSON{
+			DocID:  docID,
+			Chunks: chunks,
+		})
+	}
+
+	return ragDocuments
+}
+
+// GetRAGDocumentReference retrieves RAG document references for a specific message
+func (s *ChatService) GetRAGDocumentReference(ctx context.Context, userID string, req *pb.RAGDocumentReferenceRequest) (*pb.RAGDocumentReferenceResponse, error) {
+
+	// Validate request
+	if req.MessageId == "" {
+		return nil, fmt.Errorf("message_id is required")
+	}
+
+	// Get the chat message by ID
+	message, err := s.dao.GetChatMessageByID(userID, req.MessageId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get message: %v", err)
+	}
+
+	// Parse the document references JSON
+	if message.DocumentReferences == "" {
+		return &pb.RAGDocumentReferenceResponse{
+			Reference: nil,
+		}, nil
+	}
+
+	var ragDocuments []RAGDocumentJSON
+	if err := json.Unmarshal([]byte(message.DocumentReferences), &ragDocuments); err != nil {
+		return nil, fmt.Errorf("failed to parse document references: %v", err)
+	}
+
+	// If docId is specified, filter for that specific document
+	if req.DocId != "" {
+		for _, doc := range ragDocuments {
+			if doc.DocID == req.DocId {
+				// Get document metadata
+				docMeta, err := s.dao.GetFileMetadata(doc.DocID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get document metadata: %v", err)
+				}
+
+				// Convert chunks to proto format
+				var protoChunks []*pb.RAGDocumentReference_Chunk
+				for _, chunk := range doc.Chunks {
+					protoChunks = append(protoChunks, &pb.RAGDocumentReference_Chunk{
+						ChunkText:   chunk.ChunkText,
+						StartByte:   int32(chunk.StartByte),
+						EndByte:     int32(chunk.EndByte),
+						Simillarity: float32(chunk.Similarity),
+					})
+				}
+
+				return &pb.RAGDocumentReferenceResponse{
+					Reference: &pb.RAGDocumentReference{
+						DocId:    doc.DocID,
+						FileName: docMeta.FileName,
+						Chunks:   protoChunks,
+					},
+				}, nil
+			}
+		}
+		// Document not found - return empty result
+		return &pb.RAGDocumentReferenceResponse{
+			Reference: nil,
+		}, nil
+	}
+
+	// If no specific docId, return the first document (or you could return all)
+	if len(ragDocuments) > 0 {
+		doc := ragDocuments[0]
+
+		// Get document metadata
+		docMeta, err := s.dao.GetFileMetadata(doc.DocID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get document metadata: %v", err)
+		}
+
+		// Convert chunks to proto format
+		var protoChunks []*pb.RAGDocumentReference_Chunk
+		for _, chunk := range doc.Chunks {
+			protoChunks = append(protoChunks, &pb.RAGDocumentReference_Chunk{
+				ChunkText:   chunk.ChunkText,
+				StartByte:   int32(chunk.StartByte),
+				EndByte:     int32(chunk.EndByte),
+				Simillarity: float32(chunk.Similarity),
+			})
+		}
+
+		return &pb.RAGDocumentReferenceResponse{
+			Reference: &pb.RAGDocumentReference{
+				DocId:    doc.DocID,
+				FileName: docMeta.FileName,
+				Chunks:   protoChunks,
+			},
+		}, nil
+	}
+
+	return &pb.RAGDocumentReferenceResponse{
+		Reference: nil,
+	}, nil
 }

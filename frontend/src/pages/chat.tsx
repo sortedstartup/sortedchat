@@ -6,8 +6,8 @@ import {
 } from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
-import { CornerDownLeft} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { CornerDownLeft, FileText, Eye, FileX } from "lucide-react"; // Add FileText, Eye, and FileX icons
+import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -20,6 +20,12 @@ import {
   $availableModels,
   BranchChat,
   $listChatBranch,
+  $currentDocumentReferences, // Add this import
+  $ragEnabled, // Add RAG enabled store
+  toggleRagEnabled, // Add toggle function
+  setRagEnabledForProject, // Add set function
+  $ragDocumentDetails,
+  fetchRAGDocumentReference,
 } from "@/store/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -29,6 +35,77 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"; // Add Dialog imports
+import type { RAGDocumentReference, RAGDocumentReferenceChunk } from "proto/chatservice";
+
+// Collapsible Chunks Display Component
+function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undefined }) {
+  const [expandedChunks, setExpandedChunks] = useState<Set<number>>(new Set());
+
+  const toggleChunk = (index: number) => {
+    const newExpanded = new Set(expandedChunks);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedChunks(newExpanded);
+  };
+
+  if (!chunks || chunks.length === 0) {
+    return (
+      <div className="text-gray-500 text-center p-4">
+        No chunks available
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-h-[60vh] overflow-auto space-y-4 w-full">
+      {chunks.map((chunk: RAGDocumentReferenceChunk, index: number) => {
+        const isExpanded = expandedChunks.has(index);
+        const chunkText = chunk.chunk_text || 'No content available';
+        const words = chunkText.split(/\s+/);
+        const shouldTruncate = words.length > 20;
+        const displayText = shouldTruncate && !isExpanded 
+          ? words.slice(0, 20).join(' ') 
+          : chunkText;
+
+        return (
+          <div key={index} className="bg-gray-50 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-xs text-gray-600 font-medium">
+                Bytes {chunk.start_byte || 0} - {chunk.end_byte || 0}
+              </div>
+              <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                Similarity: {chunk.simillarity?.toFixed(3) || 'N/A'}
+              </div>
+            </div>
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">
+              {displayText}
+              {shouldTruncate && !isExpanded && (
+                <span className="text-gray-400">...</span>
+              )}
+            </div>
+            {shouldTruncate && (
+              <button
+                onClick={() => toggleChunk(index)}
+                className="mt-2 text-xs text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+              >
+                {isExpanded ? 'Show less' : 'Show more'}
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Chat() {
   const { projectId, chatId } = useParams();
@@ -49,15 +126,30 @@ export function Chat() {
     return () => unsub();
   }, [chatId, navigate]);
 
-  const { data, loading } = useStore($currentChatMessages);
+  // Set RAG enabled based on whether this is a project chat or regular chat
+  useEffect(() => {
+    if (!projectId) {
+      setRagEnabledForProject(false); // Disable RAG for regular chats
+    }
+    // For project chats, preserve the user's current RAG preference
+  }, [projectId]);
 
+  const { data, loading } = useStore($currentChatMessages);
   const streamingMessage = useStore($streamingMessage);
   const currentChatMessage = useStore($currentChatMessage);
   const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
   const listChatBranch = useStore($listChatBranch);
+  const currentDocumentReferences = useStore($currentDocumentReferences); // Add this
+  const ragEnabled = useStore($ragEnabled); // Add RAG enabled state
+  const ragDocumentDetails = useStore($ragDocumentDetails);
 
   const [inputValue, setInputValue] = useState("");
+  const [selectedDocumentForDetails, setSelectedDocumentForDetails] = useState<{
+    messageId: string;
+    docId: string;
+    fileName: string;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -69,9 +161,11 @@ export function Chat() {
     scrollToBottom();
   }, [data, streamingMessage, currentChatMessage]);
 
+
+
   const handleSend = () => {
     if (inputValue.trim()) {
-      doChat(inputValue,projectId);
+      doChat(inputValue, projectId);
       setInputValue("");
       setTimeout(scrollToBottom, 100);
     }
@@ -96,7 +190,59 @@ export function Chat() {
     }
   };
 
-  
+  // Function to render document references for a message
+  const renderDocumentReferences = (references: RAGDocumentReference[], messageId?: string) => {
+    if (!references || references.length === 0) return null;
+
+    return (
+      <div className="mt-2 ml-2 sm:ml-4">
+        <div className="text-xs text-gray-500 mb-1">Sources:</div>
+        <div className="flex flex-wrap gap-1">
+          {references.map((docRef, index) => (
+            <Button
+              key={`${docRef.doc_id}-${index}`}
+              variant="outline"
+              size="sm"
+              className="text-xs h-6 px-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+              onClick={() => {
+                console.log('Button clicked:', { 
+                  messageId, 
+                  docId: docRef.doc_id, 
+                  fileName: docRef.file_name,
+                  docRef 
+                });
+                messageId && handleViewRAGDetails(messageId, docRef.doc_id, docRef.file_name);
+              }}
+            >
+              <FileText className="h-3 w-3 mr-1" />
+              {docRef.file_name}
+              {docRef.Chunks && docRef.Chunks.length > 0 && (
+                <span className="ml-1 bg-blue-200 text-blue-800 px-1 rounded text-xs">
+                  {docRef.Chunks.length}
+                </span>
+              )}
+              <Eye className="h-3 w-3 ml-1" />
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Function to handle fetching detailed RAG document references
+  const handleViewRAGDetails = async (messageId: string, docId: string, fileName: string) => {
+    if (!projectId || !messageId) {
+      console.error("Project ID and message ID are required");
+      return;
+    }
+
+    try {
+      setSelectedDocumentForDetails({ messageId, docId, fileName });
+      await fetchRAGDocumentReference(messageId, projectId, docId);
+    } catch (error) {
+      console.error("Failed to fetch RAG details:", error);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full mx-auto max-w-full w-full">
@@ -112,7 +258,7 @@ export function Chat() {
             </div>
           ) : (
             <>
-              {data?.map((message,index) => (
+              {data?.map((message, index) => (
                 <div
                   key={index}
                   className={`flex flex-col ${
@@ -131,13 +277,26 @@ export function Chat() {
                       />
                       <ChatBubbleMessage
                         variant={message.role === "user" ? "sent" : "received"}
+                        className="relative"
                       >
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {message.content}
                         </ReactMarkdown>
+                        {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}
+                        {projectId && message.role === "assistant" && !message.rag_enabled && (
+                          <div className="absolute top-1 right-1 bg-white/80 rounded p-1" title="RAG not enabled for this message">
+                            <FileX className="h-3 w-3 text-red-500" />
+                          </div>
+                        )}
                       </ChatBubbleMessage>
                     </ChatBubble>
                   </div>
+                  
+                  {/* Show document references for assistant messages */}
+                  {message.role === "assistant" && message.references && (
+                    renderDocumentReferences(message.references, message.message_id)
+                  )}
+                  
                   {message.role === "assistant" && message.message_id && (
                     <div className="ml-2 sm:ml-4 mt-2">
                       <Button 
@@ -170,18 +329,31 @@ export function Chat() {
               )}
 
               {streamingMessage && streamingMessage.trim() && (
-                <div className="flex justify-start">
-                  <ChatBubble
-                    variant="received"
-                    className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] ml-2 sm:ml-4"
-                  >
-                    <ChatBubbleAvatar fallback="AI" />
-                    <ChatBubbleMessage variant="received">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {streamingMessage}
-                      </ReactMarkdown>
-                    </ChatBubbleMessage>
-                  </ChatBubble>
+                <div className="flex flex-col items-start">
+                  <div className="flex justify-start">
+                    <ChatBubble
+                      variant="received"
+                      className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] ml-2 sm:ml-4"
+                    >
+                      <ChatBubbleAvatar fallback="AI" />
+                      <ChatBubbleMessage variant="received" className="relative">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {streamingMessage}
+                        </ReactMarkdown>
+                        {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}
+                        {projectId && !ragEnabled && (
+                          <div className="absolute top-1 right-1 bg-white/80 rounded p-1" title="RAG not enabled for this message">
+                            <FileX className="h-3 w-3 text-red-500" />
+                          </div>
+                        )}
+                      </ChatBubbleMessage>
+                    </ChatBubble>
+                  </div>
+                  
+                  {/* Show document references for currently streaming message */}
+                  {currentDocumentReferences.length > 0 && (
+                    renderDocumentReferences(currentDocumentReferences)
+                  )}
                 </div>
               )}
               <div ref={messagesEndRef} />
@@ -211,6 +383,21 @@ export function Chat() {
       </div>
 
       <div className="flex-shrink-0 bg-background p-2 sm:p-4 border-t">
+        {/* RAG Toggle for Project Chats */}
+        {projectId && (
+          <div className="flex items-center mb-2 px-1">
+            <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={ragEnabled}
+                onChange={toggleRagEnabled}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Enable RAG (Retrieval-Augmented Generation)</span>
+            </label>
+          </div>
+        )}
+        
         <div className="relative rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring p-1">
           <ChatInput
             placeholder="Type your message here..."
@@ -244,6 +431,40 @@ export function Chat() {
           </div>
         </div>
       </div>
+
+      {/* RAG Document Details Dialog */}
+      <Dialog open={!!selectedDocumentForDetails} onOpenChange={() => setSelectedDocumentForDetails(null)}>
+        <DialogContent className="max-w-[60vw] max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              <FileText className="inline h-5 w-5 mr-2" />
+              Document Chunks: {selectedDocumentForDetails?.fileName}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {ragDocumentDetails.loading && (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-sm text-gray-500">Loading document details...</div>
+            </div>
+          )}
+          
+          {ragDocumentDetails.error && (
+            <div className="text-red-600 text-sm p-4 bg-red-50 rounded">
+              Error: {ragDocumentDetails.error}
+            </div>
+          )}
+          
+          {ragDocumentDetails.data && (
+            <div>
+              <div className="text-sm text-gray-500 mb-4">
+                <br />
+                Showing {ragDocumentDetails.data.Chunks?.length || 0} chunk{(ragDocumentDetails.data.Chunks?.length || 0) > 1 ? 's' : ''} used to generate this response
+              </div>
+              <ChunksDisplay chunks={ragDocumentDetails.data.Chunks} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -37,3 +37,16 @@ export POSTGRES_PASSWORD=dev_password
 export POSTGRES_DATABASE=sortedchat_dev
 export POSTGRES_PORT=5432
 export POSTGRES_USERNAME=postgres
+
+# Connect to postgres manually
+psql -h database -p 5432 -U postgres -W postgres
+
+
+
+## For Google oAuth Login
+GOOGLE_CLIENT_ID=XXXX.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=XXX
+GOOGLE_REDIRECT_URL=http://127.0.0.1:5173/hack/callback
+APP_JWT_SECRET=secret
+APP_ISSUER=http://127.0.0.1:5173
+OAUTH_ISSUER_URL=https://accounts.google.com

@@ -59,16 +59,15 @@ func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) erro
 }
 
 // AddChatMessage adds a message to a chat
-func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string) error {
-	_, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id) VALUES (?, ?, ?, ?)", chatId, role, content, userID)
+func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) error {
+	_, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES (?, ?, ?, ?, ?)", chatId, role, content, userID, ragEnabled)
 	return err
 }
 
 // GetChatMessages retrieves all messages for a given chat
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
-	// todo : do we need to order by time?
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, id FROM chat_messages WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
 	return messages, err
 }
 
@@ -97,11 +96,11 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatI
 	return result, nil
 }
 
-func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error) {
+func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (int64, error) {
 	result, err := s.db.Exec(`
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		chatId, role, content, model, inputTokens, outputTokens, userID)
+		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references, rag_enabled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		chatId, role, content, model, inputTokens, outputTokens, userID, references, ragEnabled)
 	if err != nil {
 		return 0, err
 	}
@@ -273,17 +272,19 @@ func (s *SQLiteDAO) SaveRAGChunkEmbedding(chunkID string, vector []float64) erro
 func (s *SQLiteDAO) GetTopSimilarRAGChunks(userID string, embedding string, projectID string) ([]RAGChunkRow, error) {
 	var chunks []RAGChunkRow
 	err := s.db.Select(&chunks, `
-        SELECT id,project_id,docs_id,start_byte,end_byte
-        FROM rag_chunks
-        WHERE project_id = ? AND user_id = ?
-        AND id IN (
-            SELECT id
-            FROM rag_chunks_vec
-            WHERE embedding MATCH ?
-            ORDER BY distance
-            LIMIT 2
-        )
-    `, projectID, userID, embedding)
+			SELECT 
+			rc.id,
+			rc.project_id,
+			rc.docs_id,
+			rc.start_byte,
+			rc.end_byte,
+			vec_distance_cosine(rcv.embedding, ?) AS similarity
+			FROM rag_chunks rc
+			JOIN rag_chunks_vec rcv ON rc.id = rcv.id
+			WHERE rc.project_id = ? AND rc.user_id = ?
+			ORDER BY similarity
+			LIMIT 2
+    `, embedding, projectID, userID)
 	return chunks, err
 }
 
@@ -375,4 +376,26 @@ func (s *SQLiteSettingsDAO) SetSettingValue(settingName string, settingValue str
 		return fmt.Errorf("failed to upsert settings: %w", err)
 	}
 	return nil
+}
+
+// GetChatMessageByID retrieves a specific chat message by its ID
+func (s *SQLiteDAO) GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error) {
+	var message ChatMessageRow
+	err := s.db.Get(&message, `
+		SELECT role, content, id, COALESCE(document_references, '') as document_references 
+		FROM chat_messages 
+		WHERE id = ? AND user_id = ?`, messageID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &message, nil
+}
+
+// UpdateChatMessageDocumentReferences updates the document references for a specific message
+func (s *SQLiteDAO) UpdateChatMessageDocumentReferences(userID string, messageID string, documentReferences string) error {
+	_, err := s.db.Exec(`
+		UPDATE chat_messages 
+		SET document_references = ? 
+		WHERE id = ? AND user_id = ?`, documentReferences, messageID, userID)
+	return err
 }

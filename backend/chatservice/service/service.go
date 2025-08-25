@@ -816,7 +816,6 @@ func (s *ChatService) EmbeddingSubscriber() {
 					embeddingMap[result.Embeddings[i].ChunkID] = result.Embeddings[i]
 				}
 				for _, chunk := range result.Chunks {
-					// userID := "0" // TODO: Get actual user_id from document metadata when user system is fully implemented
 					err := s.dao.SaveRAGChunk(docMeta.User, chunk.ID, chunk.ProjectID, chunk.DocsID, chunk.StartByte, chunk.EndByte)
 					if err != nil {
 						fmt.Printf("Failed to save chunk: %v", err)

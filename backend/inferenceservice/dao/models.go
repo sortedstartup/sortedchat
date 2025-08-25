@@ -1,5 +1,9 @@
 package dao
 
+import (
+	pb "sortedstartup/inferenceservice/proto"
+)
+
 type ModelMetadata struct {
 	ID              string  `db:"id"`
 	Name            string  `db:"name"`
@@ -14,13 +18,13 @@ type ModelMetadata struct {
 	FileStoreID     *string `db:"filestore_id"`
 }
 
-// Status constants
+// Status constants - using proto enum values
 const (
-	StatusNone        = 0 // For non-downloadable models
-	StatusPending     = 1 // Ready to download
-	StatusDownloading = 2 // Currently downloading
-	StatusCompleted   = 3 // Download completed
-	StatusFailed      = 4 // Download failed
+	StatusNone        = int(pb.DownloadStatus_NONE)        // For non-downloadable models
+	StatusPending     = int(pb.DownloadStatus_PENDING)     // Ready to download
+	StatusDownloading = int(pb.DownloadStatus_DOWNLOADING) // Currently downloading
+	StatusCompleted   = int(pb.DownloadStatus_COMPLETED)   // Download completed
+	StatusFailed      = int(pb.DownloadStatus_FAILED)      // Download failed
 )
 
 // DownloadProgress represents the progress of a model download

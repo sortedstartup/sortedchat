@@ -202,7 +202,7 @@ func (pw *ProgressWriter) updateProgress() {
 }
 
 // ListModels returns all models and streams updates for downloading models
-func (s *InferenceService) ListLLMModels(ctx context.Context, sendModels func([]*dao.ModelMetadata) error) error {
+func (s *InferenceService) GetLLMModels(ctx context.Context, sendModels func([]*dao.ModelMetadata) error) error {
 	// Get all models initially
 	models, err := s.dao.GetAllModels()
 	if err != nil {

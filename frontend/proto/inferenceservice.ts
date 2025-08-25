@@ -7,11 +7,18 @@
 import * as pb_1 from "google-protobuf";
 import * as grpc_1 from "grpc-web";
 import * as grpc_web_1 from "grpc-web";
+export enum DownloadStatus {
+    NONE = 0,
+    PENDING = 1,
+    DOWNLOADING = 2,
+    COMPLETED = 3,
+    FAILED = 4
+}
 export class DownloadProgress extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         file_size?: number;
-        status?: number;
+        status?: DownloadStatus;
         progress?: number;
         speed?: number;
     }) {
@@ -39,9 +46,9 @@ export class DownloadProgress extends pb_1.Message {
         pb_1.Message.setField(this, 1, value);
     }
     get status() {
-        return pb_1.Message.getFieldWithDefault(this, 2, 0) as number;
+        return pb_1.Message.getFieldWithDefault(this, 2, DownloadStatus.NONE) as DownloadStatus;
     }
-    set status(value: number) {
+    set status(value: DownloadStatus) {
         pb_1.Message.setField(this, 2, value);
     }
     get progress() {
@@ -58,7 +65,7 @@ export class DownloadProgress extends pb_1.Message {
     }
     static fromObject(data: {
         file_size?: number;
-        status?: number;
+        status?: DownloadStatus;
         progress?: number;
         speed?: number;
     }): DownloadProgress {
@@ -80,7 +87,7 @@ export class DownloadProgress extends pb_1.Message {
     toObject() {
         const data: {
             file_size?: number;
-            status?: number;
+            status?: DownloadStatus;
             progress?: number;
             speed?: number;
         } = {};
@@ -104,8 +111,8 @@ export class DownloadProgress extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.file_size != 0)
             writer.writeInt64(1, this.file_size);
-        if (this.status != 0)
-            writer.writeInt32(2, this.status);
+        if (this.status != DownloadStatus.NONE)
+            writer.writeEnum(2, this.status);
         if (this.progress != 0)
             writer.writeInt32(3, this.progress);
         if (this.speed != 0)
@@ -123,7 +130,7 @@ export class DownloadProgress extends pb_1.Message {
                     message.file_size = reader.readInt64();
                     break;
                 case 2:
-                    message.status = reader.readInt32();
+                    message.status = reader.readEnum();
                     break;
                 case 3:
                     message.progress = reader.readInt32();
@@ -155,7 +162,7 @@ export class Model extends pb_1.Message {
         progress?: DownloadProgress;
         is_downloaded?: boolean;
         is_downloadable?: boolean;
-        status?: number;
+        status?: DownloadStatus;
         filestore_id?: string;
     }) {
         super();
@@ -254,9 +261,9 @@ export class Model extends pb_1.Message {
         pb_1.Message.setField(this, 9, value);
     }
     get status() {
-        return pb_1.Message.getFieldWithDefault(this, 10, 0) as number;
+        return pb_1.Message.getFieldWithDefault(this, 10, DownloadStatus.NONE) as DownloadStatus;
     }
-    set status(value: number) {
+    set status(value: DownloadStatus) {
         pb_1.Message.setField(this, 10, value);
     }
     get filestore_id() {
@@ -275,7 +282,7 @@ export class Model extends pb_1.Message {
         progress?: ReturnType<typeof DownloadProgress.prototype.toObject>;
         is_downloaded?: boolean;
         is_downloadable?: boolean;
-        status?: number;
+        status?: DownloadStatus;
         filestore_id?: string;
     }): Model {
         const message = new Model({});
@@ -325,7 +332,7 @@ export class Model extends pb_1.Message {
             progress?: ReturnType<typeof DownloadProgress.prototype.toObject>;
             is_downloaded?: boolean;
             is_downloadable?: boolean;
-            status?: number;
+            status?: DownloadStatus;
             filestore_id?: string;
         } = {};
         if (this.id != null) {
@@ -385,8 +392,8 @@ export class Model extends pb_1.Message {
             writer.writeBool(8, this.is_downloaded);
         if (this.is_downloadable != false)
             writer.writeBool(9, this.is_downloadable);
-        if (this.status != 0)
-            writer.writeInt32(10, this.status);
+        if (this.status != DownloadStatus.NONE)
+            writer.writeEnum(10, this.status);
         if (this.filestore_id.length)
             writer.writeString(11, this.filestore_id);
         if (!w)
@@ -426,7 +433,7 @@ export class Model extends pb_1.Message {
                     message.is_downloadable = reader.readBool();
                     break;
                 case 10:
-                    message.status = reader.readInt32();
+                    message.status = reader.readEnum();
                     break;
                 case 11:
                     message.filestore_id = reader.readString();
@@ -577,15 +584,15 @@ export class DownloadModelResponse extends pb_1.Message {
         return DownloadModelResponse.deserialize(bytes);
     }
 }
-export class ListLLMModelsRequest extends pb_1.Message {
+export class GetLLMModelsRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {}) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") { }
     }
-    static fromObject(data: {}): ListLLMModelsRequest {
-        const message = new ListLLMModelsRequest({});
+    static fromObject(data: {}): GetLLMModelsRequest {
+        const message = new GetLLMModelsRequest({});
         return message;
     }
     toObject() {
@@ -599,8 +606,8 @@ export class ListLLMModelsRequest extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListLLMModelsRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListLLMModelsRequest();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetLLMModelsRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetLLMModelsRequest();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -613,11 +620,11 @@ export class ListLLMModelsRequest extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): ListLLMModelsRequest {
-        return ListLLMModelsRequest.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): GetLLMModelsRequest {
+        return GetLLMModelsRequest.deserialize(bytes);
     }
 }
-export class ListLLMModelsResponse extends pb_1.Message {
+export class GetLLMModelsResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         models?: Model[];
@@ -638,8 +645,8 @@ export class ListLLMModelsResponse extends pb_1.Message {
     }
     static fromObject(data: {
         models?: ReturnType<typeof Model.prototype.toObject>[];
-    }): ListLLMModelsResponse {
-        const message = new ListLLMModelsResponse({});
+    }): GetLLMModelsResponse {
+        const message = new GetLLMModelsResponse({});
         if (data.models != null) {
             message.models = data.models.map(item => Model.fromObject(item));
         }
@@ -663,8 +670,8 @@ export class ListLLMModelsResponse extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListLLMModelsResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListLLMModelsResponse();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): GetLLMModelsResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new GetLLMModelsResponse();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -680,8 +687,8 @@ export class ListLLMModelsResponse extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): ListLLMModelsResponse {
-        return ListLLMModelsResponse.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): GetLLMModelsResponse {
+        return GetLLMModelsResponse.deserialize(bytes);
     }
 }
 // Server-side service class removed for client-side compatibility
@@ -699,8 +706,8 @@ export class InferenceServiceClient {
     DownloadModel(message: DownloadModelRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<DownloadModelRequest, DownloadModelResponse>(this._address + "/sortedchat.InferenceService/DownloadModel", message, metadata || {}, InferenceServiceClient.DownloadModel);
     }
-    private static ListLLMModels = new grpc_web_1.MethodDescriptor<ListLLMModelsRequest, ListLLMModelsResponse>("/sortedchat.InferenceService/ListLLMModels", grpc_web_1.MethodType.SERVER_STREAMING, ListLLMModelsRequest, ListLLMModelsResponse, (message: ListLLMModelsRequest) => message.serialize(), ListLLMModelsResponse.deserialize);
-    ListLLMModels(message: ListLLMModelsRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.serverStreaming(this._address + "/sortedchat.InferenceService/ListLLMModels", message, metadata || {}, InferenceServiceClient.ListLLMModels);
+    private static GetLLMModels = new grpc_web_1.MethodDescriptor<GetLLMModelsRequest, GetLLMModelsResponse>("/sortedchat.InferenceService/GetLLMModels", grpc_web_1.MethodType.SERVER_STREAMING, GetLLMModelsRequest, GetLLMModelsResponse, (message: GetLLMModelsRequest) => message.serialize(), GetLLMModelsResponse.deserialize);
+    GetLLMModels(message: GetLLMModelsRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.serverStreaming(this._address + "/sortedchat.InferenceService/GetLLMModels", message, metadata || {}, InferenceServiceClient.GetLLMModels);
     }
 }

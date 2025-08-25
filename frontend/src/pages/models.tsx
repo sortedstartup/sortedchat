@@ -8,7 +8,7 @@ import {
 import { ModelCard } from '@/components/model-card';
 
 
-const Model = () => {
+const Models = () => {
   const models = useStore($llmModels);
   const isLoading = useStore($isLoadingModels);
 
@@ -86,4 +86,4 @@ const Model = () => {
   );
 };
 
-export default Model;
+export default Models;

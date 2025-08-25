@@ -5,7 +5,6 @@ import (
 	"log"
 	"log/slog"
 	"sortedstartup/inferenceservice/dao"
-	db "sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
 	"sortedstartup/inferenceservice/service"
 )
@@ -39,8 +38,8 @@ func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.Downloa
 	}, nil
 }
 
-func (s *InferenceServiceAPI) ListLLMModels(req *pb.ListLLMModelsRequest, stream pb.InferenceService_ListLLMModelsServer) error {
-	return s.service.ListLLMModels(stream.Context(), func(models []*dao.ModelMetadata) error {
+func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream pb.InferenceService_GetLLMModelsServer) error {
+	return s.service.GetLLMModels(stream.Context(), func(models []*dao.ModelMetadata) error {
 		// Convert DAO models to protobuf models
 		pbModels := make([]*pb.Model, len(models))
 		for i, model := range models {
@@ -50,7 +49,7 @@ func (s *InferenceServiceAPI) ListLLMModels(req *pb.ListLLMModelsRequest, stream
 				if progress, err := dao.FromJSON(model.Progress); err == nil {
 					progressProto = &pb.DownloadProgress{
 						FileSize: progress.FileSize,
-						Status:   int32(progress.Status),
+						Status:   pb.DownloadStatus(progress.Status),
 						Progress: int32(progress.Progress),
 						Speed:    progress.Speed,
 					}
@@ -60,7 +59,7 @@ func (s *InferenceServiceAPI) ListLLMModels(req *pb.ListLLMModelsRequest, stream
 				// Default progress for models without progress data
 				progressProto = &pb.DownloadProgress{
 					FileSize: 0,
-					Status:   int32(model.Status),
+					Status:   pb.DownloadStatus(model.Status),
 					Progress: 0,
 					Speed:    0,
 				}
@@ -82,13 +81,13 @@ func (s *InferenceServiceAPI) ListLLMModels(req *pb.ListLLMModelsRequest, stream
 				Progress:        progressProto,
 				IsDownloaded:    model.IsDownloaded,
 				IsDownloadable:  model.IsDownloadable,
-				Status:          int32(model.Status),
+				Status:          pb.DownloadStatus(model.Status),
 				FilestoreId:     filestoreID,
 			}
 		}
 
 		// Send the response
-		return stream.Send(&pb.ListLLMModelsResponse{
+		return stream.Send(&pb.GetLLMModelsResponse{
 			Models: pbModels,
 		})
 	})
@@ -96,21 +95,21 @@ func (s *InferenceServiceAPI) ListLLMModels(req *pb.ListLLMModelsRequest, stream
 
 func (s *InferenceServiceAPI) Init(config *dao.Config) {
 	switch config.Database.Type {
-	case db.DatabaseTypeSQLite:
+	case dao.DatabaseTypeSQLite:
 		slog.Info("InferenceService: Running SQLite migrations")
-		if err := db.MigrateSQLite(config.Database.SQLite.URL); err != nil {
+		if err := dao.MigrateSQLite(config.Database.SQLite.URL); err != nil {
 			log.Fatalf("InferenceService: Failed to migrate SQLite database: %v", err)
 		}
-		if err := db.SeedSqlite(config.Database.SQLite.URL); err != nil {
+		if err := dao.SeedSqlite(config.Database.SQLite.URL); err != nil {
 			log.Fatalf("InferenceService: Failed to seed SQLite database: %v", err)
 		}
-	case db.DatabaseTypePostgres:
+	case dao.DatabaseTypePostgres:
 		slog.Info("InferenceService: Running PostgreSQL migrations")
 		dsn := config.Database.Postgres.GetPostgresDSN()
-		if err := db.MigratePostgres(dsn); err != nil {
+		if err := dao.MigratePostgres(dsn); err != nil {
 			log.Fatalf("InferenceService: Failed to migrate PostgreSQL database: %v", err)
 		}
-		if err := db.SeedPostgres(dsn); err != nil {
+		if err := dao.SeedPostgres(dsn); err != nil {
 			log.Fatalf("InferenceService: Failed to seed PostgreSQL database: %v", err)
 		}
 	default:

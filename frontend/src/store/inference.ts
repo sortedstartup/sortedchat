@@ -1,6 +1,6 @@
-import { atom } from "nanostores";
+import { atom, onMount } from "nanostores";
 import {
-    DownloadModelRequest, InferenceServiceClient, ListLLMModelsRequest, Model
+    DownloadModelRequest, InferenceServiceClient, GetLLMModelsRequest, Model
 } from "../../proto/inferenceservice"
 
 const client = new InferenceServiceClient(import.meta.env.VITE_API_URL);
@@ -19,7 +19,6 @@ export const downloadModel = async (modelName: string) => {
             model_name: modelName
         });
         const res = await client.DownloadModel(req, {});
-        console.log(res.message);
         
         await ListLLMModels();
         
@@ -38,8 +37,8 @@ export const ListLLMModels = async () => {
     $isLoadingModels.set(true);
     
     try {
-        const req = new ListLLMModelsRequest({});
-        const res = client.ListLLMModels(req, {});
+        const req = new GetLLMModelsRequest({});
+        const res = client.GetLLMModels(req, {});
         
         res.on('data', (data) => {
             console.log(data.models);
@@ -63,4 +62,10 @@ export const ListLLMModels = async () => {
     }
 }
 
-ListLLMModels();
+onMount($llmModels, () => {
+    ListLLMModels();
+
+    return () => {
+        // Disabled mode
+    };
+});

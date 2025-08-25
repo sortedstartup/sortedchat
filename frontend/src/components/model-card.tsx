@@ -1,6 +1,6 @@
 import { useStore } from "@nanostores/react";
 import { useState } from "react";
-import { Model as ModelType } from '../../proto/inferenceservice';
+import { DownloadStatus, Model as ModelType } from '../../proto/inferenceservice';
 import { $downloadingModels, downloadModel } from "@/store/inference";
 
 
@@ -70,7 +70,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
       };
     }
 
-    if (isDownloaded || progressData?.status === 3) {
+    if (isDownloaded || progressData?.status === DownloadStatus.COMPLETED) {
       return {
         text: 'Downloaded',
         disabled: true,
@@ -78,7 +78,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
       };
     }
 
-    if (progressData?.status === 4) {
+    if (progressData?.status === DownloadStatus.FAILED) {
       return {
         text: 'Failed - Retry',
         disabled: false,

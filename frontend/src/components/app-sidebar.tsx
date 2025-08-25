@@ -124,7 +124,7 @@ export function AppSidebar() {
   };
 
   const handleModelsClick = () => {
-    navigate("/model");
+    navigate("/models");
   };
 
   return (

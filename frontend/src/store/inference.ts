@@ -2,8 +2,9 @@ import { atom, onMount } from "nanostores";
 import {
     DownloadModelRequest, InferenceServiceClient, GetLLMModelsRequest, Model
 } from "../../proto/inferenceservice"
+import { createAuthenticatedClientOptions } from "../lib/auth";
 
-const client = new InferenceServiceClient(import.meta.env.VITE_API_URL);
+const client = new InferenceServiceClient(import.meta.env.VITE_API_URL, {}, createAuthenticatedClientOptions());
 
 export const $llmModels = atom<Model[]>([]);
 export const $isLoadingModels = atom<boolean>(false);

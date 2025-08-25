@@ -1,4 +1,4 @@
-INSERT INTO inference_model_metadata (id, name, url, provider, input_token_cost, output_token_cost,progress,is_downloaded,is_downloadable,status,filestore_id)
+INSERT INTO inferenceservice_models_metadata (id, name, url, provider, input_token_cost, output_token_cost,progress,is_downloaded,is_downloadable,status,filestore_id)
    VALUES 
    ('gpt-4.1', 'GPT-4.1', 'https://api.openai.com/v1/responses', 'openai', 0.01, 0.01,'',FALSE,FALSE,0,NULL),
    ('gpt-4o', 'GPT-4o', 'https://api.openai.com/v1/responses', 'openai', 0.01, 0.01,'',FALSE,FALSE,0,NULL),

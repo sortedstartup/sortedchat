@@ -1,19 +1,16 @@
-import { useStore } from "@nanostores/react";
 import { useState } from "react";
 import { DownloadStatus, Model as ModelType } from '../../proto/inferenceservice';
-import { $downloadingModels, downloadModel } from "@/store/inference";
+import { downloadModel } from "@/store/inference";
 
 
 export const ModelCard = ({ model }: { model: ModelType }) => {
-  const downloadingModels = useStore($downloadingModels);
   const [showUrl, setShowUrl] = useState(false);
 
-  const isDownloading = downloadingModels.has(model.name);
   const isDownloaded = model.is_downloaded;
   const isDownloadable = model.is_downloadable;
 
   const handleDownload = async () => {
-    if (!isDownloadable || isDownloaded || isDownloading) return;
+    if (!isDownloadable || isDownloaded || model.status === DownloadStatus.DOWNLOADING) return;
 
     try {
       await downloadModel(model.name);
@@ -59,8 +56,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
   };
 
   const getButtonState = () => {
-    // Check if actively downloading (status 2) or from local state
-    const isActivelyDownloading = isDownloading || (progressData?.status === 2);
+    const isActivelyDownloading = progressData?.status === DownloadStatus.DOWNLOADING;
 
     if (isActivelyDownloading) {
       return {

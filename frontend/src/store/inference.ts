@@ -7,12 +7,8 @@ const client = new InferenceServiceClient(import.meta.env.VITE_API_URL);
 
 export const $llmModels = atom<Model[]>([]);
 export const $isLoadingModels = atom<boolean>(false);
-export const $downloadingModels = atom<Set<string>>(new Set());
 
 export const downloadModel = async (modelName: string) => { 
-    const downloadingSet = new Set($downloadingModels.get());
-    downloadingSet.add(modelName);
-    $downloadingModels.set(downloadingSet);
     
     try {
         const req = new DownloadModelRequest({
@@ -26,10 +22,6 @@ export const downloadModel = async (modelName: string) => {
     } catch (error) {
         console.error('Download failed:', error);
         throw error;
-    } finally {
-        const updatedDownloading = new Set($downloadingModels.get());
-        updatedDownloading.delete(modelName);
-        $downloadingModels.set(updatedDownloading);
     }
 }
 
@@ -41,7 +33,6 @@ export const ListLLMModels = async () => {
         const res = client.GetLLMModels(req, {});
         
         res.on('data', (data) => {
-            console.log(data.models);
             $llmModels.set(data.models);
         });
         

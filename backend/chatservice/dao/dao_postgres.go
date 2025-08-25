@@ -90,15 +90,15 @@ func (p *PostgresDAO) SaveChatName(userID string, chatId string, name string) er
 }
 
 // AddChatMessage adds a message to a chat
-func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string) error {
-	_, err := p.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id) VALUES ($1, $2, $3, $4)", chatId, role, content, userID)
+func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) error {
+	_, err := p.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES ($1, $2, $3, $4, $5)", chatId, role, content, userID, ragEnabled)
 	return err
 }
 
 // GetChatMessages retrieves all messages for a given chat
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := p.db.Select(&messages, "SELECT role, content, id FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
+	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	return messages, err
 }
 
@@ -127,14 +127,23 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string) ([]*proto.Cha
 	return result, nil
 }
 
-func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int) (int64, error) {
+func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (int64, error) {
 	// PostgreSQL doesn't have LastInsertId(), so we use RETURNING
 	var messageId int64
+	var referencesValue interface{}
+
+	// Handle JSON insertion for JSONB field
+	if references == "" {
+		referencesValue = nil
+	} else {
+		referencesValue = references
+	}
+
 	err := p.db.Get(&messageId, `
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references, rag_enabled)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id`,
-		chatId, role, content, model, inputTokens, outputTokens, userID)
+		chatId, role, content, model, inputTokens, outputTokens, userID, referencesValue, ragEnabled)
 	if err != nil {
 		return 0, err
 	}
@@ -347,13 +356,13 @@ func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, queryEmbedding strin
 	}
 
 	query := `
-		SELECT id, project_id, docs_id, start_byte, end_byte
+		SELECT id, project_id, docs_id, start_byte, end_byte,1-(embedding <=> $1) AS similarity
     FROM rag_chunks 
     WHERE user_id = $2 
       AND project_id = $3
       AND embedding IS NOT NULL
     ORDER BY embedding <=> $1  -- Cosine distance (smaller = more similar)
-    LIMIT 10`
+    LIMIT 2`
 
 	var chunks []RAGChunkRow
 	rows, err := p.db.Query(query, queryEmbedding, userID, projectID)
@@ -366,7 +375,7 @@ func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, queryEmbedding strin
 		var chunk RAGChunkRow
 
 		err := rows.Scan(&chunk.ID, &chunk.ProjectID, &chunk.DocsID,
-			&chunk.StartByte, &chunk.EndByte)
+			&chunk.StartByte, &chunk.EndByte, &chunk.Similarity)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan chunk row: %w", err)
 		}
@@ -570,4 +579,26 @@ func (p *PostgresSettingsDAO) SetSettingValue(settingName string, settingValue s
 		return fmt.Errorf("failed to upsert settings: %w", err)
 	}
 	return nil
+}
+
+// GetChatMessageByID retrieves a specific chat message by its ID
+func (p *PostgresDAO) GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error) {
+	var message ChatMessageRow
+	err := p.db.Get(&message, `
+		SELECT role, content, id, COALESCE(document_references::text, '') as document_references 
+		FROM chat_messages 
+		WHERE id = $1 AND user_id = $2`, messageID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &message, nil
+}
+
+// UpdateChatMessageDocumentReferences updates the document references for a specific message
+func (p *PostgresDAO) UpdateChatMessageDocumentReferences(userID string, messageID string, documentReferences string) error {
+	_, err := p.db.Exec(`
+		UPDATE chat_messages 
+		SET document_references = $1 
+		WHERE id = $2 AND user_id = $3`, documentReferences, messageID, userID)
+	return err
 }

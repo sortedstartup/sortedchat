@@ -30,6 +30,9 @@ import {
   SubmitGenerateEmbeddingsJob,
   $isErrorDocs,
   $isPolling,
+  $ragEnabled, // Add RAG enabled store
+  toggleRagEnabled, // Add toggle function
+  setRagEnabledForProject, // Add set function
 } from "@/store/chat";
 import { useNavigate, useParams } from "react-router-dom";
 import { Embedding_Status } from "../../proto/chatservice";
@@ -45,6 +48,7 @@ export function Project() {
   const chatsList = useStore($projectChatList);
   const isErrorDocs = useStore($isErrorDocs);
   const isPolling = useStore($isPolling);
+  const ragEnabled = useStore($ragEnabled); // Add RAG enabled state
 
   const navigate = useNavigate();
 
@@ -54,6 +58,8 @@ export function Project() {
     if (projectId) {
       $currentProjectId.set(projectId);
       fetchDocuments(projectId);
+     
+      setRagEnabledForProject(true);
     }
   }, [projectId]);
 
@@ -266,6 +272,19 @@ export function Project() {
       </div>
 
       <div className="bg-white p-4 border-t border-gray-200 flex-shrink-0">
+        {/* RAG Toggle for Project Chats */}
+        <div className="flex items-center mb-2 px-1">
+          <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={ragEnabled}
+              onChange={toggleRagEnabled}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span>Enable RAG (Retrieval-Augmented Generation)</span>
+          </label>
+        </div>
+        
         <div className="relative rounded-lg border border-gray-200 bg-gray-50 focus-within:ring-1 focus-within:ring-orange-500 p-1">
           <ChatInput
             placeholder="Type your message here..."

@@ -51,12 +51,8 @@ func (d *PostgresDAO) Infer(dummy string) error {
 	return nil
 }
 
-func (d *PostgresDAO) DownloadModel(userID string, modelName string, url string) error {
-	return nil
-}
-
 func (d *PostgresDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM inference_model_metadata WHERE name = $1`
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM inferenceservice_models_metadata WHERE name = $1`
 
 	var model ModelMetadata
 	err := d.db.Get(&model, query, modelName)
@@ -68,7 +64,7 @@ func (d *PostgresDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
 }
 
 func (d *PostgresDAO) GetAllModels() ([]*ModelMetadata, error) {
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM inference_model_metadata ORDER BY name`
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM inferenceservice_models_metadata ORDER BY name`
 
 	var models []*ModelMetadata
 	err := d.db.Select(&models, query)
@@ -81,7 +77,7 @@ func (d *PostgresDAO) GetAllModels() ([]*ModelMetadata, error) {
 
 func (d *PostgresDAO) UpdateModelProgress(id string, progress *DownloadProgress) error {
 	isDownloaded := progress.Status == StatusCompleted
-	query := `UPDATE inference_model_metadata SET progress = $1, is_downloaded = $2, status = $3 WHERE id = $4`
+	query := `UPDATE inferenceservice_models_metadata SET progress = $1, is_downloaded = $2, status = $3 WHERE id = $4`
 
 	progressJSON, err := progress.ToJSON()
 	if err != nil {
@@ -93,7 +89,7 @@ func (d *PostgresDAO) UpdateModelProgress(id string, progress *DownloadProgress)
 }
 
 func (d *PostgresDAO) UpdateModelFileStoreID(id string, filestoreID string) error {
-	query := `UPDATE inference_model_metadata SET filestore_id = $1 WHERE id = $2`
+	query := `UPDATE inferenceservice_models_metadata SET filestore_id = $1 WHERE id = $2`
 	_, err := d.db.Exec(query, filestoreID, id)
 	return err
 }

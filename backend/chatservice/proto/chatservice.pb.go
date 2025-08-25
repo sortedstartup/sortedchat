@@ -73,6 +73,110 @@ func (Embedding_Status) EnumDescriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{0}
 }
 
+type RAGDocumentReferenceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	DocId         string                 `protobuf:"bytes,3,opt,name=docId,proto3" json:"docId,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReferenceRequest) Reset() {
+	*x = RAGDocumentReferenceRequest{}
+	mi := &file_chatservice_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReferenceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReferenceRequest) ProtoMessage() {}
+
+func (x *RAGDocumentReferenceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReferenceRequest.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReferenceRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *RAGDocumentReferenceRequest) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *RAGDocumentReferenceRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *RAGDocumentReferenceRequest) GetDocId() string {
+	if x != nil {
+		return x.DocId
+	}
+	return ""
+}
+
+type RAGDocumentReferenceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Reference     *RAGDocumentReference  `protobuf:"bytes,1,opt,name=reference,proto3" json:"reference,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReferenceResponse) Reset() {
+	*x = RAGDocumentReferenceResponse{}
+	mi := &file_chatservice_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReferenceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReferenceResponse) ProtoMessage() {}
+
+func (x *RAGDocumentReferenceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReferenceResponse.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReferenceResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *RAGDocumentReferenceResponse) GetReference() *RAGDocumentReference {
+	if x != nil {
+		return x.Reference
+	}
+	return nil
+}
+
 type Settings struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	OPENAI_API_KEY string                 `protobuf:"bytes,1,opt,name=OPENAI_API_KEY,json=OPENAIAPIKEY,proto3" json:"OPENAI_API_KEY,omitempty"`
@@ -84,7 +188,7 @@ type Settings struct {
 
 func (x *Settings) Reset() {
 	*x = Settings{}
-	mi := &file_chatservice_proto_msgTypes[0]
+	mi := &file_chatservice_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -96,7 +200,7 @@ func (x *Settings) String() string {
 func (*Settings) ProtoMessage() {}
 
 func (x *Settings) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[0]
+	mi := &file_chatservice_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -109,7 +213,7 @@ func (x *Settings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Settings.ProtoReflect.Descriptor instead.
 func (*Settings) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{0}
+	return file_chatservice_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Settings) GetOPENAI_API_KEY() string {
@@ -141,7 +245,7 @@ type GetSettingRequest struct {
 
 func (x *GetSettingRequest) Reset() {
 	*x = GetSettingRequest{}
-	mi := &file_chatservice_proto_msgTypes[1]
+	mi := &file_chatservice_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -153,7 +257,7 @@ func (x *GetSettingRequest) String() string {
 func (*GetSettingRequest) ProtoMessage() {}
 
 func (x *GetSettingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[1]
+	mi := &file_chatservice_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -166,7 +270,7 @@ func (x *GetSettingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSettingRequest.ProtoReflect.Descriptor instead.
 func (*GetSettingRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{1}
+	return file_chatservice_proto_rawDescGZIP(), []int{3}
 }
 
 type GetSettingResponse struct {
@@ -178,7 +282,7 @@ type GetSettingResponse struct {
 
 func (x *GetSettingResponse) Reset() {
 	*x = GetSettingResponse{}
-	mi := &file_chatservice_proto_msgTypes[2]
+	mi := &file_chatservice_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -190,7 +294,7 @@ func (x *GetSettingResponse) String() string {
 func (*GetSettingResponse) ProtoMessage() {}
 
 func (x *GetSettingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[2]
+	mi := &file_chatservice_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -203,7 +307,7 @@ func (x *GetSettingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSettingResponse.ProtoReflect.Descriptor instead.
 func (*GetSettingResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{2}
+	return file_chatservice_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetSettingResponse) GetSettings() *Settings {
@@ -222,7 +326,7 @@ type SetSettingRequest struct {
 
 func (x *SetSettingRequest) Reset() {
 	*x = SetSettingRequest{}
-	mi := &file_chatservice_proto_msgTypes[3]
+	mi := &file_chatservice_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -234,7 +338,7 @@ func (x *SetSettingRequest) String() string {
 func (*SetSettingRequest) ProtoMessage() {}
 
 func (x *SetSettingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[3]
+	mi := &file_chatservice_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -247,7 +351,7 @@ func (x *SetSettingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetSettingRequest.ProtoReflect.Descriptor instead.
 func (*SetSettingRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{3}
+	return file_chatservice_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SetSettingRequest) GetSettings() *Settings {
@@ -266,7 +370,7 @@ type SetSettingResponse struct {
 
 func (x *SetSettingResponse) Reset() {
 	*x = SetSettingResponse{}
-	mi := &file_chatservice_proto_msgTypes[4]
+	mi := &file_chatservice_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -278,7 +382,7 @@ func (x *SetSettingResponse) String() string {
 func (*SetSettingResponse) ProtoMessage() {}
 
 func (x *SetSettingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[4]
+	mi := &file_chatservice_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -291,7 +395,7 @@ func (x *SetSettingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetSettingResponse.ProtoReflect.Descriptor instead.
 func (*SetSettingResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{4}
+	return file_chatservice_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SetSettingResponse) GetMessage() string {
@@ -311,7 +415,7 @@ type CreateChatRequest struct {
 
 func (x *CreateChatRequest) Reset() {
 	*x = CreateChatRequest{}
-	mi := &file_chatservice_proto_msgTypes[5]
+	mi := &file_chatservice_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -323,7 +427,7 @@ func (x *CreateChatRequest) String() string {
 func (*CreateChatRequest) ProtoMessage() {}
 
 func (x *CreateChatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[5]
+	mi := &file_chatservice_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -336,7 +440,7 @@ func (x *CreateChatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateChatRequest.ProtoReflect.Descriptor instead.
 func (*CreateChatRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{5}
+	return file_chatservice_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateChatRequest) GetName() string {
@@ -363,7 +467,7 @@ type CreateChatResponse struct {
 
 func (x *CreateChatResponse) Reset() {
 	*x = CreateChatResponse{}
-	mi := &file_chatservice_proto_msgTypes[6]
+	mi := &file_chatservice_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -375,7 +479,7 @@ func (x *CreateChatResponse) String() string {
 func (*CreateChatResponse) ProtoMessage() {}
 
 func (x *CreateChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[6]
+	mi := &file_chatservice_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -388,7 +492,7 @@ func (x *CreateChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateChatResponse.ProtoReflect.Descriptor instead.
 func (*CreateChatResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{6}
+	return file_chatservice_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CreateChatResponse) GetMessage() string {
@@ -405,19 +509,71 @@ func (x *CreateChatResponse) GetChatId() string {
 	return ""
 }
 
-type ChatRequest struct {
+type ProjectContext struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
-	ChatId        string                 `protobuf:"bytes,2,opt,name=chatId,proto3" json:"chatId,omitempty"`
-	Model         string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
-	ProjectId     string                 `protobuf:"bytes,4,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	RagEnabled    bool                   `protobuf:"varint,2,opt,name=rag_enabled,json=ragEnabled,proto3" json:"rag_enabled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *ProjectContext) Reset() {
+	*x = ProjectContext{}
+	mi := &file_chatservice_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectContext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectContext) ProtoMessage() {}
+
+func (x *ProjectContext) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectContext.ProtoReflect.Descriptor instead.
+func (*ProjectContext) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ProjectContext) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *ProjectContext) GetRagEnabled() bool {
+	if x != nil {
+		return x.RagEnabled
+	}
+	return false
+}
+
+type ChatRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Text           string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	ChatId         string                 `protobuf:"bytes,2,opt,name=chatId,proto3" json:"chatId,omitempty"`
+	Model          string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
+	ProjectContext *ProjectContext        `protobuf:"bytes,4,opt,name=project_context,json=projectContext,proto3" json:"project_context,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
 func (x *ChatRequest) Reset() {
 	*x = ChatRequest{}
-	mi := &file_chatservice_proto_msgTypes[7]
+	mi := &file_chatservice_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -429,7 +585,7 @@ func (x *ChatRequest) String() string {
 func (*ChatRequest) ProtoMessage() {}
 
 func (x *ChatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[7]
+	mi := &file_chatservice_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -442,7 +598,7 @@ func (x *ChatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatRequest.ProtoReflect.Descriptor instead.
 func (*ChatRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{7}
+	return file_chatservice_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ChatRequest) GetText() string {
@@ -466,11 +622,11 @@ func (x *ChatRequest) GetModel() string {
 	return ""
 }
 
-func (x *ChatRequest) GetProjectId() string {
+func (x *ChatRequest) GetProjectContext() *ProjectContext {
 	if x != nil {
-		return x.ProjectId
+		return x.ProjectContext
 	}
-	return ""
+	return nil
 }
 
 type ChatResponse struct {
@@ -479,6 +635,7 @@ type ChatResponse struct {
 	//
 	//	*ChatResponse_Text
 	//	*ChatResponse_Summary
+	//	*ChatResponse_DocumentReference
 	Response      isChatResponse_Response `protobuf_oneof:"response"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -486,7 +643,7 @@ type ChatResponse struct {
 
 func (x *ChatResponse) Reset() {
 	*x = ChatResponse{}
-	mi := &file_chatservice_proto_msgTypes[8]
+	mi := &file_chatservice_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -498,7 +655,7 @@ func (x *ChatResponse) String() string {
 func (*ChatResponse) ProtoMessage() {}
 
 func (x *ChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[8]
+	mi := &file_chatservice_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -511,7 +668,7 @@ func (x *ChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatResponse.ProtoReflect.Descriptor instead.
 func (*ChatResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{8}
+	return file_chatservice_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ChatResponse) GetResponse() isChatResponse_Response {
@@ -539,6 +696,15 @@ func (x *ChatResponse) GetSummary() *MessageSummary {
 	return nil
 }
 
+func (x *ChatResponse) GetDocumentReference() *RAGDocumentReferenceSummaryList {
+	if x != nil {
+		if x, ok := x.Response.(*ChatResponse_DocumentReference); ok {
+			return x.DocumentReference
+		}
+	}
+	return nil
+}
+
 type isChatResponse_Response interface {
 	isChatResponse_Response()
 }
@@ -548,12 +714,125 @@ type ChatResponse_Text struct {
 }
 
 type ChatResponse_Summary struct {
+	// was introduced to send message id, because it is generated server side
+	// sending one of the multiple oneof's help us do all of this in one streaming API call
 	Summary *MessageSummary `protobuf:"bytes,2,opt,name=summary,proto3,oneof"`
+}
+
+type ChatResponse_DocumentReference struct {
+	DocumentReference *RAGDocumentReferenceSummaryList `protobuf:"bytes,3,opt,name=document_reference,json=documentReference,proto3,oneof"`
 }
 
 func (*ChatResponse_Text) isChatResponse_Response() {}
 
 func (*ChatResponse_Summary) isChatResponse_Response() {}
+
+func (*ChatResponse_DocumentReference) isChatResponse_Response() {}
+
+// TODO: reasonable limits from server side, limit to 10 (constant in server side) docs
+type RAGDocumentReferenceSummaryList struct {
+	state         protoimpl.MessageState                     `protogen:"open.v1"`
+	Summary       []*RAGDocumentReferenceSummaryList_Summary `protobuf:"bytes,1,rep,name=summary,proto3" json:"summary,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReferenceSummaryList) Reset() {
+	*x = RAGDocumentReferenceSummaryList{}
+	mi := &file_chatservice_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReferenceSummaryList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReferenceSummaryList) ProtoMessage() {}
+
+func (x *RAGDocumentReferenceSummaryList) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReferenceSummaryList.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReferenceSummaryList) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RAGDocumentReferenceSummaryList) GetSummary() []*RAGDocumentReferenceSummaryList_Summary {
+	if x != nil {
+		return x.Summary
+	}
+	return nil
+}
+
+type RAGDocumentReference struct {
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	DocId         string                        `protobuf:"bytes,1,opt,name=doc_id,json=docId,proto3" json:"doc_id,omitempty"`
+	FileName      string                        `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	Chunks        []*RAGDocumentReference_Chunk `protobuf:"bytes,3,rep,name=Chunks,proto3" json:"Chunks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReference) Reset() {
+	*x = RAGDocumentReference{}
+	mi := &file_chatservice_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReference) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReference) ProtoMessage() {}
+
+func (x *RAGDocumentReference) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReference.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReference) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *RAGDocumentReference) GetDocId() string {
+	if x != nil {
+		return x.DocId
+	}
+	return ""
+}
+
+func (x *RAGDocumentReference) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *RAGDocumentReference) GetChunks() []*RAGDocumentReference_Chunk {
+	if x != nil {
+		return x.Chunks
+	}
+	return nil
+}
 
 type MessageSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -564,7 +843,7 @@ type MessageSummary struct {
 
 func (x *MessageSummary) Reset() {
 	*x = MessageSummary{}
-	mi := &file_chatservice_proto_msgTypes[9]
+	mi := &file_chatservice_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -576,7 +855,7 @@ func (x *MessageSummary) String() string {
 func (*MessageSummary) ProtoMessage() {}
 
 func (x *MessageSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[9]
+	mi := &file_chatservice_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -589,7 +868,7 @@ func (x *MessageSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageSummary.ProtoReflect.Descriptor instead.
 func (*MessageSummary) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{9}
+	return file_chatservice_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *MessageSummary) GetMessageId() string {
@@ -608,7 +887,7 @@ type GetHistoryRequest struct {
 
 func (x *GetHistoryRequest) Reset() {
 	*x = GetHistoryRequest{}
-	mi := &file_chatservice_proto_msgTypes[10]
+	mi := &file_chatservice_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -620,7 +899,7 @@ func (x *GetHistoryRequest) String() string {
 func (*GetHistoryRequest) ProtoMessage() {}
 
 func (x *GetHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[10]
+	mi := &file_chatservice_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -633,7 +912,7 @@ func (x *GetHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetHistoryRequest.ProtoReflect.Descriptor instead.
 func (*GetHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{10}
+	return file_chatservice_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetHistoryRequest) GetChatId() string {
@@ -652,7 +931,7 @@ type GetHistoryResponse struct {
 
 func (x *GetHistoryResponse) Reset() {
 	*x = GetHistoryResponse{}
-	mi := &file_chatservice_proto_msgTypes[11]
+	mi := &file_chatservice_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -664,7 +943,7 @@ func (x *GetHistoryResponse) String() string {
 func (*GetHistoryResponse) ProtoMessage() {}
 
 func (x *GetHistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[11]
+	mi := &file_chatservice_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -677,7 +956,7 @@ func (x *GetHistoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetHistoryResponse.ProtoReflect.Descriptor instead.
 func (*GetHistoryResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{11}
+	return file_chatservice_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetHistoryResponse) GetHistory() []*ChatMessage {
@@ -688,17 +967,19 @@ func (x *GetHistoryResponse) GetHistory() []*ChatMessage {
 }
 
 type ChatMessage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	MessageId     string                 `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Role          string                  `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	Content       string                  `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	MessageId     string                  `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	References    []*RAGDocumentReference `protobuf:"bytes,4,rep,name=references,proto3" json:"references,omitempty"`
+	RagEnabled    bool                    `protobuf:"varint,5,opt,name=rag_enabled,json=ragEnabled,proto3" json:"rag_enabled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ChatMessage) Reset() {
 	*x = ChatMessage{}
-	mi := &file_chatservice_proto_msgTypes[12]
+	mi := &file_chatservice_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -710,7 +991,7 @@ func (x *ChatMessage) String() string {
 func (*ChatMessage) ProtoMessage() {}
 
 func (x *ChatMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[12]
+	mi := &file_chatservice_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -723,7 +1004,7 @@ func (x *ChatMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
 func (*ChatMessage) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{12}
+	return file_chatservice_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ChatMessage) GetRole() string {
@@ -747,6 +1028,20 @@ func (x *ChatMessage) GetMessageId() string {
 	return ""
 }
 
+func (x *ChatMessage) GetReferences() []*RAGDocumentReference {
+	if x != nil {
+		return x.References
+	}
+	return nil
+}
+
+func (x *ChatMessage) GetRagEnabled() bool {
+	if x != nil {
+		return x.RagEnabled
+	}
+	return false
+}
+
 type GetChatListRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
@@ -756,7 +1051,7 @@ type GetChatListRequest struct {
 
 func (x *GetChatListRequest) Reset() {
 	*x = GetChatListRequest{}
-	mi := &file_chatservice_proto_msgTypes[13]
+	mi := &file_chatservice_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -768,7 +1063,7 @@ func (x *GetChatListRequest) String() string {
 func (*GetChatListRequest) ProtoMessage() {}
 
 func (x *GetChatListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[13]
+	mi := &file_chatservice_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -781,7 +1076,7 @@ func (x *GetChatListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChatListRequest.ProtoReflect.Descriptor instead.
 func (*GetChatListRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{13}
+	return file_chatservice_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GetChatListRequest) GetProjectId() string {
@@ -800,7 +1095,7 @@ type GetChatListResponse struct {
 
 func (x *GetChatListResponse) Reset() {
 	*x = GetChatListResponse{}
-	mi := &file_chatservice_proto_msgTypes[14]
+	mi := &file_chatservice_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -812,7 +1107,7 @@ func (x *GetChatListResponse) String() string {
 func (*GetChatListResponse) ProtoMessage() {}
 
 func (x *GetChatListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[14]
+	mi := &file_chatservice_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -825,7 +1120,7 @@ func (x *GetChatListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChatListResponse.ProtoReflect.Descriptor instead.
 func (*GetChatListResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{14}
+	return file_chatservice_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GetChatListResponse) GetChats() []*ChatInfo {
@@ -845,7 +1140,7 @@ type ChatInfo struct {
 
 func (x *ChatInfo) Reset() {
 	*x = ChatInfo{}
-	mi := &file_chatservice_proto_msgTypes[15]
+	mi := &file_chatservice_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -857,7 +1152,7 @@ func (x *ChatInfo) String() string {
 func (*ChatInfo) ProtoMessage() {}
 
 func (x *ChatInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[15]
+	mi := &file_chatservice_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -870,7 +1165,7 @@ func (x *ChatInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatInfo.ProtoReflect.Descriptor instead.
 func (*ChatInfo) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{15}
+	return file_chatservice_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ChatInfo) GetChatId() string {
@@ -901,7 +1196,7 @@ type ModelListInfo struct {
 
 func (x *ModelListInfo) Reset() {
 	*x = ModelListInfo{}
-	mi := &file_chatservice_proto_msgTypes[16]
+	mi := &file_chatservice_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -913,7 +1208,7 @@ func (x *ModelListInfo) String() string {
 func (*ModelListInfo) ProtoMessage() {}
 
 func (x *ModelListInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[16]
+	mi := &file_chatservice_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -926,7 +1221,7 @@ func (x *ModelListInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ModelListInfo.ProtoReflect.Descriptor instead.
 func (*ModelListInfo) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{16}
+	return file_chatservice_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ModelListInfo) GetId() string {
@@ -979,7 +1274,7 @@ type ListModelsRequest struct {
 
 func (x *ListModelsRequest) Reset() {
 	*x = ListModelsRequest{}
-	mi := &file_chatservice_proto_msgTypes[17]
+	mi := &file_chatservice_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -991,7 +1286,7 @@ func (x *ListModelsRequest) String() string {
 func (*ListModelsRequest) ProtoMessage() {}
 
 func (x *ListModelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[17]
+	mi := &file_chatservice_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1004,7 +1299,7 @@ func (x *ListModelsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListModelsRequest.ProtoReflect.Descriptor instead.
 func (*ListModelsRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{17}
+	return file_chatservice_proto_rawDescGZIP(), []int{22}
 }
 
 type ListModelsResponse struct {
@@ -1016,7 +1311,7 @@ type ListModelsResponse struct {
 
 func (x *ListModelsResponse) Reset() {
 	*x = ListModelsResponse{}
-	mi := &file_chatservice_proto_msgTypes[18]
+	mi := &file_chatservice_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1028,7 +1323,7 @@ func (x *ListModelsResponse) String() string {
 func (*ListModelsResponse) ProtoMessage() {}
 
 func (x *ListModelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[18]
+	mi := &file_chatservice_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1041,7 +1336,7 @@ func (x *ListModelsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListModelsResponse.ProtoReflect.Descriptor instead.
 func (*ListModelsResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{18}
+	return file_chatservice_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ListModelsResponse) GetModels() []*ModelListInfo {
@@ -1060,7 +1355,7 @@ type ChatSearchRequest struct {
 
 func (x *ChatSearchRequest) Reset() {
 	*x = ChatSearchRequest{}
-	mi := &file_chatservice_proto_msgTypes[19]
+	mi := &file_chatservice_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1072,7 +1367,7 @@ func (x *ChatSearchRequest) String() string {
 func (*ChatSearchRequest) ProtoMessage() {}
 
 func (x *ChatSearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[19]
+	mi := &file_chatservice_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1085,7 +1380,7 @@ func (x *ChatSearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatSearchRequest.ProtoReflect.Descriptor instead.
 func (*ChatSearchRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{19}
+	return file_chatservice_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ChatSearchRequest) GetQuery() string {
@@ -1106,7 +1401,7 @@ type SearchResult struct {
 
 func (x *SearchResult) Reset() {
 	*x = SearchResult{}
-	mi := &file_chatservice_proto_msgTypes[20]
+	mi := &file_chatservice_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1118,7 +1413,7 @@ func (x *SearchResult) String() string {
 func (*SearchResult) ProtoMessage() {}
 
 func (x *SearchResult) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[20]
+	mi := &file_chatservice_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1131,7 +1426,7 @@ func (x *SearchResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchResult.ProtoReflect.Descriptor instead.
 func (*SearchResult) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{20}
+	return file_chatservice_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *SearchResult) GetChatName() string {
@@ -1165,7 +1460,7 @@ type ChatSearchResponse struct {
 
 func (x *ChatSearchResponse) Reset() {
 	*x = ChatSearchResponse{}
-	mi := &file_chatservice_proto_msgTypes[21]
+	mi := &file_chatservice_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1177,7 +1472,7 @@ func (x *ChatSearchResponse) String() string {
 func (*ChatSearchResponse) ProtoMessage() {}
 
 func (x *ChatSearchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[21]
+	mi := &file_chatservice_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1190,7 +1485,7 @@ func (x *ChatSearchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatSearchResponse.ProtoReflect.Descriptor instead.
 func (*ChatSearchResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{21}
+	return file_chatservice_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ChatSearchResponse) GetQuery() string {
@@ -1218,7 +1513,7 @@ type CreateProjectRequest struct {
 
 func (x *CreateProjectRequest) Reset() {
 	*x = CreateProjectRequest{}
-	mi := &file_chatservice_proto_msgTypes[22]
+	mi := &file_chatservice_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1230,7 +1525,7 @@ func (x *CreateProjectRequest) String() string {
 func (*CreateProjectRequest) ProtoMessage() {}
 
 func (x *CreateProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[22]
+	mi := &file_chatservice_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1243,7 +1538,7 @@ func (x *CreateProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProjectRequest.ProtoReflect.Descriptor instead.
 func (*CreateProjectRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{22}
+	return file_chatservice_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *CreateProjectRequest) GetName() string {
@@ -1277,7 +1572,7 @@ type CreateProjectResponse struct {
 
 func (x *CreateProjectResponse) Reset() {
 	*x = CreateProjectResponse{}
-	mi := &file_chatservice_proto_msgTypes[23]
+	mi := &file_chatservice_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1289,7 +1584,7 @@ func (x *CreateProjectResponse) String() string {
 func (*CreateProjectResponse) ProtoMessage() {}
 
 func (x *CreateProjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[23]
+	mi := &file_chatservice_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1302,7 +1597,7 @@ func (x *CreateProjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProjectResponse.ProtoReflect.Descriptor instead.
 func (*CreateProjectResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{23}
+	return file_chatservice_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *CreateProjectResponse) GetMessage() string {
@@ -1327,7 +1622,7 @@ type GetProjectsRequest struct {
 
 func (x *GetProjectsRequest) Reset() {
 	*x = GetProjectsRequest{}
-	mi := &file_chatservice_proto_msgTypes[24]
+	mi := &file_chatservice_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1339,7 +1634,7 @@ func (x *GetProjectsRequest) String() string {
 func (*GetProjectsRequest) ProtoMessage() {}
 
 func (x *GetProjectsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[24]
+	mi := &file_chatservice_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1352,7 +1647,7 @@ func (x *GetProjectsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectsRequest.ProtoReflect.Descriptor instead.
 func (*GetProjectsRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{24}
+	return file_chatservice_proto_rawDescGZIP(), []int{29}
 }
 
 type GetProjectsResponse struct {
@@ -1364,7 +1659,7 @@ type GetProjectsResponse struct {
 
 func (x *GetProjectsResponse) Reset() {
 	*x = GetProjectsResponse{}
-	mi := &file_chatservice_proto_msgTypes[25]
+	mi := &file_chatservice_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1376,7 +1671,7 @@ func (x *GetProjectsResponse) String() string {
 func (*GetProjectsResponse) ProtoMessage() {}
 
 func (x *GetProjectsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[25]
+	mi := &file_chatservice_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1389,7 +1684,7 @@ func (x *GetProjectsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectsResponse.ProtoReflect.Descriptor instead.
 func (*GetProjectsResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{25}
+	return file_chatservice_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *GetProjectsResponse) GetProjects() []*Project {
@@ -1413,7 +1708,7 @@ type Project struct {
 
 func (x *Project) Reset() {
 	*x = Project{}
-	mi := &file_chatservice_proto_msgTypes[26]
+	mi := &file_chatservice_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1425,7 +1720,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[26]
+	mi := &file_chatservice_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1438,7 +1733,7 @@ func (x *Project) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project.ProtoReflect.Descriptor instead.
 func (*Project) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{26}
+	return file_chatservice_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *Project) GetId() string {
@@ -1492,7 +1787,7 @@ type ListDocumentsRequest struct {
 
 func (x *ListDocumentsRequest) Reset() {
 	*x = ListDocumentsRequest{}
-	mi := &file_chatservice_proto_msgTypes[27]
+	mi := &file_chatservice_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1504,7 +1799,7 @@ func (x *ListDocumentsRequest) String() string {
 func (*ListDocumentsRequest) ProtoMessage() {}
 
 func (x *ListDocumentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[27]
+	mi := &file_chatservice_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1517,7 +1812,7 @@ func (x *ListDocumentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDocumentsRequest.ProtoReflect.Descriptor instead.
 func (*ListDocumentsRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{27}
+	return file_chatservice_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ListDocumentsRequest) GetProjectId() string {
@@ -1536,7 +1831,7 @@ type ListDocumentsResponse struct {
 
 func (x *ListDocumentsResponse) Reset() {
 	*x = ListDocumentsResponse{}
-	mi := &file_chatservice_proto_msgTypes[28]
+	mi := &file_chatservice_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1548,7 +1843,7 @@ func (x *ListDocumentsResponse) String() string {
 func (*ListDocumentsResponse) ProtoMessage() {}
 
 func (x *ListDocumentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[28]
+	mi := &file_chatservice_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1561,7 +1856,7 @@ func (x *ListDocumentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDocumentsResponse.ProtoReflect.Descriptor instead.
 func (*ListDocumentsResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{28}
+	return file_chatservice_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ListDocumentsResponse) GetDocuments() []*Document {
@@ -1586,7 +1881,7 @@ type Document struct {
 
 func (x *Document) Reset() {
 	*x = Document{}
-	mi := &file_chatservice_proto_msgTypes[29]
+	mi := &file_chatservice_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1598,7 +1893,7 @@ func (x *Document) String() string {
 func (*Document) ProtoMessage() {}
 
 func (x *Document) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[29]
+	mi := &file_chatservice_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1611,7 +1906,7 @@ func (x *Document) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Document.ProtoReflect.Descriptor instead.
 func (*Document) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{29}
+	return file_chatservice_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *Document) GetId() int64 {
@@ -1672,7 +1967,7 @@ type GenerateEmbeddingRequest struct {
 
 func (x *GenerateEmbeddingRequest) Reset() {
 	*x = GenerateEmbeddingRequest{}
-	mi := &file_chatservice_proto_msgTypes[30]
+	mi := &file_chatservice_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1684,7 +1979,7 @@ func (x *GenerateEmbeddingRequest) String() string {
 func (*GenerateEmbeddingRequest) ProtoMessage() {}
 
 func (x *GenerateEmbeddingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[30]
+	mi := &file_chatservice_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1697,7 +1992,7 @@ func (x *GenerateEmbeddingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateEmbeddingRequest.ProtoReflect.Descriptor instead.
 func (*GenerateEmbeddingRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{30}
+	return file_chatservice_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GenerateEmbeddingRequest) GetProjectId() string {
@@ -1716,7 +2011,7 @@ type GenerateEmbeddingResponse struct {
 
 func (x *GenerateEmbeddingResponse) Reset() {
 	*x = GenerateEmbeddingResponse{}
-	mi := &file_chatservice_proto_msgTypes[31]
+	mi := &file_chatservice_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1728,7 +2023,7 @@ func (x *GenerateEmbeddingResponse) String() string {
 func (*GenerateEmbeddingResponse) ProtoMessage() {}
 
 func (x *GenerateEmbeddingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[31]
+	mi := &file_chatservice_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1741,7 +2036,7 @@ func (x *GenerateEmbeddingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateEmbeddingResponse.ProtoReflect.Descriptor instead.
 func (*GenerateEmbeddingResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{31}
+	return file_chatservice_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *GenerateEmbeddingResponse) GetMessage() string {
@@ -1762,7 +2057,7 @@ type GenerateChatNameRequest struct {
 
 func (x *GenerateChatNameRequest) Reset() {
 	*x = GenerateChatNameRequest{}
-	mi := &file_chatservice_proto_msgTypes[32]
+	mi := &file_chatservice_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1774,7 +2069,7 @@ func (x *GenerateChatNameRequest) String() string {
 func (*GenerateChatNameRequest) ProtoMessage() {}
 
 func (x *GenerateChatNameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[32]
+	mi := &file_chatservice_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1787,7 +2082,7 @@ func (x *GenerateChatNameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateChatNameRequest.ProtoReflect.Descriptor instead.
 func (*GenerateChatNameRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{32}
+	return file_chatservice_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *GenerateChatNameRequest) GetChatId() string {
@@ -1820,7 +2115,7 @@ type GenerateChatNameResponse struct {
 
 func (x *GenerateChatNameResponse) Reset() {
 	*x = GenerateChatNameResponse{}
-	mi := &file_chatservice_proto_msgTypes[33]
+	mi := &file_chatservice_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1832,7 +2127,7 @@ func (x *GenerateChatNameResponse) String() string {
 func (*GenerateChatNameResponse) ProtoMessage() {}
 
 func (x *GenerateChatNameResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[33]
+	mi := &file_chatservice_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1845,7 +2140,7 @@ func (x *GenerateChatNameResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateChatNameResponse.ProtoReflect.Descriptor instead.
 func (*GenerateChatNameResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{33}
+	return file_chatservice_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *GenerateChatNameResponse) GetChatName() string {
@@ -1866,7 +2161,7 @@ type BranchAChatRequest struct {
 
 func (x *BranchAChatRequest) Reset() {
 	*x = BranchAChatRequest{}
-	mi := &file_chatservice_proto_msgTypes[34]
+	mi := &file_chatservice_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1878,7 +2173,7 @@ func (x *BranchAChatRequest) String() string {
 func (*BranchAChatRequest) ProtoMessage() {}
 
 func (x *BranchAChatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[34]
+	mi := &file_chatservice_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1891,7 +2186,7 @@ func (x *BranchAChatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BranchAChatRequest.ProtoReflect.Descriptor instead.
 func (*BranchAChatRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{34}
+	return file_chatservice_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *BranchAChatRequest) GetSourceChatId() string {
@@ -1925,7 +2220,7 @@ type BranchAChatResponse struct {
 
 func (x *BranchAChatResponse) Reset() {
 	*x = BranchAChatResponse{}
-	mi := &file_chatservice_proto_msgTypes[35]
+	mi := &file_chatservice_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1937,7 +2232,7 @@ func (x *BranchAChatResponse) String() string {
 func (*BranchAChatResponse) ProtoMessage() {}
 
 func (x *BranchAChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[35]
+	mi := &file_chatservice_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1950,7 +2245,7 @@ func (x *BranchAChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BranchAChatResponse.ProtoReflect.Descriptor instead.
 func (*BranchAChatResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{35}
+	return file_chatservice_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *BranchAChatResponse) GetMessage() string {
@@ -1976,7 +2271,7 @@ type ListChatBranchRequest struct {
 
 func (x *ListChatBranchRequest) Reset() {
 	*x = ListChatBranchRequest{}
-	mi := &file_chatservice_proto_msgTypes[36]
+	mi := &file_chatservice_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1988,7 +2283,7 @@ func (x *ListChatBranchRequest) String() string {
 func (*ListChatBranchRequest) ProtoMessage() {}
 
 func (x *ListChatBranchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[36]
+	mi := &file_chatservice_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2001,7 +2296,7 @@ func (x *ListChatBranchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChatBranchRequest.ProtoReflect.Descriptor instead.
 func (*ListChatBranchRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{36}
+	return file_chatservice_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *ListChatBranchRequest) GetChatId() string {
@@ -2020,7 +2315,7 @@ type ListChatBranchResponse struct {
 
 func (x *ListChatBranchResponse) Reset() {
 	*x = ListChatBranchResponse{}
-	mi := &file_chatservice_proto_msgTypes[37]
+	mi := &file_chatservice_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2032,7 +2327,7 @@ func (x *ListChatBranchResponse) String() string {
 func (*ListChatBranchResponse) ProtoMessage() {}
 
 func (x *ListChatBranchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[37]
+	mi := &file_chatservice_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2045,7 +2340,7 @@ func (x *ListChatBranchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChatBranchResponse.ProtoReflect.Descriptor instead.
 func (*ListChatBranchResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{37}
+	return file_chatservice_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *ListChatBranchResponse) GetBranchChatList() []*ChatInfo {
@@ -2055,12 +2350,148 @@ func (x *ListChatBranchResponse) GetBranchChatList() []*ChatInfo {
 	return nil
 }
 
+type RAGDocumentReferenceSummaryList_Summary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DocId         string                 `protobuf:"bytes,1,opt,name=doc_id,json=docId,proto3" json:"doc_id,omitempty"`
+	FileName      string                 `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	ChunkCount    int32                  `protobuf:"varint,3,opt,name=chunkCount,proto3" json:"chunkCount,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) Reset() {
+	*x = RAGDocumentReferenceSummaryList_Summary{}
+	mi := &file_chatservice_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReferenceSummaryList_Summary) ProtoMessage() {}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReferenceSummaryList_Summary.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReferenceSummaryList_Summary) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{12, 0}
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) GetDocId() string {
+	if x != nil {
+		return x.DocId
+	}
+	return ""
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) GetChunkCount() int32 {
+	if x != nil {
+		return x.ChunkCount
+	}
+	return 0
+}
+
+type RAGDocumentReference_Chunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChunkText     string                 `protobuf:"bytes,3,opt,name=chunk_text,json=chunkText,proto3" json:"chunk_text,omitempty"`
+	StartByte     int32                  `protobuf:"varint,4,opt,name=start_byte,json=startByte,proto3" json:"start_byte,omitempty"`
+	EndByte       int32                  `protobuf:"varint,5,opt,name=end_byte,json=endByte,proto3" json:"end_byte,omitempty"`
+	Simillarity   float32                `protobuf:"fixed32,6,opt,name=simillarity,proto3" json:"simillarity,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReference_Chunk) Reset() {
+	*x = RAGDocumentReference_Chunk{}
+	mi := &file_chatservice_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReference_Chunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReference_Chunk) ProtoMessage() {}
+
+func (x *RAGDocumentReference_Chunk) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReference_Chunk.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReference_Chunk) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{13, 0}
+}
+
+func (x *RAGDocumentReference_Chunk) GetChunkText() string {
+	if x != nil {
+		return x.ChunkText
+	}
+	return ""
+}
+
+func (x *RAGDocumentReference_Chunk) GetStartByte() int32 {
+	if x != nil {
+		return x.StartByte
+	}
+	return 0
+}
+
+func (x *RAGDocumentReference_Chunk) GetEndByte() int32 {
+	if x != nil {
+		return x.EndByte
+	}
+	return 0
+}
+
+func (x *RAGDocumentReference_Chunk) GetSimillarity() float32 {
+	if x != nil {
+		return x.Simillarity
+	}
+	return 0
+}
+
 var File_chatservice_proto protoreflect.FileDescriptor
 
 const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"\x11chatservice.proto\x12\n" +
-	"sortedchat\"u\n" +
+	"sortedchat\"q\n" +
+	"\x1bRAGDocumentReferenceRequest\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x12\x14\n" +
+	"\x05docId\x18\x03 \x01(\tR\x05docId\"^\n" +
+	"\x1cRAGDocumentReferenceResponse\x12>\n" +
+	"\treference\x18\x01 \x01(\v2 .sortedchat.RAGDocumentReferenceR\treference\"u\n" +
 	"\bSettings\x12$\n" +
 	"\x0eOPENAI_API_KEY\x18\x01 \x01(\tR\fOPENAIAPIKEY\x12$\n" +
 	"\x0eOPENAI_API_URL\x18\x02 \x01(\tR\fOPENAIAPIURL\x12\x1d\n" +
@@ -2079,30 +2510,59 @@ const file_chatservice_proto_rawDesc = "" +
 	"project_id\x18\x02 \x01(\tR\tprojectId\"G\n" +
 	"\x12CreateChatResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12\x17\n" +
-	"\achat_id\x18\x02 \x01(\tR\x06chatId\"n\n" +
+	"\achat_id\x18\x02 \x01(\tR\x06chatId\"P\n" +
+	"\x0eProjectContext\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x1f\n" +
+	"\vrag_enabled\x18\x02 \x01(\bR\n" +
+	"ragEnabled\"\x94\x01\n" +
 	"\vChatRequest\x12\x12\n" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12\x16\n" +
 	"\x06chatId\x18\x02 \x01(\tR\x06chatId\x12\x14\n" +
-	"\x05model\x18\x03 \x01(\tR\x05model\x12\x1d\n" +
-	"\n" +
-	"project_id\x18\x04 \x01(\tR\tprojectId\"h\n" +
+	"\x05model\x18\x03 \x01(\tR\x05model\x12C\n" +
+	"\x0fproject_context\x18\x04 \x01(\v2\x1a.sortedchat.ProjectContextR\x0eprojectContext\"\xc6\x01\n" +
 	"\fChatResponse\x12\x14\n" +
 	"\x04text\x18\x01 \x01(\tH\x00R\x04text\x126\n" +
-	"\asummary\x18\x02 \x01(\v2\x1a.sortedchat.MessageSummaryH\x00R\asummaryB\n" +
+	"\asummary\x18\x02 \x01(\v2\x1a.sortedchat.MessageSummaryH\x00R\asummary\x12\\\n" +
+	"\x12document_reference\x18\x03 \x01(\v2+.sortedchat.RAGDocumentReferenceSummaryListH\x00R\x11documentReferenceB\n" +
 	"\n" +
-	"\bresponse\"/\n" +
+	"\bresponse\"\xcf\x01\n" +
+	"\x1fRAGDocumentReferenceSummaryList\x12M\n" +
+	"\asummary\x18\x01 \x03(\v23.sortedchat.RAGDocumentReferenceSummaryList.SummaryR\asummary\x1a]\n" +
+	"\aSummary\x12\x15\n" +
+	"\x06doc_id\x18\x01 \x01(\tR\x05docId\x12\x1b\n" +
+	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12\x1e\n" +
+	"\n" +
+	"chunkCount\x18\x03 \x01(\x05R\n" +
+	"chunkCount\"\x8f\x02\n" +
+	"\x14RAGDocumentReference\x12\x15\n" +
+	"\x06doc_id\x18\x01 \x01(\tR\x05docId\x12\x1b\n" +
+	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12>\n" +
+	"\x06Chunks\x18\x03 \x03(\v2&.sortedchat.RAGDocumentReference.ChunkR\x06Chunks\x1a\x82\x01\n" +
+	"\x05Chunk\x12\x1d\n" +
+	"\n" +
+	"chunk_text\x18\x03 \x01(\tR\tchunkText\x12\x1d\n" +
+	"\n" +
+	"start_byte\x18\x04 \x01(\x05R\tstartByte\x12\x19\n" +
+	"\bend_byte\x18\x05 \x01(\x05R\aendByte\x12 \n" +
+	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"/\n" +
 	"\x0eMessageSummary\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\"+\n" +
 	"\x11GetHistoryRequest\x12\x16\n" +
 	"\x06chatId\x18\x01 \x01(\tR\x06chatId\"G\n" +
 	"\x12GetHistoryResponse\x121\n" +
-	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\"Z\n" +
+	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\"\xbd\x01\n" +
 	"\vChatMessage\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
 	"\n" +
-	"message_id\x18\x03 \x01(\tR\tmessageId\"3\n" +
+	"message_id\x18\x03 \x01(\tR\tmessageId\x12@\n" +
+	"\n" +
+	"references\x18\x04 \x03(\v2 .sortedchat.RAGDocumentReferenceR\n" +
+	"references\x12\x1f\n" +
+	"\vrag_enabled\x18\x05 \x01(\bR\n" +
+	"ragEnabled\"3\n" +
 	"\x12GetChatListRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\"A\n" +
@@ -2193,7 +2653,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"\rSTATUS_QUEUED\x10\x00\x12\x16\n" +
 	"\x12STATUS_IN_PROGRESS\x10\x01\x12\x10\n" +
 	"\fSTATUS_ERROR\x10\x02\x12\x12\n" +
-	"\x0eSTATUS_SUCCESS\x10\x032\xbc\b\n" +
+	"\x0eSTATUS_SUCCESS\x10\x032\xaa\t\n" +
 	"\n" +
 	"SortedChat\x12;\n" +
 	"\x04Chat\x12\x17.sortedchat.ChatRequest\x1a\x18.sortedchat.ChatResponse0\x01\x12]\n" +
@@ -2205,7 +2665,8 @@ const file_chatservice_proto_rawDesc = "" +
 	"CreateChat\x12\x1d.sortedchat.CreateChatRequest\x1a\x1e.sortedchat.CreateChatResponse\x12J\n" +
 	"\tListModel\x12\x1d.sortedchat.ListModelsRequest\x1a\x1e.sortedchat.ListModelsResponse\x12K\n" +
 	"\n" +
-	"SearchChat\x12\x1d.sortedchat.ChatSearchRequest\x1a\x1e.sortedchat.ChatSearchResponse\x12T\n" +
+	"SearchChat\x12\x1d.sortedchat.ChatSearchRequest\x1a\x1e.sortedchat.ChatSearchResponse\x12l\n" +
+	"\x17GetRAGDocumentReference\x12'.sortedchat.RAGDocumentReferenceRequest\x1a(.sortedchat.RAGDocumentReferenceResponse\x12T\n" +
 	"\rCreateProject\x12 .sortedchat.CreateProjectRequest\x1a!.sortedchat.CreateProjectResponse\x12N\n" +
 	"\vGetProjects\x12\x1e.sortedchat.GetProjectsRequest\x1a\x1f.sortedchat.GetProjectsResponse\x12T\n" +
 	"\rListDocuments\x12 .sortedchat.ListDocumentsRequest\x1a!.sortedchat.ListDocumentsResponse\x12j\n" +
@@ -2231,95 +2692,110 @@ func file_chatservice_proto_rawDescGZIP() []byte {
 }
 
 var file_chatservice_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 45)
 var file_chatservice_proto_goTypes = []any{
-	(Embedding_Status)(0),             // 0: sortedchat.Embedding_Status
-	(*Settings)(nil),                  // 1: sortedchat.Settings
-	(*GetSettingRequest)(nil),         // 2: sortedchat.GetSettingRequest
-	(*GetSettingResponse)(nil),        // 3: sortedchat.GetSettingResponse
-	(*SetSettingRequest)(nil),         // 4: sortedchat.SetSettingRequest
-	(*SetSettingResponse)(nil),        // 5: sortedchat.SetSettingResponse
-	(*CreateChatRequest)(nil),         // 6: sortedchat.CreateChatRequest
-	(*CreateChatResponse)(nil),        // 7: sortedchat.CreateChatResponse
-	(*ChatRequest)(nil),               // 8: sortedchat.ChatRequest
-	(*ChatResponse)(nil),              // 9: sortedchat.ChatResponse
-	(*MessageSummary)(nil),            // 10: sortedchat.MessageSummary
-	(*GetHistoryRequest)(nil),         // 11: sortedchat.GetHistoryRequest
-	(*GetHistoryResponse)(nil),        // 12: sortedchat.GetHistoryResponse
-	(*ChatMessage)(nil),               // 13: sortedchat.ChatMessage
-	(*GetChatListRequest)(nil),        // 14: sortedchat.GetChatListRequest
-	(*GetChatListResponse)(nil),       // 15: sortedchat.GetChatListResponse
-	(*ChatInfo)(nil),                  // 16: sortedchat.ChatInfo
-	(*ModelListInfo)(nil),             // 17: sortedchat.ModelListInfo
-	(*ListModelsRequest)(nil),         // 18: sortedchat.ListModelsRequest
-	(*ListModelsResponse)(nil),        // 19: sortedchat.ListModelsResponse
-	(*ChatSearchRequest)(nil),         // 20: sortedchat.ChatSearchRequest
-	(*SearchResult)(nil),              // 21: sortedchat.SearchResult
-	(*ChatSearchResponse)(nil),        // 22: sortedchat.ChatSearchResponse
-	(*CreateProjectRequest)(nil),      // 23: sortedchat.CreateProjectRequest
-	(*CreateProjectResponse)(nil),     // 24: sortedchat.CreateProjectResponse
-	(*GetProjectsRequest)(nil),        // 25: sortedchat.GetProjectsRequest
-	(*GetProjectsResponse)(nil),       // 26: sortedchat.GetProjectsResponse
-	(*Project)(nil),                   // 27: sortedchat.Project
-	(*ListDocumentsRequest)(nil),      // 28: sortedchat.ListDocumentsRequest
-	(*ListDocumentsResponse)(nil),     // 29: sortedchat.ListDocumentsResponse
-	(*Document)(nil),                  // 30: sortedchat.Document
-	(*GenerateEmbeddingRequest)(nil),  // 31: sortedchat.GenerateEmbeddingRequest
-	(*GenerateEmbeddingResponse)(nil), // 32: sortedchat.GenerateEmbeddingResponse
-	(*GenerateChatNameRequest)(nil),   // 33: sortedchat.GenerateChatNameRequest
-	(*GenerateChatNameResponse)(nil),  // 34: sortedchat.GenerateChatNameResponse
-	(*BranchAChatRequest)(nil),        // 35: sortedchat.BranchAChatRequest
-	(*BranchAChatResponse)(nil),       // 36: sortedchat.BranchAChatResponse
-	(*ListChatBranchRequest)(nil),     // 37: sortedchat.ListChatBranchRequest
-	(*ListChatBranchResponse)(nil),    // 38: sortedchat.ListChatBranchResponse
+	(Embedding_Status)(0),                           // 0: sortedchat.Embedding_Status
+	(*RAGDocumentReferenceRequest)(nil),             // 1: sortedchat.RAGDocumentReferenceRequest
+	(*RAGDocumentReferenceResponse)(nil),            // 2: sortedchat.RAGDocumentReferenceResponse
+	(*Settings)(nil),                                // 3: sortedchat.Settings
+	(*GetSettingRequest)(nil),                       // 4: sortedchat.GetSettingRequest
+	(*GetSettingResponse)(nil),                      // 5: sortedchat.GetSettingResponse
+	(*SetSettingRequest)(nil),                       // 6: sortedchat.SetSettingRequest
+	(*SetSettingResponse)(nil),                      // 7: sortedchat.SetSettingResponse
+	(*CreateChatRequest)(nil),                       // 8: sortedchat.CreateChatRequest
+	(*CreateChatResponse)(nil),                      // 9: sortedchat.CreateChatResponse
+	(*ProjectContext)(nil),                          // 10: sortedchat.ProjectContext
+	(*ChatRequest)(nil),                             // 11: sortedchat.ChatRequest
+	(*ChatResponse)(nil),                            // 12: sortedchat.ChatResponse
+	(*RAGDocumentReferenceSummaryList)(nil),         // 13: sortedchat.RAGDocumentReferenceSummaryList
+	(*RAGDocumentReference)(nil),                    // 14: sortedchat.RAGDocumentReference
+	(*MessageSummary)(nil),                          // 15: sortedchat.MessageSummary
+	(*GetHistoryRequest)(nil),                       // 16: sortedchat.GetHistoryRequest
+	(*GetHistoryResponse)(nil),                      // 17: sortedchat.GetHistoryResponse
+	(*ChatMessage)(nil),                             // 18: sortedchat.ChatMessage
+	(*GetChatListRequest)(nil),                      // 19: sortedchat.GetChatListRequest
+	(*GetChatListResponse)(nil),                     // 20: sortedchat.GetChatListResponse
+	(*ChatInfo)(nil),                                // 21: sortedchat.ChatInfo
+	(*ModelListInfo)(nil),                           // 22: sortedchat.ModelListInfo
+	(*ListModelsRequest)(nil),                       // 23: sortedchat.ListModelsRequest
+	(*ListModelsResponse)(nil),                      // 24: sortedchat.ListModelsResponse
+	(*ChatSearchRequest)(nil),                       // 25: sortedchat.ChatSearchRequest
+	(*SearchResult)(nil),                            // 26: sortedchat.SearchResult
+	(*ChatSearchResponse)(nil),                      // 27: sortedchat.ChatSearchResponse
+	(*CreateProjectRequest)(nil),                    // 28: sortedchat.CreateProjectRequest
+	(*CreateProjectResponse)(nil),                   // 29: sortedchat.CreateProjectResponse
+	(*GetProjectsRequest)(nil),                      // 30: sortedchat.GetProjectsRequest
+	(*GetProjectsResponse)(nil),                     // 31: sortedchat.GetProjectsResponse
+	(*Project)(nil),                                 // 32: sortedchat.Project
+	(*ListDocumentsRequest)(nil),                    // 33: sortedchat.ListDocumentsRequest
+	(*ListDocumentsResponse)(nil),                   // 34: sortedchat.ListDocumentsResponse
+	(*Document)(nil),                                // 35: sortedchat.Document
+	(*GenerateEmbeddingRequest)(nil),                // 36: sortedchat.GenerateEmbeddingRequest
+	(*GenerateEmbeddingResponse)(nil),               // 37: sortedchat.GenerateEmbeddingResponse
+	(*GenerateChatNameRequest)(nil),                 // 38: sortedchat.GenerateChatNameRequest
+	(*GenerateChatNameResponse)(nil),                // 39: sortedchat.GenerateChatNameResponse
+	(*BranchAChatRequest)(nil),                      // 40: sortedchat.BranchAChatRequest
+	(*BranchAChatResponse)(nil),                     // 41: sortedchat.BranchAChatResponse
+	(*ListChatBranchRequest)(nil),                   // 42: sortedchat.ListChatBranchRequest
+	(*ListChatBranchResponse)(nil),                  // 43: sortedchat.ListChatBranchResponse
+	(*RAGDocumentReferenceSummaryList_Summary)(nil), // 44: sortedchat.RAGDocumentReferenceSummaryList.Summary
+	(*RAGDocumentReference_Chunk)(nil),              // 45: sortedchat.RAGDocumentReference.Chunk
 }
 var file_chatservice_proto_depIdxs = []int32{
-	1,  // 0: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
-	1,  // 1: sortedchat.SetSettingRequest.settings:type_name -> sortedchat.Settings
-	10, // 2: sortedchat.ChatResponse.summary:type_name -> sortedchat.MessageSummary
-	13, // 3: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
-	16, // 4: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
-	17, // 5: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
-	21, // 6: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
-	27, // 7: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
-	30, // 8: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
-	0,  // 9: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
-	16, // 10: sortedchat.ListChatBranchResponse.branch_chat_list:type_name -> sortedchat.ChatInfo
-	8,  // 11: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	33, // 12: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
-	11, // 13: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
-	14, // 14: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
-	6,  // 15: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
-	18, // 16: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
-	20, // 17: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
-	23, // 18: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
-	25, // 19: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
-	28, // 20: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
-	31, // 21: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
-	35, // 22: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
-	37, // 23: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
-	2,  // 24: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
-	4,  // 25: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
-	9,  // 26: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	34, // 27: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
-	12, // 28: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
-	15, // 29: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
-	7,  // 30: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	19, // 31: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
-	22, // 32: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
-	24, // 33: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
-	26, // 34: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
-	29, // 35: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
-	32, // 36: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
-	36, // 37: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
-	38, // 38: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
-	3,  // 39: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
-	5,  // 40: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
-	26, // [26:41] is the sub-list for method output_type
-	11, // [11:26] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	14, // 0: sortedchat.RAGDocumentReferenceResponse.reference:type_name -> sortedchat.RAGDocumentReference
+	3,  // 1: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
+	3,  // 2: sortedchat.SetSettingRequest.settings:type_name -> sortedchat.Settings
+	10, // 3: sortedchat.ChatRequest.project_context:type_name -> sortedchat.ProjectContext
+	15, // 4: sortedchat.ChatResponse.summary:type_name -> sortedchat.MessageSummary
+	13, // 5: sortedchat.ChatResponse.document_reference:type_name -> sortedchat.RAGDocumentReferenceSummaryList
+	44, // 6: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
+	45, // 7: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
+	18, // 8: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
+	14, // 9: sortedchat.ChatMessage.references:type_name -> sortedchat.RAGDocumentReference
+	21, // 10: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
+	22, // 11: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
+	26, // 12: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
+	32, // 13: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
+	35, // 14: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
+	0,  // 15: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
+	21, // 16: sortedchat.ListChatBranchResponse.branch_chat_list:type_name -> sortedchat.ChatInfo
+	11, // 17: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
+	38, // 18: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
+	16, // 19: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
+	19, // 20: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
+	8,  // 21: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
+	23, // 22: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
+	25, // 23: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
+	1,  // 24: sortedchat.SortedChat.GetRAGDocumentReference:input_type -> sortedchat.RAGDocumentReferenceRequest
+	28, // 25: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
+	30, // 26: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
+	33, // 27: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
+	36, // 28: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
+	40, // 29: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
+	42, // 30: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
+	4,  // 31: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
+	6,  // 32: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
+	12, // 33: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	39, // 34: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
+	17, // 35: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
+	20, // 36: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
+	9,  // 37: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
+	24, // 38: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
+	27, // 39: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
+	2,  // 40: sortedchat.SortedChat.GetRAGDocumentReference:output_type -> sortedchat.RAGDocumentReferenceResponse
+	29, // 41: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
+	31, // 42: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
+	34, // 43: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
+	37, // 44: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
+	41, // 45: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
+	43, // 46: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
+	5,  // 47: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
+	7,  // 48: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
+	33, // [33:49] is the sub-list for method output_type
+	17, // [17:33] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_chatservice_proto_init() }
@@ -2327,9 +2803,10 @@ func file_chatservice_proto_init() {
 	if File_chatservice_proto != nil {
 		return
 	}
-	file_chatservice_proto_msgTypes[8].OneofWrappers = []any{
+	file_chatservice_proto_msgTypes[11].OneofWrappers = []any{
 		(*ChatResponse_Text)(nil),
 		(*ChatResponse_Summary)(nil),
+		(*ChatResponse_DocumentReference)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2337,7 +2814,7 @@ func file_chatservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chatservice_proto_rawDesc), len(file_chatservice_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   38,
+			NumMessages:   45,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

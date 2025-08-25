@@ -1,0 +1,1 @@
+-- PostgreSQL seed data for model metadata

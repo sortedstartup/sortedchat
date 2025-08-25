@@ -11,6 +11,7 @@ import (
 	"sortedstartup/chatservice/queue"
 	"sortedstartup/chatservice/service"
 	settings "sortedstartup/chatservice/settings"
+	"sortedstartup/common/auth"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -58,8 +59,6 @@ type ChatServiceAPI struct {
 	service *service.ChatService
 }
 
-const HARDCODED_USER_ID = "0"
-
 func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory db.DAOFactory) *ChatServiceAPI {
 	settingsManager.LoadSettingsFromDB()
 
@@ -79,13 +78,21 @@ func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *sett
 }
 
 func (s *ChatServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
-	return s.service.Chat(stream.Context(), HARDCODED_USER_ID, req, func(response *pb.ChatResponse) error {
+	userID, err := auth.GetUserIDFromContext_WithError(stream.Context())
+	if err != nil {
+		return err
+	}
+	return s.service.Chat(stream.Context(), userID, req, func(response *pb.ChatResponse) error {
 		return stream.Send(response)
 	})
 }
 
 func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateChatNameRequest) (*pb.GenerateChatNameResponse, error) {
-	chatName, err := s.service.GenerateChatName(ctx, HARDCODED_USER_ID, req.GetChatId(), req.GetMessage(), req.GetModel())
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	chatName, err := s.service.GenerateChatName(ctx, userID, req.GetChatId(), req.GetMessage(), req.GetModel())
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +103,11 @@ func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateC
 }
 
 func (s *ChatServiceAPI) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
-	history, err := s.service.GetHistory(ctx, HARDCODED_USER_ID, req.ChatId)
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	history, err := s.service.GetHistory(ctx, userID, req.ChatId)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +118,11 @@ func (s *ChatServiceAPI) GetHistory(ctx context.Context, req *pb.GetHistoryReque
 }
 
 func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
-	chats, err := s.service.GetChatList(ctx, HARDCODED_USER_ID, req.GetProjectId())
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	chats, err := s.service.GetChatList(ctx, userID, req.GetProjectId())
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +130,11 @@ func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListReq
 }
 
 func (s *ChatServiceAPI) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
-	chatId, err := s.service.CreateChat(ctx, HARDCODED_USER_ID, req.Name, req.GetProjectId())
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	chatId, err := s.service.CreateChat(ctx, userID, req.Name, req.GetProjectId())
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +155,11 @@ func (s *ChatServiceAPI) ListModel(ctx context.Context, req *pb.ListModelsReques
 }
 
 func (s *ChatServiceAPI) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
-	results, err := s.service.SearchChat(ctx, HARDCODED_USER_ID, req.Query)
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	results, err := s.service.SearchChat(ctx, userID, req.Query)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +171,12 @@ func (s *ChatServiceAPI) SearchChat(ctx context.Context, req *pb.ChatSearchReque
 }
 
 func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
-	projectID, err := s.service.CreateProject(ctx, HARDCODED_USER_ID, req.Name, req.Description, req.AdditionalData)
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	projectID, err := s.service.CreateProject(ctx, userID, req.Name, req.Description, req.AdditionalData)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +188,12 @@ func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjec
 }
 
 func (s *ChatServiceAPI) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
-	projects, err := s.service.GetProjects(ctx, HARDCODED_USER_ID)
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	projects, err := s.service.GetProjects(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +214,11 @@ func (s *ChatServiceAPI) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 }
 
 func (s *ChatServiceAPI) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
-	docs, err := s.service.ListDocuments(ctx, HARDCODED_USER_ID, req.GetProjectId())
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	docs, err := s.service.ListDocuments(ctx, userID, req.GetProjectId())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch documents: %v", err)
 	}
@@ -205,7 +242,12 @@ func (s *ChatServiceAPI) ListDocuments(ctx context.Context, req *pb.ListDocument
 }
 
 func (s *ChatServiceAPI) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.GenerateEmbeddingRequest) (*pb.GenerateEmbeddingResponse, error) {
-	err := s.service.SubmitGenerateEmbeddingsJob(ctx, HARDCODED_USER_ID, req.GetProjectId())
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.service.SubmitGenerateEmbeddingsJob(ctx, userID, req.GetProjectId())
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +258,12 @@ func (s *ChatServiceAPI) SubmitGenerateEmbeddingsJob(ctx context.Context, req *p
 }
 
 func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatRequest) (*pb.BranchAChatResponse, error) {
-	newChatId, err := s.service.BranchAChat(ctx, HARDCODED_USER_ID, req.SourceChatId, req.BranchFromMessageId, req.BranchName)
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	newChatId, err := s.service.BranchAChat(ctx, userID, req.SourceChatId, req.BranchFromMessageId, req.BranchName)
 	if err != nil {
 		return &pb.BranchAChatResponse{
 			Message: err.Error(),
@@ -230,7 +277,12 @@ func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatReq
 }
 
 func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBranchRequest) (*pb.ListChatBranchResponse, error) {
-	branches, err := s.service.ListChatBranch(ctx, HARDCODED_USER_ID, req.GetChatId())
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	branches, err := s.service.ListChatBranch(ctx, userID, req.GetChatId())
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +301,11 @@ func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBra
 }
 
 func (s *ChatServiceAPI) GetRAGDocumentReference(ctx context.Context, req *pb.RAGDocumentReferenceRequest) (*pb.RAGDocumentReferenceResponse, error) {
-	return s.service.GetRAGDocumentReference(ctx, HARDCODED_USER_ID, req)
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.service.GetRAGDocumentReference(ctx, userID, req)
 }
 
 func (s *ChatServiceAPI) DeleteDocument(ctx context.Context, req *pb.DeleteDocumentRequest) (*pb.DeleteDocumentResponse, error) {

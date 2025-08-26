@@ -362,15 +362,18 @@ func (s *InferenceService) CancelDownload(ctx context.Context, userID string, mo
 	}
 	s.mu.Unlock()
 
-	err = s.dao.UpdateModelProgress(model.ID, &dao.DownloadProgress{
-		FileSize: 0,
-		Status:   dao.StatusCancelling,
-		Progress: 0,
-		Speed:    0,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update model progress: %w", err)
-	}
+	// This was leading to a unexpected situation some times
+	// the UI ws stuck in cancelling state if there was a databas error
+	// the db error was happening in sqlite without WAL due to read & write locks
+	// err = s.dao.UpdateModelProgress(model.ID, &dao.DownloadProgress{
+	// 	FileSize: 0,
+	// 	Status:   dao.StatusCancelling,
+	// 	Progress: 0,
+	// 	Speed:    0,
+	// })
+	// if err != nil {
+	// 	return fmt.Errorf("failed to update model progress: %w", err)
+	// }
 
 	log.Printf("Download cancellation initiated for model %s", modelName)
 	return nil

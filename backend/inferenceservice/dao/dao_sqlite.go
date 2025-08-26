@@ -4,8 +4,6 @@ import (
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
-	"fmt"
-
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -43,7 +41,6 @@ func (d *SQLiteDAO) Infer(dummy string) error {
 }
 
 func (d *SQLiteDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
-	fmt.Println("GetModelByName")
 	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM inferenceservice_models_metadata WHERE name = ?`
 
 	var model ModelMetadata
@@ -56,7 +53,6 @@ func (d *SQLiteDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
 }
 
 func (d *SQLiteDAO) GetAllModels() ([]*ModelMetadata, error) {
-	fmt.Println("GetAllModels")
 	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM inferenceservice_models_metadata ORDER BY name`
 
 	var models []*ModelMetadata
@@ -69,7 +65,6 @@ func (d *SQLiteDAO) GetAllModels() ([]*ModelMetadata, error) {
 }
 
 func (d *SQLiteDAO) UpdateModelProgress(id string, progress *DownloadProgress) error {
-	fmt.Println("UpdateModelProgress")
 	isDownloaded := progress.Status == StatusCompleted
 	query := `UPDATE inferenceservice_models_metadata SET progress = ?, is_downloaded = ?, status = ? WHERE id = ?`
 
@@ -83,14 +78,12 @@ func (d *SQLiteDAO) UpdateModelProgress(id string, progress *DownloadProgress) e
 }
 
 func (d *SQLiteDAO) UpdateModelFileStoreID(id string, filestoreID string) error {
-	fmt.Println("UpdateModelFileStoreID")
 	query := `UPDATE inferenceservice_models_metadata SET filestore_id = ? WHERE id = ?`
 	_, err := d.db.Exec(query, filestoreID, id)
 	return err
 }
 
 func (d *SQLiteDAO) ResetModelToInitialState(id string) error {
-	fmt.Println("ResetModelToInitialState")
 	query := `UPDATE inferenceservice_models_metadata SET progress = '', status = 0, is_downloaded = false, filestore_id = NULL WHERE id = ?`
 	_, err := d.db.Exec(query, id)
 	return err

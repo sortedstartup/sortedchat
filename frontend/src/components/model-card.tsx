@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DownloadStatus, Model as ModelType } from '../../proto/inferenceservice';
-import { downloadModel } from "@/store/inference";
+import { downloadModel, cancelDownload, deleteModel } from "@/store/inference";
 
 
 export const ModelCard = ({ model }: { model: ModelType }) => {
@@ -16,6 +16,22 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
       await downloadModel(model.name);
     } catch (error) {
       console.error('Download failed:', error);
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      await cancelDownload(model.name);
+    } catch (error) {
+      console.error('Cancel failed:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteModel(model.name);
+    } catch (error) {
+      console.error('Delete failed:', error);
     }
   };
 
@@ -60,17 +76,19 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
 
     if (isActivelyDownloading) {
       return {
-        text: 'Downloading...',
-        disabled: true,
-        className: 'bg-blue-500 text-white cursor-not-allowed opacity-75'
+        text: 'Cancel',
+        disabled: false,
+        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer',
+        onClick: handleCancel
       };
     }
 
     if (isDownloaded || progressData?.status === DownloadStatus.COMPLETED) {
       return {
-        text: 'Downloaded',
-        disabled: true,
-        className: 'bg-gray-400 text-white cursor-not-allowed opacity-50'
+        text: 'Delete',
+        disabled: false,
+        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer',
+        onClick: handleDelete
       };
     }
 
@@ -78,9 +96,19 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
       return {
         text: 'Failed - Retry',
         disabled: false,
+        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer',
+        onClick: handleDownload
+      };
+    }
+
+    if (progressData?.status === DownloadStatus.CANCELLING) {
+      return {
+        text: 'Cancelling...',
+        disabled: true,
         className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
       };
     }
+    
 
     if (!isDownloadable) {
       return null;
@@ -127,7 +155,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
         <div className="ml-4 flex flex-col items-end space-y-2">
           {buttonState && (
             <button
-              onClick={handleDownload}
+              onClick={buttonState.onClick || handleDownload}
               disabled={buttonState.disabled}
               className={`px-4 py-2 rounded-md font-medium transition-colors ${buttonState.className}`}
             >
@@ -206,12 +234,6 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
             <span className="text-gray-500">{formatFileSize(progressData.filesize)}</span>
           )}
         </div>
-
-        {progressData && progressData.status === 4 && (
-          <div className="mt-2 text-xs text-red-600">
-            Download failed • Click to retry
-          </div>
-        )}
       </div>
     </div>
   );

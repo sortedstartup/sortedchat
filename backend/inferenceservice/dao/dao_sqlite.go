@@ -21,6 +21,18 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 		return nil, err
 	}
 
+	// Set busy timeout to 10 seconds
+	_, err = db.Exec("PRAGMA busy_timeout = 10000;")
+	if err != nil {
+		return nil, err
+	}
+
+	// Enable WAL mode
+	_, err = db.Exec("PRAGMA journal_mode = WAL;")
+	if err != nil {
+		return nil, err
+	}
+
 	return &SQLiteDAO{db: db}, nil
 }
 
@@ -68,5 +80,11 @@ func (d *SQLiteDAO) UpdateModelProgress(id string, progress *DownloadProgress) e
 func (d *SQLiteDAO) UpdateModelFileStoreID(id string, filestoreID string) error {
 	query := `UPDATE inferenceservice_models_metadata SET filestore_id = ? WHERE id = ?`
 	_, err := d.db.Exec(query, filestoreID, id)
+	return err
+}
+
+func (d *SQLiteDAO) ResetModelToInitialState(id string) error {
+	query := `UPDATE inferenceservice_models_metadata SET progress = '', status = 0, is_downloaded = false, filestore_id = NULL WHERE id = ?`
+	_, err := d.db.Exec(query, id)
 	return err
 }

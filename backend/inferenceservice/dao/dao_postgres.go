@@ -93,3 +93,9 @@ func (d *PostgresDAO) UpdateModelFileStoreID(id string, filestoreID string) erro
 	_, err := d.db.Exec(query, filestoreID, id)
 	return err
 }
+
+func (d *PostgresDAO) ResetModelToInitialState(id string) error {
+	query := `UPDATE inferenceservice_models_metadata SET progress = '', status = 0, is_downloaded = false, filestore_id = NULL WHERE id = $1`
+	_, err := d.db.Exec(query, id)
+	return err
+}

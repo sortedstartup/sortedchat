@@ -154,7 +154,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
         <div className="ml-4 flex flex-col items-end space-y-2">
           {buttonState && (
             <button
-              onClick={handleDownload}
+              onClick={buttonState.onClick || handleDownload}
               disabled={buttonState.disabled}
               className={`px-4 py-2 rounded-md font-medium transition-colors ${buttonState.className}`}
             >

@@ -96,7 +96,8 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
       return {
         text: 'Failed - Retry',
         disabled: false,
-        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
+        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer',
+        onClick: handleDownload
       };
     }
 
@@ -233,12 +234,6 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
             <span className="text-gray-500">{formatFileSize(progressData.filesize)}</span>
           )}
         </div>
-
-        {progressData && progressData.status === 4 && (
-          <div className="mt-2 text-xs text-red-600">
-            Download failed • Click to retry
-          </div>
-        )}
       </div>
     </div>
   );

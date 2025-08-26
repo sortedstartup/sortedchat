@@ -32,6 +32,32 @@ func NewInferenceService(daoFactory dao.DAOFactory) *InferenceService {
 	}
 }
 
+// Initialize run on startup to reset models that were left in a pending state
+func (s *InferenceService) Initialize() error {
+	models, err := s.dao.GetAllModels()
+	if err != nil {
+		return fmt.Errorf("failed to get all models: %w", err)
+	}
+	for _, model := range models {
+		if model.Status == dao.StatusDownloading {
+			err := s.dao.UpdateModelProgress(model.ID, &dao.DownloadProgress{
+				FileSize: 0,
+				Status:   dao.StatusFailed,
+				Progress: 0,
+				Speed:    0,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to update model progress: %w", err)
+			}
+			err = s.deleteFilestoreObject(*model.FileStoreID)
+			if err != nil {
+				return fmt.Errorf("failed to delete filestore object: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
 func (s *InferenceService) DownloadModel(ctx context.Context, userID string, modelName string) error {
 	// Get model metadata from database
 	model, err := s.dao.GetModelByName(modelName)
@@ -81,6 +107,10 @@ func (s *InferenceService) DownloadModel(ctx context.Context, userID string, mod
 				}
 				if updateErr := s.dao.UpdateModelProgress(model.ID, failedProgress); updateErr != nil {
 					log.Printf("Error updating failed status for model %s: %v", model.Name, updateErr)
+				}
+				err := s.deleteFilestoreObject(*model.FileStoreID)
+				if err != nil {
+					log.Printf("Error deleting filestore object: %v", err)
 				}
 			}
 		}
@@ -159,9 +189,7 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			file.Close()
-			if removeErr := os.Remove(filePath); removeErr != nil {
-				log.Printf("Warning: Failed to remove partial file %s: %v", filePath, removeErr)
-			}
+			s.deleteFilestoreObject(filePath)
 			return ctx.Err()
 		}
 		return fmt.Errorf("failed to save file: %w", err)
@@ -363,15 +391,31 @@ func (s *InferenceService) DeleteModel(ctx context.Context, userID string, model
 
 	// Delete the physical file if it exists
 	if model.FileStoreID != nil {
-		if err := os.Remove(*model.FileStoreID); err != nil {
-			log.Printf("Warning: Failed to delete file %s: %v", *model.FileStoreID, err)
-			// Don't return error here - we still want to delete from database
+		err := s.deleteFilestoreObject(*model.FileStoreID)
+		if err != nil {
+			return fmt.Errorf("failed to delete filestore object: %w", err)
 		}
+		// Don't return error here - we still want to delete from database
 	}
 
 	if err := s.dao.ResetModelToInitialState(model.ID); err != nil {
 		return fmt.Errorf("failed to reset model to initial state: %w", err)
 	}
 
+	return nil
+}
+
+// deleteFilestoreObject safely deletes a file from the filestore and logs any errors
+func (s *InferenceService) deleteFilestoreObject(filePath string) error {
+	if filePath == "" {
+		return nil // Nothing to delete
+	}
+
+	if err := os.Remove(filePath); err != nil {
+		log.Printf("Warning: Failed to delete filestore object %s: %v", filePath, err)
+		return err
+	}
+
+	log.Printf("Successfully deleted filestore object: %s", filePath)
 	return nil
 }

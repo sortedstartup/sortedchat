@@ -150,4 +150,9 @@ func (s *InferenceServiceAPI) Init(config *dao.Config) {
 	default:
 		log.Fatalf("InferenceService: Unsupported database type: %s", config.Database.Type)
 	}
+
+	err := s.service.Initialize()
+	if err != nil {
+		log.Fatalf("InferenceService: Failed to initialize: %v", err)
+	}
 }

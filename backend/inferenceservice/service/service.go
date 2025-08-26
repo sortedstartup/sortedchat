@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const UPDATE_INTERVAL = 3 * time.Second
+
 type InferenceService struct {
 	dao                dao.DAO
 	downloadingCancels map[string]context.CancelFunc
@@ -82,6 +84,7 @@ func (s *InferenceService) DownloadModel(ctx context.Context, userID string, mod
 	s.downloadingCancels[modelName] = cancel
 	s.mu.Unlock()
 
+	// Starting downloading in a new goroutine (background task)
 	go func() {
 		defer func() {
 			s.mu.Lock()
@@ -175,7 +178,7 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 		writer:     file,
 		downloaded: 0,
 		startTime:  time.Now(),
-		lastUpdate: time.Now(),
+		lastUpdate: time.Now().Add(-UPDATE_INTERVAL), // Force immediate update
 		onProgress: func(progress *dao.DownloadProgress) {
 			s.dao.UpdateModelProgress(modelID, progress)
 		},
@@ -228,7 +231,7 @@ func (pw *ProgressWriter) Write(p []byte) (int, error) {
 	now := time.Now()
 
 	//TODO: This calculation may have high CPU cost
-	if now.Sub(pw.lastUpdate) >= 3*time.Second {
+	if now.Sub(pw.lastUpdate) >= UPDATE_INTERVAL {
 		pw.updateProgress()
 		pw.lastUpdate = now
 	}

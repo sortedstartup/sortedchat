@@ -309,7 +309,11 @@ func (s *ChatServiceAPI) GetRAGDocumentReference(ctx context.Context, req *pb.RA
 }
 
 func (s *ChatServiceAPI) DeleteDocument(ctx context.Context, req *pb.DeleteDocumentRequest) (*pb.DeleteDocumentResponse, error) {
-	err := s.service.DeleteDocument(ctx, HARDCODED_USER_ID, req.GetProjectId(), req.GetDocId())
+	userId, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = s.service.DeleteDocument(ctx, userId, req.GetProjectId(), req.GetDocId())
 	if err != nil {
 		return nil, err
 	}

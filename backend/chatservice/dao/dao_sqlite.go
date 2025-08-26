@@ -347,10 +347,11 @@ func (s *SQLiteDAO) DeleteDocument(userID string, projectID string, docID string
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Printf("transaction rollback failed: %v (original error: %v)", rbErr, err)
+			}
 		}
 	}()
-
 	// Delete from rag_chunks_vec first (embeddings)
 	_, err = tx.Exec("DELETE FROM rag_chunks_vec WHERE id IN (SELECT id FROM rag_chunks WHERE project_id = ? AND docs_id = ? AND user_id = ?)", projectID, docID, userID)
 	if err != nil {

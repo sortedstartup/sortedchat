@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DownloadStatus, Model as ModelType } from '../../proto/inferenceservice';
-import { downloadModel } from "@/store/inference";
+import { downloadModel, cancelDownload, deleteModel } from "@/store/inference";
 
 
 export const ModelCard = ({ model }: { model: ModelType }) => {
@@ -16,6 +16,22 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
       await downloadModel(model.name);
     } catch (error) {
       console.error('Download failed:', error);
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      await cancelDownload(model.name);
+    } catch (error) {
+      console.error('Cancel failed:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteModel(model.name);
+    } catch (error) {
+      console.error('Delete failed:', error);
     }
   };
 
@@ -60,17 +76,19 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
 
     if (isActivelyDownloading) {
       return {
-        text: 'Downloading...',
-        disabled: true,
-        className: 'bg-blue-500 text-white cursor-not-allowed opacity-75'
+        text: 'Cancel',
+        disabled: false,
+        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer',
+        onClick: handleCancel
       };
     }
 
     if (isDownloaded || progressData?.status === DownloadStatus.COMPLETED) {
       return {
-        text: 'Downloaded',
-        disabled: true,
-        className: 'bg-gray-400 text-white cursor-not-allowed opacity-50'
+        text: 'Delete',
+        disabled: false,
+        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer',
+        onClick: handleDelete
       };
     }
 
@@ -81,6 +99,15 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
         className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
       };
     }
+
+    if (progressData?.status === DownloadStatus.CANCELLING) {
+      return {
+        text: 'Cancelling...',
+        disabled: true,
+        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
+      };
+    }
+    
 
     if (!isDownloadable) {
       return null;

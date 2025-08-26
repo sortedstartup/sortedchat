@@ -70,3 +70,9 @@ func (d *SQLiteDAO) UpdateModelFileStoreID(id string, filestoreID string) error 
 	_, err := d.db.Exec(query, filestoreID, id)
 	return err
 }
+
+func (d *SQLiteDAO) ResetModelToInitialState(id string) error {
+	query := `UPDATE inferenceservice_models_metadata SET progress = '', status = 0, is_downloaded = false, filestore_id = NULL WHERE id = ?`
+	_, err := d.db.Exec(query, id)
+	return err
+}

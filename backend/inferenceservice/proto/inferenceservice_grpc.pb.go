@@ -22,6 +22,7 @@ const (
 	InferenceService_DownloadModel_FullMethodName  = "/sortedchat.InferenceService/DownloadModel"
 	InferenceService_GetLLMModels_FullMethodName   = "/sortedchat.InferenceService/GetLLMModels"
 	InferenceService_CancelDownload_FullMethodName = "/sortedchat.InferenceService/CancelDownload"
+	InferenceService_DeleteModel_FullMethodName    = "/sortedchat.InferenceService/DeleteModel"
 )
 
 // InferenceServiceClient is the client API for InferenceService service.
@@ -31,6 +32,7 @@ type InferenceServiceClient interface {
 	DownloadModel(ctx context.Context, in *DownloadModelRequest, opts ...grpc.CallOption) (*DownloadModelResponse, error)
 	GetLLMModels(ctx context.Context, in *GetLLMModelsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetLLMModelsResponse], error)
 	CancelDownload(ctx context.Context, in *CancelDownloadRequest, opts ...grpc.CallOption) (*CancelDownloadResponse, error)
+	DeleteModel(ctx context.Context, in *DeleteModelRequest, opts ...grpc.CallOption) (*DeleteModelResponse, error)
 }
 
 type inferenceServiceClient struct {
@@ -80,6 +82,16 @@ func (c *inferenceServiceClient) CancelDownload(ctx context.Context, in *CancelD
 	return out, nil
 }
 
+func (c *inferenceServiceClient) DeleteModel(ctx context.Context, in *DeleteModelRequest, opts ...grpc.CallOption) (*DeleteModelResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteModelResponse)
+	err := c.cc.Invoke(ctx, InferenceService_DeleteModel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InferenceServiceServer is the server API for InferenceService service.
 // All implementations must embed UnimplementedInferenceServiceServer
 // for forward compatibility.
@@ -87,6 +99,7 @@ type InferenceServiceServer interface {
 	DownloadModel(context.Context, *DownloadModelRequest) (*DownloadModelResponse, error)
 	GetLLMModels(*GetLLMModelsRequest, grpc.ServerStreamingServer[GetLLMModelsResponse]) error
 	CancelDownload(context.Context, *CancelDownloadRequest) (*CancelDownloadResponse, error)
+	DeleteModel(context.Context, *DeleteModelRequest) (*DeleteModelResponse, error)
 	mustEmbedUnimplementedInferenceServiceServer()
 }
 
@@ -105,6 +118,9 @@ func (UnimplementedInferenceServiceServer) GetLLMModels(*GetLLMModelsRequest, gr
 }
 func (UnimplementedInferenceServiceServer) CancelDownload(context.Context, *CancelDownloadRequest) (*CancelDownloadResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CancelDownload not implemented")
+}
+func (UnimplementedInferenceServiceServer) DeleteModel(context.Context, *DeleteModelRequest) (*DeleteModelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteModel not implemented")
 }
 func (UnimplementedInferenceServiceServer) mustEmbedUnimplementedInferenceServiceServer() {}
 func (UnimplementedInferenceServiceServer) testEmbeddedByValue()                          {}
@@ -174,6 +190,24 @@ func _InferenceService_CancelDownload_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InferenceService_DeleteModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteModelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InferenceServiceServer).DeleteModel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InferenceService_DeleteModel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InferenceServiceServer).DeleteModel(ctx, req.(*DeleteModelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InferenceService_ServiceDesc is the grpc.ServiceDesc for InferenceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -188,6 +222,10 @@ var InferenceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CancelDownload",
 			Handler:    _InferenceService_CancelDownload_Handler,
+		},
+		{
+			MethodName: "DeleteModel",
+			Handler:    _InferenceService_DeleteModel_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

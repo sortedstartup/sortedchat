@@ -29,4 +29,5 @@ type DAO interface {
 	GetAllModels() ([]*ModelMetadata, error)
 	UpdateModelProgress(id string, progress *DownloadProgress) error
 	UpdateModelFileStoreID(id string, filestoreID string) error
+	ResetModelToInitialState(id string) error
 }

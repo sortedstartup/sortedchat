@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"sortedstartup/common/auth"
 	"sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
 	"sortedstartup/inferenceservice/service"
@@ -28,7 +29,11 @@ func NewInferenceServiceAPI(daoFactory dao.DAOFactory) *InferenceServiceAPI {
 }
 
 func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.DownloadModelRequest) (*pb.DownloadModelResponse, error) {
-	err := s.service.DownloadModel(ctx, HARDCODED_USER_ID, req.GetModelName())
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = s.service.DownloadModel(ctx, userID, req.GetModelName())
 	if err != nil {
 		return nil, err
 	}
@@ -94,13 +99,32 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 }
 
 func (s *InferenceServiceAPI) CancelDownload(ctx context.Context, req *pb.CancelDownloadRequest) (*pb.CancelDownloadResponse, error) {
-	err := s.service.CancelDownload(ctx, HARDCODED_USER_ID, req.GetModelName())
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = s.service.CancelDownload(ctx, userID, req.GetModelName())
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.CancelDownloadResponse{
 		Message: "Download cancelled successfully",
+	}, nil
+}
+
+func (s *InferenceServiceAPI) DeleteModel(ctx context.Context, req *pb.DeleteModelRequest) (*pb.DeleteModelResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = s.service.DeleteModel(ctx, userID, req.GetModelName())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.DeleteModelResponse{
+		Message: "Model deleted successfully",
 	}, nil
 }
 

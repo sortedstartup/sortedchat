@@ -27,6 +27,7 @@ const (
 	SortedChat_ListModel_FullMethodName                   = "/sortedchat.SortedChat/ListModel"
 	SortedChat_SearchChat_FullMethodName                  = "/sortedchat.SortedChat/SearchChat"
 	SortedChat_GetRAGDocumentReference_FullMethodName     = "/sortedchat.SortedChat/GetRAGDocumentReference"
+	SortedChat_DeleteDocument_FullMethodName              = "/sortedchat.SortedChat/DeleteDocument"
 	SortedChat_CreateProject_FullMethodName               = "/sortedchat.SortedChat/CreateProject"
 	SortedChat_GetProjects_FullMethodName                 = "/sortedchat.SortedChat/GetProjects"
 	SortedChat_ListDocuments_FullMethodName               = "/sortedchat.SortedChat/ListDocuments"
@@ -47,6 +48,7 @@ type SortedChatClient interface {
 	ListModel(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error)
 	SearchChat(ctx context.Context, in *ChatSearchRequest, opts ...grpc.CallOption) (*ChatSearchResponse, error)
 	GetRAGDocumentReference(ctx context.Context, in *RAGDocumentReferenceRequest, opts ...grpc.CallOption) (*RAGDocumentReferenceResponse, error)
+	DeleteDocument(ctx context.Context, in *DeleteDocumentRequest, opts ...grpc.CallOption) (*DeleteDocumentResponse, error)
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
 	GetProjects(ctx context.Context, in *GetProjectsRequest, opts ...grpc.CallOption) (*GetProjectsResponse, error)
 	ListDocuments(ctx context.Context, in *ListDocumentsRequest, opts ...grpc.CallOption) (*ListDocumentsResponse, error)
@@ -152,6 +154,16 @@ func (c *sortedChatClient) GetRAGDocumentReference(ctx context.Context, in *RAGD
 	return out, nil
 }
 
+func (c *sortedChatClient) DeleteDocument(ctx context.Context, in *DeleteDocumentRequest, opts ...grpc.CallOption) (*DeleteDocumentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteDocumentResponse)
+	err := c.cc.Invoke(ctx, SortedChat_DeleteDocument_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sortedChatClient) CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateProjectResponse)
@@ -224,6 +236,7 @@ type SortedChatServer interface {
 	ListModel(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
 	SearchChat(context.Context, *ChatSearchRequest) (*ChatSearchResponse, error)
 	GetRAGDocumentReference(context.Context, *RAGDocumentReferenceRequest) (*RAGDocumentReferenceResponse, error)
+	DeleteDocument(context.Context, *DeleteDocumentRequest) (*DeleteDocumentResponse, error)
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
 	GetProjects(context.Context, *GetProjectsRequest) (*GetProjectsResponse, error)
 	ListDocuments(context.Context, *ListDocumentsRequest) (*ListDocumentsResponse, error)
@@ -263,6 +276,9 @@ func (UnimplementedSortedChatServer) SearchChat(context.Context, *ChatSearchRequ
 }
 func (UnimplementedSortedChatServer) GetRAGDocumentReference(context.Context, *RAGDocumentReferenceRequest) (*RAGDocumentReferenceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRAGDocumentReference not implemented")
+}
+func (UnimplementedSortedChatServer) DeleteDocument(context.Context, *DeleteDocumentRequest) (*DeleteDocumentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteDocument not implemented")
 }
 func (UnimplementedSortedChatServer) CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
@@ -440,6 +456,24 @@ func _SortedChat_GetRAGDocumentReference_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SortedChat_DeleteDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDocumentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).DeleteDocument(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_DeleteDocument_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).DeleteDocument(ctx, req.(*DeleteDocumentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SortedChat_CreateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateProjectRequest)
 	if err := dec(in); err != nil {
@@ -582,6 +616,10 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRAGDocumentReference",
 			Handler:    _SortedChat_GetRAGDocumentReference_Handler,
+		},
+		{
+			MethodName: "DeleteDocument",
+			Handler:    _SortedChat_DeleteDocument_Handler,
 		},
 		{
 			MethodName: "CreateProject",

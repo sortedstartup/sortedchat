@@ -13,6 +13,163 @@ export enum Embedding_Status {
     STATUS_ERROR = 2,
     STATUS_SUCCESS = 3
 }
+export class DeleteDocumentRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        project_id?: string;
+        doc_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("project_id" in data && data.project_id != undefined) {
+                this.project_id = data.project_id;
+            }
+            if ("doc_id" in data && data.doc_id != undefined) {
+                this.doc_id = data.doc_id;
+            }
+        }
+    }
+    get project_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set project_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get doc_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set doc_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        project_id?: string;
+        doc_id?: string;
+    }): DeleteDocumentRequest {
+        const message = new DeleteDocumentRequest({});
+        if (data.project_id != null) {
+            message.project_id = data.project_id;
+        }
+        if (data.doc_id != null) {
+            message.doc_id = data.doc_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            project_id?: string;
+            doc_id?: string;
+        } = {};
+        if (this.project_id != null) {
+            data.project_id = this.project_id;
+        }
+        if (this.doc_id != null) {
+            data.doc_id = this.doc_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.project_id.length)
+            writer.writeString(1, this.project_id);
+        if (this.doc_id.length)
+            writer.writeString(2, this.doc_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): DeleteDocumentRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new DeleteDocumentRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.project_id = reader.readString();
+                    break;
+                case 2:
+                    message.doc_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): DeleteDocumentRequest {
+        return DeleteDocumentRequest.deserialize(bytes);
+    }
+}
+export class DeleteDocumentResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message?: string;
+    }): DeleteDocumentResponse {
+        const message = new DeleteDocumentResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): DeleteDocumentResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new DeleteDocumentResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): DeleteDocumentResponse {
+        return DeleteDocumentResponse.deserialize(bytes);
+    }
+}
 export class RAGDocumentReferenceRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -4202,6 +4359,10 @@ export class SortedChatClient {
     private static GetRAGDocumentReference = new grpc_web_1.MethodDescriptor<RAGDocumentReferenceRequest, RAGDocumentReferenceResponse>("/sortedchat.SortedChat/GetRAGDocumentReference", grpc_web_1.MethodType.UNARY, RAGDocumentReferenceRequest, RAGDocumentReferenceResponse, (message: RAGDocumentReferenceRequest) => message.serialize(), RAGDocumentReferenceResponse.deserialize);
     GetRAGDocumentReference(message: RAGDocumentReferenceRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<RAGDocumentReferenceRequest, RAGDocumentReferenceResponse>(this._address + "/sortedchat.SortedChat/GetRAGDocumentReference", message, metadata || {}, SortedChatClient.GetRAGDocumentReference);
+    }
+    private static DeleteDocument = new grpc_web_1.MethodDescriptor<DeleteDocumentRequest, DeleteDocumentResponse>("/sortedchat.SortedChat/DeleteDocument", grpc_web_1.MethodType.UNARY, DeleteDocumentRequest, DeleteDocumentResponse, (message: DeleteDocumentRequest) => message.serialize(), DeleteDocumentResponse.deserialize);
+    DeleteDocument(message: DeleteDocumentRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<DeleteDocumentRequest, DeleteDocumentResponse>(this._address + "/sortedchat.SortedChat/DeleteDocument", message, metadata || {}, SortedChatClient.DeleteDocument);
     }
     private static CreateProject = new grpc_web_1.MethodDescriptor<CreateProjectRequest, CreateProjectResponse>("/sortedchat.SortedChat/CreateProject", grpc_web_1.MethodType.UNARY, CreateProjectRequest, CreateProjectResponse, (message: CreateProjectRequest) => message.serialize(), CreateProjectResponse.deserialize);
     CreateProject(message: CreateProjectRequest, metadata: grpc_web_1.Metadata | null) {

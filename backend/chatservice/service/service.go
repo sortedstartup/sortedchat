@@ -958,3 +958,22 @@ func (s *ChatService) GetRAGDocumentReference(ctx context.Context, userID string
 		Reference: nil,
 	}, nil
 }
+
+func (s *ChatService) DeleteDocument(ctx context.Context, userID string, projectID string, docID string) error {
+	if projectID == "" || docID == "" {
+		return fmt.Errorf("project_id and doc_id are required")
+	}
+
+	err := s.dao.DeleteDocument(userID, projectID, docID)
+	if err != nil {
+		return fmt.Errorf("failed to delete document: %v", err)
+	}
+
+	//TODO: What if this operation fails?
+	err = s.store.DeleteObject(ctx, docID)
+	if err != nil {
+		return fmt.Errorf("failed to delete object: %v", err)
+	}
+
+	return nil
+}

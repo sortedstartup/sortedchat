@@ -516,6 +516,41 @@ func sanitizeFTSQuery(query string) string {
 	return strings.Join(validWords, " & ")
 }
 
+func (p *PostgresDAO) DeleteDocument(userID string, projectID string, docID string) error {
+	// Start a transaction to ensure all operations succeed or fail together
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				slog.Error("transaction rollback failed", "original_error", err, "rollback_error", rbErr)
+			}
+		}
+	}()
+
+	// Delete from rag_chunks first (document chunks)
+	_, err = tx.Exec("DELETE FROM rag_chunks WHERE project_id = $1 AND docs_id = $2 AND user_id = $3", projectID, docID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete from rag_chunks: %w", err)
+	}
+
+	// Delete from project_docs (document metadata)
+	_, err = tx.Exec("DELETE FROM project_docs WHERE project_id = $1 AND docs_id = $2 AND user_id = $3", projectID, docID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete from project_docs: %w", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL
 type PostgresSettingsDAO struct {
 	db *sqlx.DB

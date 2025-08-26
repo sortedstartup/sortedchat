@@ -308,6 +308,18 @@ func (s *ChatServiceAPI) GetRAGDocumentReference(ctx context.Context, req *pb.RA
 	return s.service.GetRAGDocumentReference(ctx, userID, req)
 }
 
+func (s *ChatServiceAPI) DeleteDocument(ctx context.Context, req *pb.DeleteDocumentRequest) (*pb.DeleteDocumentResponse, error) {
+	userId, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = s.service.DeleteDocument(ctx, userId, req.GetProjectId(), req.GetDocId())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.DeleteDocumentResponse{Message: "Document deleted successfully"}, nil
+}
+
 func (s *ChatServiceAPI) Init(config *db.Config) {
 	switch config.Database.Type {
 	case db.DatabaseTypeSQLite:

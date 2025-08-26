@@ -44,6 +44,7 @@ type DAO interface {
 	// RAG Document Reference methods
 	GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error)
 	UpdateChatMessageDocumentReferences(userID string, messageID string, documentReferences string) error
+	DeleteDocument(userID string, projectID string, docID string) error
 }
 
 type SettingsDAO interface {

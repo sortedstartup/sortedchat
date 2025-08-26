@@ -25,6 +25,7 @@ import {
   ProjectContext, // Alias for backward compatibility
   RAGDocumentReferenceRequest,
   RAGDocumentReference,
+  DeleteDocumentRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -464,6 +465,29 @@ export async function fetchDocuments(projectId: string) {
   } catch (err) {
     console.error("Failed to fetch documents:", err);
     $documents.set([]);
+  }
+}
+
+export async function deleteDocument(projectId: string, docId: string) {
+  try {
+    const res = await chat.DeleteDocument(
+      DeleteDocumentRequest.fromObject({
+        project_id: projectId,
+        doc_id: docId,
+      }),
+      {}
+    );
+    
+    toast.success(res.message);
+    
+    // Refresh the documents list
+    await fetchDocuments(projectId);
+    
+    return res.message;
+  } catch (error) {
+    console.error("Failed to delete document:", error);
+    toast.error("Failed to delete document: " + (error as Error).message);
+    throw error;
   }
 }
 

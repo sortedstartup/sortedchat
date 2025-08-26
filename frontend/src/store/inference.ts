@@ -1,6 +1,6 @@
 import { atom, onMount } from "nanostores";
 import {
-    DownloadModelRequest, InferenceServiceClient, GetLLMModelsRequest, Model
+    DownloadModelRequest, InferenceServiceClient, GetLLMModelsRequest, Model, CancelDownloadRequest, DeleteModelRequest
 } from "../../proto/inferenceservice"
 import { createAuthenticatedClientOptions } from "../lib/auth";
 
@@ -61,3 +61,33 @@ onMount($llmModels, () => {
         // Disabled mode
     };
 });
+
+export const cancelDownload = async (modelName: string) => {
+    try {
+        const req = new CancelDownloadRequest({
+            model_name: modelName
+        });
+        const res = await client.CancelDownload(req, {});
+        console.log('CancelDownloadResponse', res.message);
+        await ListLLMModels();
+        return res;
+    } catch (error) {
+        console.error('CancelDownload failed:', error);
+        throw error;
+    }
+}
+
+export const deleteModel = async (modelName: string) => {
+    try {
+        const req = new DeleteModelRequest({
+            model_name: modelName
+        });
+        const res = await client.DeleteModel(req, {});
+        console.log('DeleteModelResponse', res.message);
+        await ListLLMModels();
+        return res;
+    } catch (error) {
+        console.error('DeleteModel failed:', error);
+        throw error;
+    }
+}

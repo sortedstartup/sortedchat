@@ -25,6 +25,7 @@ const (
 	StatusDownloading = int(pb.DownloadStatus_DOWNLOADING) // Currently downloading
 	StatusCompleted   = int(pb.DownloadStatus_COMPLETED)   // Download completed
 	StatusFailed      = int(pb.DownloadStatus_FAILED)      // Download failed
+	StatusCancelling  = int(pb.DownloadStatus_CANCELLING)  // Download cancelled
 )
 
 // DownloadProgress represents the progress of a model download

@@ -278,7 +278,7 @@ export function Chat() {
                         variant={message.role === "user" ? "sent" : "received"}
                         className="relative"
                       >
-                        <EnhancedMarkdown showCopyMessage={message.role === "assistant"}>
+                        <EnhancedMarkdown >
                           {message.content}
                         </EnhancedMarkdown>
                         {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}
@@ -336,7 +336,7 @@ export function Chat() {
                     >
                       <ChatBubbleAvatar fallback="AI" />
                       <ChatBubbleMessage variant="received" className="relative">
-                        <EnhancedMarkdown showCopyMessage={true}>
+                        <EnhancedMarkdown>
                           {streamingMessage}
                         </EnhancedMarkdown>
                         {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}

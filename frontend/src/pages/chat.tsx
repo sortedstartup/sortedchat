@@ -254,9 +254,9 @@ export function Chat() {
           </div>
         ) : (
           <div className="space-y-0">
-            {data?.map((message, index) => (
+            {data?.map((message) => (
               <div
-                key={index}
+                key={message.message_id}
                 className={`w-full ${
                   message.role === "user" 
                     ? "bg-gray-50 border-b border-gray-200" 

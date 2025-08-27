@@ -303,7 +303,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	stream(&pb.ChatResponse{
-		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_TOKENS_STOPPED, Message: "Reponse finished"}},
+		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_TOKENS_STOPPED, Message: "Response finished"}},
 	})
 
 	assistantText := fullResponse.String()

@@ -27,8 +27,7 @@ import {
   $ragDocumentDetails,
   fetchRAGDocumentReference,
 } from "@/store/chat";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { EnhancedMarkdown } from "@/components/enhanced-markdown";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -279,9 +278,9 @@ export function Chat() {
                         variant={message.role === "user" ? "sent" : "received"}
                         className="relative"
                       >
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <EnhancedMarkdown >
                           {message.content}
-                        </ReactMarkdown>
+                        </EnhancedMarkdown>
                         {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}
                         {projectId && message.role === "assistant" && !message.rag_enabled && (
                           <div className="absolute top-1 right-1 bg-white/80 rounded p-1" title="RAG not enabled for this message">
@@ -320,9 +319,9 @@ export function Chat() {
                   >
                     <ChatBubbleAvatar fallback="US" />
                     <ChatBubbleMessage variant="sent">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <EnhancedMarkdown>
                         {currentChatMessage}
-                      </ReactMarkdown>
+                      </EnhancedMarkdown>
                     </ChatBubbleMessage>
                   </ChatBubble>
                 </div>
@@ -337,9 +336,9 @@ export function Chat() {
                     >
                       <ChatBubbleAvatar fallback="AI" />
                       <ChatBubbleMessage variant="received" className="relative">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <EnhancedMarkdown>
                           {streamingMessage}
-                        </ReactMarkdown>
+                        </EnhancedMarkdown>
                         {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}
                         {projectId && !ragEnabled && (
                           <div className="absolute top-1 right-1 bg-white/80 rounded p-1" title="RAG not enabled for this message">

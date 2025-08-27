@@ -136,8 +136,7 @@ export function Chat() {
   const ragDocumentDetails = useStore($ragDocumentDetails);
 
   const [inputValue, setInputValue] = useState("");
-  const [copied, setCopied] = useState(false);
-
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [selectedDocumentForDetails, setSelectedDocumentForDetails] = useState<{
     messageId: string;
     docId: string;
@@ -228,11 +227,11 @@ export function Chat() {
   };
 
 
-  const handleCopyMessage = async (content: string) => {
+  const handleCopyMessage = async (content: string, messageId: string) => {
     try {
       await navigator.clipboard.writeText(content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
       console.log('Message copied to clipboard');
     } catch (error) {
       console.error('Failed to copy message:', error);
@@ -299,11 +298,11 @@ export function Chat() {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => handleCopyMessage(message.content)}
+                            onClick={() => handleCopyMessage(message.content, message.message_id)}
                             className="h-8 px-2 text-xs text-black-600 hover:text-gray-800"
                           >
                             {
-                              copied ?
+                              copiedMessageId === message.message_id ?
                               <>
                                 <Check className="h-4 w-4 text-green-400" /> 
                                 <span className="text-xs text-green-400">Copied</span> 

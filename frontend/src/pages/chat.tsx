@@ -1,12 +1,6 @@
 import { Button } from "@/components/ui/button";
-import {
-  ChatBubble,
-  ChatBubbleAvatar,
-  ChatBubbleMessage,
-} from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
-import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
-import { CornerDownLeft, FileText, Eye, FileX } from "lucide-react"; // Add FileText, Eye, and FileX icons
+import { CornerDownLeft, FileText, Eye, FileX, Copy, Check, Maximize2, Minimize2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -20,10 +14,10 @@ import {
   $availableModels,
   BranchChat,
   $listChatBranch,
-  $currentDocumentReferences, // Add this import
-  $ragEnabled, // Add RAG enabled store
-  toggleRagEnabled, // Add toggle function
-  setRagEnabledForProject, // Add set function
+  $currentDocumentReferences,
+  $ragEnabled,
+  toggleRagEnabled,
+  setRagEnabledForProject,
   $ragDocumentDetails,
   fetchRAGDocumentReference,
 } from "@/store/chat";
@@ -39,7 +33,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"; // Add Dialog imports
+} from "@/components/ui/dialog";
 import type { RAGDocumentReference, RAGDocumentReferenceChunk } from "proto/chatservice";
 
 // Collapsible Chunks Display Component
@@ -125,12 +119,10 @@ export function Chat() {
     return () => unsub();
   }, [chatId, navigate]);
 
-  // Set RAG enabled based on whether this is a project chat or regular chat
   useEffect(() => {
     if (!projectId) {
-      setRagEnabledForProject(false); // Disable RAG for regular chats
+      setRagEnabledForProject(false);
     }
-    // For project chats, preserve the user's current RAG preference
   }, [projectId]);
 
   const { data, loading } = useStore($currentChatMessages);
@@ -139,16 +131,18 @@ export function Chat() {
   const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
   const listChatBranch = useStore($listChatBranch);
-  const currentDocumentReferences = useStore($currentDocumentReferences); // Add this
-  const ragEnabled = useStore($ragEnabled); // Add RAG enabled state
+  const currentDocumentReferences = useStore($currentDocumentReferences);
+  const ragEnabled = useStore($ragEnabled);
   const ragDocumentDetails = useStore($ragDocumentDetails);
 
   const [inputValue, setInputValue] = useState("");
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [selectedDocumentForDetails, setSelectedDocumentForDetails] = useState<{
     messageId: string;
     docId: string;
     fileName: string;
   } | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -159,8 +153,6 @@ export function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [data, streamingMessage, currentChatMessage]);
-
-
 
   const handleSend = () => {
     if (inputValue.trim()) {
@@ -189,14 +181,13 @@ export function Chat() {
     }
   };
 
-  // Function to render document references for a message
   const renderDocumentReferences = (references: RAGDocumentReference[], messageId?: string) => {
     if (!references || references.length === 0) return null;
 
     return (
-      <div className="mt-2 ml-2 sm:ml-4">
-        <div className="text-xs text-gray-500 mb-1">Sources:</div>
-        <div className="flex flex-wrap gap-1">
+      <div className="mt-3">
+        <div className="text-xs text-gray-500 mb-2">Sources:</div>
+        <div className="flex flex-wrap gap-2">
           {references.map((docRef, index) => (
             <Button
               key={`${docRef.doc_id}-${index}`}
@@ -204,12 +195,6 @@ export function Chat() {
               size="sm"
               className="text-xs h-6 px-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
               onClick={() => {
-                console.log('Button clicked:', { 
-                  messageId, 
-                  docId: docRef.doc_id, 
-                  fileName: docRef.file_name,
-                  docRef 
-                });
                 messageId && handleViewRAGDetails(messageId, docRef.doc_id, docRef.file_name);
               }}
             >
@@ -228,7 +213,6 @@ export function Chat() {
     );
   };
 
-  // Function to handle fetching detailed RAG document references
   const handleViewRAGDetails = async (messageId: string, docId: string, fileName: string) => {
     if (!projectId || !messageId) {
       console.error("Project ID and message ID are required");
@@ -243,190 +227,262 @@ export function Chat() {
     }
   };
 
+
+  const handleCopyMessage = async (content: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+      console.log('Message copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy message:', error);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full mx-auto max-w-full w-full">
-      <div className="flex-1 overflow-y-auto px-2 sm:px-4 min-h-0">
-        <ChatMessageList className="flex flex-col gap-4 py-4">
-          {loading ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Loading messages...
-            </div>
-          ) : data === undefined || data === null ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              No messages yet
-            </div>
-          ) : (
-            <>
-              {data?.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex flex-col ${
-                    message.role === "user" ? "items-end" : "items-start"
-                  }`}
-                >
-                  <div className={`flex ${
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  }`}>
-                    <ChatBubble
-                      variant={message.role === "user" ? "sent" : "received"}
-                      className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] mx-2 sm:mx-4"
-                    >
-                      <ChatBubbleAvatar
-                        fallback={message.role === "user" ? "US" : "AI"}
-                      />
-                      <ChatBubbleMessage
-                        variant={message.role === "user" ? "sent" : "received"}
-                        className="relative"
-                      >
-                        <EnhancedMarkdown >
-                          {message.content}
-                        </EnhancedMarkdown>
-                        {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}
+    <div className={`flex flex-col h-full mx-auto w-full transition-all ${
+      isExpanded ? 'max-w-7xl' : 'max-w-4xl'
+    }`}>
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {loading ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            Loading messages...
+          </div>
+        ) : data === undefined || data === null ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            No messages yet
+          </div>
+        ) : (
+          <div className="space-y-0">
+            {data?.map((message) => (
+              <div
+                key={message.message_id}
+                className={`w-full ${
+                  message.role === "user" 
+                    ? "bg-gray-50 border-b border-gray-200" 
+                    : "bg-white border-b border-gray-200"
+                } py-6 px-4`}
+              >
+                <div className="w-full max-w-none px-4">
+                  {message.role === "user" ? (
+                    // User message - right aligned
+                    <div className="flex items-start space-x-4 justify-end">
+                      <div className="flex-1 min-w-0 text-right">
+                          <EnhancedMarkdown>
+                            {message.content}
+                          </EnhancedMarkdown>
+                      </div>
+                      {/* Avatar */}
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
+                        U
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start space-x-4">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium">
+                        AI
+                      </div>
+
+                      {/* Message Content */}
+                      <div className="flex-1 min-w-0">
+                          <EnhancedMarkdown>
+                            {message.content}
+                          </EnhancedMarkdown>
+
+                        {/* RAG Status Indicator */}
                         {projectId && message.role === "assistant" && !message.rag_enabled && (
-                          <div className="absolute top-1 right-1 bg-white/80 rounded p-1" title="RAG not enabled for this message">
-                            <FileX className="h-3 w-3 text-red-500" />
+                          <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
+                            <FileX className="h-3 w-3 mr-1" />
+                            RAG not enabled
                           </div>
                         )}
-                      </ChatBubbleMessage>
-                    </ChatBubble>
-                  </div>
-                  
-                  {/* Show document references for assistant messages */}
-                  {message.role === "assistant" && message.references && (
-                    renderDocumentReferences(message.references, message.message_id)
-                  )}
-                  
-                  {message.role === "assistant" && message.message_id && (
-                    <div className="ml-2 sm:ml-4 mt-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => BranchChat(message.message_id)}
-                        className="text-xs"
-                      >
-                        Branch Chat
-                      </Button>
+
+                        {/* Document References */}
+                        {message.role === "assistant" && message.references && (
+                          renderDocumentReferences(message.references, message.message_id)
+                        )}
+
+                        {/* Action Buttons */}
+                        {message.role === "assistant" && (
+                          <div className="flex items-center space-x-2 mt-3">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleCopyMessage(message.content, message.message_id)}
+                              className="h-8 px-2 text-xs text-black-600 hover:text-gray-800"
+                            >
+                              {
+                                copiedMessageId === message.message_id ?
+                                <Check className="h-4 w-4 text-green-400" /> :
+                                <Copy className="h-3 w-3 text-gray-600" />
+                                
+                              }
+
+                            </Button>
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsExpanded(!isExpanded)}
+                              className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
+                            >
+                              {isExpanded ? (
+                                <Minimize2 className="h-4 w-4" />
+                              ) : (
+                                <Maximize2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                            
+                            {message.message_id && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => BranchChat(message.message_id)}
+                                className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
+                              >
+                                Branch Chat
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-              ))}
+              </div>
+            ))}
 
-              {currentChatMessage && currentChatMessage.trim() && (
-                <div className="flex justify-end">
-                  <ChatBubble
-                    variant="sent"
-                    className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] mr-2 sm:mr-4"
-                  >
-                    <ChatBubbleAvatar fallback="US" />
-                    <ChatBubbleMessage variant="sent">
-                      <EnhancedMarkdown>
-                        {currentChatMessage}
-                      </EnhancedMarkdown>
-                    </ChatBubbleMessage>
-                  </ChatBubble>
+            {/* Current user message */}
+            {currentChatMessage && currentChatMessage.trim() && (
+              <div className="w-full bg-gray-50 border-b border-gray-200 py-6 px-4">
+                <div className="w-full max-w-none px-4">
+                  <div className="flex items-start space-x-4 justify-end">
+                    <div className="flex-1 min-w-0 text-right">
+                        <EnhancedMarkdown>
+                          {currentChatMessage}
+                        </EnhancedMarkdown>
+                    </div>
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
+                      U
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {streamingMessage && streamingMessage.trim() && (
-                <div className="flex flex-col items-start">
-                  <div className="flex justify-start">
-                    <ChatBubble
-                      variant="received"
-                      className="max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] xl:max-w-[80%] ml-2 sm:ml-4"
-                    >
-                      <ChatBubbleAvatar fallback="AI" />
-                      <ChatBubbleMessage variant="received" className="relative">
+            {/* Streaming message */}
+            {streamingMessage && streamingMessage.trim() && (
+              <div className="w-full bg-white  border-gray-200 py-6 px-4">
+                <div className="w-full max-w-none px-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium">
+                      AI
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="prose prose-sm max-w-none">
                         <EnhancedMarkdown>
                           {streamingMessage}
                         </EnhancedMarkdown>
-                        {/* Show FileX icon inside message bubble when RAG is not enabled for project chats */}
-                        {projectId && !ragEnabled && (
-                          <div className="absolute top-1 right-1 bg-white/80 rounded p-1" title="RAG not enabled for this message">
-                            <FileX className="h-3 w-3 text-red-500" />
-                          </div>
-                        )}
-                      </ChatBubbleMessage>
-                    </ChatBubble>
+                      </div>
+
+                      {/* RAG Status for streaming */}
+                      {projectId && !ragEnabled && (
+                        <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
+                          <FileX className="h-3 w-3 mr-1" />
+                          RAG not enabled
+                        </div>
+                      )}
+
+                      {/* Document references for streaming */}
+                      {currentDocumentReferences.length > 0 && (
+                        renderDocumentReferences(currentDocumentReferences)
+                      )}
+                    </div>
                   </div>
-                  
-                  {/* Show document references for currently streaming message */}
-                  {currentDocumentReferences.length > 0 && (
-                    renderDocumentReferences(currentDocumentReferences)
-                  )}
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </>
-          )}
-        </ChatMessageList>
-        
-        {/* Inner Chat List */}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+
+        {/* Related Chats */}
         {listChatBranch.length > 0 && (
-          <div className="mt-4 px-2 sm:px-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Related Chats:</h3>
-            <div className="flex flex-wrap gap-2">
-              {listChatBranch.map((chat) => (
-                <Button
-                  key={chat.chatId}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToChatBranch(chat.chatId)}
-                  className="text-xs"
-                >
-                  {chat.name || "New Branch"}
-                </Button>
-              ))}
+          <div className="bg-gray-50 border-t py-4 px-4">
+            <div className="w-full max-w-none px-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Related Chats:</h3>
+              <div className="flex flex-wrap gap-2">
+                {listChatBranch.map((chat) => (
+                  <Button
+                    key={chat.chatId}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToChatBranch(chat.chatId)}
+                    className="text-xs"
+                  >
+                    {chat.name || "New Branch"}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex-shrink-0 bg-background p-2 sm:p-4 border-t">
-        {/* RAG Toggle for Project Chats */}
-        {projectId && (
-          <div className="flex items-center mb-2 px-1">
-            <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ragEnabled}
-                onChange={toggleRagEnabled}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Enable RAG (Retrieval-Augmented Generation)</span>
-            </label>
-          </div>
-        )}
-        
-        <div className="relative rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring p-1">
-          <ChatInput
-            placeholder="Type your message here..."
-            className="min-h-12 resize-none rounded-lg bg-background border-0 p-3 shadow-none focus-visible:ring-0"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <div className="flex items-center p-3 pt-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="mr-2">
-                  {selectedModel || "Select Model"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {availableModels.map((model) => (
-                  <DropdownMenuItem
-                    key={model.id || model.label}
-                    onClick={() => handleModelSelect(model.id)}
-                  >
-                    {model.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button size="sm" className="ml-auto gap-1.5" onClick={handleSend}>
-              Send Message
-              <CornerDownLeft className="size-3.5" />
-            </Button>
+      {/* Input Section */}
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+        <div className="w-full max-w-none px-4">
+          {/* RAG Toggle for Project Chats */}
+          {projectId && (
+            <div className="flex items-center mb-3">
+              <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={ragEnabled}
+                  onChange={toggleRagEnabled}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span>Enable RAG (Retrieval-Augmented Generation)</span>
+              </label>
+            </div>
+          )}
+          
+          <div className="relative rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+            <ChatInput
+              placeholder="Ask anything"
+              className="min-h-12 resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <div className="flex items-center justify-between p-3 pt-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs">
+                    {selectedModel || "Select Model"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {availableModels.map((model) => (
+                    <DropdownMenuItem
+                      key={model.id || model.label}
+                      onClick={() => handleModelSelect(model.id)}
+                    >
+                      {model.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button 
+                size="sm" 
+                className="bg-black hover:bg-gray-800 text-white px-4"
+                onClick={handleSend}
+                disabled={!inputValue.trim()}
+              >
+                <CornerDownLeft className="size-3.5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -451,12 +507,11 @@ export function Chat() {
             <div className="text-red-600 text-sm p-4 bg-red-50 rounded">
               Error: {ragDocumentDetails.error}
             </div>
-          )}
+            )}
           
           {ragDocumentDetails.data && (
             <div>
               <div className="text-sm text-gray-500 mb-4">
-                <br />
                 Showing {ragDocumentDetails.data.Chunks?.length || 0} chunk{(ragDocumentDetails.data.Chunks?.length || 0) > 1 ? 's' : ''} used to generate this response
               </div>
               <ChunksDisplay chunks={ragDocumentDetails.data.Chunks} />

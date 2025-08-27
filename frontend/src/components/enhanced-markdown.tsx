@@ -78,10 +78,10 @@ export function EnhancedMarkdown({ children}: EnhancedMarkdownProps) {
         remarkPlugins={[remarkGfm]}
         components={{
           code: (props) => <CodeComponent {...props} />,
-          p: (props) => <p className="mb-0 last:mb-0 leading-snug" {...props} />,
-          ul: (props) => <ul className="mb-0 ml-4 list-disc space-y-0" {...props} />,
-          ol: (props) => <ol className="mb-0 ml-4 list-decimal space-y-0" {...props} />,
-          li: (props) => <li className="leading-normal" {...props} />,
+          p: (props) => <p className="mb-1 last:mb-0 " {...props} />,
+          ul: (props) => <ul className="mb-1 ml-8 list-disc space-y-0" {...props} />,
+          ol: (props) => <ol className="mb-1 ml-8 list-decimal space-y-0" {...props} />,
+          li: (props) => <li className="mb-1 leading-normal pl-2" {...props} />,
           h1: (props) => <h1 className="text-xl font-bold mb-0 mt-0 first:mt-0" {...props} />,
           h2: (props) => <h2 className="text-lg font-bold mb-0 mt-0 first:mt-0" {...props} />,
           h3: (props) => <h3 className="text-base font-bold mb-0 mt-0 first:mt-0" {...props} />,
@@ -90,6 +90,32 @@ export function EnhancedMarkdown({ children}: EnhancedMarkdownProps) {
           ),
           a: (props) => (
             <a className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer" {...props} />
+          ),
+          table: (props) => (
+            <div className="overflow-x-auto my-3">
+              <table className="border-collapse border border-gray-700 dark:border-gray-500 w-full text-sm">
+                {props.children}
+              </table>
+            </div>
+          ),
+          thead: (props) => (
+            <thead className="bg-gray-200 dark:bg-gray-800">{props.children}</thead>
+          ),
+          th: (props) => (
+            <th className="border border-gray-700 dark:border-gray-500 px-3 py-1 text-left font-semibold">
+              {props.children}
+            </th>
+          ),
+          tbody: (props) => <tbody>{props.children}</tbody>,
+          td: (props) => (
+            <td className="border border-gray-700 dark:border-gray-500 px-3 py-1">
+              {props.children}
+            </td>
+          ),
+          tr: (props) => (
+            <tr className="odd:bg-gray-100 even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800">
+              {props.children}
+            </tr>
           ),
         }}
       >

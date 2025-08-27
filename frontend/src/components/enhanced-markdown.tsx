@@ -13,7 +13,7 @@ interface EnhancedMarkdownProps {
 const CodeComponent = ({ inline, className, children }: any) => {
   const [copied, setCopied] = useState(false);
 
-  const codeString = String(children || '').replace(/\n$/, '');
+  const codeString = String(children || '');
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : 'text';
 
@@ -26,8 +26,8 @@ const CodeComponent = ({ inline, className, children }: any) => {
       console.error('Failed to copy text:', err);
     }
   };
-
-  if (inline) {
+  const isInline = inline || codeString.length < 40;
+  if (isInline) {
     return (
       <code className="bg-gray-100 dark:bg-gray-800 text-rose-600 dark:text-rose-400 px-2 py-1 rounded text-sm font-mono border">
         {children}

@@ -79,9 +79,9 @@ export function EnhancedMarkdown({ children}: EnhancedMarkdownProps) {
         components={{
           code: (props) => <CodeComponent {...props} />,
           p: (props) => <p className="mb-1 last:mb-0 " {...props} />,
-          ul: (props) => <ul className="mb-1 ml-4 list-disc space-y-0" {...props} />,
-          ol: (props) => <ol className="mb-1 ml-4 list-decimal space-y-0" {...props} />,
-          li: (props) => <li className="mb-1 leading-normal" {...props} />,
+          ul: (props) => <ul className="mb-1 ml-8 list-disc space-y-0" {...props} />,
+          ol: (props) => <ol className="mb-1 ml-8 list-decimal space-y-0" {...props} />,
+          li: (props) => <li className="mb-1 leading-normal pl-2" {...props} />,
           h1: (props) => <h1 className="text-xl font-bold mb-0 mt-0 first:mt-0" {...props} />,
           h2: (props) => <h2 className="text-lg font-bold mb-0 mt-0 first:mt-0" {...props} />,
           h3: (props) => <h3 className="text-base font-bold mb-0 mt-0 first:mt-0" {...props} />,

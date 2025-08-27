@@ -264,82 +264,91 @@ export function Chat() {
                 } py-6 px-4`}
               >
                 <div className="w-full max-w-none px-4">
-                  <div className="flex items-start space-x-4">
-                    {/* Avatar */}
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      message.role === "user"
-                        ? "bg-blue-600 text-white"
-                        : "bg-green-600 text-white"
-                    }`}>
-                      {message.role === "user" ? "U" : "AI"}
+                  {message.role === "user" ? (
+                    // User message - right aligned
+                    <div className="flex items-start space-x-4 justify-end">
+                      <div className="flex-1 min-w-0 text-right">
+                          <EnhancedMarkdown>
+                            {message.content}
+                          </EnhancedMarkdown>
+                      </div>
+                      {/* Avatar */}
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
+                        U
+                      </div>
                     </div>
-
-                    {/* Message Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="prose prose-sm max-w-none">
-                        <EnhancedMarkdown>
-                          {message.content}
-                        </EnhancedMarkdown>
+                  ) : (
+                    <div className="flex items-start space-x-4">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium">
+                        AI
                       </div>
 
-                      {/* RAG Status Indicator */}
-                      {projectId && message.role === "assistant" && !message.rag_enabled && (
-                        <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
-                          <FileX className="h-3 w-3 mr-1" />
-                          RAG not enabled
-                        </div>
-                      )}
+                      {/* Message Content */}
+                      <div className="flex-1 min-w-0">
+                          <EnhancedMarkdown>
+                            {message.content}
+                          </EnhancedMarkdown>
 
-                      {/* Document References */}
-                      {message.role === "assistant" && message.references && (
-                        renderDocumentReferences(message.references, message.message_id)
-                      )}
+                        {/* RAG Status Indicator */}
+                        {projectId && message.role === "assistant" && !message.rag_enabled && (
+                          <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
+                            <FileX className="h-3 w-3 mr-1" />
+                            RAG not enabled
+                          </div>
+                        )}
 
-                      {/* Action Buttons */}
-                      {message.role === "assistant" && (
-                        <div className="flex items-center space-x-2 mt-3">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleCopyMessage(message.content, message.message_id)}
-                            className="h-8 px-2 text-xs text-black-600 hover:text-gray-800"
-                          >
-                            {
-                              copiedMessageId === message.message_id ?
-                              <Check className="h-4 w-4 text-green-400" /> :
-                              <Copy className="h-3 w-3 text-gray-600" />
-                              
-                            }
+                        {/* Document References */}
+                        {message.role === "assistant" && message.references && (
+                          renderDocumentReferences(message.references, message.message_id)
+                        )}
 
-                          </Button>
-                          
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setIsExpanded(!isExpanded)}
-                            className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
-                          >
-                            {isExpanded ? (
-                              <Minimize2 className="h-4 w-4" />
-                            ) : (
-                              <Maximize2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                          
-                          {message.message_id && (
+                        {/* Action Buttons */}
+                        {message.role === "assistant" && (
+                          <div className="flex items-center space-x-2 mt-3">
                             <Button 
                               variant="ghost" 
-                              size="sm" 
-                              onClick={() => BranchChat(message.message_id)}
+                              size="sm"
+                              onClick={() => handleCopyMessage(message.content, message.message_id)}
+                              className="h-8 px-2 text-xs text-black-600 hover:text-gray-800"
+                            >
+                              {
+                                copiedMessageId === message.message_id ?
+                                <Check className="h-4 w-4 text-green-400" /> :
+                                <Copy className="h-3 w-3 text-gray-600" />
+                                
+                              }
+
+                            </Button>
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsExpanded(!isExpanded)}
                               className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
                             >
-                              Branch Chat
+                              {isExpanded ? (
+                                <Minimize2 className="h-4 w-4" />
+                              ) : (
+                                <Maximize2 className="h-4 w-4" />
+                              )}
                             </Button>
-                          )}
-                        </div>
-                      )}
+                            
+                            {message.message_id && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => BranchChat(message.message_id)}
+                                className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
+                              >
+                                Branch Chat
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -348,16 +357,14 @@ export function Chat() {
             {currentChatMessage && currentChatMessage.trim() && (
               <div className="w-full bg-gray-50 border-b border-gray-200 py-6 px-4">
                 <div className="w-full max-w-none px-4">
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
-                      U
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="prose prose-sm max-w-none">
+                  <div className="flex items-start space-x-4 justify-end">
+                    <div className="flex-1 min-w-0 text-right">
                         <EnhancedMarkdown>
                           {currentChatMessage}
                         </EnhancedMarkdown>
-                      </div>
+                    </div>
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
+                      U
                     </div>
                   </div>
                 </div>

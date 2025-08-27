@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
-import { CornerDownLeft, FileText, Eye, FileX, Copy, Check } from "lucide-react";
+import { CornerDownLeft, FileText, Eye, FileX, Copy, Check, Maximize2, Minimize2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -142,6 +142,7 @@ export function Chat() {
     docId: string;
     fileName: string;
   } | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -239,7 +240,9 @@ export function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full px-6">
+    <div className={`flex flex-col h-full mx-auto w-full transition-all ${
+      isExpanded ? 'max-w-7xl' : 'max-w-4xl'
+    }`}>
       <div className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
           <div className="flex items-center justify-center h-full text-gray-500">
@@ -303,17 +306,26 @@ export function Chat() {
                           >
                             {
                               copiedMessageId === message.message_id ?
-                              <>
-                                <Check className="h-4 w-4 text-green-400" /> 
-                                <span className="text-xs text-green-400">Copied</span> 
-                              </> : 
-                              <>
-                                <Copy className="h-3 w-3 text-gray-600" />
-                                <span className="text-xs text-gray-600">Copy</span>
-                              </>
+                              <Check className="h-4 w-4 text-green-400" /> :
+                              <Copy className="h-3 w-3 text-gray-600" />
+                              
                             }
 
                           </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
+                          >
+                            {isExpanded ? (
+                              <Minimize2 className="h-4 w-4" />
+                            ) : (
+                              <Maximize2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                          
                           {message.message_id && (
                             <Button 
                               variant="ghost" 

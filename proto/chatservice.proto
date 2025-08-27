@@ -98,8 +98,24 @@ message ChatResponse {
     // was introduced to send message id, because it is generated server side
     // sending one of the multiple oneof's help us do all of this in one streaming API call
     MessageSummary summary = 2;
+
+    // used when running a RAG pipeline for files in projects
     RAGDocumentReferenceSummaryList document_reference = 3; 
+
+    ChatProgress progress = 4;
   }
+}
+
+message ChatProgress {
+  enum State {
+    REQUEST_SENT_TO_LLM = 0;
+    FIRST_TOKEN_RECIEVED = 1;
+    TOKENS_STREAMING = 2;
+    TOKENS_STOPPED = 3;
+  }
+
+  State state = 1;
+  string message = 2;
 }
 
 // TODO: reasonable limits from server side, limit to 10 (constant in server side) docs
@@ -126,6 +142,7 @@ message RAGDocumentReference {
 
 message MessageSummary {
   string message_id = 1;
+  //TODO: add tokens recieved, cost?, token speed 
 }
 
 message GetHistoryRequest {

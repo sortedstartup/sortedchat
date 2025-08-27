@@ -221,6 +221,11 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 	defer resp.Body.Close()
 
+	// UI can show request sent, useful because sometimes there is a delay from the API server
+	stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_REQUEST_SENT_TO_LLM, Message: "Request sent"}},
+	})
+
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("OpenAI API error: %d - %s", resp.StatusCode, string(bodyBytes))
@@ -231,7 +236,14 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 	// Streaming response from LLM API
 	scanner := bufio.NewScanner(resp.Body)
+	firstToken := true
 	for scanner.Scan() {
+		if firstToken {
+			stream(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_FIRST_TOKEN_RECIEVED, Message: "First token recieved"}},
+			})
+			firstToken = false
+		}
 		line := strings.TrimSpace(scanner.Text())
 
 		if line == "" {
@@ -289,6 +301,10 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("error reading stream: %v", err)
 	}
+
+	stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_TOKENS_STOPPED, Message: "Reponse finished"}},
+	})
 
 	assistantText := fullResponse.String()
 	if assistantText != "" {

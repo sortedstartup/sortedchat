@@ -275,7 +275,8 @@ export const doChat = (msg: string,projectId: string | undefined) => {
   stream.on("error", (err: Error) => {
     console.error("Stream error:", err);
     $streamingMessage.set("");
-    $currentChatMessage.set("");
+    // $currentChatMessage.set("");
+    toast.error("Error: " + `Stream error`);
     
     // Reset RAG to enabled for project chats even on error
     if (projectId) {

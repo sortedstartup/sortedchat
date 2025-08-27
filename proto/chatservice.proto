@@ -142,7 +142,7 @@ message RAGDocumentReference {
 
 message MessageSummary {
   string message_id = 1;
-  //TODO: add tokens recieved, cost?, token speed 
+  //TODO: add tokens received, cost?, token speed 
 }
 
 message GetHistoryRequest {

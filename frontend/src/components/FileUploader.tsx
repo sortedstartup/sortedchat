@@ -98,21 +98,23 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       return baseFileItem;
     }
 
-    if (file.type === "application/pdf") {
+    if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
       try {
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
 
-        let extractedText = "";
+        const chunks: string[] = [];
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
           const content = await page.getTextContent();
-          console.log('Content:', content);
-          const pageText = content.items.map(item => ("str" in item ? item.str : "")).join(" ");
-          extractedText += pageText + "\n\n";
+          const pageText = (content.items as any[])
+            .map((item) => (typeof item === "object" && "str" in item ? (item as any).str : ""))
+            .join(" ");
+          chunks.push(pageText, "\n\n");
         }
 
-        const textBlob = new Blob([extractedText], { type: "text/plain" });
+        const textBlob = new Blob([chunks.join("")], { type: "text/plain" });
         const fileName = file.name.replace(/\.pdf$/i, ".txt");
         
         const textFile = Object.assign(textBlob, {
@@ -122,24 +124,27 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         return {
           ...baseFileItem,
           file: textFile,
-          path: textFile.name,
+          path: path.replace(/\.pdf$/i, ".txt"),
         };
       } catch (error) {
         console.error("PDF extraction failed:", error);
-        return baseFileItem;
+        return {
+          ...baseFileItem,
+          status: "failed",
+          error: "PDF text extraction failed",
+        };
       }
     }
     return baseFileItem;
   };
 
   const addFiles = async (files: FileList) => {
-    const newItems: FileItem[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      const path = (f as any).webkitRelativePath || f.name;
-      const processedItem = await processFileForUpload(f, path);
-      newItems.push(processedItem);
-    }
+    const newItems = await Promise.all(
+      Array.from(files).map(f => {
+        const path = (f as any).webkitRelativePath || f.name;
+        return processFileForUpload(f, path);
+      })
+    );
 
     const updatedList = [...fileList, ...newItems];
     setFileList(updatedList);

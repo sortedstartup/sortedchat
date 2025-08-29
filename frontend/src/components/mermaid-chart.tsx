@@ -17,9 +17,9 @@ export default function MermaidChart({ chart, config, className }: Props) {
     // Initialize once per render with safe defaults
     mermaid.initialize({
       startOnLoad: false,
-      securityLevel: 'strict',  // safer; disables raw HTML in labels
       theme: 'default',
       ...config,
+      securityLevel: 'strict',
     });
 
     const el = ref.current;

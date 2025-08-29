@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -73,7 +73,7 @@ const CodeComponent = ({ inline, className, children }: any) => {
   );
 };
 
-export function EnhancedMarkdown({ children }: EnhancedMarkdownProps) {
+export const EnhancedMarkdown = memo(function EnhancedMarkdown({ children }: EnhancedMarkdownProps) {
   return (
     <div className="prose prose-sm max-w-none dark:prose-invert">
       <ReactMarkdown
@@ -82,7 +82,6 @@ export function EnhancedMarkdown({ children }: EnhancedMarkdownProps) {
           code: ({ className, children, ...props }) => {
             const codeString = String(children || '');
             const match = /language-(\w+)/.exec(className || '');
-            console.log("language: ", children);
             const language = match ? match[1] : 'text';
 
             if ( language === 'mermaid') {
@@ -136,4 +135,4 @@ export function EnhancedMarkdown({ children }: EnhancedMarkdownProps) {
       </ReactMarkdown>
     </div>
   );
-}
+});

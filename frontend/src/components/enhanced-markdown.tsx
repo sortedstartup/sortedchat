@@ -1,4 +1,4 @@
-import { useState, memo } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -73,7 +73,7 @@ const CodeComponent = ({ inline, className, children }: any) => {
   );
 };
 
-export const EnhancedMarkdown = memo(function EnhancedMarkdown({ children }: EnhancedMarkdownProps) {
+export const EnhancedMarkdown = ({ children }: EnhancedMarkdownProps) => {
   return (
     <div className="prose prose-sm max-w-none dark:prose-invert">
       <ReactMarkdown
@@ -135,4 +135,4 @@ export const EnhancedMarkdown = memo(function EnhancedMarkdown({ children }: Enh
       </ReactMarkdown>
     </div>
   );
-});
+};

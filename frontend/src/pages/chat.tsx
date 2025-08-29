@@ -100,6 +100,89 @@ function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undef
   );
 }
 
+function ChatInputBox({ projectId, onSendMessage }: { projectId?: string; onSendMessage: (message: string) => void }) {
+  const [inputValue, setInputValue] = useState("");
+  const availableModels = useStore($availableModels);
+  const selectedModel = useStore($selectedModel);
+  const ragEnabled = useStore($ragEnabled);
+
+  const handleSend = () => {
+    if (inputValue.trim()) {
+      onSendMessage(inputValue);
+      setInputValue("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleModelSelect = (model: string) => {
+    $selectedModel.set(model);
+  };
+
+  return (
+    <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+      <div className="w-full max-w-none px-4">
+        {/* RAG Toggle for Project Chats */}
+        {projectId && (
+          <div className="flex items-center mb-3">
+            <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={ragEnabled}
+                onChange={toggleRagEnabled}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Enable RAG (Retrieval-Augmented Generation)</span>
+            </label>
+          </div>
+        )}
+        
+        <div className="relative rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+          <ChatInput
+            placeholder="Ask anything"
+            className="min-h-12 resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <div className="flex items-center justify-between p-3 pt-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs">
+                  {selectedModel || "Select Model"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {availableModels.map((model) => (
+                  <DropdownMenuItem
+                    key={model.id || model.label}
+                    onClick={() => handleModelSelect(model.id)}
+                  >
+                    {model.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button 
+              size="sm" 
+              className="bg-black hover:bg-gray-800 text-white px-4"
+              onClick={handleSend}
+              disabled={!inputValue.trim()}
+            >
+              <CornerDownLeft className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Chat() {
   const { projectId, chatId } = useParams();
   const navigate = useNavigate();
@@ -128,14 +211,11 @@ export function Chat() {
   const { data, loading } = useStore($currentChatMessages);
   const streamingMessage = useStore($streamingMessage);
   const currentChatMessage = useStore($currentChatMessage);
-  const availableModels = useStore($availableModels);
-  const selectedModel = useStore($selectedModel);
   const listChatBranch = useStore($listChatBranch);
   const currentDocumentReferences = useStore($currentDocumentReferences);
   const ragEnabled = useStore($ragEnabled);
   const ragDocumentDetails = useStore($ragDocumentDetails);
 
-  const [inputValue, setInputValue] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [selectedDocumentForDetails, setSelectedDocumentForDetails] = useState<{
     messageId: string;
@@ -154,23 +234,9 @@ export function Chat() {
     scrollToBottom();
   }, [data, streamingMessage, currentChatMessage]);
 
-  const handleSend = () => {
-    if (inputValue.trim()) {
-      doChat(inputValue, projectId);
-      setInputValue("");
-      setTimeout(scrollToBottom, 100);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const handleModelSelect = (model: string) => {
-    $selectedModel.set(model);
+  const handleSendMessage = (message: string) => {
+    doChat(message, projectId);
+    setTimeout(scrollToBottom, 100);
   };
 
   const goToChatBranch = async (chatId: string) => {
@@ -226,7 +292,6 @@ export function Chat() {
       console.error("Failed to fetch RAG details:", error);
     }
   };
-
 
   const handleCopyMessage = async (content: string, messageId: string) => {
     try {
@@ -430,62 +495,10 @@ export function Chat() {
         )}
       </div>
 
-      {/* Input Section */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
-        <div className="w-full max-w-none px-4">
-          {/* RAG Toggle for Project Chats */}
-          {projectId && (
-            <div className="flex items-center mb-3">
-              <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={ragEnabled}
-                  onChange={toggleRagEnabled}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span>Enable RAG (Retrieval-Augmented Generation)</span>
-              </label>
-            </div>
-          )}
-          
-          <div className="relative rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-            <ChatInput
-              placeholder="Ask anything"
-              className="min-h-12 resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-            <div className="flex items-center justify-between p-3 pt-0">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    {selectedModel || "Select Model"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {availableModels.map((model) => (
-                    <DropdownMenuItem
-                      key={model.id || model.label}
-                      onClick={() => handleModelSelect(model.id)}
-                    >
-                      {model.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button 
-                size="sm" 
-                className="bg-black hover:bg-gray-800 text-white px-4"
-                onClick={handleSend}
-                disabled={!inputValue.trim()}
-              >
-                <CornerDownLeft className="size-3.5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ChatInputBox 
+        projectId={projectId}
+        onSendMessage={handleSendMessage}
+      />
 
       {/* RAG Document Details Dialog */}
       <Dialog open={!!selectedDocumentForDetails} onOpenChange={() => setSelectedDocumentForDetails(null)}>

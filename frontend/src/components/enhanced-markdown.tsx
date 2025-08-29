@@ -88,8 +88,11 @@ export const EnhancedMarkdown = ({ children }: EnhancedMarkdownProps) => {
               return <MermaidChart chart={codeString} className="my-4 flex justify-center" />;
             }
 
-            return <CodeComponent className={className} children={children} {...props} />;
-          },
+            return (
+              <CodeComponent className={className} {...props}>
+                {children}
+              </CodeComponent>
+            );
           p: (props) => <p className="mb-1 last:mb-0 " {...props} />,
           ul: (props) => <ul className="mb-1 ml-8 list-disc space-y-0" {...props} />,
           ol: (props) => <ol className="mb-1 ml-8 list-decimal space-y-0" {...props} />,

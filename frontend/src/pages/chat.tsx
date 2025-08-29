@@ -114,7 +114,13 @@ function ChatInputBox({ projectId, onSendMessage }: { projectId?: string; onSend
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Avoid sending while the user is composing text (IME)
+    // @ts-expect-error: isComposing exists on native event
+    if (
+      e.key === "Enter" &&
+      !e.shiftKey &&
+      !(e.nativeEvent?.isComposing || (e as any).isComposing)
+    ) {
       e.preventDefault();
       handleSend();
     }

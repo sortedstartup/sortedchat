@@ -6,6 +6,7 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MermaidChart from '@/components/mermaid-chart';
+import { memo } from 'react';
 
 interface EnhancedMarkdownProps {
   children: string;
@@ -73,7 +74,7 @@ const CodeComponent = ({ inline, className, children }: any) => {
   );
 };
 
-export const EnhancedMarkdown = ({ children }: EnhancedMarkdownProps) => {
+export const EnhancedMarkdown = memo(({ children }: EnhancedMarkdownProps) => {
   return (
     <div className="prose prose-sm max-w-none dark:prose-invert">
       <ReactMarkdown
@@ -93,6 +94,7 @@ export const EnhancedMarkdown = ({ children }: EnhancedMarkdownProps) => {
                 {children}
               </CodeComponent>
             );
+          },
           p: (props) => <p className="mb-1 last:mb-0 " {...props} />,
           ul: (props) => <ul className="mb-1 ml-8 list-disc space-y-0" {...props} />,
           ol: (props) => <ol className="mb-1 ml-8 list-decimal space-y-0" {...props} />,
@@ -138,4 +140,4 @@ export const EnhancedMarkdown = ({ children }: EnhancedMarkdownProps) => {
       </ReactMarkdown>
     </div>
   );
-};
+});

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import mermaid, { type MermaidConfig } from 'mermaid';
+import { useMemo } from 'react';
 
 type Props = {
   chart: string;               // Mermaid DSL
@@ -9,6 +10,8 @@ type Props = {
 
 export default function MermaidChart({ chart, config, className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const configJson = useMemo(() => JSON.stringify(config), [config]);
+
 
   useEffect(() => {
     // Initialize once per render with safe defaults
@@ -33,7 +36,7 @@ export default function MermaidChart({ chart, config, className }: Props) {
       .catch((err) => {
         el.innerHTML = `<pre style="color:red">Mermaid error:\n${String(err)}</pre>`;
       });
-  }, [chart, JSON.stringify(config)]);
+  }, [chart, configJson]);
 
   return <div className={className} ref={ref} style={{ width: '100%', overflow: 'auto' }} />;
 }

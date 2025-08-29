@@ -9,7 +9,9 @@ import { getJWTToken } from "@/lib/auth";
 import * as pdfjsLib from "pdfjs-dist";
 import PdfWorker from "pdfjs-dist/build/pdf.worker?worker";
 
-pdfjsLib.GlobalWorkerOptions.workerPort = new PdfWorker();
+if (typeof window !== "undefined" && !pdfjsLib.GlobalWorkerOptions.workerPort) {
+  pdfjsLib.GlobalWorkerOptions.workerPort = new PdfWorker();
+}
 
 export type FileItem = {
   id: string;

@@ -1123,18 +1123,26 @@ export class ChatRequest extends pb_1.Message {
     }
 }
 export class ChatResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [[1, 2, 3]];
+    #one_of_decls: number[][] = [[1, 2, 3, 4]];
     constructor(data?: any[] | ({} & (({
         text?: string;
         summary?: never;
+        user_message_id?: never;
         document_reference?: never;
     } | {
         text?: never;
         summary?: MessageSummary;
+        user_message_id?: never;
         document_reference?: never;
     } | {
         text?: never;
         summary?: never;
+        user_message_id?: string;
+        document_reference?: never;
+    } | {
+        text?: never;
+        summary?: never;
+        user_message_id?: never;
         document_reference?: RAGDocumentReferenceSummaryList;
     })))) {
         super();
@@ -1145,6 +1153,9 @@ export class ChatResponse extends pb_1.Message {
             }
             if ("summary" in data && data.summary != undefined) {
                 this.summary = data.summary;
+            }
+            if ("user_message_id" in data && data.user_message_id != undefined) {
+                this.user_message_id = data.user_message_id;
             }
             if ("document_reference" in data && data.document_reference != undefined) {
                 this.document_reference = data.document_reference;
@@ -1169,29 +1180,40 @@ export class ChatResponse extends pb_1.Message {
     get has_summary() {
         return pb_1.Message.getField(this, 2) != null;
     }
+    get user_message_id() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set user_message_id(value: string) {
+        pb_1.Message.setOneofField(this, 3, this.#one_of_decls[0], value);
+    }
+    get has_user_message_id() {
+        return pb_1.Message.getField(this, 3) != null;
+    }
     get document_reference() {
-        return pb_1.Message.getWrapperField(this, RAGDocumentReferenceSummaryList, 3) as RAGDocumentReferenceSummaryList;
+        return pb_1.Message.getWrapperField(this, RAGDocumentReferenceSummaryList, 4) as RAGDocumentReferenceSummaryList;
     }
     set document_reference(value: RAGDocumentReferenceSummaryList) {
-        pb_1.Message.setOneofWrapperField(this, 3, this.#one_of_decls[0], value);
+        pb_1.Message.setOneofWrapperField(this, 4, this.#one_of_decls[0], value);
     }
     get has_document_reference() {
-        return pb_1.Message.getField(this, 3) != null;
+        return pb_1.Message.getField(this, 4) != null;
     }
     get response() {
         const cases: {
-            [index: number]: "none" | "text" | "summary" | "document_reference";
+            [index: number]: "none" | "text" | "summary" | "user_message_id" | "document_reference";
         } = {
             0: "none",
             1: "text",
             2: "summary",
-            3: "document_reference"
+            3: "user_message_id",
+            4: "document_reference"
         };
-        return cases[pb_1.Message.computeOneofCase(this, [1, 2, 3])];
+        return cases[pb_1.Message.computeOneofCase(this, [1, 2, 3, 4])];
     }
     static fromObject(data: {
         text?: string;
         summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
+        user_message_id?: string;
         document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
     }): ChatResponse {
         const message = new ChatResponse({});
@@ -1200,6 +1222,9 @@ export class ChatResponse extends pb_1.Message {
         }
         if (data.summary != null) {
             message.summary = MessageSummary.fromObject(data.summary);
+        }
+        if (data.user_message_id != null) {
+            message.user_message_id = data.user_message_id;
         }
         if (data.document_reference != null) {
             message.document_reference = RAGDocumentReferenceSummaryList.fromObject(data.document_reference);
@@ -1210,6 +1235,7 @@ export class ChatResponse extends pb_1.Message {
         const data: {
             text?: string;
             summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
+            user_message_id?: string;
             document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
         } = {};
         if (this.text != null) {
@@ -1217,6 +1243,9 @@ export class ChatResponse extends pb_1.Message {
         }
         if (this.summary != null) {
             data.summary = this.summary.toObject();
+        }
+        if (this.user_message_id != null) {
+            data.user_message_id = this.user_message_id;
         }
         if (this.document_reference != null) {
             data.document_reference = this.document_reference.toObject();
@@ -1231,8 +1260,10 @@ export class ChatResponse extends pb_1.Message {
             writer.writeString(1, this.text);
         if (this.has_summary)
             writer.writeMessage(2, this.summary, () => this.summary.serialize(writer));
+        if (this.has_user_message_id)
+            writer.writeString(3, this.user_message_id);
         if (this.has_document_reference)
-            writer.writeMessage(3, this.document_reference, () => this.document_reference.serialize(writer));
+            writer.writeMessage(4, this.document_reference, () => this.document_reference.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1249,6 +1280,9 @@ export class ChatResponse extends pb_1.Message {
                     reader.readMessage(message.summary, () => message.summary = MessageSummary.deserialize(reader));
                     break;
                 case 3:
+                    message.user_message_id = reader.readString();
+                    break;
+                case 4:
                     reader.readMessage(message.document_reference, () => message.document_reference = RAGDocumentReferenceSummaryList.deserialize(reader));
                     break;
                 default: reader.skipField();
@@ -1696,12 +1730,24 @@ export class MessageSummary extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         message_id?: string;
+        model?: string;
+        input_tokens?: number;
+        output_tokens?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("message_id" in data && data.message_id != undefined) {
                 this.message_id = data.message_id;
+            }
+            if ("model" in data && data.model != undefined) {
+                this.model = data.model;
+            }
+            if ("input_tokens" in data && data.input_tokens != undefined) {
+                this.input_tokens = data.input_tokens;
+            }
+            if ("output_tokens" in data && data.output_tokens != undefined) {
+                this.output_tokens = data.output_tokens;
             }
         }
     }
@@ -1711,21 +1757,63 @@ export class MessageSummary extends pb_1.Message {
     set message_id(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
+    get model() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set model(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get input_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 3, 0) as number;
+    }
+    set input_tokens(value: number) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get output_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 4, 0) as number;
+    }
+    set output_tokens(value: number) {
+        pb_1.Message.setField(this, 4, value);
+    }
     static fromObject(data: {
         message_id?: string;
+        model?: string;
+        input_tokens?: number;
+        output_tokens?: number;
     }): MessageSummary {
         const message = new MessageSummary({});
         if (data.message_id != null) {
             message.message_id = data.message_id;
+        }
+        if (data.model != null) {
+            message.model = data.model;
+        }
+        if (data.input_tokens != null) {
+            message.input_tokens = data.input_tokens;
+        }
+        if (data.output_tokens != null) {
+            message.output_tokens = data.output_tokens;
         }
         return message;
     }
     toObject() {
         const data: {
             message_id?: string;
+            model?: string;
+            input_tokens?: number;
+            output_tokens?: number;
         } = {};
         if (this.message_id != null) {
             data.message_id = this.message_id;
+        }
+        if (this.model != null) {
+            data.model = this.model;
+        }
+        if (this.input_tokens != null) {
+            data.input_tokens = this.input_tokens;
+        }
+        if (this.output_tokens != null) {
+            data.output_tokens = this.output_tokens;
         }
         return data;
     }
@@ -1735,6 +1823,12 @@ export class MessageSummary extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.message_id.length)
             writer.writeString(1, this.message_id);
+        if (this.model.length)
+            writer.writeString(2, this.model);
+        if (this.input_tokens != 0)
+            writer.writeInt32(3, this.input_tokens);
+        if (this.output_tokens != 0)
+            writer.writeInt32(4, this.output_tokens);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1746,6 +1840,15 @@ export class MessageSummary extends pb_1.Message {
             switch (reader.getFieldNumber()) {
                 case 1:
                     message.message_id = reader.readString();
+                    break;
+                case 2:
+                    message.model = reader.readString();
+                    break;
+                case 3:
+                    message.input_tokens = reader.readInt32();
+                    break;
+                case 4:
+                    message.output_tokens = reader.readInt32();
                     break;
                 default: reader.skipField();
             }
@@ -1901,6 +2004,9 @@ export class ChatMessage extends pb_1.Message {
         message_id?: string;
         references?: RAGDocumentReference[];
         rag_enabled?: boolean;
+        model?: string;
+        input_tokens?: number;
+        output_tokens?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [4], this.#one_of_decls);
@@ -1919,6 +2025,15 @@ export class ChatMessage extends pb_1.Message {
             }
             if ("rag_enabled" in data && data.rag_enabled != undefined) {
                 this.rag_enabled = data.rag_enabled;
+            }
+            if ("model" in data && data.model != undefined) {
+                this.model = data.model;
+            }
+            if ("input_tokens" in data && data.input_tokens != undefined) {
+                this.input_tokens = data.input_tokens;
+            }
+            if ("output_tokens" in data && data.output_tokens != undefined) {
+                this.output_tokens = data.output_tokens;
             }
         }
     }
@@ -1952,12 +2067,33 @@ export class ChatMessage extends pb_1.Message {
     set rag_enabled(value: boolean) {
         pb_1.Message.setField(this, 5, value);
     }
+    get model() {
+        return pb_1.Message.getFieldWithDefault(this, 6, "") as string;
+    }
+    set model(value: string) {
+        pb_1.Message.setField(this, 6, value);
+    }
+    get input_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 7, 0) as number;
+    }
+    set input_tokens(value: number) {
+        pb_1.Message.setField(this, 7, value);
+    }
+    get output_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 8, 0) as number;
+    }
+    set output_tokens(value: number) {
+        pb_1.Message.setField(this, 8, value);
+    }
     static fromObject(data: {
         role?: string;
         content?: string;
         message_id?: string;
         references?: ReturnType<typeof RAGDocumentReference.prototype.toObject>[];
         rag_enabled?: boolean;
+        model?: string;
+        input_tokens?: number;
+        output_tokens?: number;
     }): ChatMessage {
         const message = new ChatMessage({});
         if (data.role != null) {
@@ -1975,6 +2111,15 @@ export class ChatMessage extends pb_1.Message {
         if (data.rag_enabled != null) {
             message.rag_enabled = data.rag_enabled;
         }
+        if (data.model != null) {
+            message.model = data.model;
+        }
+        if (data.input_tokens != null) {
+            message.input_tokens = data.input_tokens;
+        }
+        if (data.output_tokens != null) {
+            message.output_tokens = data.output_tokens;
+        }
         return message;
     }
     toObject() {
@@ -1984,6 +2129,9 @@ export class ChatMessage extends pb_1.Message {
             message_id?: string;
             references?: ReturnType<typeof RAGDocumentReference.prototype.toObject>[];
             rag_enabled?: boolean;
+            model?: string;
+            input_tokens?: number;
+            output_tokens?: number;
         } = {};
         if (this.role != null) {
             data.role = this.role;
@@ -1999,6 +2147,15 @@ export class ChatMessage extends pb_1.Message {
         }
         if (this.rag_enabled != null) {
             data.rag_enabled = this.rag_enabled;
+        }
+        if (this.model != null) {
+            data.model = this.model;
+        }
+        if (this.input_tokens != null) {
+            data.input_tokens = this.input_tokens;
+        }
+        if (this.output_tokens != null) {
+            data.output_tokens = this.output_tokens;
         }
         return data;
     }
@@ -2016,6 +2173,12 @@ export class ChatMessage extends pb_1.Message {
             writer.writeRepeatedMessage(4, this.references, (item: RAGDocumentReference) => item.serialize(writer));
         if (this.rag_enabled != false)
             writer.writeBool(5, this.rag_enabled);
+        if (this.model.length)
+            writer.writeString(6, this.model);
+        if (this.input_tokens != 0)
+            writer.writeInt32(7, this.input_tokens);
+        if (this.output_tokens != 0)
+            writer.writeInt32(8, this.output_tokens);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -2039,6 +2202,15 @@ export class ChatMessage extends pb_1.Message {
                     break;
                 case 5:
                     message.rag_enabled = reader.readBool();
+                    break;
+                case 6:
+                    message.model = reader.readString();
+                    break;
+                case 7:
+                    message.input_tokens = reader.readInt32();
+                    break;
+                case 8:
+                    message.output_tokens = reader.readInt32();
                     break;
                 default: reader.skipField();
             }

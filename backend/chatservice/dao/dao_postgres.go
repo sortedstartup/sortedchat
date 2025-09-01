@@ -90,15 +90,21 @@ func (p *PostgresDAO) SaveChatName(userID string, chatId string, name string) er
 }
 
 // AddChatMessage adds a message to a chat
-func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) error {
-	_, err := p.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES ($1, $2, $3, $4, $5)", chatId, role, content, userID, ragEnabled)
-	return err
+func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) (string, error) {
+	var messageId string
+
+	err := p.db.Get(&messageId, "INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES ($1, $2, $3, $4, $5) RETURNING id", chatId, role, content, userID, ragEnabled)
+	if err != nil {
+		return "", err
+	}
+
+	return messageId, nil
 }
 
 // GetChatMessages retrieves all messages for a given chat
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
+	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	return messages, err
 }
 
@@ -127,9 +133,9 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string) ([]*proto.Cha
 	return result, nil
 }
 
-func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (int64, error) {
+func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (MessageSummary, error) {
 	// PostgreSQL doesn't have LastInsertId(), so we use RETURNING
-	var messageId int64
+	var messageId string
 	var referencesValue interface{}
 
 	// Handle JSON insertion for JSONB field
@@ -145,10 +151,15 @@ func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, rol
 		RETURNING id`,
 		chatId, role, content, model, inputTokens, outputTokens, userID, referencesValue, ragEnabled)
 	if err != nil {
-		return 0, err
+		return MessageSummary{}, err
 	}
 
-	return messageId, nil
+	return MessageSummary{
+		MessageId:        messageId,
+		Model:            model,
+		InputTokenCount:  inputTokens,
+		OutputTokenCount: outputTokens,
+	}, nil
 }
 
 // GetModels retrieves all available models

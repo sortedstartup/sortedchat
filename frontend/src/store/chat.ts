@@ -26,6 +26,7 @@ import {
   RAGDocumentReferenceRequest,
   RAGDocumentReference,
   DeleteDocumentRequest,
+  MessageSummary,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -98,6 +99,7 @@ export const fetchChatMessages = async (chatId: string) => {
         if (message.references && message.references.length > 0) {
           allReferences.push(...message.references);
         }
+        console.log('Message:', message.model, 'Input Tokens:', message.input_tokens, 'Output Tokens:', message.output_tokens);
       });
     }
     
@@ -122,7 +124,8 @@ export const fetchChatMessages = async (chatId: string) => {
 
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
-
+export const $messageSummary = atom<MessageSummary | null>(null);
+export const $currentUserMessageId = atom<string>("");
 const addMessageToHistory = (message: ChatMessage) => {
   const currentState = $currentChatMessages.get();
   if (currentState.data) {
@@ -212,9 +215,12 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     if (res.has_text) {
       assistantResponse += res.text;
       $streamingMessage.set(assistantResponse);
+    } else if (res.has_user_message_id) {
+      console.log('Received user message ID:', res.user_message_id);
+      $currentUserMessageId.set(res.user_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
-      messageId = res.summary.message_id;
-      console.log('Received message ID:', messageId);
+      $messageSummary.set(res.summary);
+      messageId = res.summary.message_id; //assistant message id is set in the store
     } else if (res.has_document_reference && ragEnabled) {
       // Only process document references if RAG is enabled
       const docRefList = res.document_reference;
@@ -598,7 +604,6 @@ export async function ListChatBranch (chatId: string) {
     const res = await chat.ListChatBranch(ListChatBranchRequest.fromObject({
       chat_id: chatId,
     }),{});
-    console.log('response from branch chat list', res.branch_chat_list)
     $listChatBranch.set(res.branch_chat_list);
   } catch (error) {
     console.error('Failed to fetch branch chat list:', error);

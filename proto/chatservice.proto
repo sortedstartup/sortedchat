@@ -98,7 +98,8 @@ message ChatResponse {
     // was introduced to send message id, because it is generated server side
     // sending one of the multiple oneof's help us do all of this in one streaming API call
     MessageSummary summary = 2;
-    RAGDocumentReferenceSummaryList document_reference = 3; 
+    string user_message_id = 3;
+    RAGDocumentReferenceSummaryList document_reference = 4; 
   }
 }
 
@@ -126,6 +127,9 @@ message RAGDocumentReference {
 
 message MessageSummary {
   string message_id = 1;
+  string model = 2;
+  int32 input_tokens = 3;
+  int32 output_tokens = 4;
 }
 
 message GetHistoryRequest {
@@ -142,6 +146,9 @@ message ChatMessage {
   string message_id = 3;
   repeated RAGDocumentReference references = 4;
   bool rag_enabled = 5;
+  string model = 6;
+  int32 input_tokens = 7;
+  int32 output_tokens = 8;
 }
 
 message GetChatListRequest {

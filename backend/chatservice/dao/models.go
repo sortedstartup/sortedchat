@@ -6,6 +6,16 @@ type ChatMessageRow struct {
 	Id                 string `db:"id" json:"id"`
 	DocumentReferences string `db:"document_references" json:"document_references"`
 	RagEnabled         bool   `db:"rag_enabled" json:"rag_enabled"`
+	Model              string `db:"model" json:"model"`
+	InputTokenCount    int    `db:"input_token_count" json:"input_token_count"`
+	OutputTokenCount   int    `db:"output_token_count" json:"output_token_count"`
+}
+
+type MessageSummary struct {
+	MessageId        string `db:"message_id" json:"message_id"`
+	Model            string `db:"model" json:"model"`
+	InputTokenCount  int    `db:"input_token_count" json:"input_token_count"`
+	OutputTokenCount int    `db:"output_token_count" json:"output_token_count"`
 }
 
 type ProjectRow struct {

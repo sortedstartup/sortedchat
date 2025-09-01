@@ -731,6 +731,7 @@ type ChatResponse struct {
 	//
 	//	*ChatResponse_Text
 	//	*ChatResponse_Summary
+	//	*ChatResponse_UserMessageId
 	//	*ChatResponse_DocumentReference
 	Response      isChatResponse_Response `protobuf_oneof:"response"`
 	unknownFields protoimpl.UnknownFields
@@ -792,6 +793,15 @@ func (x *ChatResponse) GetSummary() *MessageSummary {
 	return nil
 }
 
+func (x *ChatResponse) GetUserMessageId() string {
+	if x != nil {
+		if x, ok := x.Response.(*ChatResponse_UserMessageId); ok {
+			return x.UserMessageId
+		}
+	}
+	return ""
+}
+
 func (x *ChatResponse) GetDocumentReference() *RAGDocumentReferenceSummaryList {
 	if x != nil {
 		if x, ok := x.Response.(*ChatResponse_DocumentReference); ok {
@@ -815,13 +825,19 @@ type ChatResponse_Summary struct {
 	Summary *MessageSummary `protobuf:"bytes,2,opt,name=summary,proto3,oneof"`
 }
 
+type ChatResponse_UserMessageId struct {
+	UserMessageId string `protobuf:"bytes,3,opt,name=user_message_id,json=userMessageId,proto3,oneof"`
+}
+
 type ChatResponse_DocumentReference struct {
-	DocumentReference *RAGDocumentReferenceSummaryList `protobuf:"bytes,3,opt,name=document_reference,json=documentReference,proto3,oneof"`
+	DocumentReference *RAGDocumentReferenceSummaryList `protobuf:"bytes,4,opt,name=document_reference,json=documentReference,proto3,oneof"`
 }
 
 func (*ChatResponse_Text) isChatResponse_Response() {}
 
 func (*ChatResponse_Summary) isChatResponse_Response() {}
+
+func (*ChatResponse_UserMessageId) isChatResponse_Response() {}
 
 func (*ChatResponse_DocumentReference) isChatResponse_Response() {}
 
@@ -933,6 +949,9 @@ func (x *RAGDocumentReference) GetChunks() []*RAGDocumentReference_Chunk {
 type MessageSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	InputTokens   int32                  `protobuf:"varint,3,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
+	OutputTokens  int32                  `protobuf:"varint,4,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -972,6 +991,27 @@ func (x *MessageSummary) GetMessageId() string {
 		return x.MessageId
 	}
 	return ""
+}
+
+func (x *MessageSummary) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *MessageSummary) GetInputTokens() int32 {
+	if x != nil {
+		return x.InputTokens
+	}
+	return 0
+}
+
+func (x *MessageSummary) GetOutputTokens() int32 {
+	if x != nil {
+		return x.OutputTokens
+	}
+	return 0
 }
 
 type GetHistoryRequest struct {
@@ -1069,6 +1109,9 @@ type ChatMessage struct {
 	MessageId     string                  `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	References    []*RAGDocumentReference `protobuf:"bytes,4,rep,name=references,proto3" json:"references,omitempty"`
 	RagEnabled    bool                    `protobuf:"varint,5,opt,name=rag_enabled,json=ragEnabled,proto3" json:"rag_enabled,omitempty"`
+	Model         string                  `protobuf:"bytes,6,opt,name=model,proto3" json:"model,omitempty"`
+	InputTokens   int32                   `protobuf:"varint,7,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
+	OutputTokens  int32                   `protobuf:"varint,8,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1136,6 +1179,27 @@ func (x *ChatMessage) GetRagEnabled() bool {
 		return x.RagEnabled
 	}
 	return false
+}
+
+func (x *ChatMessage) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetInputTokens() int32 {
+	if x != nil {
+		return x.InputTokens
+	}
+	return 0
+}
+
+func (x *ChatMessage) GetOutputTokens() int32 {
+	if x != nil {
+		return x.OutputTokens
+	}
+	return 0
 }
 
 type GetChatListRequest struct {
@@ -2622,11 +2686,12 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12\x16\n" +
 	"\x06chatId\x18\x02 \x01(\tR\x06chatId\x12\x14\n" +
 	"\x05model\x18\x03 \x01(\tR\x05model\x12C\n" +
-	"\x0fproject_context\x18\x04 \x01(\v2\x1a.sortedchat.ProjectContextR\x0eprojectContext\"\xc6\x01\n" +
+	"\x0fproject_context\x18\x04 \x01(\v2\x1a.sortedchat.ProjectContextR\x0eprojectContext\"\xf0\x01\n" +
 	"\fChatResponse\x12\x14\n" +
 	"\x04text\x18\x01 \x01(\tH\x00R\x04text\x126\n" +
-	"\asummary\x18\x02 \x01(\v2\x1a.sortedchat.MessageSummaryH\x00R\asummary\x12\\\n" +
-	"\x12document_reference\x18\x03 \x01(\v2+.sortedchat.RAGDocumentReferenceSummaryListH\x00R\x11documentReferenceB\n" +
+	"\asummary\x18\x02 \x01(\v2\x1a.sortedchat.MessageSummaryH\x00R\asummary\x12(\n" +
+	"\x0fuser_message_id\x18\x03 \x01(\tH\x00R\ruserMessageId\x12\\\n" +
+	"\x12document_reference\x18\x04 \x01(\v2+.sortedchat.RAGDocumentReferenceSummaryListH\x00R\x11documentReferenceB\n" +
 	"\n" +
 	"\bresponse\"\xcf\x01\n" +
 	"\x1fRAGDocumentReferenceSummaryList\x12M\n" +
@@ -2647,14 +2712,17 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"start_byte\x18\x04 \x01(\x05R\tstartByte\x12\x19\n" +
 	"\bend_byte\x18\x05 \x01(\x05R\aendByte\x12 \n" +
-	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"/\n" +
+	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"\x8d\x01\n" +
 	"\x0eMessageSummary\x12\x1d\n" +
 	"\n" +
-	"message_id\x18\x01 \x01(\tR\tmessageId\"+\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\x12!\n" +
+	"\finput_tokens\x18\x03 \x01(\x05R\vinputTokens\x12#\n" +
+	"\routput_tokens\x18\x04 \x01(\x05R\foutputTokens\"+\n" +
 	"\x11GetHistoryRequest\x12\x16\n" +
 	"\x06chatId\x18\x01 \x01(\tR\x06chatId\"G\n" +
 	"\x12GetHistoryResponse\x121\n" +
-	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\"\xbd\x01\n" +
+	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\"\x9b\x02\n" +
 	"\vChatMessage\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
@@ -2664,7 +2732,10 @@ const file_chatservice_proto_rawDesc = "" +
 	"references\x18\x04 \x03(\v2 .sortedchat.RAGDocumentReferenceR\n" +
 	"references\x12\x1f\n" +
 	"\vrag_enabled\x18\x05 \x01(\bR\n" +
-	"ragEnabled\"3\n" +
+	"ragEnabled\x12\x14\n" +
+	"\x05model\x18\x06 \x01(\tR\x05model\x12!\n" +
+	"\finput_tokens\x18\a \x01(\x05R\vinputTokens\x12#\n" +
+	"\routput_tokens\x18\b \x01(\x05R\foutputTokens\"3\n" +
 	"\x12GetChatListRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\"A\n" +
@@ -2914,6 +2985,7 @@ func file_chatservice_proto_init() {
 	file_chatservice_proto_msgTypes[13].OneofWrappers = []any{
 		(*ChatResponse_Text)(nil),
 		(*ChatResponse_Summary)(nil),
+		(*ChatResponse_UserMessageId)(nil),
 		(*ChatResponse_DocumentReference)(nil),
 	}
 	type x struct{}

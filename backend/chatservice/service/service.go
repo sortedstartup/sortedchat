@@ -186,10 +186,19 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			return fmt.Errorf("failed to insert user message with references: %v", err)
 		}
 	} else {
-		err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, ragEnabled)
+		userMessageId, err := s.dao.AddChatMessage(userID, chatId, "user", req.Text, ragEnabled)
 		if err != nil {
 			return fmt.Errorf("failed to insert user message: %v", err)
+		} else {
+			if err := stream(&pb.ChatResponse{
+				Response: &pb.ChatResponse_UserMessageId{
+					UserMessageId: userMessageId,
+				},
+			}); err != nil {
+				return fmt.Errorf("failed to send message summary: %v", err)
+			}
 		}
+
 	}
 
 	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
@@ -306,12 +315,15 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 		// TODO: we dont save streaming response, if stream is killed we loose the message.
 		// TODO : scope for optimization, can be 1 sql call internally
-		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON, ragEnabled)
+		summary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON, ragEnabled)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
 			summary := &pb.MessageSummary{
-				MessageId: fmt.Sprintf("%d", messageId),
+				MessageId:    summary.MessageId,
+				Model:        model,
+				InputTokens:  int32(summary.InputTokenCount),
+				OutputTokens: int32(summary.OutputTokenCount),
 			}
 			if err := stream(&pb.ChatResponse{
 				Response: &pb.ChatResponse_Summary{
@@ -445,10 +457,13 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 	var pbMessages []*pb.ChatMessage
 	for _, m := range messages {
 		pbMessage := &pb.ChatMessage{
-			Role:       m.Role,
-			Content:    m.Content,
-			MessageId:  m.Id,
-			RagEnabled: m.RagEnabled,
+			Role:         m.Role,
+			Content:      m.Content,
+			MessageId:    m.Id,
+			RagEnabled:   m.RagEnabled,
+			Model:        m.Model,
+			InputTokens:  int32(m.InputTokenCount),
+			OutputTokens: int32(m.OutputTokenCount),
 		}
 
 		if m.DocumentReferences != "" {

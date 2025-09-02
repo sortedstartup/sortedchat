@@ -103,24 +103,22 @@ func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessa
 }
 
 // GetChatList retrieves all chats for a user
-func (p *PostgresDAO) GetChatList(userID string, projectID string, soft_deleted bool) ([]*proto.ChatInfo, error) {
+func (p *PostgresDAO) GetChatList(userID string, projectID string, softDeleted bool) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
-	var err error
 
-	if soft_deleted {
-		if projectID == "" || projectID == "null" {
-			err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND soft_deleted = true AND parent_chat_id IS NULL AND user_id = $1", userID)
-		} else {
-			err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = $1 AND soft_deleted = true AND parent_chat_id IS NULL AND user_id = $2", projectID, userID)
-		}
+	query := "SELECT chat_id, name FROM chat_list WHERE soft_deleted = ? AND parent_chat_id IS NULL"
+	args := []interface{}{softDeleted}
+
+	if projectID == "" || projectID == "null" {
+		query += " AND project_id IS NULL AND user_id = ?"
+		args = append(args, userID)
 	} else {
-		if projectID == "" || projectID == "null" {
-			err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND soft_deleted = false AND parent_chat_id IS NULL AND user_id = $1", userID)
-		} else {
-			err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = $1 AND soft_deleted = false AND parent_chat_id IS NULL AND user_id = $2", projectID, userID)
-		}
+		query += " AND project_id = ? AND user_id = ?"
+		args = append(args, projectID, userID)
 	}
 
+	query = p.db.Rebind(query)
+	err := p.db.Select(&chats, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -564,11 +562,12 @@ func (p *PostgresDAO) SoftDeleteChat(userID string, chatId string) error {
         WITH RECURSIVE chat_hierarchy AS (
             SELECT chat_id
             FROM chat_list
-            WHERE chat_id = $1
+            WHERE chat_id = $1 AND user_id = $2
             UNION ALL
             SELECT c.chat_id
             FROM chat_list c
             JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = $2
         )
         UPDATE chat_list
         SET soft_deleted = TRUE
@@ -583,11 +582,12 @@ func (p *PostgresDAO) DeleteChat(userID string, chatId string) error {
         WITH RECURSIVE chat_hierarchy AS (
             SELECT chat_id
             FROM chat_list
-            WHERE chat_id = $1
+            WHERE chat_id = $1 AND user_id = $2
             UNION ALL
             SELECT c.chat_id
             FROM chat_list c
             JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = $2
         )
         DELETE FROM chat_list
         WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
@@ -601,11 +601,12 @@ func (p *PostgresDAO) RestoreChat(userID string, chatId string) error {
         WITH RECURSIVE chat_hierarchy AS (
             SELECT chat_id
             FROM chat_list
-            WHERE chat_id = $1
+            WHERE chat_id = $1 AND user_id = $2
             UNION ALL
             SELECT c.chat_id
             FROM chat_list c
             JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = $2
         )
         UPDATE chat_list
         SET soft_deleted = FALSE
@@ -613,6 +614,15 @@ func (p *PostgresDAO) RestoreChat(userID string, chatId string) error {
         AND user_id = $2;
     `, chatId, userID)
 	return err
+}
+
+func (p *PostgresDAO) IsChatDeleted(chatId string) (bool, error) {
+	var isDeleted bool
+	err := p.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = $1", chatId)
+	if err != nil {
+		return false, err
+	}
+	return isDeleted, err
 }
 
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL

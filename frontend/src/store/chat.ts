@@ -655,7 +655,6 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
   });
 
   try {
-    console.log('Fetching RAG document reference for message:', messageId, 'project:', projectId, 'docId:', docId);
     const request = RAGDocumentReferenceRequest.fromObject({
       message_id: messageId,
       project_id: projectId,
@@ -693,10 +692,10 @@ export const DeleteChat = async (chatId: string, operation: DeleteChatRequestOpe
 
 
     if (operation === DeleteChatRequestOperation.SOFT_DELETE) {
-      getChatList($currentProjectId.get(), false);
+      getChatList(undefined, false);
     }
     else {
-      getChatList($currentProjectId.get(), true);
+      getChatList(undefined, true);
     }
 
     

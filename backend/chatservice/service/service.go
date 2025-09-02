@@ -105,6 +105,15 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("Chat ID is required to maintain context")
 	}
 
+	isDeleted, err := s.dao.IsChatDeleted(chatId)
+	if err != nil {
+		return fmt.Errorf("error occured while checking chat id ")
+	}
+
+	if isDeleted {
+		return fmt.Errorf("Chat is deleted, please create a new chat")
+	}
+
 	model := req.Model
 	if model == "" {
 		return fmt.Errorf("model is required")
@@ -983,18 +992,17 @@ func (s *ChatService) DeleteChat(ctx context.Context, userID string, chatId stri
 		return fmt.Errorf("chat ID is required")
 	}
 
-	if operation == pb.DeleteChatRequest_DELETE {
-		err := s.dao.DeleteChat(userID, chatId)
-		if err != nil {
+	switch operation {
+	case pb.DeleteChatRequest_DELETE:
+		if err := s.dao.DeleteChat(userID, chatId); err != nil {
 			return fmt.Errorf("failed to delete chat: %v", err)
 		}
-	}
-
-	if operation == pb.DeleteChatRequest_SOFT_DELETE {
-		err := s.dao.SoftDeleteChat(userID, chatId)
-		if err != nil {
+	case pb.DeleteChatRequest_SOFT_DELETE:
+		if err := s.dao.SoftDeleteChat(userID, chatId); err != nil {
 			return fmt.Errorf("failed to delete chat: %v", err)
 		}
+	default:
+		return fmt.Errorf("unsupported delete operation: %v", operation)
 	}
 
 	return nil

@@ -105,7 +105,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("Chat ID is required to maintain context")
 	}
 
-	isDeleted, err := s.dao.IsChatDeleted(chatId)
+	isDeleted, err := s.dao.IsChatDeleted(chatId, userID)
 	if err != nil {
 		return fmt.Errorf("error occured while checking chat id ")
 	}

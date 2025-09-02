@@ -434,9 +434,9 @@ func (s *SQLiteDAO) RestoreChat(userID string, chatId string) error {
 	return err
 }
 
-func (s *SQLiteDAO) IsChatDeleted(chatId string) (bool, error) {
+func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
 	var isDeleted bool
-	err := s.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = ?", chatId)
+	err := s.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	if err != nil {
 		return false, err
 	}

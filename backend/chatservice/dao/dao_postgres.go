@@ -651,9 +651,9 @@ func (p *PostgresDAO) RestoreChat(userID string, chatId string) error {
 	return err
 }
 
-func (p *PostgresDAO) IsChatDeleted(chatId string) (bool, error) {
+func (p *PostgresDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
 	var isDeleted bool
-	err := p.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = $1", chatId)
+	err := p.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = $1 AND user_id = $2", chatId, userID)
 	if err != nil {
 		return false, err
 	}

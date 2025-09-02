@@ -158,9 +158,8 @@ export const $projectChatList = atom<ChatInfo[]>([]);
 export const $trashChatList = atom<ChatInfo[]>([]);
 
 export const getChatList = (projectId?: string, softDeleted?: boolean) => {
-  const requestObj: GetChatListRequest = projectId
-    ? GetChatListRequest.fromObject({ project_id: projectId, soft_deleted: softDeleted })
-    : new GetChatListRequest(softDeleted ? { soft_deleted: softDeleted } : {});
+
+  const requestObj = GetChatListRequest.fromObject({ project_id: projectId, soft_deleted: softDeleted });
 
   chat.GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
     if (softDeleted) {

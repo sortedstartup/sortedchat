@@ -1,4 +1,4 @@
-import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2 } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -41,6 +41,7 @@ import {
   createProject,
   getProjectList,
   ArchiveChat,
+  getChatList,
 } from "@/store/chat";
 import { authActions, $auth } from "@/auth/store/auth";
 import remarkGfm from "remark-gfm";
@@ -56,6 +57,7 @@ export function AppSidebar() {
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [localSearchText, setLocalSearchText] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
 
   const navigate = useNavigate();
 
@@ -152,6 +154,12 @@ export function AppSidebar() {
   const handleMoveToTrash = async (chatId: string) => {
     await ArchiveChat(chatId);
     navigate("/");
+  };
+
+  const toggleArchiveView = async () => {
+    const newShowArchived = !showArchived;
+    setShowArchived(newShowArchived);
+    getChatList($currentProjectId.get(), !showArchived);
   };
 
   return (
@@ -301,9 +309,23 @@ export function AppSidebar() {
           <SidebarSeparator />
 
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
-              Chats
-            </SidebarGroupLabel>
+            <div className="flex items-center justify-between">
+              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
+                {showArchived ? "Archived Chats" : "Chats"}
+              </SidebarGroupLabel>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={toggleArchiveView}
+              >
+                {showArchived ? (
+                  <ArchiveRestore className="h-4 w-4" />
+                ) : (
+                  <Archive className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
             <SidebarGroupContent>
               <SidebarMenu>
                 {chatsList.map((chat) => (

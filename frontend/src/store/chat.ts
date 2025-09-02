@@ -156,7 +156,7 @@ export const $projectChatList = atom<ChatInfo[]>([]);
 export const getChatList = (projectId?: string, archived?: boolean) => {
   const requestObj: GetChatListRequest = projectId
     ? GetChatListRequest.fromObject({ project_id: projectId, archived: archived })
-    : new GetChatListRequest();
+    : new GetChatListRequest(archived ? {archived: archived} : {});
 
   chat.GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
     (projectId ? $projectChatList : $chatList).set(value.chats);

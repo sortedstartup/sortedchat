@@ -43,6 +43,7 @@ import {
   getChatList,
   DeleteChat,
   RestoreChat,
+  $trashChatList,
 } from "@/store/chat";
 import { authActions, $auth } from "@/auth/store/auth";
 import remarkGfm from "remark-gfm";
@@ -53,6 +54,7 @@ export function AppSidebar() {
   const projectsList = useStore($projectList);
   const chatsList = useStore($chatList);
   const searchResults = useStore($searchResults);
+  const trashChatList = useStore($trashChatList);
   const auth = useStore($auth);
   
   const [projectName, setProjectName] = useState("");
@@ -340,7 +342,7 @@ export function AppSidebar() {
             </div>
             <SidebarGroupContent>
               <SidebarMenu>
-                {chatsList.map((chat) => (
+                {(showSoftDeleted ? trashChatList : chatsList).map((chat) => (
                   <SidebarMenuItem key={chat.chatId}>
                     <div className="flex items-center justify-between w-full group">
                       <SidebarMenuButton

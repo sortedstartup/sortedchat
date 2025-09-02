@@ -154,16 +154,23 @@ export const createNewChat = async (projectId?: string) => {
   return response.chat_id;
 };
 
-export const $projectChatList = atom<ChatInfo[]>([]);   
+export const $projectChatList = atom<ChatInfo[]>([]);
+export const $trashChatList = atom<ChatInfo[]>([]);
+
 export const getChatList = (projectId?: string, softDeleted?: boolean) => {
   const requestObj: GetChatListRequest = projectId
     ? GetChatListRequest.fromObject({ project_id: projectId, soft_deleted: softDeleted })
-    : new GetChatListRequest(softDeleted ? {soft_deleted: softDeleted} : {});
+    : new GetChatListRequest(softDeleted ? { soft_deleted: softDeleted } : {});
 
   chat.GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
-    (projectId ? $projectChatList : $chatList).set(value.chats);
+    if (softDeleted) {
+      $trashChatList.set(value.chats);  
+    } else {
+      (projectId ? $projectChatList : $chatList).set(value.chats);
+    }
   });
 };
+
 
 const isFirstMessageInChat = (): boolean => {
   const currentState = $currentChatMessages.get();

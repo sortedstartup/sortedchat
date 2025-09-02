@@ -26,7 +26,9 @@ import {
   RAGDocumentReferenceRequest,
   RAGDocumentReference,
   DeleteDocumentRequest,
-  ArchiveChatRequest,
+  DeleteChatRequest,
+  DeleteChatRequestOperation,
+  RestoreChatRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -153,10 +155,10 @@ export const createNewChat = async (projectId?: string) => {
 };
 
 export const $projectChatList = atom<ChatInfo[]>([]);   
-export const getChatList = (projectId?: string, archived?: boolean) => {
+export const getChatList = (projectId?: string, softDeleted?: boolean) => {
   const requestObj: GetChatListRequest = projectId
-    ? GetChatListRequest.fromObject({ project_id: projectId, archived: archived })
-    : new GetChatListRequest(archived ? {archived: archived} : {});
+    ? GetChatListRequest.fromObject({ project_id: projectId, soft_deleted: softDeleted })
+    : new GetChatListRequest(softDeleted ? {soft_deleted: softDeleted} : {});
 
   chat.GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
     (projectId ? $projectChatList : $chatList).set(value.chats);
@@ -215,7 +217,6 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       $streamingMessage.set(assistantResponse);
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
-      console.log('Received message ID:', messageId);
     } else if (res.has_document_reference && ragEnabled) {
       // Only process document references if RAG is enabled
       const docRefList = res.document_reference;
@@ -678,14 +679,33 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
   }
 };
 
-export const ArchiveChat = async (chatId: string) => {
+export const DeleteChat = async (chatId: string, operation: DeleteChatRequestOperation) => {
   try {
-    const res = await chat.ArchiveChat(ArchiveChatRequest.fromObject({ chat_id: chatId }), {});
+    const res = await chat.DeleteChat(DeleteChatRequest.fromObject({ chat_id: chatId, operation: operation }), {});
     toast.success(res.message);
-    getChatList();
-    getChatList($currentProjectId.get(), false);
+
+
+    if (operation === DeleteChatRequestOperation.SOFT_DELETE) {
+      getChatList($currentProjectId.get(), false);
+    }
+    else {
+      getChatList($currentProjectId.get(), true);
+    }
+
+    
   } catch (error) {
-    console.error('Failed to archive chat:', error);
-    toast.error(`Failed to archive chat: ${(error as Error).message || 'Unknown error'}`);
+    console.error('Failed to Delete chat:', error);
+    toast.error(`Failed to Delete chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+export const RestoreChat = async (chatId: string) => {
+  try {
+    const res = await chat.RestoreChat(RestoreChatRequest.fromObject({ chat_id: chatId }), {});
+    toast.success(res.message);
+    getChatList($currentProjectId.get(), true);
+  } catch (error) {
+    console.error('Failed to Restore chat:', error);
+    toast.error(`Failed to Restore chat: ${(error as Error).message || 'Unknown error'}`);
   }
 }

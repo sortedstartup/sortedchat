@@ -492,8 +492,8 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 	return pbMessages, nil
 }
 
-func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID string, archived bool) ([]*pb.ChatInfo, error) {
-	chats, err := s.dao.GetChatList(userID, projectID, archived)
+func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID string, soft_deleted bool) ([]*pb.ChatInfo, error) {
+	chats, err := s.dao.GetChatList(userID, projectID, soft_deleted)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch chat list: %v", err)
 	}
@@ -978,14 +978,36 @@ func (s *ChatService) DeleteDocument(ctx context.Context, userID string, project
 	return nil
 }
 
-func (s *ChatService) ArchiveChat(ctx context.Context, userID string, chatId string) error {
+func (s *ChatService) DeleteChat(ctx context.Context, userID string, chatId string, operation pb.DeleteChatRequest_Operation) error {
 	if chatId == "" {
 		return fmt.Errorf("chat ID is required")
 	}
 
-	err := s.dao.ArchiveChat(userID, chatId)
+	if operation == pb.DeleteChatRequest_DELETE {
+		err := s.dao.DeleteChat(userID, chatId)
+		if err != nil {
+			return fmt.Errorf("failed to delete chat: %v", err)
+		}
+	}
+
+	if operation == pb.DeleteChatRequest_SOFT_DELETE {
+		err := s.dao.SoftDeleteChat(userID, chatId)
+		if err != nil {
+			return fmt.Errorf("failed to delete chat: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (s *ChatService) RestoreChat(ctx context.Context, userID string, chatId string) error {
+	if chatId == "" {
+		return fmt.Errorf("chat ID is required")
+	}
+
+	err := s.dao.RestoreChat(userID, chatId)
 	if err != nil {
-		return fmt.Errorf("failed to archive chat: %v", err)
+		return fmt.Errorf("failed to restore chat: %v", err)
 	}
 
 	return nil

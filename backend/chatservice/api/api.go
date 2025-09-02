@@ -122,7 +122,7 @@ func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListReq
 	if err != nil {
 		return nil, err
 	}
-	chats, err := s.service.GetChatList(ctx, userID, req.GetProjectId(), req.GetArchived())
+	chats, err := s.service.GetChatList(ctx, userID, req.GetProjectId(), req.GetSoftDeleted())
 	if err != nil {
 		return nil, err
 	}
@@ -320,16 +320,28 @@ func (s *ChatServiceAPI) DeleteDocument(ctx context.Context, req *pb.DeleteDocum
 	return &pb.DeleteDocumentResponse{Message: "Document deleted successfully"}, nil
 }
 
-func (s *ChatServiceAPI) ArchiveChat(ctx context.Context, req *pb.ArchiveChatRequest) (*pb.ArchiveChatResponse, error) {
+func (s *ChatServiceAPI) DeleteChat(ctx context.Context, req *pb.DeleteChatRequest) (*pb.DeleteChatResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		return nil, err
 	}
-	err = s.service.ArchiveChat(ctx, userID, req.GetChatId())
+	err = s.service.DeleteChat(ctx, userID, req.GetChatId(), req.GetOperation())
 	if err != nil {
 		return nil, err
 	}
-	return &pb.ArchiveChatResponse{Message: "Chat archived successfully"}, nil
+	return &pb.DeleteChatResponse{Message: "Chat deleted successfully"}, nil
+}
+
+func (s *ChatServiceAPI) RestoreChat(ctx context.Context, req *pb.RestoreChatRequest) (*pb.RestoreChatResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = s.service.RestoreChat(ctx, userID, req.GetChatId())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RestoreChatResponse{Message: "Chat restored successfully"}, nil
 }
 
 func (s *ChatServiceAPI) Init(config *db.Config) {

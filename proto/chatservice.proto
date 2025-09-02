@@ -24,13 +24,26 @@ service SortedChat {
 
     rpc BranchAChat(BranchAChatRequest) returns (BranchAChatResponse);
     rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
-    rpc ArchiveChat(ArchiveChatRequest) returns (ArchiveChatResponse);
+    rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse);
+    rpc RestoreChat(RestoreChatRequest) returns (RestoreChatResponse);
 }
 
-message ArchiveChatRequest {
+message RestoreChatRequest {
   string chat_id = 1;
 }
-message ArchiveChatResponse {
+message RestoreChatResponse {
+  string message = 1;
+}
+
+message DeleteChatRequest {
+  string chat_id = 1;
+  Operation operation = 2;
+  enum Operation {
+    DELETE = 0;
+    SOFT_DELETE = 1;
+  } 
+}
+message DeleteChatResponse {
   string message = 1;
 }
 
@@ -155,7 +168,7 @@ message ChatMessage {
 
 message GetChatListRequest {
   string project_id = 1;
-  bool archived = 2;
+  bool soft_deleted = 2;
 }
 
 message GetChatListResponse {

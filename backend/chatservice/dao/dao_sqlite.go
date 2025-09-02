@@ -72,22 +72,22 @@ func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessage
 }
 
 // GetChatList retrieves all chats for a user
-func (s *SQLiteDAO) GetChatList(userID string, projectID string, archived bool) ([]*proto.ChatInfo, error) {
+func (s *SQLiteDAO) GetChatList(userID string, projectID string, soft_deleted bool) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
 	var err error
 
-	if archived {
+	if soft_deleted {
 		if projectID == "" || projectID == "null" {
-			err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND archived = 1 AND parent_chat_id IS NULL AND user_id = ?", userID)
+			err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND soft_deleted = 1 AND parent_chat_id IS NULL AND user_id = ?", userID)
 		} else {
-			err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ? AND archived = 1 AND parent_chat_id IS NULL AND user_id = ?", projectID, userID)
+			err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ? AND soft_deleted = 1 AND parent_chat_id IS NULL AND user_id = ?", projectID, userID)
 		}
 
 	} else {
 		if projectID == "" || projectID == "null" {
-			err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND archived = 0 AND parent_chat_id IS NULL AND user_id = ?", userID)
+			err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND soft_deleted = 0 AND parent_chat_id IS NULL AND user_id = ?", userID)
 		} else {
-			err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ? AND archived = 0 AND parent_chat_id IS NULL AND user_id = ?", projectID, userID)
+			err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ? AND soft_deleted = 0 AND parent_chat_id IS NULL AND user_id = ?", projectID, userID)
 		}
 	}
 
@@ -388,7 +388,7 @@ func (s *SQLiteDAO) DeleteDocument(userID string, projectID string, docID string
 	return nil
 }
 
-func (s *SQLiteDAO) ArchiveChat(userID string, chatId string) error {
+func (s *SQLiteDAO) SoftDeleteChat(userID string, chatId string) error {
 	_, err := s.db.Exec(`
         WITH RECURSIVE chat_hierarchy AS (
             SELECT chat_id FROM chat_list WHERE chat_id = ?
@@ -397,7 +397,38 @@ func (s *SQLiteDAO) ArchiveChat(userID string, chatId string) error {
             JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
         )
         UPDATE chat_list
-        SET archived = TRUE
+        SET soft_deleted = TRUE
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = ?;
+    `, chatId, userID)
+	return err
+}
+
+func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
+	_, err := s.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id FROM chat_list WHERE chat_id = ?
+            UNION ALL
+            SELECT c.chat_id FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+        )
+        DELETE FROM chat_list
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = ?;
+    `, chatId, userID)
+	return err
+}
+
+func (s *SQLiteDAO) RestoreChat(userID string, chatId string) error {
+	_, err := s.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id FROM chat_list WHERE chat_id = ?
+            UNION ALL
+            SELECT c.chat_id FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+        )
+        UPDATE chat_list
+        SET soft_deleted = FALSE
         WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
         AND user_id = ?;
     `, chatId, userID)

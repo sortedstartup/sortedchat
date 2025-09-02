@@ -34,6 +34,8 @@ const (
 	SortedChat_SubmitGenerateEmbeddingsJob_FullMethodName = "/sortedchat.SortedChat/SubmitGenerateEmbeddingsJob"
 	SortedChat_BranchAChat_FullMethodName                 = "/sortedchat.SortedChat/BranchAChat"
 	SortedChat_ListChatBranch_FullMethodName              = "/sortedchat.SortedChat/ListChatBranch"
+	SortedChat_DeleteChat_FullMethodName                  = "/sortedchat.SortedChat/DeleteChat"
+	SortedChat_RestoreChat_FullMethodName                 = "/sortedchat.SortedChat/RestoreChat"
 )
 
 // SortedChatClient is the client API for SortedChat service.
@@ -55,6 +57,8 @@ type SortedChatClient interface {
 	SubmitGenerateEmbeddingsJob(ctx context.Context, in *GenerateEmbeddingRequest, opts ...grpc.CallOption) (*GenerateEmbeddingResponse, error)
 	BranchAChat(ctx context.Context, in *BranchAChatRequest, opts ...grpc.CallOption) (*BranchAChatResponse, error)
 	ListChatBranch(ctx context.Context, in *ListChatBranchRequest, opts ...grpc.CallOption) (*ListChatBranchResponse, error)
+	DeleteChat(ctx context.Context, in *DeleteChatRequest, opts ...grpc.CallOption) (*DeleteChatResponse, error)
+	RestoreChat(ctx context.Context, in *RestoreChatRequest, opts ...grpc.CallOption) (*RestoreChatResponse, error)
 }
 
 type sortedChatClient struct {
@@ -224,6 +228,26 @@ func (c *sortedChatClient) ListChatBranch(ctx context.Context, in *ListChatBranc
 	return out, nil
 }
 
+func (c *sortedChatClient) DeleteChat(ctx context.Context, in *DeleteChatRequest, opts ...grpc.CallOption) (*DeleteChatResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteChatResponse)
+	err := c.cc.Invoke(ctx, SortedChat_DeleteChat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sortedChatClient) RestoreChat(ctx context.Context, in *RestoreChatRequest, opts ...grpc.CallOption) (*RestoreChatResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestoreChatResponse)
+	err := c.cc.Invoke(ctx, SortedChat_RestoreChat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SortedChatServer is the server API for SortedChat service.
 // All implementations must embed UnimplementedSortedChatServer
 // for forward compatibility.
@@ -243,6 +267,8 @@ type SortedChatServer interface {
 	SubmitGenerateEmbeddingsJob(context.Context, *GenerateEmbeddingRequest) (*GenerateEmbeddingResponse, error)
 	BranchAChat(context.Context, *BranchAChatRequest) (*BranchAChatResponse, error)
 	ListChatBranch(context.Context, *ListChatBranchRequest) (*ListChatBranchResponse, error)
+	DeleteChat(context.Context, *DeleteChatRequest) (*DeleteChatResponse, error)
+	RestoreChat(context.Context, *RestoreChatRequest) (*RestoreChatResponse, error)
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -297,6 +323,12 @@ func (UnimplementedSortedChatServer) BranchAChat(context.Context, *BranchAChatRe
 }
 func (UnimplementedSortedChatServer) ListChatBranch(context.Context, *ListChatBranchRequest) (*ListChatBranchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListChatBranch not implemented")
+}
+func (UnimplementedSortedChatServer) DeleteChat(context.Context, *DeleteChatRequest) (*DeleteChatResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteChat not implemented")
+}
+func (UnimplementedSortedChatServer) RestoreChat(context.Context, *RestoreChatRequest) (*RestoreChatResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreChat not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}
 func (UnimplementedSortedChatServer) testEmbeddedByValue()                    {}
@@ -582,6 +614,42 @@ func _SortedChat_ListChatBranch_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SortedChat_DeleteChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteChatRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).DeleteChat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_DeleteChat_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).DeleteChat(ctx, req.(*DeleteChatRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SortedChat_RestoreChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreChatRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).RestoreChat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_RestoreChat_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).RestoreChat(ctx, req.(*RestoreChatRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SortedChat_ServiceDesc is the grpc.ServiceDesc for SortedChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -644,6 +712,14 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListChatBranch",
 			Handler:    _SortedChat_ListChatBranch_Handler,
+		},
+		{
+			MethodName: "DeleteChat",
+			Handler:    _SortedChat_DeleteChat_Handler,
+		},
+		{
+			MethodName: "RestoreChat",
+			Handler:    _SortedChat_RestoreChat_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

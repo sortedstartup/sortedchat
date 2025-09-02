@@ -105,6 +105,15 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("Chat ID is required to maintain context")
 	}
 
+	isDeleted, err := s.dao.IsChatDeleted(chatId, userID)
+	if err != nil {
+		return fmt.Errorf("error occured while checking chat id ")
+	}
+
+	if isDeleted {
+		return fmt.Errorf("Chat is deleted, please create a new chat")
+	}
+
 	model := req.Model
 	if model == "" {
 		return fmt.Errorf("model is required")
@@ -492,8 +501,8 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 	return pbMessages, nil
 }
 
-func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID string) ([]*pb.ChatInfo, error) {
-	chats, err := s.dao.GetChatList(userID, projectID)
+func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID string, soft_deleted bool) ([]*pb.ChatInfo, error) {
+	chats, err := s.dao.GetChatList(userID, projectID, soft_deleted)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch chat list: %v", err)
 	}
@@ -973,6 +982,40 @@ func (s *ChatService) DeleteDocument(ctx context.Context, userID string, project
 	err = s.store.DeleteObject(ctx, docID)
 	if err != nil {
 		return fmt.Errorf("failed to delete object: %v", err)
+	}
+
+	return nil
+}
+
+func (s *ChatService) DeleteChat(ctx context.Context, userID string, chatId string, operation pb.DeleteChatRequest_Operation) error {
+	if chatId == "" {
+		return fmt.Errorf("chat ID is required")
+	}
+
+	switch operation {
+	case pb.DeleteChatRequest_DELETE:
+		if err := s.dao.DeleteChat(userID, chatId); err != nil {
+			return fmt.Errorf("failed to delete chat: %v", err)
+		}
+	case pb.DeleteChatRequest_SOFT_DELETE:
+		if err := s.dao.SoftDeleteChat(userID, chatId); err != nil {
+			return fmt.Errorf("failed to delete chat: %v", err)
+		}
+	default:
+		return fmt.Errorf("unsupported delete operation: %v", operation)
+	}
+
+	return nil
+}
+
+func (s *ChatService) RestoreChat(ctx context.Context, userID string, chatId string) error {
+	if chatId == "" {
+		return fmt.Errorf("chat ID is required")
+	}
+
+	err := s.dao.RestoreChat(userID, chatId)
+	if err != nil {
+		return fmt.Errorf("failed to restore chat: %v", err)
 	}
 
 	return nil

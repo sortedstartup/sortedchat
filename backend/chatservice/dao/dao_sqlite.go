@@ -72,16 +72,21 @@ func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessage
 }
 
 // GetChatList retrieves all chats for a user
-func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error) {
+func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted bool) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
-	var err error
+
+	query := "SELECT chat_id, name FROM chat_list WHERE soft_deleted = ? AND parent_chat_id IS NULL"
+	args := []interface{}{softDeleted}
 
 	if projectID == "" || projectID == "null" {
-		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND user_id = ?", userID)
+		query += " AND project_id IS NULL AND user_id = ?"
+		args = append(args, userID)
 	} else {
-		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ? AND user_id = ?", projectID, userID)
+		query += " AND project_id = ? AND user_id = ?"
+		args = append(args, projectID, userID)
 	}
 
+	err := s.db.Select(&chats, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -377,6 +382,65 @@ func (s *SQLiteDAO) DeleteDocument(userID string, projectID string, docID string
 	}
 
 	return nil
+}
+
+func (s *SQLiteDAO) SoftDeleteChat(userID string, chatId string) error {
+	_, err := s.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+            UNION ALL
+            SELECT c.chat_id FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = ?
+        )
+        UPDATE chat_list
+        SET soft_deleted = TRUE
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = ?;
+    `, chatId, userID, userID, userID)
+	return err
+}
+
+func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
+	_, err := s.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+            UNION ALL
+            SELECT c.chat_id FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = ?
+        )
+        DELETE FROM chat_list
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = ?;
+    `, chatId, userID, userID, userID)
+	return err
+}
+
+func (s *SQLiteDAO) RestoreChat(userID string, chatId string) error {
+	_, err := s.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+            UNION ALL
+            SELECT c.chat_id FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = ?
+        )
+        UPDATE chat_list
+        SET soft_deleted = FALSE
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = ?;
+    `, chatId, userID, userID, userID)
+	return err
+}
+
+func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
+	var isDeleted bool
+	err := s.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	if err != nil {
+		return false, err
+	}
+	return isDeleted, err
 }
 
 type SQLiteSettingsDAO struct {

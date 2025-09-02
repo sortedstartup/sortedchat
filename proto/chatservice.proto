@@ -24,7 +24,16 @@ service SortedChat {
 
     rpc BranchAChat(BranchAChatRequest) returns (BranchAChatResponse);
     rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
+    rpc ArchiveChat(ArchiveChatRequest) returns (ArchiveChatResponse);
 }
+
+message ArchiveChatRequest {
+  string chat_id = 1;
+}
+message ArchiveChatResponse {
+  string message = 1;
+}
+
 message DeleteDocumentRequest {
   string project_id = 1;
   string doc_id = 2;
@@ -146,6 +155,7 @@ message ChatMessage {
 
 message GetChatListRequest {
   string project_id = 1;
+  bool archived = 2;
 }
 
 message GetChatListResponse {

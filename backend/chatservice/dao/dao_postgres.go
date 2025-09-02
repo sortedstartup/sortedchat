@@ -103,14 +103,22 @@ func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessa
 }
 
 // GetChatList retrieves all chats for a user
-func (p *PostgresDAO) GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error) {
+func (p *PostgresDAO) GetChatList(userID string, projectID string, archived bool) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
 	var err error
 
-	if projectID == "" || projectID == "null" {
-		err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND user_id = $1", userID)
+	if archived {
+		if projectID == "" || projectID == "null" {
+			err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND archived = 1 AND parent_chat_id IS NULL AND user_id = $1", userID)
+		} else {
+			err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = $1 AND archived = 1 AND parent_chat_id IS NULL AND user_id = $2", projectID, userID)
+		}
 	} else {
-		err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = $1 AND user_id = $2", projectID, userID)
+		if projectID == "" || projectID == "null" {
+			err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND archived = 0 AND parent_chat_id IS NULL AND user_id = $1", userID)
+		} else {
+			err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = $1 AND archived = 0 AND parent_chat_id IS NULL AND user_id = $2", projectID, userID)
+		}
 	}
 
 	if err != nil {
@@ -549,6 +557,25 @@ func (p *PostgresDAO) DeleteDocument(userID string, projectID string, docID stri
 	}
 
 	return nil
+}
+
+func (p *PostgresDAO) ArchiveChat(userID string, chatId string) error {
+	_, err := p.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id
+            FROM chat_list
+            WHERE chat_id = $1
+            UNION ALL
+            SELECT c.chat_id
+            FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+        )
+        UPDATE chat_list
+        SET archived = TRUE
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = $2;
+    `, chatId, userID)
+	return err
 }
 
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL

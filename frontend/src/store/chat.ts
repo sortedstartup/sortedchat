@@ -26,6 +26,7 @@ import {
   RAGDocumentReferenceRequest,
   RAGDocumentReference,
   DeleteDocumentRequest,
+  ArchiveChatRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -147,14 +148,14 @@ export const createNewChat = async (projectId?: string) => {
     CreateChatRequest.fromObject(requestObj),
     {}
   );
-  getChatList(projectId);
+  getChatList(projectId, false);
   return response.chat_id;
 };
 
 export const $projectChatList = atom<ChatInfo[]>([]);   
-export const getChatList = (projectId?: string) => {
+export const getChatList = (projectId?: string, archived?: boolean) => {
   const requestObj: GetChatListRequest = projectId
-    ? GetChatListRequest.fromObject({ project_id: projectId })
+    ? GetChatListRequest.fromObject({ project_id: projectId, archived: archived })
     : new GetChatListRequest();
 
   chat.GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
@@ -506,7 +507,7 @@ $documents.listen((projectId) => {
 
 $currentProjectId.listen((newProjectId) => {
   if (newProjectId) {
-    getChatList(newProjectId);
+    getChatList(newProjectId, false);
   } else {
     $chatList.set([]);
   }
@@ -676,3 +677,15 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
     throw error;
   }
 };
+
+export const ArchiveChat = async (chatId: string) => {
+  try {
+    const res = await chat.ArchiveChat(ArchiveChatRequest.fromObject({ chat_id: chatId }), {});
+    toast.success(res.message);
+    getChatList();
+    getChatList($currentProjectId.get(), false);
+  } catch (error) {
+    console.error('Failed to archive chat:', error);
+    toast.error(`Failed to archive chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}

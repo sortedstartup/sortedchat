@@ -1,4 +1,4 @@
-import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -10,6 +10,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,6 +40,7 @@ import {
   createNewChat,
   createProject,
   getProjectList,
+  ArchiveChat,
 } from "@/store/chat";
 import { authActions, $auth } from "@/auth/store/auth";
 import remarkGfm from "remark-gfm";
@@ -140,6 +147,11 @@ export function AppSidebar() {
   const handleLogout = () => {
     authActions.clearToken();
     navigate("/login");
+  };
+
+  const handleMoveToTrash = async (chatId: string) => {
+    await ArchiveChat(chatId);
+    navigate("/");
   };
 
   return (
@@ -296,14 +308,38 @@ export function AppSidebar() {
               <SidebarMenu>
                 {chatsList.map((chat) => (
                   <SidebarMenuItem key={chat.chatId}>
-                    <SidebarMenuButton
-                      onClick={() => handleChatSelect(chat.chatId)}
-                    >
-                      <MessageCircle />
-                      <span className="flex items-center">
-                        {chat.name || "New Chat"}
-                      </span>
-                    </SidebarMenuButton>
+                    <div className="flex items-center justify-between w-full group">
+                      <SidebarMenuButton
+                        onClick={() => handleChatSelect(chat.chatId)}
+                        className="flex-1"
+                      >
+                        <MessageCircle />
+                        <span className="flex items-center">
+                          {chat.name || "New Chat"}
+                        </span>
+                      </SidebarMenuButton>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => handleMoveToTrash(chat.chatId)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Move to Trash
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>

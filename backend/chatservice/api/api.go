@@ -122,7 +122,7 @@ func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListReq
 	if err != nil {
 		return nil, err
 	}
-	chats, err := s.service.GetChatList(ctx, userID, req.GetProjectId())
+	chats, err := s.service.GetChatList(ctx, userID, req.GetProjectId(), req.GetArchived())
 	if err != nil {
 		return nil, err
 	}
@@ -318,6 +318,18 @@ func (s *ChatServiceAPI) DeleteDocument(ctx context.Context, req *pb.DeleteDocum
 		return nil, err
 	}
 	return &pb.DeleteDocumentResponse{Message: "Document deleted successfully"}, nil
+}
+
+func (s *ChatServiceAPI) ArchiveChat(ctx context.Context, req *pb.ArchiveChatRequest) (*pb.ArchiveChatResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = s.service.ArchiveChat(ctx, userID, req.GetChatId())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ArchiveChatResponse{Message: "Chat archived successfully"}, nil
 }
 
 func (s *ChatServiceAPI) Init(config *db.Config) {

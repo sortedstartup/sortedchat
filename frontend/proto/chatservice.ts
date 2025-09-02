@@ -13,6 +13,140 @@ export enum Embedding_Status {
     STATUS_ERROR = 2,
     STATUS_SUCCESS = 3
 }
+export class ArchiveChatRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        chat_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("chat_id" in data && data.chat_id != undefined) {
+                this.chat_id = data.chat_id;
+            }
+        }
+    }
+    get chat_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set chat_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        chat_id?: string;
+    }): ArchiveChatRequest {
+        const message = new ArchiveChatRequest({});
+        if (data.chat_id != null) {
+            message.chat_id = data.chat_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            chat_id?: string;
+        } = {};
+        if (this.chat_id != null) {
+            data.chat_id = this.chat_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.chat_id.length)
+            writer.writeString(1, this.chat_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ArchiveChatRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ArchiveChatRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.chat_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ArchiveChatRequest {
+        return ArchiveChatRequest.deserialize(bytes);
+    }
+}
+export class ArchiveChatResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message?: string;
+    }): ArchiveChatResponse {
+        const message = new ArchiveChatResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ArchiveChatResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ArchiveChatResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ArchiveChatResponse {
+        return ArchiveChatResponse.deserialize(bytes);
+    }
+}
 export class DeleteDocumentRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -2056,12 +2190,16 @@ export class GetChatListRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         project_id?: string;
+        archived?: boolean;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("project_id" in data && data.project_id != undefined) {
                 this.project_id = data.project_id;
+            }
+            if ("archived" in data && data.archived != undefined) {
+                this.archived = data.archived;
             }
         }
     }
@@ -2071,21 +2209,35 @@ export class GetChatListRequest extends pb_1.Message {
     set project_id(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
+    get archived() {
+        return pb_1.Message.getFieldWithDefault(this, 2, false) as boolean;
+    }
+    set archived(value: boolean) {
+        pb_1.Message.setField(this, 2, value);
+    }
     static fromObject(data: {
         project_id?: string;
+        archived?: boolean;
     }): GetChatListRequest {
         const message = new GetChatListRequest({});
         if (data.project_id != null) {
             message.project_id = data.project_id;
+        }
+        if (data.archived != null) {
+            message.archived = data.archived;
         }
         return message;
     }
     toObject() {
         const data: {
             project_id?: string;
+            archived?: boolean;
         } = {};
         if (this.project_id != null) {
             data.project_id = this.project_id;
+        }
+        if (this.archived != null) {
+            data.archived = this.archived;
         }
         return data;
     }
@@ -2095,6 +2247,8 @@ export class GetChatListRequest extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.project_id.length)
             writer.writeString(1, this.project_id);
+        if (this.archived != false)
+            writer.writeBool(2, this.archived);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -2106,6 +2260,9 @@ export class GetChatListRequest extends pb_1.Message {
             switch (reader.getFieldNumber()) {
                 case 1:
                     message.project_id = reader.readString();
+                    break;
+                case 2:
+                    message.archived = reader.readBool();
                     break;
                 default: reader.skipField();
             }
@@ -4387,6 +4544,10 @@ export class SortedChatClient {
     private static ListChatBranch = new grpc_web_1.MethodDescriptor<ListChatBranchRequest, ListChatBranchResponse>("/sortedchat.SortedChat/ListChatBranch", grpc_web_1.MethodType.UNARY, ListChatBranchRequest, ListChatBranchResponse, (message: ListChatBranchRequest) => message.serialize(), ListChatBranchResponse.deserialize);
     ListChatBranch(message: ListChatBranchRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<ListChatBranchRequest, ListChatBranchResponse>(this._address + "/sortedchat.SortedChat/ListChatBranch", message, metadata || {}, SortedChatClient.ListChatBranch);
+    }
+    private static ArchiveChat = new grpc_web_1.MethodDescriptor<ArchiveChatRequest, ArchiveChatResponse>("/sortedchat.SortedChat/ArchiveChat", grpc_web_1.MethodType.UNARY, ArchiveChatRequest, ArchiveChatResponse, (message: ArchiveChatRequest) => message.serialize(), ArchiveChatResponse.deserialize);
+    ArchiveChat(message: ArchiveChatRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<ArchiveChatRequest, ArchiveChatResponse>(this._address + "/sortedchat.SortedChat/ArchiveChat", message, metadata || {}, SortedChatClient.ArchiveChat);
     }
 }
 // Server-side service class removed for client-side compatibility

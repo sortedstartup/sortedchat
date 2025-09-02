@@ -14,7 +14,7 @@ type DAO interface {
 	GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error)
 
 	// GetChatList retrieves all chats for a user
-	GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error)
+	GetChatList(userID string, projectID string, archived bool) ([]*proto.ChatInfo, error)
 
 	// Model operations
 	GetModels() ([]proto.ModelListInfo, error)
@@ -45,6 +45,7 @@ type DAO interface {
 	GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error)
 	UpdateChatMessageDocumentReferences(userID string, messageID string, documentReferences string) error
 	DeleteDocument(userID string, projectID string, docID string) error
+	ArchiveChat(userID string, chatId string) error
 }
 
 type SettingsDAO interface {

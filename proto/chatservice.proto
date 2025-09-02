@@ -130,6 +130,7 @@ message MessageSummary {
   string model = 2;
   int32 input_tokens = 3;
   int32 output_tokens = 4;
+  float cost = 5;
 }
 
 message GetHistoryRequest {
@@ -149,6 +150,7 @@ message ChatMessage {
   string model = 6;
   int32 input_tokens = 7;
   int32 output_tokens = 8;
+  float cost = 9;
 }
 
 message GetChatListRequest {

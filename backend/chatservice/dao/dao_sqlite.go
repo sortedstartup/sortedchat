@@ -73,10 +73,26 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 	return fmt.Sprintf("%d", messageId), nil
 }
 
-// GetChatMessages retrieves all messages for a given chat
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
+	query := `
+        SELECT
+            cm.role,
+            cm.content,
+            cm.id,
+            COALESCE(cm.document_references, '') as document_references,
+            (cm.rag_enabled = 1) as rag_enabled,
+            COALESCE(cm.model, '') as model,
+            COALESCE(cm.input_token_count, 0) as input_token_count,
+            COALESCE(cm.output_token_count, 0) as output_token_count,
+            COALESCE(mm.input_token_cost, 0) * COALESCE(cm.input_token_count, 0) +
+            COALESCE(mm.output_token_cost, 0) * COALESCE(cm.output_token_count, 0) as cost
+        FROM chat_messages cm
+        LEFT JOIN model_metadata mm ON cm.model = mm.id
+        WHERE cm.chat_id = ? AND cm.user_id = ?
+        ORDER BY cm.id
+    `
+	err := s.db.Select(&messages, query, chatId, userID)
 	return messages, err
 }
 
@@ -106,6 +122,7 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatI
 }
 
 func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (MessageSummary, error) {
+
 	result, err := s.db.Exec(`
 		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references, rag_enabled)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -115,12 +132,30 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role 
 	}
 
 	messageId, err := result.LastInsertId()
+	if err != nil {
+		fmt.Println("errsanskar", err)
+		return MessageSummary{}, err
+	}
+
+	var inputTokenCost, outputTokenCost float64
+
+	err = s.db.QueryRow(`
+        SELECT input_token_cost, output_token_cost
+        FROM model_metadata
+        WHERE id = ?
+    `, model).Scan(&inputTokenCost, &outputTokenCost)
+	if err != nil {
+		return MessageSummary{}, err
+	}
+
+	cost := inputTokenCost*float64(inputTokens) + outputTokenCost*float64(outputTokens)
 
 	summary := MessageSummary{
 		MessageId:        fmt.Sprintf("%d", messageId),
 		Model:            model,
 		InputTokenCount:  inputTokens,
 		OutputTokenCount: outputTokens,
+		Cost:             cost,
 	}
 
 	return summary, err

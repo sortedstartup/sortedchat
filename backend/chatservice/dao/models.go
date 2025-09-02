@@ -1,21 +1,23 @@
 package dao
 
 type ChatMessageRow struct {
-	Role               string `db:"role" json:"role"`
-	Content            string `db:"content" json:"content"`
-	Id                 string `db:"id" json:"id"`
-	DocumentReferences string `db:"document_references" json:"document_references"`
-	RagEnabled         bool   `db:"rag_enabled" json:"rag_enabled"`
-	Model              string `db:"model" json:"model"`
-	InputTokenCount    int    `db:"input_token_count" json:"input_token_count"`
-	OutputTokenCount   int    `db:"output_token_count" json:"output_token_count"`
+	Role               string  `db:"role" json:"role"`
+	Content            string  `db:"content" json:"content"`
+	Id                 string  `db:"id" json:"id"`
+	DocumentReferences string  `db:"document_references" json:"document_references"`
+	RagEnabled         bool    `db:"rag_enabled" json:"rag_enabled"`
+	Model              string  `db:"model" json:"model"`
+	InputTokenCount    int     `db:"input_token_count" json:"input_token_count"`
+	OutputTokenCount   int     `db:"output_token_count" json:"output_token_count"`
+	Cost               float64 `db:"cost" json:"cost"`
 }
 
 type MessageSummary struct {
-	MessageId        string `db:"message_id" json:"message_id"`
-	Model            string `db:"model" json:"model"`
-	InputTokenCount  int    `db:"input_token_count" json:"input_token_count"`
-	OutputTokenCount int    `db:"output_token_count" json:"output_token_count"`
+	MessageId        string  `db:"message_id" json:"message_id"`
+	Model            string  `db:"model" json:"model"`
+	InputTokenCount  int     `db:"input_token_count" json:"input_token_count"`
+	OutputTokenCount int     `db:"output_token_count" json:"output_token_count"`
+	Cost             float64 `db:"cost" json:"cost"`
 }
 
 type ProjectRow struct {

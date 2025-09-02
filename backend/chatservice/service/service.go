@@ -324,6 +324,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				Model:        model,
 				InputTokens:  int32(summary.InputTokenCount),
 				OutputTokens: int32(summary.OutputTokenCount),
+				Cost:         float32(summary.Cost),
 			}
 			if err := stream(&pb.ChatResponse{
 				Response: &pb.ChatResponse_Summary{
@@ -464,6 +465,7 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			Model:        m.Model,
 			InputTokens:  int32(m.InputTokenCount),
 			OutputTokens: int32(m.OutputTokenCount),
+			Cost:         float32(m.Cost),
 		}
 
 		if m.DocumentReferences != "" {

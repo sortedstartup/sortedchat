@@ -952,6 +952,7 @@ type MessageSummary struct {
 	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
 	InputTokens   int32                  `protobuf:"varint,3,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
 	OutputTokens  int32                  `protobuf:"varint,4,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
+	Cost          float32                `protobuf:"fixed32,5,opt,name=cost,proto3" json:"cost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1010,6 +1011,13 @@ func (x *MessageSummary) GetInputTokens() int32 {
 func (x *MessageSummary) GetOutputTokens() int32 {
 	if x != nil {
 		return x.OutputTokens
+	}
+	return 0
+}
+
+func (x *MessageSummary) GetCost() float32 {
+	if x != nil {
+		return x.Cost
 	}
 	return 0
 }
@@ -1112,6 +1120,7 @@ type ChatMessage struct {
 	Model         string                  `protobuf:"bytes,6,opt,name=model,proto3" json:"model,omitempty"`
 	InputTokens   int32                   `protobuf:"varint,7,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
 	OutputTokens  int32                   `protobuf:"varint,8,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
+	Cost          float32                 `protobuf:"fixed32,9,opt,name=cost,proto3" json:"cost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1198,6 +1207,13 @@ func (x *ChatMessage) GetInputTokens() int32 {
 func (x *ChatMessage) GetOutputTokens() int32 {
 	if x != nil {
 		return x.OutputTokens
+	}
+	return 0
+}
+
+func (x *ChatMessage) GetCost() float32 {
+	if x != nil {
+		return x.Cost
 	}
 	return 0
 }
@@ -2712,17 +2728,18 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"start_byte\x18\x04 \x01(\x05R\tstartByte\x12\x19\n" +
 	"\bend_byte\x18\x05 \x01(\x05R\aendByte\x12 \n" +
-	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"\x8d\x01\n" +
+	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"\xa1\x01\n" +
 	"\x0eMessageSummary\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x14\n" +
 	"\x05model\x18\x02 \x01(\tR\x05model\x12!\n" +
 	"\finput_tokens\x18\x03 \x01(\x05R\vinputTokens\x12#\n" +
-	"\routput_tokens\x18\x04 \x01(\x05R\foutputTokens\"+\n" +
+	"\routput_tokens\x18\x04 \x01(\x05R\foutputTokens\x12\x12\n" +
+	"\x04cost\x18\x05 \x01(\x02R\x04cost\"+\n" +
 	"\x11GetHistoryRequest\x12\x16\n" +
 	"\x06chatId\x18\x01 \x01(\tR\x06chatId\"G\n" +
 	"\x12GetHistoryResponse\x121\n" +
-	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\"\x9b\x02\n" +
+	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\"\xaf\x02\n" +
 	"\vChatMessage\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
@@ -2735,7 +2752,8 @@ const file_chatservice_proto_rawDesc = "" +
 	"ragEnabled\x12\x14\n" +
 	"\x05model\x18\x06 \x01(\tR\x05model\x12!\n" +
 	"\finput_tokens\x18\a \x01(\x05R\vinputTokens\x12#\n" +
-	"\routput_tokens\x18\b \x01(\x05R\foutputTokens\"3\n" +
+	"\routput_tokens\x18\b \x01(\x05R\foutputTokens\x12\x12\n" +
+	"\x04cost\x18\t \x01(\x02R\x04cost\"3\n" +
 	"\x12GetChatListRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\"A\n" +

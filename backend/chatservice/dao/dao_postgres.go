@@ -101,7 +101,7 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 	return messageId, nil
 }
 
-// GetChatMessages retrieves all messages for a given chat
+// GetChatMessages retrieves all messages for a given chat - need to add cost
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
 	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)

@@ -220,6 +220,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       $currentUserMessageId.set(res.user_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
       $messageSummary.set(res.summary);
+      console.log('Received message summary:', res.summary.model, res.summary.input_tokens, res.summary.output_tokens, res.summary.cost);
       messageId = res.summary.message_id; //assistant message id is set in the store
     } else if (res.has_document_reference && ragEnabled) {
       // Only process document references if RAG is enabled

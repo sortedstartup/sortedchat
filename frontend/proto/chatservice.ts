@@ -1733,6 +1733,7 @@ export class MessageSummary extends pb_1.Message {
         model?: string;
         input_tokens?: number;
         output_tokens?: number;
+        cost?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -1748,6 +1749,9 @@ export class MessageSummary extends pb_1.Message {
             }
             if ("output_tokens" in data && data.output_tokens != undefined) {
                 this.output_tokens = data.output_tokens;
+            }
+            if ("cost" in data && data.cost != undefined) {
+                this.cost = data.cost;
             }
         }
     }
@@ -1775,11 +1779,18 @@ export class MessageSummary extends pb_1.Message {
     set output_tokens(value: number) {
         pb_1.Message.setField(this, 4, value);
     }
+    get cost() {
+        return pb_1.Message.getFieldWithDefault(this, 5, 0) as number;
+    }
+    set cost(value: number) {
+        pb_1.Message.setField(this, 5, value);
+    }
     static fromObject(data: {
         message_id?: string;
         model?: string;
         input_tokens?: number;
         output_tokens?: number;
+        cost?: number;
     }): MessageSummary {
         const message = new MessageSummary({});
         if (data.message_id != null) {
@@ -1794,6 +1805,9 @@ export class MessageSummary extends pb_1.Message {
         if (data.output_tokens != null) {
             message.output_tokens = data.output_tokens;
         }
+        if (data.cost != null) {
+            message.cost = data.cost;
+        }
         return message;
     }
     toObject() {
@@ -1802,6 +1816,7 @@ export class MessageSummary extends pb_1.Message {
             model?: string;
             input_tokens?: number;
             output_tokens?: number;
+            cost?: number;
         } = {};
         if (this.message_id != null) {
             data.message_id = this.message_id;
@@ -1814,6 +1829,9 @@ export class MessageSummary extends pb_1.Message {
         }
         if (this.output_tokens != null) {
             data.output_tokens = this.output_tokens;
+        }
+        if (this.cost != null) {
+            data.cost = this.cost;
         }
         return data;
     }
@@ -1829,6 +1847,8 @@ export class MessageSummary extends pb_1.Message {
             writer.writeInt32(3, this.input_tokens);
         if (this.output_tokens != 0)
             writer.writeInt32(4, this.output_tokens);
+        if (this.cost != 0)
+            writer.writeFloat(5, this.cost);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1849,6 +1869,9 @@ export class MessageSummary extends pb_1.Message {
                     break;
                 case 4:
                     message.output_tokens = reader.readInt32();
+                    break;
+                case 5:
+                    message.cost = reader.readFloat();
                     break;
                 default: reader.skipField();
             }
@@ -2007,6 +2030,7 @@ export class ChatMessage extends pb_1.Message {
         model?: string;
         input_tokens?: number;
         output_tokens?: number;
+        cost?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [4], this.#one_of_decls);
@@ -2034,6 +2058,9 @@ export class ChatMessage extends pb_1.Message {
             }
             if ("output_tokens" in data && data.output_tokens != undefined) {
                 this.output_tokens = data.output_tokens;
+            }
+            if ("cost" in data && data.cost != undefined) {
+                this.cost = data.cost;
             }
         }
     }
@@ -2085,6 +2112,12 @@ export class ChatMessage extends pb_1.Message {
     set output_tokens(value: number) {
         pb_1.Message.setField(this, 8, value);
     }
+    get cost() {
+        return pb_1.Message.getFieldWithDefault(this, 9, 0) as number;
+    }
+    set cost(value: number) {
+        pb_1.Message.setField(this, 9, value);
+    }
     static fromObject(data: {
         role?: string;
         content?: string;
@@ -2094,6 +2127,7 @@ export class ChatMessage extends pb_1.Message {
         model?: string;
         input_tokens?: number;
         output_tokens?: number;
+        cost?: number;
     }): ChatMessage {
         const message = new ChatMessage({});
         if (data.role != null) {
@@ -2120,6 +2154,9 @@ export class ChatMessage extends pb_1.Message {
         if (data.output_tokens != null) {
             message.output_tokens = data.output_tokens;
         }
+        if (data.cost != null) {
+            message.cost = data.cost;
+        }
         return message;
     }
     toObject() {
@@ -2132,6 +2169,7 @@ export class ChatMessage extends pb_1.Message {
             model?: string;
             input_tokens?: number;
             output_tokens?: number;
+            cost?: number;
         } = {};
         if (this.role != null) {
             data.role = this.role;
@@ -2157,6 +2195,9 @@ export class ChatMessage extends pb_1.Message {
         if (this.output_tokens != null) {
             data.output_tokens = this.output_tokens;
         }
+        if (this.cost != null) {
+            data.cost = this.cost;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -2179,6 +2220,8 @@ export class ChatMessage extends pb_1.Message {
             writer.writeInt32(7, this.input_tokens);
         if (this.output_tokens != 0)
             writer.writeInt32(8, this.output_tokens);
+        if (this.cost != 0)
+            writer.writeFloat(9, this.cost);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -2211,6 +2254,9 @@ export class ChatMessage extends pb_1.Message {
                     break;
                 case 8:
                     message.output_tokens = reader.readInt32();
+                    break;
+                case 9:
+                    message.cost = reader.readFloat();
                     break;
                 default: reader.skipField();
             }

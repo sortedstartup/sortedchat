@@ -13,6 +13,7 @@ import {
   Info,
   ArrowUp,
   ArrowDown,
+  DollarSign,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
@@ -259,6 +260,10 @@ function Message({
                     <div className="flex items-center space-x-1">
                       <ArrowDown />
                       <span>{messageSummary?.output_tokens || message.output_tokens}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <DollarSign />
+                      <span>{(messageSummary?.cost)?.toFixed(2) || (message?.cost)?.toFixed(2)}</span>
                     </div>
                   </>
                 ) : (

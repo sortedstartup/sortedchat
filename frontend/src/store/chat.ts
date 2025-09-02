@@ -708,7 +708,7 @@ export const RestoreChat = async (chatId: string) => {
   try {
     const res = await chat.RestoreChat(RestoreChatRequest.fromObject({ chat_id: chatId }), {});
     toast.success(res.message);
-    getChatList($currentProjectId.get(), true);
+    getChatList(undefined, true);
   } catch (error) {
     console.error('Failed to Restore chat:', error);
     toast.error(`Failed to Restore chat: ${(error as Error).message || 'Unknown error'}`);

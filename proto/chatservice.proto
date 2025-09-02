@@ -168,7 +168,8 @@ message ChatMessage {
 
 message GetChatListRequest {
   string project_id = 1;
-  bool soft_deleted = 2;
+  bool soft_deleted = 2; 
+  //later we create a filter object because we might have to add more filters
 }
 
 message GetChatListResponse {

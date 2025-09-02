@@ -577,8 +577,19 @@ func (p *PostgresDAO) SoftDeleteChat(userID string, chatId string) error {
 	return err
 }
 
-func (p *PostgresDAO) DeleteChat(userID string, chatId string) error {
-	_, err := p.db.Exec(`
+func (p *PostgresDAO) DeleteChat(userID string, chatId string) (err error) {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// Delete messages under the hierarchy first
+	_, err = tx.Exec(`
         WITH RECURSIVE chat_hierarchy AS (
             SELECT chat_id
             FROM chat_list
@@ -587,13 +598,37 @@ func (p *PostgresDAO) DeleteChat(userID string, chatId string) error {
             SELECT c.chat_id
             FROM chat_list c
             JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
-			WHERE c.user_id = $2
+            WHERE c.user_id = $2
+        )
+        DELETE FROM chat_messages
+        WHERE user_id = $2
+          AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
+    `, chatId, userID)
+	if err != nil {
+		return err
+	}
+
+	// Delete chats from the hierarchy
+	_, err = tx.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id
+            FROM chat_list
+            WHERE chat_id = $1 AND user_id = $2
+            UNION ALL
+            SELECT c.chat_id
+            FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+            WHERE c.user_id = $2
         )
         DELETE FROM chat_list
-        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
-        AND user_id = $2;
+        WHERE user_id = $2
+          AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
     `, chatId, userID)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (p *PostgresDAO) RestoreChat(userID string, chatId string) error {

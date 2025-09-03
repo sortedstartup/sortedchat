@@ -27,6 +27,9 @@ import {
   RAGDocumentReference,
   DeleteDocumentRequest,
   MessageSummary,
+  DeleteChatRequest,
+  DeleteChatRequestOperation,
+  RestoreChatRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -150,20 +153,26 @@ export const createNewChat = async (projectId?: string) => {
     CreateChatRequest.fromObject(requestObj),
     {}
   );
-  getChatList(projectId);
+  getChatList(projectId, false);
   return response.chat_id;
 };
 
-export const $projectChatList = atom<ChatInfo[]>([]);   
-export const getChatList = (projectId?: string) => {
-  const requestObj: GetChatListRequest = projectId
-    ? GetChatListRequest.fromObject({ project_id: projectId })
-    : new GetChatListRequest();
+export const $projectChatList = atom<ChatInfo[]>([]);
+export const $trashChatList = atom<ChatInfo[]>([]);
+
+export const getChatList = (projectId?: string, softDeleted?: boolean) => {
+
+  const requestObj = GetChatListRequest.fromObject({ project_id: projectId, soft_deleted: softDeleted });
 
   chat.GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
-    (projectId ? $projectChatList : $chatList).set(value.chats);
+    if (softDeleted) {
+      $trashChatList.set(value.chats);  
+    } else {
+      (projectId ? $projectChatList : $chatList).set(value.chats);
+    }
   });
 };
+
 
 const isFirstMessageInChat = (): boolean => {
   const currentState = $currentChatMessages.get();
@@ -219,9 +228,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       console.log('Received user message ID:', res.user_message_id);
       $currentUserMessageId.set(res.user_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
-      $messageSummary.set(res.summary);
-      console.log('Received message summary:', res.summary.model, res.summary.input_tokens, res.summary.output_tokens, res.summary.cost);
-      messageId = res.summary.message_id; //assistant message id is set in the store
+      messageId = res.summary.message_id;
     } else if (res.has_document_reference && ragEnabled) {
       // Only process document references if RAG is enabled
       const docRefList = res.document_reference;
@@ -513,7 +520,7 @@ $documents.listen((projectId) => {
 
 $currentProjectId.listen((newProjectId) => {
   if (newProjectId) {
-    getChatList(newProjectId);
+    getChatList(newProjectId, false);
   } else {
     $chatList.set([]);
   }
@@ -652,7 +659,6 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
   });
 
   try {
-    console.log('Fetching RAG document reference for message:', messageId, 'project:', projectId, 'docId:', docId);
     const request = RAGDocumentReferenceRequest.fromObject({
       message_id: messageId,
       project_id: projectId,
@@ -682,3 +688,34 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
     throw error;
   }
 };
+
+export const DeleteChat = async (chatId: string, operation: DeleteChatRequestOperation) => {
+  try {
+    const res = await chat.DeleteChat(DeleteChatRequest.fromObject({ chat_id: chatId, operation: operation }), {});
+    toast.success(res.message);
+
+
+    if (operation === DeleteChatRequestOperation.SOFT_DELETE) {
+      getChatList(undefined, false);
+    }
+    else {
+      getChatList(undefined, true);
+    }
+
+    
+  } catch (error) {
+    console.error('Failed to Delete chat:', error);
+    toast.error(`Failed to Delete chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+export const RestoreChat = async (chatId: string) => {
+  try {
+    const res = await chat.RestoreChat(RestoreChatRequest.fromObject({ chat_id: chatId }), {});
+    toast.success(res.message);
+    getChatList(undefined, true);
+  } catch (error) {
+    console.error('Failed to Restore chat:', error);
+    toast.error(`Failed to Restore chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}

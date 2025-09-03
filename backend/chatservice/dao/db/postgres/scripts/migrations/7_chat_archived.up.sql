@@ -1,0 +1,1 @@
+ALTER TABLE chat_list ADD COLUMN soft_deleted BOOLEAN DEFAULT FALSE;

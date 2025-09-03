@@ -427,6 +427,7 @@ function ChatInputBox({
         <button 
           onClick={toggleDetailedTokens}
           className="flex items-center gap-1 text-gray-400 hover:text-gray-600 transition-colors px-1"
+          aria-label={showDetailedTokens ? "Hide detailed token usage" : "Show detailed token usage"}
         >
           <ChevronRight className={`size-3 transition-transform ${showDetailedTokens ? 'rotate-90' : ''}`} />
         </button>

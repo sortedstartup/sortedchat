@@ -1315,7 +1315,7 @@ export class ChatProgress extends pb_1.Message {
         }
     }
     get state() {
-        return pb_1.Message.getFieldWithDefault(this, 1, ChatProgressState.REQUEST_SENT_TO_LLM) as ChatProgressState;
+        return pb_1.Message.getFieldWithDefault(this, 1, ChatProgressState.SENDING_REQUEST_TO_LLM) as ChatProgressState;
     }
     set state(value: ChatProgressState) {
         pb_1.Message.setField(this, 1, value);
@@ -1356,7 +1356,7 @@ export class ChatProgress extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.state != ChatProgressState.REQUEST_SENT_TO_LLM)
+        if (this.state != ChatProgressState.SENDING_REQUEST_TO_LLM)
             writer.writeEnum(1, this.state);
         if (this.message.length)
             writer.writeString(2, this.message);
@@ -1388,10 +1388,12 @@ export class ChatProgress extends pb_1.Message {
     }
 }
 export enum ChatProgressState {
-    REQUEST_SENT_TO_LLM = 0,
-    FIRST_TOKEN_RECIEVED = 1,
-    TOKENS_STREAMING = 2,
-    TOKENS_STOPPED = 3
+    SENDING_REQUEST_TO_LLM = 0,
+    REQUEST_SENT_TO_LLM = 1,
+    FIRST_RESPONSE_RECEIVED = 2,
+    FIRST_TOKEN_RECEIVED = 3,
+    TOKENS_STREAMING = 4,
+    TOKENS_STOPPED = 5
 }
 export class RAGDocumentReferenceSummaryList extends pb_1.Message {
     #one_of_decls: number[][] = [];

@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
+	"net/http/httptrace"
 	"os"
 	"strings"
 
@@ -92,6 +93,7 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 }
 
 func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatRequest, stream func(*pb.ChatResponse) error) error {
+
 	projectID := req.GetProjectContext().GetProjectId()
 	ragEnabled := req.GetProjectContext().GetRagEnabled()
 
@@ -208,6 +210,10 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("failed to marshal request: %v", err)
 	}
 
+	stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_SENDING_REQUEST_TO_LLM, Message: "Request sent"}},
+	})
+
 	httpReq, err := http.NewRequest("POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
@@ -215,6 +221,27 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
 
+	// UI can show request sent, useful because sometimes there is a delay from the API server
+	stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_SENDING_REQUEST_TO_LLM, Message: "Request sent"}},
+	})
+
+	// This is awesome!, in go I was easily able to find out exactly when the request was sent
+	trace := &httptrace.ClientTrace{
+		WroteRequest: func(info httptrace.WroteRequestInfo) {
+			stream(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_REQUEST_SENT_TO_LLM, Message: ""}},
+			})
+		},
+		GotFirstResponseByte: func() {
+			stream(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_FIRST_RESPONSE_RECEIVED, Message: ""}},
+			})
+
+		},
+	}
+
+	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return fmt.Errorf("OpenAI request failed: %v", err)
@@ -222,9 +249,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	defer resp.Body.Close()
 
 	// UI can show request sent, useful because sometimes there is a delay from the API server
-	stream(&pb.ChatResponse{
-		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_REQUEST_SENT_TO_LLM, Message: "Request sent"}},
-	})
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -240,7 +264,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	for scanner.Scan() {
 		if firstToken {
 			stream(&pb.ChatResponse{
-				Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_FIRST_TOKEN_RECIEVED, Message: "First token recieved"}},
+				Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_FIRST_TOKEN_RECEIVED, Message: "First token received"}},
 			})
 			firstToken = false
 		}
@@ -302,9 +326,12 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("error reading stream: %v", err)
 	}
 
-	stream(&pb.ChatResponse{
+	err = stream(&pb.ChatResponse{
 		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_TOKENS_STOPPED, Message: "Response finished"}},
 	})
+	if err != nil {
+		return fmt.Errorf("failed to send completion progress: %v", err)
+	}
 
 	assistantText := fullResponse.String()
 	if assistantText != "" {

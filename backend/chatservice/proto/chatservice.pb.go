@@ -76,25 +76,31 @@ func (Embedding_Status) EnumDescriptor() ([]byte, []int) {
 type ChatProgress_State int32
 
 const (
-	ChatProgress_REQUEST_SENT_TO_LLM  ChatProgress_State = 0
-	ChatProgress_FIRST_TOKEN_RECIEVED ChatProgress_State = 1
-	ChatProgress_TOKENS_STREAMING     ChatProgress_State = 2
-	ChatProgress_TOKENS_STOPPED       ChatProgress_State = 3
+	ChatProgress_SENDING_REQUEST_TO_LLM  ChatProgress_State = 0
+	ChatProgress_REQUEST_SENT_TO_LLM     ChatProgress_State = 1
+	ChatProgress_FIRST_RESPONSE_RECEIVED ChatProgress_State = 2
+	ChatProgress_FIRST_TOKEN_RECEIVED    ChatProgress_State = 3
+	ChatProgress_TOKENS_STREAMING        ChatProgress_State = 4
+	ChatProgress_TOKENS_STOPPED          ChatProgress_State = 5
 )
 
 // Enum value maps for ChatProgress_State.
 var (
 	ChatProgress_State_name = map[int32]string{
-		0: "REQUEST_SENT_TO_LLM",
-		1: "FIRST_TOKEN_RECIEVED",
-		2: "TOKENS_STREAMING",
-		3: "TOKENS_STOPPED",
+		0: "SENDING_REQUEST_TO_LLM",
+		1: "REQUEST_SENT_TO_LLM",
+		2: "FIRST_RESPONSE_RECEIVED",
+		3: "FIRST_TOKEN_RECEIVED",
+		4: "TOKENS_STREAMING",
+		5: "TOKENS_STOPPED",
 	}
 	ChatProgress_State_value = map[string]int32{
-		"REQUEST_SENT_TO_LLM":  0,
-		"FIRST_TOKEN_RECIEVED": 1,
-		"TOKENS_STREAMING":     2,
-		"TOKENS_STOPPED":       3,
+		"SENDING_REQUEST_TO_LLM":  0,
+		"REQUEST_SENT_TO_LLM":     1,
+		"FIRST_RESPONSE_RECEIVED": 2,
+		"FIRST_TOKEN_RECEIVED":    3,
+		"TOKENS_STREAMING":        4,
+		"TOKENS_STOPPED":          5,
 	}
 )
 
@@ -936,7 +942,7 @@ func (x *ChatProgress) GetState() ChatProgress_State {
 	if x != nil {
 		return x.State
 	}
-	return ChatProgress_REQUEST_SENT_TO_LLM
+	return ChatProgress_SENDING_REQUEST_TO_LLM
 }
 
 func (x *ChatProgress) GetMessage() string {
@@ -1053,7 +1059,7 @@ func (x *RAGDocumentReference) GetChunks() []*RAGDocumentReference_Chunk {
 
 type MessageSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` //TODO: add tokens recieved, cost?, token speed
+	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` //TODO: add tokens received, cost?, token speed
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2750,15 +2756,17 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x12document_reference\x18\x03 \x01(\v2+.sortedchat.RAGDocumentReferenceSummaryListH\x00R\x11documentReference\x126\n" +
 	"\bprogress\x18\x04 \x01(\v2\x18.sortedchat.ChatProgressH\x00R\bprogressB\n" +
 	"\n" +
-	"\bresponse\"\xc4\x01\n" +
+	"\bresponse\"\xfe\x01\n" +
 	"\fChatProgress\x124\n" +
 	"\x05state\x18\x01 \x01(\x0e2\x1e.sortedchat.ChatProgress.StateR\x05state\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"d\n" +
-	"\x05State\x12\x17\n" +
-	"\x13REQUEST_SENT_TO_LLM\x10\x00\x12\x18\n" +
-	"\x14FIRST_TOKEN_RECIEVED\x10\x01\x12\x14\n" +
-	"\x10TOKENS_STREAMING\x10\x02\x12\x12\n" +
-	"\x0eTOKENS_STOPPED\x10\x03\"\xcf\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\x9d\x01\n" +
+	"\x05State\x12\x1a\n" +
+	"\x16SENDING_REQUEST_TO_LLM\x10\x00\x12\x17\n" +
+	"\x13REQUEST_SENT_TO_LLM\x10\x01\x12\x1b\n" +
+	"\x17FIRST_RESPONSE_RECEIVED\x10\x02\x12\x18\n" +
+	"\x14FIRST_TOKEN_RECEIVED\x10\x03\x12\x14\n" +
+	"\x10TOKENS_STREAMING\x10\x04\x12\x12\n" +
+	"\x0eTOKENS_STOPPED\x10\x05\"\xcf\x01\n" +
 	"\x1fRAGDocumentReferenceSummaryList\x12M\n" +
 	"\asummary\x18\x01 \x03(\v23.sortedchat.RAGDocumentReferenceSummaryList.SummaryR\asummary\x1a]\n" +
 	"\aSummary\x12\x15\n" +

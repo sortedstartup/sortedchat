@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
-import { CornerDownLeft, FileText, Eye, FileX, Copy, Check, Maximize2, Minimize2 } from "lucide-react";
+import { CornerDownLeft, FileText, Eye, FileX, Copy, Check, Maximize2, Minimize2, ClockArrowUp, ArrowUp, ArrowDown, ClockArrowDown } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -20,6 +20,7 @@ import {
   setRagEnabledForProject,
   $ragDocumentDetails,
   fetchRAGDocumentReference,
+  $currentChatMessageProgress,
 } from "@/store/chat";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
 import {
@@ -34,7 +35,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { RAGDocumentReference, RAGDocumentReferenceChunk } from "proto/chatservice";
+import { ChatProgressState, type RAGDocumentReferenceChunk, type RAGDocumentReference, type ChatProgress } from "../../proto/chatservice";
+// import {ChatProgressState} from "proto/chatservice.ts"
+
 
 // Collapsible Chunks Display Component
 function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undefined }) {
@@ -134,6 +137,7 @@ export function Chat() {
   const currentDocumentReferences = useStore($currentDocumentReferences);
   const ragEnabled = useStore($ragEnabled);
   const ragDocumentDetails = useStore($ragDocumentDetails);
+  const currentChatMessageProgress = useStore($currentChatMessageProgress)
 
   const [inputValue, setInputValue] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
@@ -147,18 +151,19 @@ export function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block:'start' });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [data, streamingMessage, currentChatMessage]);
+  }, [data, currentChatMessage]);
 
   const handleSend = () => {
     if (inputValue.trim()) {
       doChat(inputValue, projectId);
       setInputValue("");
-      setTimeout(scrollToBottom, 100);
+
+      //setTimeout(scrollToBottom, 100);
     }
   };
 
@@ -254,6 +259,7 @@ export function Chat() {
           </div>
         ) : (
           <div className="space-y-0">
+               
             {data?.map((message) => (
               <div
                 key={message.message_id}
@@ -266,16 +272,17 @@ export function Chat() {
                 <div className="w-full max-w-none px-4">
                   {message.role === "user" ? (
                     // User message - right aligned
-                    <div className="flex items-start space-x-4 justify-end">
+                    <div className="flex items-start space-x-4 justify-end">                    
                       <div className="flex-1 min-w-0 text-right">
                           <EnhancedMarkdown>
-                            {message.content}
-                          </EnhancedMarkdown>
+                            {message.content} 
+                          </EnhancedMarkdown>                          
                       </div>
                       {/* Avatar */}
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
                         U
                       </div>
+                       
                     </div>
                   ) : (
                     <div className="flex items-start space-x-4">
@@ -289,7 +296,7 @@ export function Chat() {
                           <EnhancedMarkdown>
                             {message.content}
                           </EnhancedMarkdown>
-
+                         
                         {/* RAG Status Indicator */}
                         {projectId && message.role === "assistant" && !message.rag_enabled && (
                           <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
@@ -298,6 +305,7 @@ export function Chat() {
                           </div>
                         )}
 
+     
                         {/* Document References */}
                         {message.role === "assistant" && message.references && (
                           renderDocumentReferences(message.references, message.message_id)
@@ -361,11 +369,13 @@ export function Chat() {
                     <div className="flex-1 min-w-0 text-right">
                         <EnhancedMarkdown>
                           {currentChatMessage}
-                        </EnhancedMarkdown>
+                        </EnhancedMarkdown>                        
                     </div>
+                     <div> {(currentChatMessageProgress)?getProgressIcon(currentChatMessageProgress):<></> } </div>
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
                       U
                     </div>
+                    
                   </div>
                 </div>
               </div>
@@ -522,3 +532,23 @@ export function Chat() {
     </div>
   );
 }
+
+
+const getProgressIcon = (p: ChatProgress) => {
+  switch(p.state) {
+    case ChatProgressState.SENDING_REQUEST_TO_LLM:
+      return <ClockArrowUp />;
+    case ChatProgressState.REQUEST_SENT_TO_LLM:
+      return <ClockArrowDown />;
+    case ChatProgressState.FIRST_RESPONSE_RECEIVED:
+    case ChatProgressState.FIRST_TOKEN_RECEIVED:
+    case ChatProgressState.TOKENS_STREAMING:
+      return (        
+        <ArrowDown className="animate-bounce" />
+      );
+    default:
+      return <></>;
+  }
+}
+
+

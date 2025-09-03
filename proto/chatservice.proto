@@ -108,10 +108,12 @@ message ChatResponse {
 
 message ChatProgress {
   enum State {
-    REQUEST_SENT_TO_LLM = 0;
-    FIRST_TOKEN_RECEIVED = 1;
-    TOKENS_STREAMING = 2;
-    TOKENS_STOPPED = 3;
+    SENDING_REQUEST_TO_LLM = 0;
+    REQUEST_SENT_TO_LLM = 1;
+    FIRST_RESPONSE_RECEIVED = 2;
+    FIRST_TOKEN_RECEIVED = 3;
+    TOKENS_STREAMING = 4;
+    TOKENS_STOPPED = 5;
   }
 
   State state = 1;

@@ -230,7 +230,6 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       assistantResponse += res.text;
       $streamingMessage.set(assistantResponse);
     } else if (res.has_user_message_id) {
-      console.log('Received user message ID:', res.user_message_id);
       $currentUserMessageId.set(res.user_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
       messageId = res.summary.message_id;

@@ -75,24 +75,7 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	query := `
-        SELECT
-            cm.role,
-            cm.content,
-            cm.id,
-            COALESCE(cm.document_references, '') as document_references,
-            (cm.rag_enabled = 1) as rag_enabled,
-            COALESCE(cm.model, '') as model,
-            COALESCE(cm.input_token_count, 0) as input_token_count,
-            COALESCE(cm.output_token_count, 0) as output_token_count,
-			COALESCE(cm.cached_token_count, 0) as cached_token_count,
-            COALESCE(cm.cost, 0) as cost
-        FROM chat_messages cm
-        LEFT JOIN model_metadata mm ON cm.model = mm.id
-        WHERE cm.chat_id = ? AND cm.user_id = ?
-        ORDER BY cm.id
-    `
-	err := s.db.Select(&messages, query, chatId, userID)
+	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
 	return messages, err
 }
 

@@ -102,8 +102,11 @@ export const fetchChatMessages = async (chatId: string) => {
         if (message.references && message.references.length > 0) {
           allReferences.push(...message.references);
         }
-        console.log('Message:', message.model, 'Input Tokens:', message.input_tokens, 'Output Tokens:', message.output_tokens);
       });
+    }
+
+    if (res.chat_metadata) {
+      $chatMetadata.set(res.chat_metadata);
     }
     
     // Set document references if any exist
@@ -179,6 +182,8 @@ const isFirstMessageInChat = (): boolean => {
   return !currentState.data || currentState.data.length === 0;
 };
 
+export const $chatMetadata = atom<ChatInfo | null>(null);
+
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
@@ -229,6 +234,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       $currentUserMessageId.set(res.user_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
+      $messageSummary.set(res.summary);
     } else if (res.has_document_reference && ragEnabled) {
       // Only process document references if RAG is enabled
       const docRefList = res.document_reference;
@@ -250,8 +256,10 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       $currentDocumentReferences.set([...currentChatReferences]);
       $showDocumentReferences.set(true);
       
-    }
-  });
+    }else if (res.has_chat_metadata) {
+      $chatMetadata.set(res.chat_metadata);
+    };
+  } );
 
   stream.on("end", () => {
     const userMessage = ChatMessage.fromObject({

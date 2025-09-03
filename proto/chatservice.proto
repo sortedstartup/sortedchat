@@ -122,6 +122,7 @@ message ChatResponse {
     MessageSummary summary = 2;
     string user_message_id = 3;
     RAGDocumentReferenceSummaryList document_reference = 4; 
+    ChatInfo chat_metadata = 5;
   }
 }
 
@@ -152,7 +153,8 @@ message MessageSummary {
   string model = 2;
   int32 input_tokens = 3;
   int32 output_tokens = 4;
-  float cost = 5;
+  int32 cached_tokens = 5;
+  float cost = 6;
 }
 
 message GetHistoryRequest {
@@ -161,6 +163,7 @@ message GetHistoryRequest {
 
 message GetHistoryResponse {
   repeated ChatMessage history = 1;
+  ChatInfo chat_metadata = 2;
 }
 
 message ChatMessage {
@@ -172,7 +175,8 @@ message ChatMessage {
   string model = 6;
   int32 input_tokens = 7;
   int32 output_tokens = 8;
-  float cost = 9;
+  int32 cached_tokens = 9;
+  float cost = 10;
 }
 
 message GetChatListRequest {
@@ -188,6 +192,10 @@ message GetChatListResponse {
 message ChatInfo {
   string chatId = 1;
   string name = 2;
+  float cost = 3;
+  int32 input_token_count = 4;
+  int32 output_token_count = 5;
+  int32 cached_token_count = 6;
 }
 
 message ModelListInfo {

@@ -14,6 +14,7 @@ import {
   ArrowUp,
   ArrowDown,
   DollarSign,
+  ChevronRight
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
@@ -36,6 +37,7 @@ import {
   fetchRAGDocumentReference,
   $currentUserMessageId,
   $messageSummary,
+  $chatMetadata,
 } from "@/store/chat";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
 import {
@@ -136,6 +138,21 @@ interface MessageProps {
   messageSummary?: MessageSummary;
 }
 
+function formatCostAndTokens(
+  cost: number | undefined,
+  cachedTokens: number | undefined,
+  showCachedTokens = true
+): { costDisplay: string; cachedTokensDisplay: string } {
+  let costDisplay = "";
+  if (cost !== undefined) {
+    costDisplay = cost < 1 ? `${(cost * 100).toFixed(3)} cents` : `${cost.toFixed(2)}`;
+  }
+
+  const cachedTokensDisplay = showCachedTokens && cachedTokens && cachedTokens > 0 ? cachedTokens.toString() : "";
+
+  return { costDisplay, cachedTokensDisplay };
+}
+
 function Message({
   message,
   onCopyMessage,
@@ -151,6 +168,12 @@ function Message({
 
   const isUser = message.role === "user";
 
+  const { costDisplay, cachedTokensDisplay } = formatCostAndTokens(
+    messageSummary?.cost || message?.cost,
+    messageSummary?.cached_tokens || message.cached_tokens,
+    true
+  );
+
   return (
     <div
       className={`w-full ${isUser
@@ -164,8 +187,7 @@ function Message({
       >
         {!isUser && (
           <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium">
-            AI 
-            {/* chat model: {messageSummary?.model} */}
+            AI
           </div>
         )}
 
@@ -254,16 +276,19 @@ function Message({
                 {isHovered ? (
                   <>
                     <div className="flex items-center space-x-1">
-                      <ArrowUp />
-                      <span>{messageSummary?.input_tokens || message.input_tokens}</span>
+                      <ArrowUp className="size-3" />
+                      <span>
+                        {messageSummary?.input_tokens || message.input_tokens}
+                        {cachedTokensDisplay ? `/${cachedTokensDisplay}` : ""}
+                      </span>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <ArrowDown />
+                      <ArrowDown className="size-3" />
                       <span>{messageSummary?.output_tokens || message.output_tokens}</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <DollarSign />
-                      <span>{(messageSummary?.cost)?.toFixed(2) || (message?.cost)?.toFixed(2)}</span>
+                      <DollarSign className="size-3" />
+                      <span>{costDisplay}</span>
                     </div>
                   </>
                 ) : (
@@ -292,9 +317,20 @@ function ChatInputBox({
   onSendMessage: (message: string) => void;
 }) {
   const [inputValue, setInputValue] = useState("");
+  const [showDetailedTokens, setShowDetailedTokens] = useState(() => {
+    const saved = localStorage.getItem('showDetailedTokens');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const toggleDetailedTokens = () => {
+    const newValue = !showDetailedTokens;
+    setShowDetailedTokens(newValue);
+    localStorage.setItem('showDetailedTokens', JSON.stringify(newValue));
+  };
   const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
   const ragEnabled = useStore($ragEnabled);
+  const chatMetadata = useStore($chatMetadata);
 
   const handleSend = () => {
     if (inputValue.trim()) {
@@ -318,6 +354,11 @@ function ChatInputBox({
   const handleModelSelect = (model: string) => {
     $selectedModel.set(model);
   };
+
+  const { costDisplay, cachedTokensDisplay } = formatCostAndTokens(
+    chatMetadata?.cost ,
+    chatMetadata?.cached_token_count
+  );
 
   return (
     <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
@@ -373,6 +414,34 @@ function ChatInputBox({
             </Button>
           </div>
         </div>
+      </div>
+      <div className="text-sm text-gray-500 mt-2 flex flex-row gap-2 px-6">
+        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+          <ArrowUp className="size-3" />
+          <span>{chatMetadata?.input_token_count}</span>
+        </div>
+        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+          <ArrowDown className="size-3" />
+          <span>{chatMetadata?.output_token_count}</span>
+        </div>
+        <button 
+          onClick={toggleDetailedTokens}
+          className="flex items-center gap-1 text-gray-400 hover:text-gray-600 transition-colors px-1"
+        >
+          <ChevronRight className={`size-3 transition-transform ${showDetailedTokens ? 'rotate-90' : ''}`} />
+        </button>
+        {showDetailedTokens && (
+          <>
+            
+            {cachedTokensDisplay && <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+              <span>{cachedTokensDisplay} cached tokens</span>
+            </div>}
+            <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+              <DollarSign className="size-3"/>
+              <span>{costDisplay}</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

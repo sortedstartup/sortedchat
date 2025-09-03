@@ -104,7 +104,7 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 // GetChatMessages retrieves all messages for a given chat - need to add cost
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
+	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cost, 0) as cost, COALESCE(cached_token_count, 0) as cached_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	return messages, err
 }
 
@@ -139,9 +139,10 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string, softDeleted b
 	return result, nil
 }
 
-func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (MessageSummary, error) {
+func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (MessageSummary, error) {
 	// PostgreSQL doesn't have LastInsertId(), so we use RETURNING
 	var messageId string
+	var inputTokenCost, outputTokenCost, cachedTokenCost float64
 	var referencesValue interface{}
 
 	// Handle JSON insertion for JSONB field
@@ -151,20 +152,60 @@ func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, rol
 		referencesValue = references
 	}
 
+	// Insert the chat message and get the inserted row id
 	err := p.db.Get(&messageId, `
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references, rag_enabled)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id`,
-		chatId, role, content, model, inputTokens, outputTokens, userID, referencesValue, ragEnabled)
+        INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, cached_token_count, user_id, document_references, rag_enabled)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id`,
+		chatId, role, content, model, inputTokens, outputTokens, cachedTokens, userID, referencesValue, ragEnabled)
 	if err != nil {
 		return MessageSummary{}, err
 	}
 
+	// Query the costs for the model
+	err = p.db.QueryRow(`
+        SELECT input_token_cost, output_token_cost, cached_token_cost
+        FROM model_metadata
+        WHERE id = $1`, model).Scan(&inputTokenCost, &outputTokenCost, &cachedTokenCost)
+	if err != nil {
+		return MessageSummary{}, err
+	}
+
+	// Calculate cost with per 1M token pricing
+	cost := (inputTokenCost*float64(inputTokens) + outputTokenCost*float64(outputTokens) + cachedTokenCost*float64(cachedTokens)) / 1000000
+
+	// Update the cost of the inserted message
+	_, err = p.db.Exec(`
+        UPDATE chat_messages
+        SET cost = $1
+        WHERE id = $2
+        `, cost, messageId)
+	if err != nil {
+		return MessageSummary{}, err
+	}
+
+	// Update the total cost and token counts for the chat
+	_, err = p.db.Exec(`
+        UPDATE chat_list
+        SET 
+            cost = COALESCE(cost, 0) + $1,
+            input_token_count = COALESCE(input_token_count, 0) + $2,
+            output_token_count = COALESCE(output_token_count, 0) + $3,
+            cached_token_count = COALESCE(cached_token_count, 0) + $4
+        WHERE chat_id = $5 AND user_id = $6
+    `, cost, inputTokens, outputTokens, cachedTokens, chatId, userID)
+	if err != nil {
+		return MessageSummary{}, err
+	}
+
+	// Return the message summary
 	return MessageSummary{
 		MessageId:        messageId,
 		Model:            model,
 		InputTokenCount:  inputTokens,
 		OutputTokenCount: outputTokens,
+		CachedTokenCount: cachedTokens,
+		Cost:             cost,
 	}, nil
 }
 
@@ -669,6 +710,15 @@ func (p *PostgresDAO) IsChatDeleted(chatId string, userID string) (bool, error) 
 		return false, err
 	}
 	return isDeleted, err
+}
+
+func (p *PostgresDAO) GetChatMetadata(userID string, chatId string) (ChatInfoRow, error) {
+	var chat ChatInfoRow
+	err := p.db.Get(&chat, "SELECT chat_id, name, cost, input_token_count, output_token_count, cached_token_count FROM chat_list WHERE chat_id = $1 AND user_id = $2", chatId, userID)
+	if err != nil {
+		return ChatInfoRow{}, err
+	}
+	return chat, nil
 }
 
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL

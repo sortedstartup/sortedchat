@@ -9,6 +9,7 @@ type ChatMessageRow struct {
 	Model              string  `db:"model" json:"model"`
 	InputTokenCount    int     `db:"input_token_count" json:"input_token_count"`
 	OutputTokenCount   int     `db:"output_token_count" json:"output_token_count"`
+	CachedTokenCount   int     `db:"cached_token_count" json:"cached_token_count"`
 	Cost               float64 `db:"cost" json:"cost"`
 }
 
@@ -17,6 +18,7 @@ type MessageSummary struct {
 	Model            string  `db:"model" json:"model"`
 	InputTokenCount  int     `db:"input_token_count" json:"input_token_count"`
 	OutputTokenCount int     `db:"output_token_count" json:"output_token_count"`
+	CachedTokenCount int     `db:"cached_token_count" json:"cached_token_count"`
 	Cost             float64 `db:"cost" json:"cost"`
 }
 
@@ -52,8 +54,12 @@ type RAGChunkRow struct {
 }
 
 type ChatInfoRow struct {
-	Id   string `db:"chat_id"`
-	Name string `db:"name"`
+	Id               string  `db:"chat_id"`
+	Name             string  `db:"name"`
+	Cost             float64 `db:"cost"`
+	InputTokenCount  int     `db:"input_token_count"`
+	OutputTokenCount int     `db:"output_token_count"`
+	CachedTokenCount int     `db:"cached_token_count"`
 }
 
 type dbSettings struct {

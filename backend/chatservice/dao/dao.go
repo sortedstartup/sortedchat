@@ -10,9 +10,10 @@ type DAO interface {
 	GetChatName(userID string, chatId string) (string, error)
 	SaveChatName(userID string, chatId string, name string) error
 	AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) (string, error)
-	AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (MessageSummary, error)
+	AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (MessageSummary, error)
 	GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error)
 	IsChatDeleted(chatId string, userID string) (bool, error)
+	GetChatMetadata(userID string, chatId string) (ChatInfoRow, error)
 
 	// GetChatList retrieves all chats for a user
 	GetChatList(userID string, projectID string, softDeleted bool) ([]*proto.ChatInfo, error)

@@ -85,8 +85,8 @@ func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessage
             COALESCE(cm.model, '') as model,
             COALESCE(cm.input_token_count, 0) as input_token_count,
             COALESCE(cm.output_token_count, 0) as output_token_count,
-            COALESCE(mm.input_token_cost, 0) * COALESCE(cm.input_token_count, 0) +
-            COALESCE(mm.output_token_cost, 0) * COALESCE(cm.output_token_count, 0) as cost
+			COALESCE(cm.cached_token_count, 0) as cached_token_count,
+            COALESCE(cm.cost, 0) as cost
         FROM chat_messages cm
         LEFT JOIN model_metadata mm ON cm.model = mm.id
         WHERE cm.chat_id = ? AND cm.user_id = ?
@@ -126,40 +126,66 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted boo
 	return result, nil
 }
 
-func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (MessageSummary, error) {
+func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (MessageSummary, error) {
 
 	result, err := s.db.Exec(`
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references, rag_enabled)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		chatId, role, content, model, inputTokens, outputTokens, userID, references, ragEnabled)
+		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, cached_token_count, user_id, document_references, rag_enabled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		chatId, role, content, model, inputTokens, outputTokens, cachedTokens, userID, references, ragEnabled)
 	if err != nil {
 		return MessageSummary{}, err
 	}
 
 	messageId, err := result.LastInsertId()
 	if err != nil {
-		fmt.Println("errsanskar", err)
 		return MessageSummary{}, err
 	}
 
-	var inputTokenCost, outputTokenCost float64
+	var inputTokenCost, outputTokenCost, cachedTokenCost float64
 
+	//this is to get the cost of the model
 	err = s.db.QueryRow(`
-        SELECT input_token_cost, output_token_cost
+        SELECT input_token_cost, output_token_cost, cached_token_cost
         FROM model_metadata
         WHERE id = ?
-    `, model).Scan(&inputTokenCost, &outputTokenCost)
+    `, model).Scan(&inputTokenCost, &outputTokenCost, &cachedTokenCost)
 	if err != nil {
 		return MessageSummary{}, err
 	}
 
-	cost := inputTokenCost*float64(inputTokens) + outputTokenCost*float64(outputTokens)
+	cost := (inputTokenCost*float64(inputTokens) + outputTokenCost*float64(outputTokens) + cachedTokenCost*float64(cachedTokens)) / 1000000
 
+	// this is to update the cost of the message
+	_, err = s.db.Exec(`
+		UPDATE chat_messages
+		SET cost = ?
+		WHERE id = ?
+	`, cost, messageId)
+	if err != nil {
+		return MessageSummary{}, err
+	}
+
+	//this is to update the total cost of the chat
+	_, err = s.db.Exec(`
+    UPDATE chat_list
+    SET 
+        cost = COALESCE(cost, 0) + ?,
+        input_token_count = COALESCE(input_token_count, 0) + ?,
+        output_token_count = COALESCE(output_token_count, 0) + ?,
+        cached_token_count = COALESCE(cached_token_count, 0) + ?
+    WHERE chat_id = ? AND user_id = ?
+`, cost, inputTokens, outputTokens, cachedTokens, chatId, userID)
+	if err != nil {
+		return MessageSummary{}, err
+	}
+
+	//this is to return the message summary
 	summary := MessageSummary{
 		MessageId:        fmt.Sprintf("%d", messageId),
 		Model:            model,
 		InputTokenCount:  inputTokens,
 		OutputTokenCount: outputTokens,
+		CachedTokenCount: cachedTokens,
 		Cost:             cost,
 	}
 
@@ -493,6 +519,15 @@ func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
 		return false, err
 	}
 	return isDeleted, err
+}
+
+func (s *SQLiteDAO) GetChatMetadata(userID string, chatId string) (ChatInfoRow, error) {
+	var chat ChatInfoRow
+	err := s.db.Get(&chat, "SELECT chat_id, name, cost, input_token_count, output_token_count, cached_token_count FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	if err != nil {
+		return ChatInfoRow{}, err
+	}
+	return chat, nil
 }
 
 type SQLiteSettingsDAO struct {

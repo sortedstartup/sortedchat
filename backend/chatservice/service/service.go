@@ -190,7 +190,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		} else {
 			referencesJSON = string(referencesBytes)
 		}
-		_, err = s.dao.AddChatMessageWithTokens(userID, chatId, "user", req.Text, "", 0, 0, referencesJSON, ragEnabled)
+		_, err = s.dao.AddChatMessageWithTokens(userID, chatId, "user", req.Text, "", 0, 0, 0, referencesJSON, ragEnabled)
 		if err != nil {
 			return fmt.Errorf("failed to insert user message with references: %v", err)
 		}
@@ -245,7 +245,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	var fullResponse strings.Builder
-	var inputTokens, outputTokens int
+	var inputTokens, outputTokens, cachedTokens int
 
 	// Streaming response from LLM API
 	scanner := bufio.NewScanner(resp.Body)
@@ -278,6 +278,11 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			}
 			if completionTokens, ok := usage["completion_tokens"].(float64); ok {
 				outputTokens = int(completionTokens)
+			}
+			if promptTokensDetails, ok := usage["prompt_tokens_details"].(map[string]interface{}); ok {
+				if cachedTokensVal, ok := promptTokensDetails["cached_tokens"].(float64); ok {
+					cachedTokens = int(cachedTokensVal)
+				}
 			}
 		}
 
@@ -324,7 +329,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 		// TODO: we dont save streaming response, if stream is killed we loose the message.
 		// TODO : scope for optimization, can be 1 sql call internally
-		summary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON, ragEnabled)
+		summary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
@@ -333,6 +338,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				Model:        model,
 				InputTokens:  int32(summary.InputTokenCount),
 				OutputTokens: int32(summary.OutputTokenCount),
+				CachedTokens: int32(summary.CachedTokenCount),
 				Cost:         float32(summary.Cost),
 			}
 			if err := stream(&pb.ChatResponse{
@@ -343,6 +349,27 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				return fmt.Errorf("failed to send message summary: %v", err)
 			}
 		}
+	}
+
+	chatInfo, err := s.dao.GetChatMetadata(userID, chatId)
+	if err != nil {
+		return fmt.Errorf("failed to get chat metadata: %v", err)
+	}
+
+	chatInfoPb := &pb.ChatInfo{
+		ChatId:           chatId,
+		Cost:             float32(chatInfo.Cost),
+		InputTokenCount:  int32(chatInfo.InputTokenCount),
+		OutputTokenCount: int32(chatInfo.OutputTokenCount),
+		CachedTokenCount: int32(chatInfo.CachedTokenCount),
+	}
+
+	if err := stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_ChatMetadata{
+			ChatMetadata: chatInfoPb,
+		},
+	}); err != nil {
+		return fmt.Errorf("failed to send chat metadata: %v", err)
 	}
 
 	return nil
@@ -454,14 +481,14 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 	return chatName, nil
 }
 
-func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId string) ([]*pb.ChatMessage, error) {
+func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId string) ([]*pb.ChatMessage, *pb.ChatInfo, error) {
 	if chatId == "" {
-		return nil, fmt.Errorf("chat ID is required")
+		return nil, nil, fmt.Errorf("chat ID is required")
 	}
 
 	messages, err := s.dao.GetChatMessages(userID, chatId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch history: %v", err)
+		return nil, nil, fmt.Errorf("failed to fetch history: %v", err)
 	}
 
 	var pbMessages []*pb.ChatMessage
@@ -474,6 +501,7 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			Model:        m.Model,
 			InputTokens:  int32(m.InputTokenCount),
 			OutputTokens: int32(m.OutputTokenCount),
+			CachedTokens: int32(m.CachedTokenCount),
 			Cost:         float32(m.Cost),
 		}
 
@@ -515,7 +543,19 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 		pbMessages = append(pbMessages, pbMessage)
 	}
 
-	return pbMessages, nil
+	chatInfo, err := s.dao.GetChatMetadata(userID, chatId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get chat metadata: %v", err)
+	}
+	pbChatInfo := &pb.ChatInfo{
+		ChatId:           chatId,
+		Cost:             float32(chatInfo.Cost),
+		InputTokenCount:  int32(chatInfo.InputTokenCount),
+		OutputTokenCount: int32(chatInfo.OutputTokenCount),
+		CachedTokenCount: int32(chatInfo.CachedTokenCount),
+	}
+
+	return pbMessages, pbChatInfo, nil
 }
 
 func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID string, soft_deleted bool) ([]*pb.ChatInfo, error) {

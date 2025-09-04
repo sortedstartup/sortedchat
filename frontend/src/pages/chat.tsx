@@ -29,7 +29,6 @@ import {
   $availableModels,
   BranchChat,
   $listChatBranch,
-  $currentDocumentReferences,
   $ragEnabled,
   toggleRagEnabled,
   setRagEnabledForProject,
@@ -133,9 +132,6 @@ interface MessageProps {
   projectId?: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  ragEnabled?: boolean;
-  currentDocumentReferences?: RAGDocumentReference[];
-  renderDocumentReferences?: (refs: RAGDocumentReference[], msgId?: string) => React.ReactNode;
   messageSummary?: MessageSummary;
 }
 
@@ -465,8 +461,6 @@ export function Chat() {
   const streamingMessage = useStore($streamingMessage);
   const currentChatMessage = useStore($currentChatMessage);
   const listChatBranch = useStore($listChatBranch);
-  const currentDocumentReferences = useStore($currentDocumentReferences);
-  const ragEnabled = useStore($ragEnabled);
   const ragDocumentDetails = useStore($ragDocumentDetails);
   const currentUserMessageId = useStore($currentUserMessageId);
   const messageSummaries = useStore($messageSummaries);
@@ -535,42 +529,6 @@ export function Chat() {
     ...(streamingMessage?.trim() ? [{ message_id: currentAssistantMessageId, role: "assistant", content: streamingMessage }] : []),
   ];
 
-  const renderDocumentReferences = (
-    references: RAGDocumentReference[],
-    messageId?: string
-  ) => {
-    if (!references || references.length === 0) return null;
-
-    return (
-      <div className="mt-3">
-        <div className="text-xs text-gray-500 mb-2">Sources:</div>
-        <div className="flex flex-wrap gap-2">
-          {references.map((docRef, index) => (
-            <Button
-              key={`${docRef.doc_id}-${index}`}
-              variant="outline"
-              size="sm"
-              className="text-xs h-6 px-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-              onClick={() =>
-                messageId &&
-                handleViewRAGDetails(messageId, docRef.doc_id, docRef.file_name)
-              }
-            >
-              <FileText className="h-3 w-3 mr-1" />
-              {docRef.file_name}
-              {docRef.Chunks && docRef.Chunks.length > 0 && (
-                <span className="ml-1 bg-blue-200 text-blue-800 px-1 rounded text-xs">
-                  {docRef.Chunks.length}
-                </span>
-              )}
-              <Eye className="h-3 w-3 ml-1" />
-            </Button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div
       className={`flex flex-col h-full mx-auto w-full transition-all ${isExpanded ? "max-w-7xl" : "max-w-4xl"
@@ -600,11 +558,6 @@ export function Chat() {
                 projectId={projectId}
                 isExpanded={isExpanded}
                 onToggleExpand={handleToggleExpand}
-                ragEnabled={ragEnabled}
-                currentDocumentReferences={
-                  message?.role === "assistant" ? currentDocumentReferences : []
-                }
-                renderDocumentReferences={renderDocumentReferences}
                 messageSummary={summaryForThis || undefined}
               />
           )

@@ -506,7 +506,7 @@ func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
 
 func (s *SQLiteDAO) GetChatMetadata(userID string, chatId string) (ChatInfoRow, error) {
 	var chat ChatInfoRow
-	err := s.db.Get(&chat, "SELECT chat_id, name, cost, input_token_count, output_token_count, cached_token_count FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	err := s.db.Get(&chat, "SELECT chat_id, name, COALESCE(cost, 0) AS cost, COALESCE(input_token_count, 0) AS input_token_count, COALESCE(output_token_count, 0) AS output_token_count, COALESCE(cached_token_count, 0) AS cached_token_count FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	if err != nil {
 		return ChatInfoRow{}, err
 	}

@@ -107,14 +107,14 @@ func (s *ChatServiceAPI) GetHistory(ctx context.Context, req *pb.GetHistoryReque
 	if err != nil {
 		return nil, err
 	}
-	history, chatInfo, err := s.service.GetHistory(ctx, userID, req.ChatId)
+	history, chatmetadata, err := s.service.GetHistory(ctx, userID, req.ChatId)
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.GetHistoryResponse{
 		History:      history,
-		ChatMetadata: chatInfo,
+		ChatMetadata: chatmetadata,
 	}, nil
 }
 

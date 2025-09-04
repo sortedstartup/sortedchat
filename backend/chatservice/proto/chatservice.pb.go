@@ -1587,7 +1587,7 @@ func (x *ChatMessage) GetCost() float32 {
 type GetChatListRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	SoftDeleted   bool                   `protobuf:"varint,2,opt,name=soft_deleted,json=softDeleted,proto3" json:"soft_deleted,omitempty"`
+	SoftDeleted   bool                   `protobuf:"varint,2,opt,name=soft_deleted,json=softDeleted,proto3" json:"soft_deleted,omitempty"` //later we create a filter object because we might have to add more filters
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1680,6 +1680,7 @@ func (x *GetChatListResponse) GetChats() []*ChatInfo {
 	return nil
 }
 
+// total chat cost/token
 type ChatInfo struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	ChatId           string                 `protobuf:"bytes,1,opt,name=chatId,proto3" json:"chatId,omitempty"`
@@ -3383,65 +3384,67 @@ var file_chatservice_proto_goTypes = []any{
 }
 var file_chatservice_proto_depIdxs = []int32{
 	1,  // 0: sortedchat.DeleteChatRequest.operation:type_name -> sortedchat.DeleteChatRequest.Operation
-	21, // 1: sortedchat.RAGDocumentReferenceResponse.reference:type_name -> sortedchat.RAGDocumentReference
-	10, // 2: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
-	10, // 3: sortedchat.SetSettingRequest.settings:type_name -> sortedchat.Settings
-	17, // 4: sortedchat.ChatRequest.project_context:type_name -> sortedchat.ProjectContext
-	22, // 5: sortedchat.ChatResponse.summary:type_name -> sortedchat.MessageSummary
-	20, // 6: sortedchat.ChatResponse.document_reference:type_name -> sortedchat.RAGDocumentReferenceSummaryList
-	28, // 7: sortedchat.ChatResponse.chat_metadata:type_name -> sortedchat.ChatInfo
-	51, // 8: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
-	52, // 9: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
-	25, // 10: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
-	28, // 11: sortedchat.GetHistoryResponse.chat_metadata:type_name -> sortedchat.ChatInfo
-	21, // 12: sortedchat.ChatMessage.references:type_name -> sortedchat.RAGDocumentReference
-	28, // 13: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
-	29, // 14: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
-	33, // 15: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
-	39, // 16: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
-	42, // 17: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
+	23, // 1: sortedchat.RAGDocumentReferenceResponse.reference:type_name -> sortedchat.RAGDocumentReference
+	12, // 2: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
+	12, // 3: sortedchat.SetSettingRequest.settings:type_name -> sortedchat.Settings
+	19, // 4: sortedchat.ChatRequest.project_context:type_name -> sortedchat.ProjectContext
+	24, // 5: sortedchat.ChatResponse.summary:type_name -> sortedchat.MessageSummary
+	22, // 6: sortedchat.ChatResponse.document_reference:type_name -> sortedchat.RAGDocumentReferenceSummaryList
+	30, // 7: sortedchat.ChatResponse.chat_metadata:type_name -> sortedchat.ChatInfo
+	53, // 8: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
+	54, // 9: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
+	27, // 10: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
+	30, // 11: sortedchat.GetHistoryResponse.chat_metadata:type_name -> sortedchat.ChatInfo
+	23, // 12: sortedchat.ChatMessage.references:type_name -> sortedchat.RAGDocumentReference
+	30, // 13: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
+	31, // 14: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
+	35, // 15: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
+	41, // 16: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
+	44, // 17: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
 	0,  // 18: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
-	28, // 19: sortedchat.ListChatBranchResponse.branch_chat_list:type_name -> sortedchat.ChatInfo
-	18, // 20: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	45, // 21: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
-	23, // 22: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
-	26, // 23: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
-	15, // 24: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
-	30, // 25: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
-	32, // 26: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
-	8,  // 27: sortedchat.SortedChat.GetRAGDocumentReference:input_type -> sortedchat.RAGDocumentReferenceRequest
-	6,  // 28: sortedchat.SortedChat.DeleteDocument:input_type -> sortedchat.DeleteDocumentRequest
-	35, // 29: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
-	37, // 30: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
-	40, // 31: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
-	43, // 32: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
-	47, // 33: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
-	49, // 34: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
-	4,  // 35: sortedchat.SortedChat.DeleteChat:input_type -> sortedchat.DeleteChatRequest
-	2,  // 36: sortedchat.SortedChat.RestoreChat:input_type -> sortedchat.RestoreChatRequest
-	11, // 37: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
-	13, // 38: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
-	19, // 39: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	46, // 40: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
-	24, // 41: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
-	27, // 42: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
-	16, // 43: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	31, // 44: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
-	34, // 45: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
-	9,  // 46: sortedchat.SortedChat.GetRAGDocumentReference:output_type -> sortedchat.RAGDocumentReferenceResponse
-	7,  // 47: sortedchat.SortedChat.DeleteDocument:output_type -> sortedchat.DeleteDocumentResponse
-	36, // 48: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
-	38, // 49: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
-	41, // 50: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
-	44, // 51: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
-	48, // 52: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
-	50, // 53: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
-	5,  // 54: sortedchat.SortedChat.DeleteChat:output_type -> sortedchat.DeleteChatResponse
-	3,  // 55: sortedchat.SortedChat.RestoreChat:output_type -> sortedchat.RestoreChatResponse
-	12, // 56: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
-	14, // 57: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
-	39, // [39:58] is the sub-list for method output_type
-	20, // [20:39] is the sub-list for method input_type
+	30, // 19: sortedchat.ListChatBranchResponse.branch_chat_list:type_name -> sortedchat.ChatInfo
+	20, // 20: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
+	47, // 21: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
+	25, // 22: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
+	28, // 23: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
+	17, // 24: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
+	32, // 25: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
+	34, // 26: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
+	10, // 27: sortedchat.SortedChat.GetRAGDocumentReference:input_type -> sortedchat.RAGDocumentReferenceRequest
+	8,  // 28: sortedchat.SortedChat.DeleteDocument:input_type -> sortedchat.DeleteDocumentRequest
+	37, // 29: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
+	39, // 30: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
+	42, // 31: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
+	45, // 32: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
+	49, // 33: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
+	51, // 34: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
+	6,  // 35: sortedchat.SortedChat.DeleteChat:input_type -> sortedchat.DeleteChatRequest
+	4,  // 36: sortedchat.SortedChat.RestoreChat:input_type -> sortedchat.RestoreChatRequest
+	2,  // 37: sortedchat.SortedChat.RenameChat:input_type -> sortedchat.RenameChatRequest
+	13, // 38: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
+	15, // 39: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
+	21, // 40: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	48, // 41: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
+	26, // 42: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
+	29, // 43: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
+	18, // 44: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
+	33, // 45: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
+	36, // 46: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
+	11, // 47: sortedchat.SortedChat.GetRAGDocumentReference:output_type -> sortedchat.RAGDocumentReferenceResponse
+	9,  // 48: sortedchat.SortedChat.DeleteDocument:output_type -> sortedchat.DeleteDocumentResponse
+	38, // 49: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
+	40, // 50: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
+	43, // 51: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
+	46, // 52: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
+	50, // 53: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
+	52, // 54: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
+	7,  // 55: sortedchat.SortedChat.DeleteChat:output_type -> sortedchat.DeleteChatResponse
+	5,  // 56: sortedchat.SortedChat.RestoreChat:output_type -> sortedchat.RestoreChatResponse
+	3,  // 57: sortedchat.SortedChat.RenameChat:output_type -> sortedchat.RenameChatResponse
+	14, // 58: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
+	16, // 59: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
+	40, // [40:60] is the sub-list for method output_type
+	20, // [20:40] is the sub-list for method input_type
 	20, // [20:20] is the sub-list for extension type_name
 	20, // [20:20] is the sub-list for extension extendee
 	0,  // [0:20] is the sub-list for field type_name

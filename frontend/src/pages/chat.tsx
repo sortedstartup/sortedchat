@@ -166,8 +166,8 @@ function Message({
   const isUser = message.role === "user";
 
   const { costDisplay, cachedTokensDisplay } = formatCostAndTokens(
-    messageSummary?.cost || message?.cost,
-    messageSummary?.cached_tokens || message.cached_tokens,
+    messageSummary?.cost ?? message?.cost,
+    messageSummary?.cached_tokens ?? message.cached_tokens,
     true
   );
 

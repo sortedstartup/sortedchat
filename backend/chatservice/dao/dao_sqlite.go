@@ -109,12 +109,30 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted boo
 	return result, nil
 }
 
-func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (MessageSummary, error) {
+func (s *SQLiteDAO) AddChatMessageWithTokens(
+	userID string,
+	chatId string,
+	role string,
+	content string,
+	model string,
+	inputTokens int,
+	outputTokens int,
+	cachedTokens int,
+	references string,
+	ragEnabled bool,
+) (MessageSummary, error) {
 
+	// Insert the message first and capture its ID
 	result, err := s.db.Exec(`
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, cached_token_count, user_id, document_references, rag_enabled)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		chatId, role, content, model, inputTokens, outputTokens, cachedTokens, userID, references, ragEnabled)
+		INSERT INTO chat_messages (
+			chat_id, role, content, model,
+			input_token_count, output_token_count, cached_token_count,
+			user_id, document_references, rag_enabled
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		chatId, role, content, model,
+		inputTokens, outputTokens, cachedTokens,
+		userID, references, ragEnabled,
+	)
 	if err != nil {
 		return MessageSummary{}, err
 	}
@@ -124,45 +142,61 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role 
 		return MessageSummary{}, err
 	}
 
-	var inputTokenCost, outputTokenCost, cachedTokenCost float64
-
-	//this is to get the cost of the model
+	// Use a single CTE to compute cost and update both tables
+	var cost float64
 	err = s.db.QueryRow(`
-        SELECT input_token_cost, output_token_cost, cached_token_cost
-        FROM model_metadata
-        WHERE id = ?
-    `, model).Scan(&inputTokenCost, &outputTokenCost, &cachedTokenCost)
+	WITH
+	  vars AS (
+	    SELECT
+	      ?1 AS input_tokens,
+	      ?2 AS output_tokens,
+	      ?3 AS cached_tokens,
+	      ?4 AS model_id,
+	      ?5 AS message_id,
+	      ?6 AS chat_id,
+	      ?7 AS user_id
+	  ),
+	  meta AS (
+	    SELECT
+	      mm.input_token_cost,
+	      mm.output_token_cost,
+	      mm.cached_token_cost
+	    FROM model_metadata mm, vars v
+	    WHERE mm.id = v.model_id
+	  ),
+	  calc AS (
+	    SELECT
+	      (m.input_token_cost * v.input_tokens
+	     + m.output_token_cost * v.output_tokens
+	     + m.cached_token_cost * v.cached_tokens) / 1000000.0 AS cost,
+	      v.*
+	    FROM meta m, vars v
+	  ),
+	  upd_msg AS (
+	    UPDATE chat_messages
+	    SET cost = (SELECT cost FROM calc)
+	    WHERE id = (SELECT message_id FROM calc)
+	    RETURNING cost
+	  )
+	UPDATE chat_list
+	SET
+	  cost               = COALESCE(cost, 0) + (SELECT cost FROM calc),
+	  input_token_count  = COALESCE(input_token_count, 0) + (SELECT input_tokens  FROM calc),
+	  output_token_count = COALESCE(output_token_count, 0) + (SELECT output_tokens FROM calc),
+	  cached_token_count = COALESCE(cached_token_count, 0) + (SELECT cached_tokens FROM calc)
+	WHERE chat_id = (SELECT chat_id FROM calc)
+	  AND user_id = (SELECT user_id FROM calc)
+	RETURNING (SELECT cost FROM calc);
+	`,
+		inputTokens, outputTokens, cachedTokens,
+		model, messageId, chatId, userID,
+	).Scan(&cost)
+
 	if err != nil {
 		return MessageSummary{}, err
 	}
 
-	cost := (inputTokenCost*float64(inputTokens) + outputTokenCost*float64(outputTokens) + cachedTokenCost*float64(cachedTokens)) / 1000000
-
-	// this is to update the cost of the message
-	_, err = s.db.Exec(`
-		UPDATE chat_messages
-		SET cost = ?
-		WHERE id = ?
-	`, cost, messageId)
-	if err != nil {
-		return MessageSummary{}, err
-	}
-
-	//this is to update the total cost of the chat
-	_, err = s.db.Exec(`
-    UPDATE chat_list
-    SET 
-        cost = COALESCE(cost, 0) + ?,
-        input_token_count = COALESCE(input_token_count, 0) + ?,
-        output_token_count = COALESCE(output_token_count, 0) + ?,
-        cached_token_count = COALESCE(cached_token_count, 0) + ?
-    WHERE chat_id = ? AND user_id = ?
-`, cost, inputTokens, outputTokens, cachedTokens, chatId, userID)
-	if err != nil {
-		return MessageSummary{}, err
-	}
-
-	//this is to return the message summary
+	// Return the message summary
 	summary := MessageSummary{
 		MessageId:        fmt.Sprintf("%d", messageId),
 		Model:            model,
@@ -172,7 +206,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role 
 		Cost:             cost,
 	}
 
-	return summary, err
+	return summary, nil
 }
 
 // GetModels retrieves all available models

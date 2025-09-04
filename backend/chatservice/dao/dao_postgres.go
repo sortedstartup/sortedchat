@@ -2,6 +2,7 @@ package dao
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -93,7 +94,25 @@ func (p *PostgresDAO) SaveChatName(userID string, chatId string, name string) er
 func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
 	var messageId string
 
-	err := p.db.Get(&messageId, "INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id", chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
+	// Handle empty or whitespace references by setting it to empty JSON object
+	trimmedRef := strings.TrimSpace(references)
+	if trimmedRef == "" {
+		trimmedRef = "{}"
+	}
+
+	// Validate references JSON
+	var temp interface{}
+	if err := json.Unmarshal([]byte(trimmedRef), &temp); err != nil {
+		return "", errors.New("invalid JSON format for references field: " + err.Error())
+	}
+
+	// Insert into DB
+	err := p.db.Get(&messageId,
+		`INSERT INTO chat_messages
+        (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id`,
+		chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, trimmedRef)
 	if err != nil {
 		return "", err
 	}
@@ -139,66 +158,81 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string, softDeleted b
 	return result, nil
 }
 
-func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (MessageSummary, error) {
-	// PostgreSQL doesn't have LastInsertId(), so we use RETURNING
-	var messageId string
-	var inputTokenCost, outputTokenCost, cachedTokenCost float64
-	var referencesValue interface{}
+func (p *PostgresDAO) AddChatMessageWithTokens(
+	userID string,
+	chatId string,
+	role string,
+	content string,
+	model string,
+	inputTokens int,
+	outputTokens int,
+	cachedTokens int,
+	references string,
+	ragEnabled bool,
+) (MessageSummary, error) {
 
-	// Handle JSON insertion for JSONB field
+	var messageId string
+	var cost float64
+	var referencesValue interface{}
 	if references == "" {
 		referencesValue = nil
 	} else {
 		referencesValue = references
 	}
 
-	// Insert the chat message and get the inserted row id
-	err := p.db.Get(&messageId, `
-        INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, cached_token_count, user_id, document_references, rag_enabled)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING id`,
-		chatId, role, content, model, inputTokens, outputTokens, cachedTokens, userID, referencesValue, ragEnabled)
+	sqlQuery := `
+		WITH ins AS (
+			INSERT INTO chat_messages (
+				chat_id, role, content, model,
+				input_token_count, output_token_count, cached_token_count,
+				user_id, document_references, rag_enabled
+			)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			RETURNING id
+		),
+		prices AS (
+			SELECT input_token_cost, output_token_cost, cached_token_cost
+			FROM model_metadata WHERE id = $4
+		),
+		calc AS (
+			SELECT (p.input_token_cost * $5
+				+ p.output_token_cost * $6
+				+ p.cached_token_cost * $7) / 1000000.0 AS cost
+			FROM prices p
+		),
+		upd_msg AS (
+			UPDATE chat_messages m
+			SET cost = c.cost
+			FROM calc c
+			WHERE m.id = (SELECT id FROM ins)
+		)
+		, upd_chat AS (
+			UPDATE chat_list cl
+			SET cost               = COALESCE(cl.cost,0) + c.cost,
+				input_token_count  = COALESCE(cl.input_token_count,0) + $5,
+				output_token_count = COALESCE(cl.output_token_count,0) + $6,
+				cached_token_count = COALESCE(cl.cached_token_count,0) + $7
+			FROM calc c
+			WHERE cl.chat_id = $11 AND cl.user_id = $8
+		)
+		SELECT ins.id, calc.cost
+		FROM ins, calc;
+		`
+
+	err := p.db.QueryRow(sqlQuery,
+		chatId, role, content, model,
+		inputTokens, outputTokens, cachedTokens,
+		userID, referencesValue, ragEnabled,
+		chatId, // $11
+	).Scan(&messageId, &cost)
+
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return MessageSummary{}, errors.New("no message inserted or updated, no result returned")
+		}
 		return MessageSummary{}, err
 	}
 
-	// Query the costs for the model
-	err = p.db.QueryRow(`
-        SELECT input_token_cost, output_token_cost, cached_token_cost
-        FROM model_metadata
-        WHERE id = $1`, model).Scan(&inputTokenCost, &outputTokenCost, &cachedTokenCost)
-	if err != nil {
-		return MessageSummary{}, err
-	}
-
-	// Calculate cost with per 1M token pricing
-	cost := (inputTokenCost*float64(inputTokens) + outputTokenCost*float64(outputTokens) + cachedTokenCost*float64(cachedTokens)) / 1000000
-
-	// Update the cost of the inserted message
-	_, err = p.db.Exec(`
-        UPDATE chat_messages
-        SET cost = $1
-        WHERE id = $2
-        `, cost, messageId)
-	if err != nil {
-		return MessageSummary{}, err
-	}
-
-	// Update the total cost and token counts for the chat
-	_, err = p.db.Exec(`
-        UPDATE chat_list
-        SET 
-            cost = COALESCE(cost, 0) + $1,
-            input_token_count = COALESCE(input_token_count, 0) + $2,
-            output_token_count = COALESCE(output_token_count, 0) + $3,
-            cached_token_count = COALESCE(cached_token_count, 0) + $4
-        WHERE chat_id = $5 AND user_id = $6
-    `, cost, inputTokens, outputTokens, cachedTokens, chatId, userID)
-	if err != nil {
-		return MessageSummary{}, err
-	}
-
-	// Return the message summary
 	return MessageSummary{
 		MessageId:        messageId,
 		Model:            model,

@@ -345,6 +345,18 @@ func (s *ChatServiceAPI) RestoreChat(ctx context.Context, req *pb.RestoreChatReq
 	return &pb.RestoreChatResponse{Message: "Chat restored successfully"}, nil
 }
 
+func (s *ChatServiceAPI) RenameChat(ctx context.Context, req *pb.RenameChatRequest) (*pb.RenameChatResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = s.service.RenameChat(ctx, userID, req.GetChatId(), req.GetName())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RenameChatResponse{Message: "Chat renamed successfully"}, nil
+}
+
 func (s *ChatServiceAPI) Init(config *db.Config) {
 	switch config.Database.Type {
 	case db.DatabaseTypeSQLite:

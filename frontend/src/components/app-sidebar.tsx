@@ -1,4 +1,4 @@
-import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -44,6 +44,7 @@ import {
   DeleteChat,
   RestoreChat,
   $trashChatList,
+  RenameChat,
 } from "@/store/chat";
 import { authActions, $auth } from "@/auth/store/auth";
 import remarkGfm from "remark-gfm";
@@ -62,6 +63,11 @@ export function AppSidebar() {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [localSearchText, setLocalSearchText] = useState("");
   const [showSoftDeleted, setShowSoftDeleted] = useState(false);
+  
+  // Rename chat states
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [renameChatId, setRenameChatId] = useState("");
+  const [newChatName, setNewChatName] = useState("");
 
   const navigate = useNavigate();
 
@@ -174,6 +180,32 @@ export function AppSidebar() {
   const handleRestoreChat = async (chatId: string) => {
     await RestoreChat(chatId);
     navigate("/");
+  };
+
+  // Rename chat handlers
+  const handleRenameClick = (chatId: string, currentName: string) => {
+    setRenameChatId(chatId);
+    setNewChatName(currentName || "");
+    setIsRenameDialogOpen(true);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (!newChatName.trim() || !renameChatId) return;
+    
+    try {
+      await RenameChat(renameChatId, newChatName.trim());
+      setIsRenameDialogOpen(false);
+      setRenameChatId("");
+      setNewChatName("");
+    } catch (error) {
+      console.error("Failed to rename chat:", error);
+    }
+  };
+
+  const handleRenameCancel = () => {
+    setIsRenameDialogOpen(false);
+    setRenameChatId("");
+    setNewChatName("");
   };
 
   return (
@@ -390,6 +422,13 @@ export function AppSidebar() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem 
+                              onClick={() => handleRenameClick(chat.chatId, chat.name)}
+                              className="focus:bg-blue-50 focus:text-blue-600"
+                            >
+                              <Edit2 className="h-4 w-4 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
                               onClick={() => handleMoveToTrash(chat.chatId)}
                               className="text-red-600 focus:text-red-600"
                             >
@@ -406,6 +445,45 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </div>
+
+        {/* Rename Chat Dialog */}
+        <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Chat</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Input
+                id="chat-name"
+                value={newChatName}
+                onChange={(e) => setNewChatName(e.target.value)}
+                placeholder="Enter new chat name"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleRenameConfirm();
+                  }
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRenameCancel}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleRenameConfirm}
+                disabled={!newChatName.trim()}
+              >
+                Rename
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="mt-auto border-t border-gray-200 dark:border-gray-700 pt-2">
           <SidebarGroup>

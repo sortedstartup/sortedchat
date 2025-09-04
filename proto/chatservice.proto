@@ -26,6 +26,15 @@ service SortedChat {
     rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
     rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse);
     rpc RestoreChat(RestoreChatRequest) returns (RestoreChatResponse);
+    rpc RenameChat(RenameChatRequest) returns (RenameChatResponse);
+}
+
+message RenameChatRequest {
+  string chat_id = 1;
+  string name = 2;
+}
+message RenameChatResponse {
+  string message = 1;
 }
 
 message RestoreChatRequest {

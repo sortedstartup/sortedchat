@@ -1026,7 +1026,7 @@ func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId stri
 		return fmt.Errorf("chat ID is required")
 	}
 
-	if name == "" {
+	if strings.TrimSpace(name) == "" {
 		return fmt.Errorf("name is required")
 	}
 

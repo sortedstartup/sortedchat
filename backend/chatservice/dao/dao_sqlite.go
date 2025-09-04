@@ -444,8 +444,18 @@ func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
 }
 
 func (s *SQLiteDAO) RenameChat(userID string, chatId string, name string) error {
-	_, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ? AND user_id = ?", name, chatId, userID)
-	return err
+	result, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ? AND user_id = ?", name, chatId, userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("chat not found or permission denied")
+	}
+	return nil
 }
 
 type SQLiteSettingsDAO struct {

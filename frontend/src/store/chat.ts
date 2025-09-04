@@ -719,8 +719,17 @@ export const RestoreChat = async (chatId: string) => {
 export const RenameChat = async (chatId: string, name: string) => {
   try {
     const res = await chat.RenameChat(RenameChatRequest.fromObject({ chat_id: chatId, name: name }), {});
-    getChatList(undefined, false);
+    
     toast.success(res.message);
+
+    const chatList = $chatList.get();
+    chatList.forEach((chat: ChatInfo) => {
+      if (chat.chatId === chatId) {
+        chat.name = name;
+      }
+    });
+    $chatList.set(chatList);
+    
   } catch (error) {
     console.error('Failed to Rename chat:', error);
     toast.error(`Failed to Rename chat: ${(error as Error).message || 'Unknown error'}`);

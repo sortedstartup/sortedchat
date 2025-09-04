@@ -53,6 +53,9 @@ type GenerateEmbeddingMessage struct {
 	DocsID string `json:"docs_id"`
 }
 
+const MAX_CHAT_NAME_LENGTH = 50
+const MIN_CHAT_NAME_LENGTH = 1
+
 func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory dao.DAOFactory) (*ChatService, error) {
 	daoInstance, err := daoFactory.CreateDAO()
 	if err != nil {
@@ -1018,5 +1021,27 @@ func (s *ChatService) RestoreChat(ctx context.Context, userID string, chatId str
 		return fmt.Errorf("failed to restore chat: %v", err)
 	}
 
+	return nil
+}
+
+func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId string, name string) error {
+	if chatId == "" {
+		return fmt.Errorf("chat ID is required")
+	}
+
+	trimmedName := strings.TrimSpace(name)
+
+	if len(trimmedName) < MIN_CHAT_NAME_LENGTH {
+		return fmt.Errorf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH)
+	}
+
+	if len(trimmedName) > MAX_CHAT_NAME_LENGTH {
+		return fmt.Errorf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH)
+	}
+
+	err := s.dao.RenameChat(userID, chatId, trimmedName)
+	if err != nil {
+		return fmt.Errorf("failed to rename chat: %v", err)
+	}
 	return nil
 }

@@ -660,6 +660,21 @@ func (p *PostgresDAO) IsChatDeleted(chatId string, userID string) (bool, error) 
 	return isDeleted, err
 }
 
+func (p *PostgresDAO) RenameChat(userID string, chatId string, name string) error {
+	result, err := p.db.Exec("UPDATE chat_list SET name = $1 WHERE chat_id = $2 AND user_id = $3", name, chatId, userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("chat not found or permission denied")
+	}
+	return nil
+}
+
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL
 type PostgresSettingsDAO struct {
 	db *sqlx.DB

@@ -49,6 +49,7 @@ type DAO interface {
 	SoftDeleteChat(userID string, chatId string) error
 	DeleteChat(userID string, chatId string) error
 	RestoreChat(userID string, chatId string) error
+	RenameChat(userID string, chatId string, name string) error
 }
 
 type SettingsDAO interface {

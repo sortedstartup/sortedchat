@@ -13,6 +13,163 @@ export enum Embedding_Status {
     STATUS_ERROR = 2,
     STATUS_SUCCESS = 3
 }
+export class RenameChatRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        chat_id?: string;
+        name?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("chat_id" in data && data.chat_id != undefined) {
+                this.chat_id = data.chat_id;
+            }
+            if ("name" in data && data.name != undefined) {
+                this.name = data.name;
+            }
+        }
+    }
+    get chat_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set chat_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get name() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set name(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        chat_id?: string;
+        name?: string;
+    }): RenameChatRequest {
+        const message = new RenameChatRequest({});
+        if (data.chat_id != null) {
+            message.chat_id = data.chat_id;
+        }
+        if (data.name != null) {
+            message.name = data.name;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            chat_id?: string;
+            name?: string;
+        } = {};
+        if (this.chat_id != null) {
+            data.chat_id = this.chat_id;
+        }
+        if (this.name != null) {
+            data.name = this.name;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.chat_id.length)
+            writer.writeString(1, this.chat_id);
+        if (this.name.length)
+            writer.writeString(2, this.name);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): RenameChatRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new RenameChatRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.chat_id = reader.readString();
+                    break;
+                case 2:
+                    message.name = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): RenameChatRequest {
+        return RenameChatRequest.deserialize(bytes);
+    }
+}
+export class RenameChatResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message?: string;
+    }): RenameChatResponse {
+        const message = new RenameChatResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): RenameChatResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new RenameChatResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): RenameChatResponse {
+        return RenameChatResponse.deserialize(bytes);
+    }
+}
 export class RestoreChatRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -4713,6 +4870,10 @@ export class SortedChatClient {
     private static RestoreChat = new grpc_web_1.MethodDescriptor<RestoreChatRequest, RestoreChatResponse>("/sortedchat.SortedChat/RestoreChat", grpc_web_1.MethodType.UNARY, RestoreChatRequest, RestoreChatResponse, (message: RestoreChatRequest) => message.serialize(), RestoreChatResponse.deserialize);
     RestoreChat(message: RestoreChatRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<RestoreChatRequest, RestoreChatResponse>(this._address + "/sortedchat.SortedChat/RestoreChat", message, metadata || {}, SortedChatClient.RestoreChat);
+    }
+    private static RenameChat = new grpc_web_1.MethodDescriptor<RenameChatRequest, RenameChatResponse>("/sortedchat.SortedChat/RenameChat", grpc_web_1.MethodType.UNARY, RenameChatRequest, RenameChatResponse, (message: RenameChatRequest) => message.serialize(), RenameChatResponse.deserialize);
+    RenameChat(message: RenameChatRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<RenameChatRequest, RenameChatResponse>(this._address + "/sortedchat.SortedChat/RenameChat", message, metadata || {}, SortedChatClient.RenameChat);
     }
 }
 // Server-side service class removed for client-side compatibility

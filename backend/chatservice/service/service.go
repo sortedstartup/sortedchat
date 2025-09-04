@@ -1020,3 +1020,19 @@ func (s *ChatService) RestoreChat(ctx context.Context, userID string, chatId str
 
 	return nil
 }
+
+func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId string, name string) error {
+	if chatId == "" {
+		return fmt.Errorf("chat ID is required")
+	}
+
+	if name == "" {
+		return fmt.Errorf("name is required")
+	}
+
+	err := s.dao.RenameChat(userID, chatId, name)
+	if err != nil {
+		return fmt.Errorf("failed to rename chat: %v", err)
+	}
+	return nil
+}

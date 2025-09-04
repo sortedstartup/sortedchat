@@ -443,6 +443,11 @@ func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
 	return isDeleted, err
 }
 
+func (s *SQLiteDAO) RenameChat(userID string, chatId string, name string) error {
+	_, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ? AND user_id = ?", name, chatId, userID)
+	return err
+}
+
 type SQLiteSettingsDAO struct {
 	db *sqlx.DB
 }

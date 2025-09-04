@@ -660,6 +660,11 @@ func (p *PostgresDAO) IsChatDeleted(chatId string, userID string) (bool, error) 
 	return isDeleted, err
 }
 
+func (p *PostgresDAO) RenameChat(userID string, chatId string, name string) error {
+	_, err := p.db.Exec("UPDATE chat_list SET name = $1 WHERE chat_id = $2 AND user_id = $3", name, chatId, userID)
+	return err
+}
+
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL
 type PostgresSettingsDAO struct {
 	db *sqlx.DB

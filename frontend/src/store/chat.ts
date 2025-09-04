@@ -29,6 +29,7 @@ import {
   DeleteChatRequest,
   DeleteChatRequestOperation,
   RestoreChatRequest,
+  RenameChatRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -712,5 +713,16 @@ export const RestoreChat = async (chatId: string) => {
   } catch (error) {
     console.error('Failed to Restore chat:', error);
     toast.error(`Failed to Restore chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+export const RenameChat = async (chatId: string, name: string) => {
+  try {
+    const res = await chat.RenameChat(RenameChatRequest.fromObject({ chat_id: chatId, name: name }), {});
+    getChatList(undefined, false);
+    toast.success(res.message);
+  } catch (error) {
+    console.error('Failed to Rename chat:', error);
+    toast.error(`Failed to Rename chat: ${(error as Error).message || 'Unknown error'}`);
   }
 }

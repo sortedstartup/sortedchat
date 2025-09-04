@@ -402,19 +402,51 @@ func (s *SQLiteDAO) SoftDeleteChat(userID string, chatId string) error {
 }
 
 func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
-	_, err := s.db.Exec(`
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// Delete messages under the hierarchy first
+	_, err = tx.Exec(`
         WITH RECURSIVE chat_hierarchy AS (
             SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
             UNION ALL
             SELECT c.chat_id FROM chat_list c
             JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
-			WHERE c.user_id = ?
+            WHERE c.user_id = ?
+        )
+        DELETE FROM chat_messages
+        WHERE user_id = ?
+          AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
+    `, chatId, userID, userID, userID)
+	if err != nil {
+		return err
+	}
+
+	// Delete chats from the hierarchy
+	_, err = tx.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+            UNION ALL
+            SELECT c.chat_id FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+            WHERE c.user_id = ?
         )
         DELETE FROM chat_list
-        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
-        AND user_id = ?;
+        WHERE user_id = ?
+          AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
     `, chatId, userID, userID, userID)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *SQLiteDAO) RestoreChat(userID string, chatId string) error {

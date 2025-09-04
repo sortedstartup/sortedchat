@@ -90,10 +90,10 @@ func (p *PostgresDAO) SaveChatName(userID string, chatId string, name string) er
 }
 
 // AddChatMessage adds a message to a chat
-func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) (string, error) {
+func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
 	var messageId string
 
-	err := p.db.Get(&messageId, "INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES ($1, $2, $3, $4, $5) RETURNING id", chatId, role, content, userID, ragEnabled)
+	err := p.db.Get(&messageId, "INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id", chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
 	if err != nil {
 		return "", err
 	}

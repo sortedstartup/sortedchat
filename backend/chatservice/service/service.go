@@ -180,34 +180,28 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	// Save user message with RAG document references if available
+	var userMessageId string
+	var referencesJSON string
 	if len(ragChunks) > 0 {
 		// Create the RAG JSON structure from chunks
 		ragDocuments := s.createRAGDocumentJSONFromChunks(ragChunks)
 		referencesBytes, err := json.Marshal(ragDocuments)
-		var referencesJSON string
 		if err != nil {
 			slog.Error("failed to marshal RAG document references for user message", "error", err)
 		} else {
 			referencesJSON = string(referencesBytes)
 		}
-		_, err = s.dao.AddChatMessageWithTokens(userID, chatId, "user", req.Text, "", 0, 0, 0, referencesJSON, ragEnabled)
-		if err != nil {
-			return fmt.Errorf("failed to insert user message with references: %v", err)
-		}
-	} else {
-		userMessageId, err := s.dao.AddChatMessage(userID, chatId, "user", req.Text, ragEnabled)
-		if err != nil {
-			return fmt.Errorf("failed to insert user message: %v", err)
-		} else {
-			if err := stream(&pb.ChatResponse{
-				Response: &pb.ChatResponse_UserMessageId{
-					UserMessageId: userMessageId,
-				},
-			}); err != nil {
-				return fmt.Errorf("failed to send message summary: %v", err)
-			}
-		}
-
+	}
+	userMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, model, 0, 0, 0, referencesJSON, ragEnabled)
+	if err != nil {
+		return fmt.Errorf("failed to insert user message: %v", err)
+	}
+	if err := stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_UserMessageId{
+			UserMessageId: userMessageId,
+		},
+	}); err != nil {
+		return fmt.Errorf("failed to send message summary: %v", err)
 	}
 
 	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})

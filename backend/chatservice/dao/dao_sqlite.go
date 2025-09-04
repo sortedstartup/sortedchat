@@ -59,8 +59,8 @@ func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) erro
 }
 
 // AddChatMessage adds a message to a chat
-func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) (string, error) {
-	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES (?, ?, ?, ?, ?)", chatId, role, content, userID, ragEnabled)
+func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
+	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
 	if err != nil {
 		return "", err
 	}

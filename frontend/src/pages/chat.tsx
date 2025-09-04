@@ -36,8 +36,9 @@ import {
   $ragDocumentDetails,
   fetchRAGDocumentReference,
   $currentUserMessageId,
-  $messageSummary,
   $chatMetadata,
+  $messageSummaries,
+  $currentAssistantMessageId,
 } from "@/store/chat";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
 import {
@@ -194,7 +195,7 @@ function Message({
         <div className={`flex-1 min-w-0 text-${isUser ? "right" : "left"}`}>
           <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
 
-          {!isUser && projectId && !message.rag_enabled && (
+          {!isUser && projectId && message.rag_enabled == false && (
             <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
               <FileX className="h-3 w-3 mr-1" />
               RAG not enabled
@@ -236,7 +237,7 @@ function Message({
                   variant="ghost"
                   size="sm"
                   onClick={() => onCopyMessage(message.content, message.message_id)}
-                  className="h-8 px-2 text-xs text-black-600 hover:text-gray-800"
+                  className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
                 >
                   {isCopied ? (
                     <Check className="h-4 w-4 text-green-400" />
@@ -468,7 +469,9 @@ export function Chat() {
   const ragEnabled = useStore($ragEnabled);
   const ragDocumentDetails = useStore($ragDocumentDetails);
   const currentUserMessageId = useStore($currentUserMessageId);
-  const messageSummary = useStore($messageSummary);
+  const messageSummaries = useStore($messageSummaries);
+  const currentAssistantMessageId = useStore($currentAssistantMessageId);
+
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -529,7 +532,7 @@ export function Chat() {
   const combinedMessages = [
     ...(data || []),
     ...(currentChatMessage?.trim() ? [{ message_id: currentUserMessageId, role: "user", content: currentChatMessage }] : []),
-    ...(streamingMessage?.trim() ? [{ message_id: messageSummary?.message_id, role: "assistant", content: streamingMessage }] : []),
+    ...(streamingMessage?.trim() ? [{ message_id: currentAssistantMessageId, role: "assistant", content: streamingMessage }] : []),
   ];
 
   const renderDocumentReferences = (
@@ -583,26 +586,29 @@ export function Chat() {
             No messages yet
           </div>
         ) : (
-          combinedMessages.map((message,index) => (
-            <Message
-              key={index}
-              message={message as ChatMessage}
-              onCopyMessage={handleCopyMessage}
-              onViewRAGDetails={handleViewRAGDetails}
-              onBranchChat={BranchChat}
-              isCopied={copiedMessageId === message?.message_id}
-              projectId={projectId}
-              isExpanded={isExpanded}
-              onToggleExpand={handleToggleExpand}
-              ragEnabled={ragEnabled}
-              currentDocumentReferences={
-                message?.role === "assistant" ? currentDocumentReferences : []
-              }
-              renderDocumentReferences={renderDocumentReferences}
-              messageSummary={messageSummary || undefined}
-            />
-          ))
-        )}
+          combinedMessages.map((message,index) => {
+            const summaryForThis = messageSummaries[message.message_id || ""];
+
+            return (
+              <Message
+                key={index}
+                message={message as ChatMessage}
+                onCopyMessage={handleCopyMessage}
+                onViewRAGDetails={handleViewRAGDetails}
+                onBranchChat={BranchChat}
+                isCopied={copiedMessageId === message?.message_id}
+                projectId={projectId}
+                isExpanded={isExpanded}
+                onToggleExpand={handleToggleExpand}
+                ragEnabled={ragEnabled}
+                currentDocumentReferences={
+                  message?.role === "assistant" ? currentDocumentReferences : []
+                }
+                renderDocumentReferences={renderDocumentReferences}
+                messageSummary={summaryForThis || undefined}
+              />
+          )
+}))}
         <div ref={messagesEndRef} />
         {listChatBranch.length > 0 && (
           <div className="bg-gray-50 border-t py-4 px-4">

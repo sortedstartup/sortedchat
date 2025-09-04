@@ -130,8 +130,11 @@ export const fetchChatMessages = async (chatId: string) => {
 
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
-export const $messageSummary = atom<MessageSummary | null>(null);
+export const $messageSummaries = atom<Record<string, MessageSummary>>({});
+
 export const $currentUserMessageId = atom<string>("");
+export const $currentAssistantMessageId = atom<string | null>(null);
+
 const addMessageToHistory = (message: ChatMessage) => {
   const currentState = $currentChatMessages.get();
   if (currentState.data) {
@@ -184,6 +187,7 @@ const isFirstMessageInChat = (): boolean => {
 
 export const $chatMetadata = atom<ChatInfo | null>(null);
 
+
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
@@ -230,10 +234,18 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       assistantResponse += res.text;
       $streamingMessage.set(assistantResponse);
     } else if (res.has_user_message_id) {
+      console.log("res.user_message_id", res.user_message_id);
       $currentUserMessageId.set(res.user_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
-      $messageSummary.set(res.summary);
+      const currentSummaries = $messageSummaries.get();
+      $messageSummaries.set({
+        ...currentSummaries,
+        [res.summary.message_id]: res.summary,
+      });
+      $currentAssistantMessageId.set(messageId);
+
+
     } else if (res.has_document_reference && ragEnabled) {
       // Only process document references if RAG is enabled
       const docRefList = res.document_reference;

@@ -1,83 +1,19 @@
-UPDATE model_metadata SET
-   input_token_cost = 3.00,    
-   cached_token_cost = 0.75,   
-   output_token_cost = 12.00   
-   WHERE id = 'gpt-4.1';
-
-UPDATE model_metadata SET
-   input_token_cost = 5.00,    
-   cached_token_cost = 1.25,   
-   output_token_cost = 15.00   
-   WHERE id = 'gpt-4o';
-
-UPDATE model_metadata SET
-   input_token_cost = 0.40,    
-   cached_token_cost = 0.10,   
-   output_token_cost = 1.60    
-   WHERE id = 'o3-mini';
-
-UPDATE model_metadata SET
-   input_token_cost = 4.00,    
-   cached_token_cost = 1.00,   
-   output_token_cost = 16.00   
-   WHERE id = 'o4-mini';
-
-UPDATE model_metadata SET
-   input_token_cost = 0.40,    
-   cached_token_cost = 0.10,   
-   output_token_cost = 1.60    
-   WHERE id = 'o3';
-
-UPDATE model_metadata SET
-   input_token_cost = 1.00,    
-   cached_token_cost = 0.25,   
-   output_token_cost = 4.00    
-   WHERE id = 'gemini-2.5-flash';
-
-UPDATE model_metadata SET
-   input_token_cost = 1.50,    
-   cached_token_cost = 0.35,   
-   output_token_cost = 6.00    
-   WHERE id = 'gemini-2.0-flash';
-
-UPDATE model_metadata SET
-   input_token_cost = 1.00,    
-   cached_token_cost = 0.25,   
-   output_token_cost = 4.00    
-   WHERE id = 'gemini-2.5-pro';
-
-UPDATE model_metadata SET
-   input_token_cost = 0.80,    
-   cached_token_cost = 0.20,   
-   output_token_cost = 4.00    
-   WHERE id = 'claude-3.5-haiku';
-
-UPDATE model_metadata SET
-   input_token_cost = 2.00,    
-   cached_token_cost = 0.50,   
-   output_token_cost = 8.00    
-   WHERE id = 'claude-3.7-sonnet';
-
-UPDATE model_metadata SET
-   input_token_cost = 3.00,    
-   cached_token_cost = 0.75,   
-   output_token_cost = 12.00   
-   WHERE id = 'claude-4-sonnet';
-
-UPDATE model_metadata SET
-   input_token_cost = 1.25,    
-   cached_token_cost = 0.125,
-   output_token_cost = 10.00   
-   WHERE id = 'gpt-5';
-
-UPDATE model_metadata SET
-   input_token_cost = 0.25,    
-   cached_token_cost = 0.025,  
-   output_token_cost = 2.00   
-   WHERE id = 'gpt-5-mini';
-
-UPDATE model_metadata SET
-   input_token_cost = 0.05,    
-   cached_token_cost = 0.005,   
-   output_token_cost = 0.40   
-   WHERE id = 'gpt-5-nano';
+INSERT INTO model_metadata (id,name, url, provider, input_token_cost, cached_token_cost, output_token_cost) VALUES
+  ('gpt-4.1', 'GPT-4.1', 'https://api.openai.com/v1/responses', 'openai',  3.00, 0.75, 12.00),
+  ('gpt-4o', 'GPT-4o', 'https://api.openai.com/v1/responses', 'openai',  5.00, 1.25, 15.00),
+  ('o3-mini', 'o3-mini', 'https://api.openai.com/v1/responses', 'openai', 0.40, 0.10, 1.60),
+  ('o4-mini', 'o4-mini', 'https://api.openai.com/v1/responses', 'openai', 4.00, 1.00, 16.00),
+  ('o3', 'o3', 'https://api.openai.com/v1/responses', 'openai', 0.40, 0.10, 1.60),
+  ('gemini-2.5-flash', 'gemini-2.5-flash', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'gemini', 1.00, 0.25, 4.00),
+  ('gemini-2.0-flash', 'gemini-2.0-flash', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', 'gemini', 1.50, 0.35, 6.00),
+  ('gemini-2.5-pro', 'gemini-2.5-pro', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'gemini', 1.00, 0.25, 4.00),
+  ('claude-3.5-haiku', 'claude-3.5-haiku', 'https://api.anthropic.com/v1/messages', 'claude',   0.80, 0.20, 4.00),
+  ('claude-3.7-sonnet', 'claude-3.7-sonnet', 'https://api.anthropic.com/v1/messages', 'claude', 2.00, 0.50, 8.00),
+  ('claude-4-sonnet', 'claude-4-sonnet', 'https://api.anthropic.com/v1/messages', 'claude', 3.00, 0.75, 12.00),
+  ('gpt-5', 'GPT-5', 'https://api.openai.com/v1/responses', 'openai', 1.25, 0.125, 10.00),
+  ('gpt-5-mini', 'GPT-5-mini', 'https://api.openai.com/v1/responses', 'openai', 0.25, 0.025, 2.00),
+  ('gpt-5-nano', 'GPT-5-nano', 'https://api.openai.com/v1/responses', 'openai', 0.05, 0.005, 0.40)
+ON CONFLICT(id) DO UPDATE SET
+  input_token_cost=excluded.input_token_cost,
+  cached_token_cost=excluded.cached_token_cost,
+  output_token_cost=excluded.output_token_cost;

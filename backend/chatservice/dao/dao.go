@@ -9,7 +9,7 @@ type DAO interface {
 	CreateChat(userID string, chatId string, name string, projectID string) error
 	GetChatName(userID string, chatId string) (string, error)
 	SaveChatName(userID string, chatId string, name string) error
-	AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) (string, error)
+	AddChatMessage(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error)
 	AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (MessageSummary, error)
 	GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error)
 	IsChatDeleted(chatId string, userID string) (bool, error)

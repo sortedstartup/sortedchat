@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"sortedstartup/chatservice/dao"
+	db "sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
@@ -1044,4 +1045,28 @@ func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId stri
 		return fmt.Errorf("failed to rename chat: %v", err)
 	}
 	return nil
+}
+
+func (s *ChatService) Init(config *db.Config) {
+	switch config.Database.Type {
+	case db.DatabaseTypeSQLite:
+		slog.Info("ChatService: Running SQLite migrations")
+		if err := db.MigrateSQLite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("ChatService: Failed to migrate SQLite database: %v", err)
+		}
+		if err := db.SeedSqlite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("ChatService: Failed to seed SQLite database: %v", err)
+		}
+	case db.DatabaseTypePostgres:
+		slog.Info("ChatService: Running PostgreSQL migrations")
+		dsn := config.Database.Postgres.GetPostgresDSN()
+		if err := db.MigratePostgres(dsn); err != nil {
+			log.Fatalf("ChatService: Failed to migrate PostgreSQL database: %v", err)
+		}
+		if err := db.SeedPostgres(dsn); err != nil {
+			log.Fatalf("ChatService: Failed to seed PostgreSQL database: %v", err)
+		}
+	default:
+		log.Fatalf("ChatService: Unsupported database type: %s", config.Database.Type)
+	}
 }

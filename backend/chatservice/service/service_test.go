@@ -7,12 +7,11 @@ import (
 	"testing"
 )
 
-func TestRenameChat(t *testing.T) {
+func setupTestChatService(t *testing.T) *ChatService {
 	config := &dao.Config{}
 	config.Database.Type = dao.DatabaseTypeSQLite
 	config.Database.SQLite.URL = ":memory:"
 
-	// Run migrations and seed using service.Init
 	chatService := &ChatService{}
 	dbConn := chatService.Init(config)
 
@@ -21,6 +20,19 @@ func TestRenameChat(t *testing.T) {
 		t.Fatalf("failed to create SQLiteDAO: %v", err)
 	}
 	chatService.dao = daoInstance
+
+	// Register cleanup to run after this test completes
+	t.Cleanup(func() {
+		// Cleanup logic here, e.g., closing db connection
+		dbConn.Close()
+	})
+
+	return chatService
+}
+
+func TestRenameChat(t *testing.T) {
+	chatService := setupTestChatService(t)
+	daoInstance := chatService.dao.(*dao.SQLiteDAO)
 
 	// Insert initial chat data using DAO
 	chat_id, err := chatService.CreateChat(context.Background(), "user456", "Old Chat Name", "")

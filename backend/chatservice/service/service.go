@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"sortedstartup/chatservice/dao"
-	db "sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
@@ -1050,37 +1049,38 @@ func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId stri
 	return nil
 }
 
-func (s *ChatService) Init(config *db.Config) *sql.DB {
-	//Create DB and run migrations
-	sqlite_vec.Auto()
-	sqlDB, err := sql.Open("sqlite3", config.Database.SQLite.URL)
-	if err != nil {
-		slog.Error("error", "err", err)
-	}
-	// defer sqlDB.Close() //lets not close it here
+func (s *ChatService) Init(config *dao.Config) *sql.DB {
 
 	//for sqlite we pass db connnection to migrate and seed functions
 	//for postgres we pass dsn(URL) to migrate and seed functions
 	switch config.Database.Type {
-	case db.DatabaseTypeSQLite:
+	case dao.DatabaseTypeSQLite:
+		//Create DB and run migrations
+		sqlite_vec.Auto()
+		sqlDB, err := sql.Open("sqlite3", config.Database.SQLite.URL)
+		if err != nil {
+			log.Fatalf("failed to open database: %v", err)
+		}
+		// defer sqlDB.Close() //lets not close it here
 		slog.Info("ChatService: Running SQLite migrations")
-		if err := db.MigrateDB_UsingConnectionDefaults(sqlDB); err != nil {
+		if err := dao.MigrateDB_UsingConnectionDefaults(sqlDB); err != nil {
 			log.Fatalf("ChatService: Failed to migrate SQLite database: %v", err)
 		}
-		if err := db.SeedDB_UsingConnectionDefaults(sqlDB); err != nil {
+		if err := dao.SeedDB_UsingConnectionDefaults(sqlDB); err != nil {
 			log.Fatalf("ChatService: Failed to seed SQLite database: %v", err)
 		}
-	case db.DatabaseTypePostgres:
+		return sqlDB
+	case dao.DatabaseTypePostgres:
 		slog.Info("ChatService: Running PostgreSQL migrations")
 		dsn := config.Database.Postgres.GetPostgresDSN()
-		if err := db.MigratePostgres(dsn); err != nil {
+		if err := dao.MigratePostgres(dsn); err != nil {
 			log.Fatalf("ChatService: Failed to migrate PostgreSQL database: %v", err)
 		}
-		if err := db.SeedPostgres(dsn); err != nil {
+		if err := dao.SeedPostgres(dsn); err != nil {
 			log.Fatalf("ChatService: Failed to seed PostgreSQL database: %v", err)
 		}
 	default:
 		log.Fatalf("ChatService: Unsupported database type: %s", config.Database.Type)
 	}
-	return sqlDB
+	return nil
 }

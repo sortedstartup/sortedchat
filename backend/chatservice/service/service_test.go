@@ -3,14 +3,13 @@ package service
 import (
 	"context"
 	"sortedstartup/chatservice/dao"
-	db "sortedstartup/chatservice/dao"
 	"strings"
 	"testing"
 )
 
 func TestRenameChat(t *testing.T) {
-	config := &db.Config{}
-	config.Database.Type = db.DatabaseTypeSQLite
+	config := &dao.Config{}
+	config.Database.Type = dao.DatabaseTypeSQLite
 	config.Database.SQLite.URL = ":memory:"
 
 	// Run migrations and seed using service.Init

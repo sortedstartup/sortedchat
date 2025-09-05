@@ -108,7 +108,10 @@ export const fetchChatMessages = async (chatId: string) => {
 
     if (res.chat_metadata) {
       $chatMetadata.set(res.chat_metadata);
+    } else {
+      $chatMetadata.set(null);
     }
+
     
     // Set document references if any exist
     if (allReferences.length > 0) {
@@ -192,6 +195,8 @@ export const $chatMetadata = atom<ChatInfo | null>(null);
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
+  $currentUserMessageId.set("");
+  $currentAssistantMessageId.set(null);
 
   const isFirstMessage = isFirstMessageInChat();
   const isNewlyBranched = $isNewlyBranched.get();
@@ -642,6 +647,10 @@ export async function ListChatBranch (chatId: string) {
 $currentChatId.listen((newChatId) => {
   $streamingMessage.set("");
   $currentChatMessage.set("");
+  $messageSummaries.set({});
+  $currentUserMessageId.set("");
+  $currentAssistantMessageId.set(null);
+  $chatMetadata.set(null);
 
   // fetch branch chat list
   if (newChatId) {

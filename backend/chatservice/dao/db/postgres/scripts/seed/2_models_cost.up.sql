@@ -17,6 +17,9 @@ VALUES
   ('gpt-5-mini', 'GPT-5-mini', 'https://api.openai.com/v1/responses', 'openai', 0.25, 0.025, 2.00),
   ('gpt-5-nano', 'GPT-5-nano', 'https://api.openai.com/v1/responses', 'openai', 0.05, 0.005, 0.40)
 ON CONFLICT (id) DO UPDATE SET
+  name             = EXCLUDED.name,
+  url              = EXCLUDED.url,
+  provider         = EXCLUDED.provider,
   input_token_cost  = EXCLUDED.input_token_cost,
   cached_token_cost = EXCLUDED.cached_token_cost,
   output_token_cost = EXCLUDED.output_token_cost;

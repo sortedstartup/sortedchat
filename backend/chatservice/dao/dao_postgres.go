@@ -97,7 +97,7 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 	// Handle empty or whitespace references by setting it to empty JSON object
 	trimmedRef := strings.TrimSpace(references)
 	if trimmedRef == "" {
-		trimmedRef = "{}"
+		trimmedRef = "[]"
 	}
 
 	// Validate references JSON
@@ -110,7 +110,7 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 	err := p.db.Get(&messageId,
 		`INSERT INTO chat_messages
         (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
         RETURNING id`,
 		chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, trimmedRef)
 	if err != nil {
@@ -748,7 +748,7 @@ func (p *PostgresDAO) IsChatDeleted(chatId string, userID string) (bool, error) 
 
 func (p *PostgresDAO) GetChatMetadata(userID string, chatId string) (ChatInfoRow, error) {
 	var chat ChatInfoRow
-	err := p.db.Get(&chat, "SELECT chat_id, name, cost, input_token_count, output_token_count, cached_token_count FROM chat_list WHERE chat_id = $1 AND user_id = $2", chatId, userID)
+	err := p.db.Get(&chat, "SELECT chat_id, name, COALESCE(cost,0) AS cost, COALESCE(input_token_count,0) AS input_token_count, COALESCE(output_token_count,0) AS output_token_count, COALESCE(cached_token_count,0) AS cached_token_count FROM chat_list WHERE chat_id = $1 AND user_id = $2", chatId, userID)
 	if err != nil {
 		return ChatInfoRow{}, err
 	}

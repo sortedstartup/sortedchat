@@ -6,7 +6,7 @@ INSERT INTO model_metadata (id,name, url, provider, input_token_cost, cached_tok
   ('o3', 'o3', 'https://api.openai.com/v1/responses', 'openai', 0.40, 0.10, 1.60),
   ('gemini-2.5-flash', 'gemini-2.5-flash', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'gemini', 1.00, 0.25, 4.00),
   ('gemini-2.0-flash', 'gemini-2.0-flash', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', 'gemini', 1.50, 0.35, 6.00),
-  ('gemini-2.5-pro', 'gemini-2.5-pro', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'gemini', 1.00, 0.25, 4.00),
+  ('gemini-2.5-pro', 'gemini-2.5-pro', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',   'gemini', 1.00, 0.25, 4.00),
   ('claude-3.5-haiku', 'claude-3.5-haiku', 'https://api.anthropic.com/v1/messages', 'claude',   0.80, 0.20, 4.00),
   ('claude-3.7-sonnet', 'claude-3.7-sonnet', 'https://api.anthropic.com/v1/messages', 'claude', 2.00, 0.50, 8.00),
   ('claude-4-sonnet', 'claude-4-sonnet', 'https://api.anthropic.com/v1/messages', 'claude', 3.00, 0.75, 12.00),

@@ -329,21 +329,21 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 		// TODO: we dont save streaming response, if stream is killed we loose the message.
 		// TODO : scope for optimization, can be 1 sql call internally
-		summary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
-			summary := &pb.MessageSummary{
-				MessageId:    summary.MessageId,
+			pbSummary := &pb.MessageSummary{
+				MessageId:    daoSummary.MessageId,
 				Model:        model,
-				InputTokens:  int32(summary.InputTokenCount),
-				OutputTokens: int32(summary.OutputTokenCount),
-				CachedTokens: int32(summary.CachedTokenCount),
-				Cost:         float32(summary.Cost),
+				InputTokens:  int32(daoSummary.InputTokenCount),
+				OutputTokens: int32(daoSummary.OutputTokenCount),
+				CachedTokens: int32(daoSummary.CachedTokenCount),
+				Cost:         float32(daoSummary.Cost),
 			}
 			if err := stream(&pb.ChatResponse{
 				Response: &pb.ChatResponse_Summary{
-					Summary: summary,
+					Summary: pbSummary,
 				},
 			}); err != nil {
 				return fmt.Errorf("failed to send message summary: %v", err)

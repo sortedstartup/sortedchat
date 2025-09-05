@@ -2,6 +2,7 @@ package dao
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"log/slog"
 	"strings"
@@ -36,221 +37,265 @@ func SetupSQLiteInMemoryTestDB(t *testing.T) *SQLiteDAO {
 }
 
 func TestAddChatMessageWithTokens(t *testing.T) {
-	// Define test cases
-	testCases := []struct {
-		name             string
+	// Define model metadata
+	modelMetadata := []struct {
 		model            string
 		modelDisplayName string
 		modelProvider    string
 		inputTokenCost   float64
 		outputTokenCost  float64
 		cachedTokenCost  float64
-		role             string
-		message          string
-		inputTokens      int
-		outputTokens     int
-		cachedTokens     int
-		references       string
-		ragEnabled       bool
-		expectError      bool
-		errorContains    string
 	}{
 		{
-			name:             "Valid assistant message with sanskar model",
 			model:            "sanskar-4.1",
 			modelDisplayName: "SANSKAR-4",
 			modelProvider:    "SANSKAR",
 			inputTokenCost:   0.025,
 			outputTokenCost:  0.050,
 			cachedTokenCost:  0.001,
-			role:             "assistant",
-			message:          "Hello, how can I help you?",
-			inputTokens:      4,
-			outputTokens:     10,
-			cachedTokens:     0,
-			references:       "",
-			ragEnabled:       false,
-			expectError:      false,
 		},
 		{
-			name:             "Valid user message with cached tokens",
 			model:            "gpt-4-turbo",
 			modelDisplayName: "GPT-4 Turbo",
 			modelProvider:    "OPENAI",
 			inputTokenCost:   0.010,
 			outputTokenCost:  0.030,
 			cachedTokenCost:  0.005,
-			role:             "user",
-			message:          "What is the weather today?",
-			inputTokens:      5,
-			outputTokens:     0,
-			cachedTokens:     5, // Reduced cached tokens for small numbers
-			references:       "",
-			ragEnabled:       false,
-			expectError:      false,
 		},
 		{
-			name:             "System message with references and RAG enabled",
 			model:            "claude-3-sonnet",
 			modelDisplayName: "Claude-3 Sonnet",
 			modelProvider:    "ANTHROPIC",
 			inputTokenCost:   0.003,
 			outputTokenCost:  0.015,
 			cachedTokenCost:  0.0003,
-			role:             "system",
-			message:          "You are a helpful assistant.",
-			inputTokens:      6,
-			outputTokens:     0,
-			cachedTokens:     0,
-			references:       "doc1.pdf,doc2.txt",
-			ragEnabled:       true,
-			expectError:      false,
 		},
 		{
-			name:             "Small token counts with test model",
 			model:            "test-model-small",
 			modelDisplayName: "Test Model Small",
 			modelProvider:    "TEST",
 			inputTokenCost:   0.0001,
 			outputTokenCost:  0.0002,
 			cachedTokenCost:  0.0001,
-			role:             "assistant",
-			message:          "Short response with few tokens.",
-			inputTokens:      3,
-			outputTokens:     7,
-			cachedTokens:     2,
-			references:       "",
-			ragEnabled:       false,
-			expectError:      false,
-		},
-		{
-			name:             "Zero tokens",
-			model:            "test-model",
-			modelDisplayName: "Test Model",
-			modelProvider:    "TEST",
-			inputTokenCost:   0.001,
-			outputTokenCost:  0.002,
-			cachedTokenCost:  0.0001,
-			role:             "user",
-			message:          "",
-			inputTokens:      0,
-			outputTokens:     0,
-			cachedTokens:     0,
-			references:       "",
-			ragEnabled:       false,
-			expectError:      false,
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup fresh database for each test case
-			daoInstance := SetupSQLiteInMemoryTestDB(t)
+	// Define token test cases
+	tokenTestCases := []struct {
+		name          string
+		role          string
+		message       string
+		inputTokens   int
+		outputTokens  int
+		cachedTokens  int
+		references    string
+		ragEnabled    bool
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:         "Valid assistant message",
+			role:         "assistant",
+			message:      "Hello, how can I help you?",
+			inputTokens:  4,
+			outputTokens: 10,
+			cachedTokens: 0,
+			references:   "",
+			ragEnabled:   false,
+			expectError:  false,
+		},
+		{
+			name:         "Valid user message with cached tokens",
+			role:         "user",
+			message:      "What is the weather today?",
+			inputTokens:  5,
+			outputTokens: 0,
+			cachedTokens: 5,
+			references:   "",
+			ragEnabled:   false,
+			expectError:  false,
+		},
+		{
+			name:         "System message with references and RAG enabled",
+			role:         "system",
+			message:      "You are a helpful assistant.",
+			inputTokens:  6,
+			outputTokens: 0,
+			cachedTokens: 0,
+			references:   "doc1.pdf,doc2.txt",
+			ragEnabled:   true,
+			expectError:  false,
+		},
+		{
+			name:         "Small token counts",
+			role:         "assistant",
+			message:      "Short response with few tokens.",
+			inputTokens:  3,
+			outputTokens: 7,
+			cachedTokens: 2,
+			references:   "",
+			ragEnabled:   false,
+			expectError:  false,
+		},
+		{
+			name:         "Zero tokens",
+			role:         "user",
+			message:      "",
+			inputTokens:  0,
+			outputTokens: 0,
+			cachedTokens: 0,
+			references:   "",
+			ragEnabled:   false,
+			expectError:  false,
+		},
+		{
+			name:         "High token counts",
+			role:         "assistant",
+			message:      "This is a very long response that would consume many tokens in a real scenario.",
+			inputTokens:  100,
+			outputTokens: 250,
+			cachedTokens: 50,
+			references:   "",
+			ragEnabled:   false,
+			expectError:  false,
+		},
+		{
+			name:         "Only input tokens",
+			role:         "user",
+			message:      "User query with only input tokens",
+			inputTokens:  15,
+			outputTokens: 0,
+			cachedTokens: 0,
+			references:   "",
+			ragEnabled:   false,
+			expectError:  false,
+		},
+		{
+			name:         "Only cached tokens",
+			role:         "user",
+			message:      "Message using only cached tokens",
+			inputTokens:  0,
+			outputTokens: 0,
+			cachedTokens: 20,
+			references:   "",
+			ragEnabled:   false,
+			expectError:  false,
+		},
+	}
 
-			// Pre-insert a chat into chat_list to satisfy foreign key constraint
-			err := daoInstance.CreateChat("user123", "chat123", "Test Chat", "")
-			if err != nil {
-				t.Fatalf("failed to create chat: %v", err)
-			}
+	for _, model := range modelMetadata {
+		t.Run(fmt.Sprintf("Model_%s", model.model), func(t *testing.T) {
+			for _, tc := range tokenTestCases {
+				t.Run(tc.name, func(t *testing.T) {
+					// Setup fresh database for each test case
+					daoInstance := SetupSQLiteInMemoryTestDB(t)
 
-			// Add the model for this test case
-			err = daoInstance.AddModel(tc.model, tc.modelDisplayName, "", tc.modelProvider,
-				tc.inputTokenCost, tc.outputTokenCost, tc.cachedTokenCost)
-			if err != nil {
-				t.Fatalf("failed to add model: %v", err)
-			}
+					// Pre-insert a chat into chat_list to satisfy foreign key constraint
+					err := daoInstance.CreateChat("user123", "chat123", "Test Chat", "")
+					if err != nil {
+						t.Fatalf("failed to create chat: %v", err)
+					}
 
-			// Execute the function under test
-			summary, err := daoInstance.AddChatMessageWithTokens(
-				"user123",
-				"chat123",
-				tc.role,
-				tc.message,
-				tc.model,
-				tc.inputTokens,
-				tc.outputTokens,
-				tc.cachedTokens,
-				tc.references,
-				tc.ragEnabled,
-			)
+					// Add the model for this test case
+					err = daoInstance.AddModel(model.model, model.modelDisplayName, "", model.modelProvider,
+						model.inputTokenCost, model.outputTokenCost, model.cachedTokenCost)
+					if err != nil {
+						t.Fatalf("failed to add model: %v", err)
+					}
 
-			// Check error expectations
-			if tc.expectError {
-				if err == nil {
-					t.Fatalf("expected error but got none")
-				}
-				if tc.errorContains != "" && !strings.Contains(err.Error(), tc.errorContains) {
-					t.Fatalf("expected error containing '%s', got '%s'", tc.errorContains, err.Error())
-				}
-				return // Skip further assertions for error cases
-			}
+					// Execute the function under test
+					summary, err := daoInstance.AddChatMessageWithTokens(
+						"user123",
+						"chat123",
+						tc.role,
+						tc.message,
+						model.model,
+						tc.inputTokens,
+						tc.outputTokens,
+						tc.cachedTokens,
+						tc.references,
+						tc.ragEnabled,
+					)
 
-			if err != nil {
-				t.Fatalf("AddChatMessageWithTokens failed: %v", err)
-			}
+					// Check error expectations
+					if tc.expectError {
+						if err == nil {
+							t.Fatalf("expected error but got none")
+						}
+						if tc.errorContains != "" && !strings.Contains(err.Error(), tc.errorContains) {
+							t.Fatalf("expected error containing '%s', got '%s'", tc.errorContains, err.Error())
+						}
+						return // Skip further assertions for error cases
+					}
 
-			// Verify the returned summary
-			if summary.Model != tc.model {
-				t.Errorf("expected model '%s', got '%s'", tc.model, summary.Model)
-			}
+					if err != nil {
+						t.Fatalf("AddChatMessageWithTokens failed: %v", err)
+					}
 
-			if summary.InputTokenCount != tc.inputTokens {
-				t.Errorf("expected input token count %d, got %d", tc.inputTokens, summary.InputTokenCount)
-			}
+					// Verify the returned summary
+					if summary.Model != model.model {
+						t.Errorf("expected model '%s', got '%s'", model.model, summary.Model)
+					}
 
-			if summary.OutputTokenCount != tc.outputTokens {
-				t.Errorf("expected output token count %d, got %d", tc.outputTokens, summary.OutputTokenCount)
-			}
+					if summary.InputTokenCount != tc.inputTokens {
+						t.Errorf("expected input token count %d, got %d", tc.inputTokens, summary.InputTokenCount)
+					}
 
-			if summary.CachedTokenCount != tc.cachedTokens {
-				t.Errorf("expected cached token count %d, got %d", tc.cachedTokens, summary.CachedTokenCount)
-			}
+					if summary.OutputTokenCount != tc.outputTokens {
+						t.Errorf("expected output token count %d, got %d", tc.outputTokens, summary.OutputTokenCount)
+					}
 
-			// Calculate expected cost
-			expectedCost := (float64(tc.inputTokens)*tc.inputTokenCost +
-				float64(tc.outputTokens)*tc.outputTokenCost +
-				float64(tc.cachedTokens)*tc.cachedTokenCost) / 1000000.0
+					if summary.CachedTokenCount != tc.cachedTokens {
+						t.Errorf("expected cached token count %d, got %d", tc.cachedTokens, summary.CachedTokenCount)
+					}
 
-			// Direct equality check for cost
-			if summary.Cost != expectedCost {
-				t.Errorf("expected cost %f, got %f", expectedCost, summary.Cost)
-			}
+					// Calculate expected cost
+					expectedCost := (float64(tc.inputTokens)*model.inputTokenCost +
+						float64(tc.outputTokens)*model.outputTokenCost +
+						float64(tc.cachedTokens)*model.cachedTokenCost) / 1000000.0
 
-			// Verify the message was inserted into chat_messages table
-			var count int
-			err = daoInstance.db.QueryRow(`
-                SELECT COUNT(*) FROM chat_messages 
-                WHERE chat_id = ? AND user_id = ? AND role = ?`,
-				"chat123", "user123", tc.role).Scan(&count)
-			if err != nil {
-				t.Fatalf("failed to query chat_messages: %v", err)
-			}
-			if count != 1 {
-				t.Errorf("expected 1 message in chat_messages, got %d", count)
-			}
+					// Direct equality check for cost
+					if summary.Cost != expectedCost {
+						t.Errorf("expected cost %f, got %f", expectedCost, summary.Cost)
+					}
 
-			// Verify chat_list was updated with totals
-			var totalCost float64
-			var totalInput, totalOutput, totalCached int
-			err = daoInstance.db.QueryRow(`
-                SELECT cost, input_token_count, output_token_count, cached_token_count
-                FROM chat_list WHERE chat_id = ? AND user_id = ?`,
-				"chat123", "user123").Scan(&totalCost, &totalInput, &totalOutput, &totalCached)
-			if err != nil {
-				t.Fatalf("failed to query chat_list: %v", err)
-			}
+					// Verify the message was inserted into chat_messages table
+					var count int
+					err = daoInstance.db.QueryRow(`
+						SELECT COUNT(*) FROM chat_messages 
+						WHERE chat_id = ? AND user_id = ? AND role = ?`,
+						"chat123", "user123", tc.role).Scan(&count)
+					if err != nil {
+						t.Fatalf("failed to query chat_messages: %v", err)
+					}
+					if count != 1 {
+						t.Errorf("expected 1 message in chat_messages, got %d", count)
+					}
 
-			if totalCost != expectedCost {
-				t.Errorf("expected chat_list cost %f, got %f", expectedCost, totalCost)
-			}
-			if totalInput != tc.inputTokens {
-				t.Errorf("expected chat_list input tokens %d, got %d", tc.inputTokens, totalInput)
-			}
-			if totalOutput != tc.outputTokens {
-				t.Errorf("expected chat_list output tokens %d, got %d", tc.outputTokens, totalOutput)
-			}
-			if totalCached != tc.cachedTokens {
-				t.Errorf("expected chat_list cached tokens %d, got %d", tc.cachedTokens, totalCached)
+					// Verify chat_list was updated with totals
+					var totalCost float64
+					var totalInput, totalOutput, totalCached int
+					err = daoInstance.db.QueryRow(`
+						SELECT cost, input_token_count, output_token_count, cached_token_count
+						FROM chat_list WHERE chat_id = ? AND user_id = ?`,
+						"chat123", "user123").Scan(&totalCost, &totalInput, &totalOutput, &totalCached)
+					if err != nil {
+						t.Fatalf("failed to query chat_list: %v", err)
+					}
+
+					if totalCost != expectedCost {
+						t.Errorf("expected chat_list cost %f, got %f", expectedCost, totalCost)
+					}
+					if totalInput != tc.inputTokens {
+						t.Errorf("expected chat_list input tokens %d, got %d", tc.inputTokens, totalInput)
+					}
+					if totalOutput != tc.outputTokens {
+						t.Errorf("expected chat_list output tokens %d, got %d", tc.outputTokens, totalOutput)
+					}
+					if totalCached != tc.cachedTokens {
+						t.Errorf("expected chat_list cached tokens %d, got %d", tc.cachedTokens, totalCached)
+					}
+				})
 			}
 		})
 	}

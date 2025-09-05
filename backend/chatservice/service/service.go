@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -22,6 +23,8 @@ import (
 	"sortedstartup/chatservice/rag"
 	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/store"
+
+	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
 	"github.com/google/uuid"
 )
@@ -1047,14 +1050,24 @@ func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId stri
 	return nil
 }
 
-func (s *ChatService) Init(config *db.Config) {
+func (s *ChatService) Init(config *db.Config) *sql.DB {
+	//Create DB and run migrations
+	sqlite_vec.Auto()
+	sqlDB, err := sql.Open("sqlite3", config.Database.SQLite.URL)
+	if err != nil {
+		slog.Error("error", "err", err)
+	}
+	// defer sqlDB.Close() //lets not close it here
+
+	//for sqlite we pass db connnection to migrate and seed functions
+	//for postgres we pass dsn(URL) to migrate and seed functions
 	switch config.Database.Type {
 	case db.DatabaseTypeSQLite:
 		slog.Info("ChatService: Running SQLite migrations")
-		if err := db.MigrateSQLite(config.Database.SQLite.URL); err != nil {
+		if err := db.MigrateDB_UsingConnectionDefaults(sqlDB); err != nil {
 			log.Fatalf("ChatService: Failed to migrate SQLite database: %v", err)
 		}
-		if err := db.SeedSqlite(config.Database.SQLite.URL); err != nil {
+		if err := db.SeedDB_UsingConnectionDefaults(sqlDB); err != nil {
 			log.Fatalf("ChatService: Failed to seed SQLite database: %v", err)
 		}
 	case db.DatabaseTypePostgres:
@@ -1069,4 +1082,5 @@ func (s *ChatService) Init(config *db.Config) {
 	default:
 		log.Fatalf("ChatService: Unsupported database type: %s", config.Database.Type)
 	}
+	return sqlDB
 }

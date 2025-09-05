@@ -13,13 +13,13 @@ import (
 func TestRenameChat(t *testing.T) {
 	config := &db.Config{}
 	config.Database.Type = db.DatabaseTypeSQLite
-	config.Database.SQLite.URL = "/tmp/test_sqlite.db"
+	config.Database.SQLite.URL = ":memory:"
 
 	// Run migrations and seed using service.Init
 	chatService := &ChatService{}
-	chatService.Init(config)
+	dbConn := chatService.Init(config)
 
-	daoInstance, err := dao.NewSQLiteDAO("/tmp/test_sqlite.db")
+	daoInstance, err := dao.NewSQLiteInMemoryDAO(dbConn)
 	if err != nil {
 		t.Fatalf("failed to create SQLiteDAO: %v", err)
 	}

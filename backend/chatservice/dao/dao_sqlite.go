@@ -30,6 +30,10 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 	return &SQLiteDAO{db: db}, nil
 }
 
+func NewSQLiteInMemoryDAO(dbConn *sql.DB) (*SQLiteDAO, error) {
+	return &SQLiteDAO{db: sqlx.NewDb(dbConn, "sqlite3")}, nil
+}
+
 // CreateChat creates a new chat with the given ID and name
 func (s *SQLiteDAO) CreateChat(userID string, chatId string, name string, projectID string) error {
 	if projectID == "" || projectID == "null" {

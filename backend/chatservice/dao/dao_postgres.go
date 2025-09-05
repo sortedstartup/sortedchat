@@ -770,6 +770,21 @@ func (p *PostgresDAO) RenameChat(userID string, chatId string, name string) erro
 	return nil
 }
 
+func (p *PostgresDAO) AddModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
+	_, err := p.db.Exec(`
+		INSERT INTO model_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (id) DO UPDATE SET
+			name = EXCLUDED.name,
+			url = EXCLUDED.url,
+			provider = EXCLUDED.provider,
+			input_token_cost = EXCLUDED.input_token_cost,
+			output_token_cost = EXCLUDED.output_token_cost,
+			cached_token_cost = EXCLUDED.cached_token_cost
+	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost)
+	return err
+}
+
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL
 type PostgresSettingsDAO struct {
 	db *sqlx.DB

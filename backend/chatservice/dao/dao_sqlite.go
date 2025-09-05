@@ -125,18 +125,16 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 	references string,
 	ragEnabled bool,
 ) (MessageSummary, error) {
-
 	// Insert the message first and capture its ID
 	result, err := s.db.Exec(`
-		INSERT INTO chat_messages (
-			chat_id, role, content, model,
-			input_token_count, output_token_count, cached_token_count,
-			user_id, document_references, rag_enabled
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        INSERT INTO chat_messages (
+            chat_id, role, content, model,
+            input_token_count, output_token_count, cached_token_count,
+            user_id, document_references, rag_enabled
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		chatId, role, content, model,
 		inputTokens, outputTokens, cachedTokens,
-		userID, references, ragEnabled,
-	)
+		userID, references, ragEnabled)
 	if err != nil {
 		return MessageSummary{}, err
 	}
@@ -146,58 +144,40 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 		return MessageSummary{}, err
 	}
 
-	// Use a single CTE to compute cost and update both tables
-	var cost float64
+	// Get the model metadata for cost calculation
+	var inputCost, outputCost, cachedCost float64
 	err = s.db.QueryRow(`
-	WITH
-	  vars AS (
-	    SELECT
-	      ?1 AS input_tokens,
-	      ?2 AS output_tokens,
-	      ?3 AS cached_tokens,
-	      ?4 AS model_id,
-	      ?5 AS message_id,
-	      ?6 AS chat_id,
-	      ?7 AS user_id
-	  ),
-	  meta AS (
-	    SELECT
-	      mm.input_token_cost,
-	      mm.output_token_cost,
-	      mm.cached_token_cost
-	    FROM model_metadata mm, vars v
-	    WHERE mm.id = v.model_id
-	  ),
-	  calc AS (
-	    SELECT
-	      (m.input_token_cost * v.input_tokens
-	     + m.output_token_cost * v.output_tokens
-	     + m.cached_token_cost * v.cached_tokens) / 1000000.0 AS cost,
-	      v.*
-	    FROM meta m, vars v
-	  ),
-	  upd_msg AS (
-	    UPDATE chat_messages
-	    SET cost = (SELECT cost FROM calc)
-	    WHERE id = (SELECT message_id FROM calc)
-	    RETURNING cost
-	  )
-	UPDATE chat_list
-	SET
-	  cost               = COALESCE(cost, 0) + (SELECT cost FROM calc),
-	  input_token_count  = COALESCE(input_token_count, 0) + (SELECT input_tokens  FROM calc),
-	  output_token_count = COALESCE(output_token_count, 0) + (SELECT output_tokens FROM calc),
-	  cached_token_count = COALESCE(cached_token_count, 0) + (SELECT cached_tokens FROM calc)
-	WHERE chat_id = (SELECT chat_id FROM calc)
-	  AND user_id = (SELECT user_id FROM calc)
-	RETURNING (SELECT cost FROM calc);
-	`,
-		inputTokens, outputTokens, cachedTokens,
-		model, messageId, chatId, userID,
-	).Scan(&cost)
-
+        SELECT input_token_cost, output_token_cost, cached_token_cost
+        FROM model_metadata
+        WHERE id = ?`, model).Scan(&inputCost, &outputCost, &cachedCost)
 	if err != nil {
-		return MessageSummary{}, err
+		return MessageSummary{}, fmt.Errorf("failed to get model metadata: %w", err)
+	}
+
+	// Calculate the cost
+	cost := (float64(inputTokens)*inputCost + float64(outputTokens)*outputCost + float64(cachedTokens)*cachedCost) / 1000000.0
+
+	// Update the message with the calculated cost
+	_, err = s.db.Exec(`
+        UPDATE chat_messages 
+        SET cost = ? 
+        WHERE id = ?`, cost, messageId)
+	if err != nil {
+		return MessageSummary{}, fmt.Errorf("failed to update message cost: %w", err)
+	}
+
+	// Update the chat_list with cumulative totals
+	_, err = s.db.Exec(`
+        UPDATE chat_list
+        SET
+            cost = COALESCE(cost, 0) + ?,
+            input_token_count = COALESCE(input_token_count, 0) + ?,
+            output_token_count = COALESCE(output_token_count, 0) + ?,
+            cached_token_count = COALESCE(cached_token_count, 0) + ?
+        WHERE chat_id = ? AND user_id = ?`,
+		cost, inputTokens, outputTokens, cachedTokens, chatId, userID)
+	if err != nil {
+		return MessageSummary{}, fmt.Errorf("failed to update chat_list: %w", err)
 	}
 
 	// Return the message summary
@@ -564,6 +544,21 @@ func (s *SQLiteDAO) RenameChat(userID string, chatId string, name string) error 
 		return fmt.Errorf("chat not found or permission denied")
 	}
 	return nil
+}
+
+func (s *SQLiteDAO) AddModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
+	_, err := s.db.Exec(`
+		INSERT INTO model_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET
+			name = excluded.name,
+			url = excluded.url,
+			provider = excluded.provider,
+			input_token_cost = excluded.input_token_cost,
+			output_token_cost = excluded.output_token_cost,
+			cached_token_cost = excluded.cached_token_cost
+	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost)
+	return err
 }
 
 type SQLiteSettingsDAO struct {

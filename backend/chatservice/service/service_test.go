@@ -8,8 +8,6 @@ import (
 	"testing"
 )
 
-// setupTestDB is no longer needed; migrations are handled by service.Init
-
 func TestRenameChat(t *testing.T) {
 	config := &db.Config{}
 	config.Database.Type = db.DatabaseTypeSQLite
@@ -26,19 +24,19 @@ func TestRenameChat(t *testing.T) {
 	chatService.dao = daoInstance
 
 	// Insert initial chat data using DAO
-	err = daoInstance.CreateChat("user456", "chat123", "Old Chat Name", "")
+	chat_id, err := chatService.CreateChat(context.Background(), "user456", "Old Chat Name", "")
 	if err != nil {
 		t.Fatalf("failed to insert initial chat: %v", err)
 	}
 
 	// Rename chat
-	err = chatService.RenameChat(context.Background(), "user456", "chat123", "New Chat Name")
+	err = chatService.RenameChat(context.Background(), "user456", chat_id, "New Chat Name")
 	if err != nil {
 		t.Errorf("RenameChat error = %v", err)
 	}
 
 	// Verify change persisted in DB
-	newName, err := daoInstance.GetChatName("user456", "chat123")
+	newName, err := daoInstance.GetChatName("user456", chat_id)
 	if err != nil {
 		t.Fatalf("failed to query chat: %v", err)
 	}

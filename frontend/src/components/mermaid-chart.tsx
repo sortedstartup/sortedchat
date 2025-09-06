@@ -1,6 +1,11 @@
-import { useEffect, useRef } from 'react';
-import mermaid, { type MermaidConfig } from 'mermaid';
-import { useMemo } from 'react';
+import { useEffect, useRef, useMemo } from "react";
+//mermaid dynamically wants dagre-d3-es at runtime so we need to import it here,
+//otherwise tree shaking will remove it and mermaid will fail to render
+import * as dagre from 'dagre-d3-es';
+import type { MermaidConfig } from "mermaid";
+import mermaid from "mermaid";
+
+console.debug('dagre-d3-es loaded:', !!dagre);
 
 type Props = {
   chart: string;               // Mermaid DSL

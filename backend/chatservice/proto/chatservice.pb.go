@@ -1057,7 +1057,9 @@ type ChatResponse struct {
 	//
 	//	*ChatResponse_Text
 	//	*ChatResponse_Summary
+	//	*ChatResponse_RequestMessageId
 	//	*ChatResponse_DocumentReference
+	//	*ChatResponse_ChatMetadata
 	Response      isChatResponse_Response `protobuf_oneof:"response"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1109,7 +1111,7 @@ func (x *ChatResponse) GetText() string {
 	return ""
 }
 
-func (x *ChatResponse) GetSummary() *MessageSummary {
+func (x *ChatResponse) GetSummary() *ResponseSummary {
 	if x != nil {
 		if x, ok := x.Response.(*ChatResponse_Summary); ok {
 			return x.Summary
@@ -1118,10 +1120,28 @@ func (x *ChatResponse) GetSummary() *MessageSummary {
 	return nil
 }
 
+func (x *ChatResponse) GetRequestMessageId() string {
+	if x != nil {
+		if x, ok := x.Response.(*ChatResponse_RequestMessageId); ok {
+			return x.RequestMessageId
+		}
+	}
+	return ""
+}
+
 func (x *ChatResponse) GetDocumentReference() *RAGDocumentReferenceSummaryList {
 	if x != nil {
 		if x, ok := x.Response.(*ChatResponse_DocumentReference); ok {
 			return x.DocumentReference
+		}
+	}
+	return nil
+}
+
+func (x *ChatResponse) GetChatMetadata() *ChatInfo {
+	if x != nil {
+		if x, ok := x.Response.(*ChatResponse_ChatMetadata); ok {
+			return x.ChatMetadata
 		}
 	}
 	return nil
@@ -1138,18 +1158,30 @@ type ChatResponse_Text struct {
 type ChatResponse_Summary struct {
 	// was introduced to send message id, because it is generated server side
 	// sending one of the multiple oneof's help us do all of this in one streaming API call
-	Summary *MessageSummary `protobuf:"bytes,2,opt,name=summary,proto3,oneof"`
+	Summary *ResponseSummary `protobuf:"bytes,2,opt,name=summary,proto3,oneof"`
+}
+
+type ChatResponse_RequestMessageId struct {
+	RequestMessageId string `protobuf:"bytes,3,opt,name=request_message_id,json=requestMessageId,proto3,oneof"`
 }
 
 type ChatResponse_DocumentReference struct {
-	DocumentReference *RAGDocumentReferenceSummaryList `protobuf:"bytes,3,opt,name=document_reference,json=documentReference,proto3,oneof"`
+	DocumentReference *RAGDocumentReferenceSummaryList `protobuf:"bytes,4,opt,name=document_reference,json=documentReference,proto3,oneof"`
+}
+
+type ChatResponse_ChatMetadata struct {
+	ChatMetadata *ChatInfo `protobuf:"bytes,5,opt,name=chat_metadata,json=chatMetadata,proto3,oneof"`
 }
 
 func (*ChatResponse_Text) isChatResponse_Response() {}
 
 func (*ChatResponse_Summary) isChatResponse_Response() {}
 
+func (*ChatResponse_RequestMessageId) isChatResponse_Response() {}
+
 func (*ChatResponse_DocumentReference) isChatResponse_Response() {}
+
+func (*ChatResponse_ChatMetadata) isChatResponse_Response() {}
 
 // TODO: reasonable limits from server side, limit to 10 (constant in server side) docs
 type RAGDocumentReferenceSummaryList struct {
@@ -1256,27 +1288,32 @@ func (x *RAGDocumentReference) GetChunks() []*RAGDocumentReference_Chunk {
 	return nil
 }
 
-type MessageSummary struct {
+type ResponseSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	InputTokens   int32                  `protobuf:"varint,3,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
+	OutputTokens  int32                  `protobuf:"varint,4,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
+	CachedTokens  int32                  `protobuf:"varint,5,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
+	Cost          float32                `protobuf:"fixed32,6,opt,name=cost,proto3" json:"cost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *MessageSummary) Reset() {
-	*x = MessageSummary{}
+func (x *ResponseSummary) Reset() {
+	*x = ResponseSummary{}
 	mi := &file_chatservice_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MessageSummary) String() string {
+func (x *ResponseSummary) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MessageSummary) ProtoMessage() {}
+func (*ResponseSummary) ProtoMessage() {}
 
-func (x *MessageSummary) ProtoReflect() protoreflect.Message {
+func (x *ResponseSummary) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1288,16 +1325,51 @@ func (x *MessageSummary) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MessageSummary.ProtoReflect.Descriptor instead.
-func (*MessageSummary) Descriptor() ([]byte, []int) {
+// Deprecated: Use ResponseSummary.ProtoReflect.Descriptor instead.
+func (*ResponseSummary) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *MessageSummary) GetMessageId() string {
+func (x *ResponseSummary) GetMessageId() string {
 	if x != nil {
 		return x.MessageId
 	}
 	return ""
+}
+
+func (x *ResponseSummary) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *ResponseSummary) GetInputTokens() int32 {
+	if x != nil {
+		return x.InputTokens
+	}
+	return 0
+}
+
+func (x *ResponseSummary) GetOutputTokens() int32 {
+	if x != nil {
+		return x.OutputTokens
+	}
+	return 0
+}
+
+func (x *ResponseSummary) GetCachedTokens() int32 {
+	if x != nil {
+		return x.CachedTokens
+	}
+	return 0
+}
+
+func (x *ResponseSummary) GetCost() float32 {
+	if x != nil {
+		return x.Cost
+	}
+	return 0
 }
 
 type GetHistoryRequest struct {
@@ -1347,6 +1419,7 @@ func (x *GetHistoryRequest) GetChatId() string {
 type GetHistoryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	History       []*ChatMessage         `protobuf:"bytes,1,rep,name=history,proto3" json:"history,omitempty"`
+	ChatMetadata  *ChatInfo              `protobuf:"bytes,2,opt,name=chat_metadata,json=chatMetadata,proto3" json:"chat_metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1388,6 +1461,13 @@ func (x *GetHistoryResponse) GetHistory() []*ChatMessage {
 	return nil
 }
 
+func (x *GetHistoryResponse) GetChatMetadata() *ChatInfo {
+	if x != nil {
+		return x.ChatMetadata
+	}
+	return nil
+}
+
 type ChatMessage struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Role          string                  `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
@@ -1395,6 +1475,11 @@ type ChatMessage struct {
 	MessageId     string                  `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	References    []*RAGDocumentReference `protobuf:"bytes,4,rep,name=references,proto3" json:"references,omitempty"`
 	RagEnabled    bool                    `protobuf:"varint,5,opt,name=rag_enabled,json=ragEnabled,proto3" json:"rag_enabled,omitempty"`
+	Model         string                  `protobuf:"bytes,6,opt,name=model,proto3" json:"model,omitempty"`
+	InputTokens   int32                   `protobuf:"varint,7,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
+	OutputTokens  int32                   `protobuf:"varint,8,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
+	CachedTokens  int32                   `protobuf:"varint,9,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
+	Cost          float32                 `protobuf:"fixed32,10,opt,name=cost,proto3" json:"cost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1462,6 +1547,41 @@ func (x *ChatMessage) GetRagEnabled() bool {
 		return x.RagEnabled
 	}
 	return false
+}
+
+func (x *ChatMessage) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *ChatMessage) GetInputTokens() int32 {
+	if x != nil {
+		return x.InputTokens
+	}
+	return 0
+}
+
+func (x *ChatMessage) GetOutputTokens() int32 {
+	if x != nil {
+		return x.OutputTokens
+	}
+	return 0
+}
+
+func (x *ChatMessage) GetCachedTokens() int32 {
+	if x != nil {
+		return x.CachedTokens
+	}
+	return 0
+}
+
+func (x *ChatMessage) GetCost() float32 {
+	if x != nil {
+		return x.Cost
+	}
+	return 0
 }
 
 type GetChatListRequest struct {
@@ -1560,12 +1680,17 @@ func (x *GetChatListResponse) GetChats() []*ChatInfo {
 	return nil
 }
 
+// total chat cost/token
 type ChatInfo struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChatId        string                 `protobuf:"bytes,1,opt,name=chatId,proto3" json:"chatId,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ChatId           string                 `protobuf:"bytes,1,opt,name=chatId,proto3" json:"chatId,omitempty"`
+	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Cost             float32                `protobuf:"fixed32,3,opt,name=cost,proto3" json:"cost,omitempty"`
+	InputTokenCount  int32                  `protobuf:"varint,4,opt,name=input_token_count,json=inputTokenCount,proto3" json:"input_token_count,omitempty"`
+	OutputTokenCount int32                  `protobuf:"varint,5,opt,name=output_token_count,json=outputTokenCount,proto3" json:"output_token_count,omitempty"`
+	CachedTokenCount int32                  `protobuf:"varint,6,opt,name=cached_token_count,json=cachedTokenCount,proto3" json:"cached_token_count,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ChatInfo) Reset() {
@@ -1610,6 +1735,34 @@ func (x *ChatInfo) GetName() string {
 		return x.Name
 	}
 	return ""
+}
+
+func (x *ChatInfo) GetCost() float32 {
+	if x != nil {
+		return x.Cost
+	}
+	return 0
+}
+
+func (x *ChatInfo) GetInputTokenCount() int32 {
+	if x != nil {
+		return x.InputTokenCount
+	}
+	return 0
+}
+
+func (x *ChatInfo) GetOutputTokenCount() int32 {
+	if x != nil {
+		return x.OutputTokenCount
+	}
+	return 0
+}
+
+func (x *ChatInfo) GetCachedTokenCount() int32 {
+	if x != nil {
+		return x.CachedTokenCount
+	}
+	return 0
 }
 
 type ModelListInfo struct {
@@ -2974,11 +3127,13 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12\x16\n" +
 	"\x06chatId\x18\x02 \x01(\tR\x06chatId\x12\x14\n" +
 	"\x05model\x18\x03 \x01(\tR\x05model\x12C\n" +
-	"\x0fproject_context\x18\x04 \x01(\v2\x1a.sortedchat.ProjectContextR\x0eprojectContext\"\xc6\x01\n" +
+	"\x0fproject_context\x18\x04 \x01(\v2\x1a.sortedchat.ProjectContextR\x0eprojectContext\"\xb4\x02\n" +
 	"\fChatResponse\x12\x14\n" +
-	"\x04text\x18\x01 \x01(\tH\x00R\x04text\x126\n" +
-	"\asummary\x18\x02 \x01(\v2\x1a.sortedchat.MessageSummaryH\x00R\asummary\x12\\\n" +
-	"\x12document_reference\x18\x03 \x01(\v2+.sortedchat.RAGDocumentReferenceSummaryListH\x00R\x11documentReferenceB\n" +
+	"\x04text\x18\x01 \x01(\tH\x00R\x04text\x127\n" +
+	"\asummary\x18\x02 \x01(\v2\x1b.sortedchat.ResponseSummaryH\x00R\asummary\x12.\n" +
+	"\x12request_message_id\x18\x03 \x01(\tH\x00R\x10requestMessageId\x12\\\n" +
+	"\x12document_reference\x18\x04 \x01(\v2+.sortedchat.RAGDocumentReferenceSummaryListH\x00R\x11documentReference\x12;\n" +
+	"\rchat_metadata\x18\x05 \x01(\v2\x14.sortedchat.ChatInfoH\x00R\fchatMetadataB\n" +
 	"\n" +
 	"\bresponse\"\xcf\x01\n" +
 	"\x1fRAGDocumentReferenceSummaryList\x12M\n" +
@@ -2999,14 +3154,20 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"start_byte\x18\x04 \x01(\x05R\tstartByte\x12\x19\n" +
 	"\bend_byte\x18\x05 \x01(\x05R\aendByte\x12 \n" +
-	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"/\n" +
-	"\x0eMessageSummary\x12\x1d\n" +
+	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"\xc7\x01\n" +
+	"\x0fResponseSummary\x12\x1d\n" +
 	"\n" +
-	"message_id\x18\x01 \x01(\tR\tmessageId\"+\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\x12!\n" +
+	"\finput_tokens\x18\x03 \x01(\x05R\vinputTokens\x12#\n" +
+	"\routput_tokens\x18\x04 \x01(\x05R\foutputTokens\x12#\n" +
+	"\rcached_tokens\x18\x05 \x01(\x05R\fcachedTokens\x12\x12\n" +
+	"\x04cost\x18\x06 \x01(\x02R\x04cost\"+\n" +
 	"\x11GetHistoryRequest\x12\x16\n" +
-	"\x06chatId\x18\x01 \x01(\tR\x06chatId\"G\n" +
+	"\x06chatId\x18\x01 \x01(\tR\x06chatId\"\x82\x01\n" +
 	"\x12GetHistoryResponse\x121\n" +
-	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\"\xbd\x01\n" +
+	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\x129\n" +
+	"\rchat_metadata\x18\x02 \x01(\v2\x14.sortedchat.ChatInfoR\fchatMetadata\"\xd4\x02\n" +
 	"\vChatMessage\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
@@ -3016,16 +3177,26 @@ const file_chatservice_proto_rawDesc = "" +
 	"references\x18\x04 \x03(\v2 .sortedchat.RAGDocumentReferenceR\n" +
 	"references\x12\x1f\n" +
 	"\vrag_enabled\x18\x05 \x01(\bR\n" +
-	"ragEnabled\"V\n" +
+	"ragEnabled\x12\x14\n" +
+	"\x05model\x18\x06 \x01(\tR\x05model\x12!\n" +
+	"\finput_tokens\x18\a \x01(\x05R\vinputTokens\x12#\n" +
+	"\routput_tokens\x18\b \x01(\x05R\foutputTokens\x12#\n" +
+	"\rcached_tokens\x18\t \x01(\x05R\fcachedTokens\x12\x12\n" +
+	"\x04cost\x18\n" +
+	" \x01(\x02R\x04cost\"V\n" +
 	"\x12GetChatListRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
 	"\fsoft_deleted\x18\x02 \x01(\bR\vsoftDeleted\"A\n" +
 	"\x13GetChatListResponse\x12*\n" +
-	"\x05chats\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x05chats\"6\n" +
+	"\x05chats\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x05chats\"\xd2\x01\n" +
 	"\bChatInfo\x12\x16\n" +
 	"\x06chatId\x18\x01 \x01(\tR\x06chatId\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"\xb9\x01\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04cost\x18\x03 \x01(\x02R\x04cost\x12*\n" +
+	"\x11input_token_count\x18\x04 \x01(\x05R\x0finputTokenCount\x12,\n" +
+	"\x12output_token_count\x18\x05 \x01(\x05R\x10outputTokenCount\x12,\n" +
+	"\x12cached_token_count\x18\x06 \x01(\x05R\x10cachedTokenCount\"\xb9\x01\n" +
 	"\rModelListInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x1a\n" +
@@ -3179,7 +3350,7 @@ var file_chatservice_proto_goTypes = []any{
 	(*ChatResponse)(nil),                            // 21: sortedchat.ChatResponse
 	(*RAGDocumentReferenceSummaryList)(nil),         // 22: sortedchat.RAGDocumentReferenceSummaryList
 	(*RAGDocumentReference)(nil),                    // 23: sortedchat.RAGDocumentReference
-	(*MessageSummary)(nil),                          // 24: sortedchat.MessageSummary
+	(*ResponseSummary)(nil),                         // 24: sortedchat.ResponseSummary
 	(*GetHistoryRequest)(nil),                       // 25: sortedchat.GetHistoryRequest
 	(*GetHistoryResponse)(nil),                      // 26: sortedchat.GetHistoryResponse
 	(*ChatMessage)(nil),                             // 27: sortedchat.ChatMessage
@@ -3217,64 +3388,66 @@ var file_chatservice_proto_depIdxs = []int32{
 	12, // 2: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
 	12, // 3: sortedchat.SetSettingRequest.settings:type_name -> sortedchat.Settings
 	19, // 4: sortedchat.ChatRequest.project_context:type_name -> sortedchat.ProjectContext
-	24, // 5: sortedchat.ChatResponse.summary:type_name -> sortedchat.MessageSummary
+	24, // 5: sortedchat.ChatResponse.summary:type_name -> sortedchat.ResponseSummary
 	22, // 6: sortedchat.ChatResponse.document_reference:type_name -> sortedchat.RAGDocumentReferenceSummaryList
-	53, // 7: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
-	54, // 8: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
-	27, // 9: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
-	23, // 10: sortedchat.ChatMessage.references:type_name -> sortedchat.RAGDocumentReference
-	30, // 11: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
-	31, // 12: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
-	35, // 13: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
-	41, // 14: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
-	44, // 15: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
-	0,  // 16: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
-	30, // 17: sortedchat.ListChatBranchResponse.branch_chat_list:type_name -> sortedchat.ChatInfo
-	20, // 18: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	47, // 19: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
-	25, // 20: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
-	28, // 21: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
-	17, // 22: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
-	32, // 23: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
-	34, // 24: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
-	10, // 25: sortedchat.SortedChat.GetRAGDocumentReference:input_type -> sortedchat.RAGDocumentReferenceRequest
-	8,  // 26: sortedchat.SortedChat.DeleteDocument:input_type -> sortedchat.DeleteDocumentRequest
-	37, // 27: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
-	39, // 28: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
-	42, // 29: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
-	45, // 30: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
-	49, // 31: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
-	51, // 32: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
-	6,  // 33: sortedchat.SortedChat.DeleteChat:input_type -> sortedchat.DeleteChatRequest
-	4,  // 34: sortedchat.SortedChat.RestoreChat:input_type -> sortedchat.RestoreChatRequest
-	2,  // 35: sortedchat.SortedChat.RenameChat:input_type -> sortedchat.RenameChatRequest
-	13, // 36: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
-	15, // 37: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
-	21, // 38: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	48, // 39: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
-	26, // 40: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
-	29, // 41: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
-	18, // 42: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	33, // 43: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
-	36, // 44: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
-	11, // 45: sortedchat.SortedChat.GetRAGDocumentReference:output_type -> sortedchat.RAGDocumentReferenceResponse
-	9,  // 46: sortedchat.SortedChat.DeleteDocument:output_type -> sortedchat.DeleteDocumentResponse
-	38, // 47: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
-	40, // 48: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
-	43, // 49: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
-	46, // 50: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
-	50, // 51: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
-	52, // 52: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
-	7,  // 53: sortedchat.SortedChat.DeleteChat:output_type -> sortedchat.DeleteChatResponse
-	5,  // 54: sortedchat.SortedChat.RestoreChat:output_type -> sortedchat.RestoreChatResponse
-	3,  // 55: sortedchat.SortedChat.RenameChat:output_type -> sortedchat.RenameChatResponse
-	14, // 56: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
-	16, // 57: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
-	38, // [38:58] is the sub-list for method output_type
-	18, // [18:38] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	30, // 7: sortedchat.ChatResponse.chat_metadata:type_name -> sortedchat.ChatInfo
+	53, // 8: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
+	54, // 9: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
+	27, // 10: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
+	30, // 11: sortedchat.GetHistoryResponse.chat_metadata:type_name -> sortedchat.ChatInfo
+	23, // 12: sortedchat.ChatMessage.references:type_name -> sortedchat.RAGDocumentReference
+	30, // 13: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
+	31, // 14: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
+	35, // 15: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
+	41, // 16: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
+	44, // 17: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
+	0,  // 18: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
+	30, // 19: sortedchat.ListChatBranchResponse.branch_chat_list:type_name -> sortedchat.ChatInfo
+	20, // 20: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
+	47, // 21: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
+	25, // 22: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
+	28, // 23: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
+	17, // 24: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
+	32, // 25: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
+	34, // 26: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
+	10, // 27: sortedchat.SortedChat.GetRAGDocumentReference:input_type -> sortedchat.RAGDocumentReferenceRequest
+	8,  // 28: sortedchat.SortedChat.DeleteDocument:input_type -> sortedchat.DeleteDocumentRequest
+	37, // 29: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
+	39, // 30: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
+	42, // 31: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
+	45, // 32: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
+	49, // 33: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
+	51, // 34: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
+	6,  // 35: sortedchat.SortedChat.DeleteChat:input_type -> sortedchat.DeleteChatRequest
+	4,  // 36: sortedchat.SortedChat.RestoreChat:input_type -> sortedchat.RestoreChatRequest
+	2,  // 37: sortedchat.SortedChat.RenameChat:input_type -> sortedchat.RenameChatRequest
+	13, // 38: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
+	15, // 39: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
+	21, // 40: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	48, // 41: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
+	26, // 42: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
+	29, // 43: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
+	18, // 44: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
+	33, // 45: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
+	36, // 46: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
+	11, // 47: sortedchat.SortedChat.GetRAGDocumentReference:output_type -> sortedchat.RAGDocumentReferenceResponse
+	9,  // 48: sortedchat.SortedChat.DeleteDocument:output_type -> sortedchat.DeleteDocumentResponse
+	38, // 49: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
+	40, // 50: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
+	43, // 51: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
+	46, // 52: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
+	50, // 53: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
+	52, // 54: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
+	7,  // 55: sortedchat.SortedChat.DeleteChat:output_type -> sortedchat.DeleteChatResponse
+	5,  // 56: sortedchat.SortedChat.RestoreChat:output_type -> sortedchat.RestoreChatResponse
+	3,  // 57: sortedchat.SortedChat.RenameChat:output_type -> sortedchat.RenameChatResponse
+	14, // 58: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
+	16, // 59: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
+	40, // [40:60] is the sub-list for method output_type
+	20, // [20:40] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_chatservice_proto_init() }
@@ -3285,7 +3458,9 @@ func file_chatservice_proto_init() {
 	file_chatservice_proto_msgTypes[19].OneofWrappers = []any{
 		(*ChatResponse_Text)(nil),
 		(*ChatResponse_Summary)(nil),
+		(*ChatResponse_RequestMessageId)(nil),
 		(*ChatResponse_DocumentReference)(nil),
+		(*ChatResponse_ChatMetadata)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

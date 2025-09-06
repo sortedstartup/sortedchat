@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,6 +22,8 @@ import (
 	"sortedstartup/chatservice/rag"
 	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/store"
+
+	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
 	"github.com/google/uuid"
 )
@@ -183,25 +186,28 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	// Save user message with RAG document references if available
+	var requestMessageId string
+	var referencesJSON string
 	if len(ragChunks) > 0 {
 		// Create the RAG JSON structure from chunks
 		ragDocuments := s.createRAGDocumentJSONFromChunks(ragChunks)
 		referencesBytes, err := json.Marshal(ragDocuments)
-		var referencesJSON string
 		if err != nil {
 			slog.Error("failed to marshal RAG document references for user message", "error", err)
 		} else {
 			referencesJSON = string(referencesBytes)
 		}
-		_, err = s.dao.AddChatMessageWithTokens(userID, chatId, "user", req.Text, "", 0, 0, referencesJSON, ragEnabled)
-		if err != nil {
-			return fmt.Errorf("failed to insert user message with references: %v", err)
-		}
-	} else {
-		err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, ragEnabled)
-		if err != nil {
-			return fmt.Errorf("failed to insert user message: %v", err)
-		}
+	}
+	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, model, 0, 0, 0, referencesJSON, ragEnabled)
+	if err != nil {
+		return fmt.Errorf("failed to insert user message: %v", err)
+	}
+	if err := stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_RequestMessageId{
+			RequestMessageId: requestMessageId,
+		},
+	}); err != nil {
+		return fmt.Errorf("failed to send message summary: %v", err)
 	}
 
 	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
@@ -239,7 +245,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	var fullResponse strings.Builder
-	var inputTokens, outputTokens int
+	var inputTokens, outputTokens, cachedTokens int
 
 	// Streaming response from LLM API
 	scanner := bufio.NewScanner(resp.Body)
@@ -272,6 +278,11 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			}
 			if completionTokens, ok := usage["completion_tokens"].(float64); ok {
 				outputTokens = int(completionTokens)
+			}
+			if promptTokensDetails, ok := usage["prompt_tokens_details"].(map[string]interface{}); ok {
+				if cachedTokensVal, ok := promptTokensDetails["cached_tokens"].(float64); ok {
+					cachedTokens = int(cachedTokensVal)
+				}
 			}
 		}
 
@@ -318,21 +329,47 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 		// TODO: we dont save streaming response, if stream is killed we loose the message.
 		// TODO : scope for optimization, can be 1 sql call internally
-		messageId, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, referencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
-			summary := &pb.MessageSummary{
-				MessageId: fmt.Sprintf("%d", messageId),
+			pbSummary := &pb.ResponseSummary{
+				MessageId:    daoSummary.MessageId,
+				Model:        model,
+				InputTokens:  int32(daoSummary.InputTokenCount),
+				OutputTokens: int32(daoSummary.OutputTokenCount),
+				CachedTokens: int32(daoSummary.CachedTokenCount),
+				Cost:         float32(daoSummary.Cost),
 			}
 			if err := stream(&pb.ChatResponse{
 				Response: &pb.ChatResponse_Summary{
-					Summary: summary,
+					Summary: pbSummary,
 				},
 			}); err != nil {
 				return fmt.Errorf("failed to send message summary: %v", err)
 			}
 		}
+	}
+
+	chatInfo, err := s.dao.GetChatMetadata(userID, chatId)
+	if err != nil {
+		return fmt.Errorf("failed to get chat metadata: %v", err)
+	}
+
+	chatInfoPb := &pb.ChatInfo{
+		ChatId:           chatId,
+		Cost:             float32(chatInfo.Cost),
+		InputTokenCount:  int32(chatInfo.InputTokenCount),
+		OutputTokenCount: int32(chatInfo.OutputTokenCount),
+		CachedTokenCount: int32(chatInfo.CachedTokenCount),
+	}
+
+	if err := stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_ChatMetadata{
+			ChatMetadata: chatInfoPb,
+		},
+	}); err != nil {
+		return fmt.Errorf("failed to send chat metadata: %v", err)
 	}
 
 	return nil
@@ -444,23 +481,28 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 	return chatName, nil
 }
 
-func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId string) ([]*pb.ChatMessage, error) {
+func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId string) ([]*pb.ChatMessage, *pb.ChatInfo, error) {
 	if chatId == "" {
-		return nil, fmt.Errorf("chat ID is required")
+		return nil, nil, fmt.Errorf("chat ID is required")
 	}
 
 	messages, err := s.dao.GetChatMessages(userID, chatId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch history: %v", err)
+		return nil, nil, fmt.Errorf("failed to fetch history: %v", err)
 	}
 
 	var pbMessages []*pb.ChatMessage
 	for _, m := range messages {
 		pbMessage := &pb.ChatMessage{
-			Role:       m.Role,
-			Content:    m.Content,
-			MessageId:  m.Id,
-			RagEnabled: m.RagEnabled,
+			Role:         m.Role,
+			Content:      m.Content,
+			MessageId:    m.Id,
+			RagEnabled:   m.RagEnabled,
+			Model:        m.Model,
+			InputTokens:  int32(m.InputTokenCount),
+			OutputTokens: int32(m.OutputTokenCount),
+			CachedTokens: int32(m.CachedTokenCount),
+			Cost:         float32(m.Cost),
 		}
 
 		if m.DocumentReferences != "" {
@@ -501,7 +543,19 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 		pbMessages = append(pbMessages, pbMessage)
 	}
 
-	return pbMessages, nil
+	chatInfo, err := s.dao.GetChatMetadata(userID, chatId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get chat metadata: %v", err)
+	}
+	pbChatInfo := &pb.ChatInfo{
+		ChatId:           chatId,
+		Cost:             float32(chatInfo.Cost),
+		InputTokenCount:  int32(chatInfo.InputTokenCount),
+		OutputTokenCount: int32(chatInfo.OutputTokenCount),
+		CachedTokenCount: int32(chatInfo.CachedTokenCount),
+	}
+
+	return pbMessages, pbChatInfo, nil
 }
 
 func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID string, soft_deleted bool) ([]*pb.ChatInfo, error) {
@@ -1042,6 +1096,42 @@ func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId stri
 	err := s.dao.RenameChat(userID, chatId, trimmedName)
 	if err != nil {
 		return fmt.Errorf("failed to rename chat: %v", err)
+	}
+	return nil
+}
+
+func (s *ChatService) Init(config *dao.Config) *sql.DB {
+
+	//for sqlite we pass db connnection to migrate and seed functions
+	//for postgres we pass dsn(URL) to migrate and seed functions
+	switch config.Database.Type {
+	case dao.DatabaseTypeSQLite:
+		//Create DB and run migrations
+		sqlite_vec.Auto()
+		sqlDB, err := sql.Open("sqlite3", config.Database.SQLite.URL)
+		if err != nil {
+			log.Fatalf("failed to open database: %v", err)
+		}
+		// defer sqlDB.Close() //lets not close it here
+		slog.Info("ChatService: Running SQLite migrations")
+		if err := dao.MigrateDB_UsingConnectionDefaults(sqlDB); err != nil {
+			log.Fatalf("ChatService: Failed to migrate SQLite database: %v", err)
+		}
+		if err := dao.SeedDB_UsingConnectionDefaults(sqlDB); err != nil {
+			log.Fatalf("ChatService: Failed to seed SQLite database: %v", err)
+		}
+		return sqlDB
+	case dao.DatabaseTypePostgres:
+		slog.Info("ChatService: Running PostgreSQL migrations")
+		dsn := config.Database.Postgres.GetPostgresDSN()
+		if err := dao.MigratePostgres(dsn); err != nil {
+			log.Fatalf("ChatService: Failed to migrate PostgreSQL database: %v", err)
+		}
+		if err := dao.SeedPostgres(dsn); err != nil {
+			log.Fatalf("ChatService: Failed to seed PostgreSQL database: %v", err)
+		}
+	default:
+		log.Fatalf("ChatService: Unsupported database type: %s", config.Database.Type)
 	}
 	return nil
 }

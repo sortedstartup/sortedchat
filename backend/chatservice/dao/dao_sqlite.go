@@ -492,7 +492,9 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
 	}()
 
 	// Delete messages under the hierarchy first
+	// Create a temporary table to hold the chat IDs of the hierarchy
 	_, err = tx.Exec(`
+        CREATE TEMP TABLE chat_ids_to_delete AS
         WITH RECURSIVE chat_hierarchy AS (
             SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
             UNION ALL
@@ -500,27 +502,28 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
             JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
             WHERE c.user_id = ?
         )
-        DELETE FROM chat_messages
-        WHERE user_id = ?
-          AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
-    `, chatId, userID, userID, userID)
+        SELECT chat_id FROM chat_hierarchy;
+    `, chatId, userID, userID)
 	if err != nil {
 		return err
 	}
 
-	// Delete chats from the hierarchy
+	// Delete messages using the temporary table
 	_, err = tx.Exec(`
-        WITH RECURSIVE chat_hierarchy AS (
-            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
-            UNION ALL
-            SELECT c.chat_id FROM chat_list c
-            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
-            WHERE c.user_id = ?
-        )
+        DELETE FROM chat_messages
+        WHERE user_id = ?
+          AND chat_id IN (SELECT chat_id FROM chat_ids_to_delete);
+    `, userID)
+	if err != nil {
+		return err
+	}
+
+	// Delete chats using the temporary table
+	_, err = tx.Exec(`
         DELETE FROM chat_list
         WHERE user_id = ?
-          AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
-    `, chatId, userID, userID, userID)
+          AND chat_id IN (SELECT chat_id FROM chat_ids_to_delete);
+    `, userID)
 	if err != nil {
 		return err
 	}

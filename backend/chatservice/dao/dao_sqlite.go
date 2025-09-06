@@ -525,7 +525,8 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	return err
 }
 
 func (s *SQLiteDAO) RestoreChat(userID string, chatId string) error {

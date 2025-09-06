@@ -1575,19 +1575,37 @@ export class ChatRequest extends pb_1.Message {
     }
 }
 export class ChatResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [[1, 2, 3]];
+    #one_of_decls: number[][] = [[1, 2, 3, 4, 5]];
     constructor(data?: any[] | ({} & (({
         text?: string;
         summary?: never;
+        request_message_id?: never;
         document_reference?: never;
+        chat_metadata?: never;
     } | {
         text?: never;
-        summary?: MessageSummary;
+        summary?: ResponseSummary;
+        request_message_id?: never;
         document_reference?: never;
+        chat_metadata?: never;
     } | {
         text?: never;
         summary?: never;
+        request_message_id?: string;
+        document_reference?: never;
+        chat_metadata?: never;
+    } | {
+        text?: never;
+        summary?: never;
+        request_message_id?: never;
         document_reference?: RAGDocumentReferenceSummaryList;
+        chat_metadata?: never;
+    } | {
+        text?: never;
+        summary?: never;
+        request_message_id?: never;
+        document_reference?: never;
+        chat_metadata?: ChatInfo;
     })))) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -1598,8 +1616,14 @@ export class ChatResponse extends pb_1.Message {
             if ("summary" in data && data.summary != undefined) {
                 this.summary = data.summary;
             }
+            if ("request_message_id" in data && data.request_message_id != undefined) {
+                this.request_message_id = data.request_message_id;
+            }
             if ("document_reference" in data && data.document_reference != undefined) {
                 this.document_reference = data.document_reference;
+            }
+            if ("chat_metadata" in data && data.chat_metadata != undefined) {
+                this.chat_metadata = data.chat_metadata;
             }
         }
     }
@@ -1613,56 +1637,86 @@ export class ChatResponse extends pb_1.Message {
         return pb_1.Message.getField(this, 1) != null;
     }
     get summary() {
-        return pb_1.Message.getWrapperField(this, MessageSummary, 2) as MessageSummary;
+        return pb_1.Message.getWrapperField(this, ResponseSummary, 2) as ResponseSummary;
     }
-    set summary(value: MessageSummary) {
+    set summary(value: ResponseSummary) {
         pb_1.Message.setOneofWrapperField(this, 2, this.#one_of_decls[0], value);
     }
     get has_summary() {
         return pb_1.Message.getField(this, 2) != null;
     }
+    get request_message_id() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set request_message_id(value: string) {
+        pb_1.Message.setOneofField(this, 3, this.#one_of_decls[0], value);
+    }
+    get has_request_message_id() {
+        return pb_1.Message.getField(this, 3) != null;
+    }
     get document_reference() {
-        return pb_1.Message.getWrapperField(this, RAGDocumentReferenceSummaryList, 3) as RAGDocumentReferenceSummaryList;
+        return pb_1.Message.getWrapperField(this, RAGDocumentReferenceSummaryList, 4) as RAGDocumentReferenceSummaryList;
     }
     set document_reference(value: RAGDocumentReferenceSummaryList) {
-        pb_1.Message.setOneofWrapperField(this, 3, this.#one_of_decls[0], value);
+        pb_1.Message.setOneofWrapperField(this, 4, this.#one_of_decls[0], value);
     }
     get has_document_reference() {
-        return pb_1.Message.getField(this, 3) != null;
+        return pb_1.Message.getField(this, 4) != null;
+    }
+    get chat_metadata() {
+        return pb_1.Message.getWrapperField(this, ChatInfo, 5) as ChatInfo;
+    }
+    set chat_metadata(value: ChatInfo) {
+        pb_1.Message.setOneofWrapperField(this, 5, this.#one_of_decls[0], value);
+    }
+    get has_chat_metadata() {
+        return pb_1.Message.getField(this, 5) != null;
     }
     get response() {
         const cases: {
-            [index: number]: "none" | "text" | "summary" | "document_reference";
+            [index: number]: "none" | "text" | "summary" | "request_message_id" | "document_reference" | "chat_metadata";
         } = {
             0: "none",
             1: "text",
             2: "summary",
-            3: "document_reference"
+            3: "request_message_id",
+            4: "document_reference",
+            5: "chat_metadata"
         };
-        return cases[pb_1.Message.computeOneofCase(this, [1, 2, 3])];
+        return cases[pb_1.Message.computeOneofCase(this, [1, 2, 3, 4, 5])];
     }
     static fromObject(data: {
         text?: string;
-        summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
+        summary?: ReturnType<typeof ResponseSummary.prototype.toObject>;
+        request_message_id?: string;
         document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
+        chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
     }): ChatResponse {
         const message = new ChatResponse({});
         if (data.text != null) {
             message.text = data.text;
         }
         if (data.summary != null) {
-            message.summary = MessageSummary.fromObject(data.summary);
+            message.summary = ResponseSummary.fromObject(data.summary);
+        }
+        if (data.request_message_id != null) {
+            message.request_message_id = data.request_message_id;
         }
         if (data.document_reference != null) {
             message.document_reference = RAGDocumentReferenceSummaryList.fromObject(data.document_reference);
+        }
+        if (data.chat_metadata != null) {
+            message.chat_metadata = ChatInfo.fromObject(data.chat_metadata);
         }
         return message;
     }
     toObject() {
         const data: {
             text?: string;
-            summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
+            summary?: ReturnType<typeof ResponseSummary.prototype.toObject>;
+            request_message_id?: string;
             document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
+            chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
         } = {};
         if (this.text != null) {
             data.text = this.text;
@@ -1670,8 +1724,14 @@ export class ChatResponse extends pb_1.Message {
         if (this.summary != null) {
             data.summary = this.summary.toObject();
         }
+        if (this.request_message_id != null) {
+            data.request_message_id = this.request_message_id;
+        }
         if (this.document_reference != null) {
             data.document_reference = this.document_reference.toObject();
+        }
+        if (this.chat_metadata != null) {
+            data.chat_metadata = this.chat_metadata.toObject();
         }
         return data;
     }
@@ -1683,8 +1743,12 @@ export class ChatResponse extends pb_1.Message {
             writer.writeString(1, this.text);
         if (this.has_summary)
             writer.writeMessage(2, this.summary, () => this.summary.serialize(writer));
+        if (this.has_request_message_id)
+            writer.writeString(3, this.request_message_id);
         if (this.has_document_reference)
-            writer.writeMessage(3, this.document_reference, () => this.document_reference.serialize(writer));
+            writer.writeMessage(4, this.document_reference, () => this.document_reference.serialize(writer));
+        if (this.has_chat_metadata)
+            writer.writeMessage(5, this.chat_metadata, () => this.chat_metadata.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1698,10 +1762,16 @@ export class ChatResponse extends pb_1.Message {
                     message.text = reader.readString();
                     break;
                 case 2:
-                    reader.readMessage(message.summary, () => message.summary = MessageSummary.deserialize(reader));
+                    reader.readMessage(message.summary, () => message.summary = ResponseSummary.deserialize(reader));
                     break;
                 case 3:
+                    message.request_message_id = reader.readString();
+                    break;
+                case 4:
                     reader.readMessage(message.document_reference, () => message.document_reference = RAGDocumentReferenceSummaryList.deserialize(reader));
+                    break;
+                case 5:
+                    reader.readMessage(message.chat_metadata, () => message.chat_metadata = ChatInfo.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -2144,16 +2214,36 @@ export class RAGDocumentReferenceChunk extends pb_1.Message {
         return RAGDocumentReferenceChunk.deserialize(bytes);
     }
 }
-export class MessageSummary extends pb_1.Message {
+export class ResponseSummary extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         message_id?: string;
+        model?: string;
+        input_tokens?: number;
+        output_tokens?: number;
+        cached_tokens?: number;
+        cost?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("message_id" in data && data.message_id != undefined) {
                 this.message_id = data.message_id;
+            }
+            if ("model" in data && data.model != undefined) {
+                this.model = data.model;
+            }
+            if ("input_tokens" in data && data.input_tokens != undefined) {
+                this.input_tokens = data.input_tokens;
+            }
+            if ("output_tokens" in data && data.output_tokens != undefined) {
+                this.output_tokens = data.output_tokens;
+            }
+            if ("cached_tokens" in data && data.cached_tokens != undefined) {
+                this.cached_tokens = data.cached_tokens;
+            }
+            if ("cost" in data && data.cost != undefined) {
+                this.cost = data.cost;
             }
         }
     }
@@ -2163,21 +2253,91 @@ export class MessageSummary extends pb_1.Message {
     set message_id(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
+    get model() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set model(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get input_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 3, 0) as number;
+    }
+    set input_tokens(value: number) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get output_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 4, 0) as number;
+    }
+    set output_tokens(value: number) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    get cached_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 5, 0) as number;
+    }
+    set cached_tokens(value: number) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    get cost() {
+        return pb_1.Message.getFieldWithDefault(this, 6, 0) as number;
+    }
+    set cost(value: number) {
+        pb_1.Message.setField(this, 6, value);
+    }
     static fromObject(data: {
         message_id?: string;
-    }): MessageSummary {
-        const message = new MessageSummary({});
+        model?: string;
+        input_tokens?: number;
+        output_tokens?: number;
+        cached_tokens?: number;
+        cost?: number;
+    }): ResponseSummary {
+        const message = new ResponseSummary({});
         if (data.message_id != null) {
             message.message_id = data.message_id;
+        }
+        if (data.model != null) {
+            message.model = data.model;
+        }
+        if (data.input_tokens != null) {
+            message.input_tokens = data.input_tokens;
+        }
+        if (data.output_tokens != null) {
+            message.output_tokens = data.output_tokens;
+        }
+        if (data.cached_tokens != null) {
+            message.cached_tokens = data.cached_tokens;
+        }
+        if (data.cost != null) {
+            message.cost = data.cost;
         }
         return message;
     }
     toObject() {
         const data: {
             message_id?: string;
+            model?: string;
+            input_tokens?: number;
+            output_tokens?: number;
+            cached_tokens?: number;
+            cost?: number;
         } = {};
         if (this.message_id != null) {
             data.message_id = this.message_id;
+        }
+        if (this.model != null) {
+            data.model = this.model;
+        }
+        if (this.input_tokens != null) {
+            data.input_tokens = this.input_tokens;
+        }
+        if (this.output_tokens != null) {
+            data.output_tokens = this.output_tokens;
+        }
+        if (this.cached_tokens != null) {
+            data.cached_tokens = this.cached_tokens;
+        }
+        if (this.cost != null) {
+            data.cost = this.cost;
         }
         return data;
     }
@@ -2187,17 +2347,42 @@ export class MessageSummary extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.message_id.length)
             writer.writeString(1, this.message_id);
+        if (this.model.length)
+            writer.writeString(2, this.model);
+        if (this.input_tokens != 0)
+            writer.writeInt32(3, this.input_tokens);
+        if (this.output_tokens != 0)
+            writer.writeInt32(4, this.output_tokens);
+        if (this.cached_tokens != 0)
+            writer.writeInt32(5, this.cached_tokens);
+        if (this.cost != 0)
+            writer.writeFloat(6, this.cost);
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): MessageSummary {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new MessageSummary();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ResponseSummary {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ResponseSummary();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
                     message.message_id = reader.readString();
+                    break;
+                case 2:
+                    message.model = reader.readString();
+                    break;
+                case 3:
+                    message.input_tokens = reader.readInt32();
+                    break;
+                case 4:
+                    message.output_tokens = reader.readInt32();
+                    break;
+                case 5:
+                    message.cached_tokens = reader.readInt32();
+                    break;
+                case 6:
+                    message.cost = reader.readFloat();
                     break;
                 default: reader.skipField();
             }
@@ -2207,8 +2392,8 @@ export class MessageSummary extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): MessageSummary {
-        return MessageSummary.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ResponseSummary {
+        return ResponseSummary.deserialize(bytes);
     }
 }
 export class GetHistoryRequest extends pb_1.Message {
@@ -2282,12 +2467,16 @@ export class GetHistoryResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         history?: ChatMessage[];
+        chat_metadata?: ChatInfo;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("history" in data && data.history != undefined) {
                 this.history = data.history;
+            }
+            if ("chat_metadata" in data && data.chat_metadata != undefined) {
+                this.chat_metadata = data.chat_metadata;
             }
         }
     }
@@ -2297,21 +2486,38 @@ export class GetHistoryResponse extends pb_1.Message {
     set history(value: ChatMessage[]) {
         pb_1.Message.setRepeatedWrapperField(this, 1, value);
     }
+    get chat_metadata() {
+        return pb_1.Message.getWrapperField(this, ChatInfo, 2) as ChatInfo;
+    }
+    set chat_metadata(value: ChatInfo) {
+        pb_1.Message.setWrapperField(this, 2, value);
+    }
+    get has_chat_metadata() {
+        return pb_1.Message.getField(this, 2) != null;
+    }
     static fromObject(data: {
         history?: ReturnType<typeof ChatMessage.prototype.toObject>[];
+        chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
     }): GetHistoryResponse {
         const message = new GetHistoryResponse({});
         if (data.history != null) {
             message.history = data.history.map(item => ChatMessage.fromObject(item));
+        }
+        if (data.chat_metadata != null) {
+            message.chat_metadata = ChatInfo.fromObject(data.chat_metadata);
         }
         return message;
     }
     toObject() {
         const data: {
             history?: ReturnType<typeof ChatMessage.prototype.toObject>[];
+            chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
         } = {};
         if (this.history != null) {
             data.history = this.history.map((item: ChatMessage) => item.toObject());
+        }
+        if (this.chat_metadata != null) {
+            data.chat_metadata = this.chat_metadata.toObject();
         }
         return data;
     }
@@ -2321,6 +2527,8 @@ export class GetHistoryResponse extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.history.length)
             writer.writeRepeatedMessage(1, this.history, (item: ChatMessage) => item.serialize(writer));
+        if (this.has_chat_metadata)
+            writer.writeMessage(2, this.chat_metadata, () => this.chat_metadata.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -2332,6 +2540,9 @@ export class GetHistoryResponse extends pb_1.Message {
             switch (reader.getFieldNumber()) {
                 case 1:
                     reader.readMessage(message.history, () => pb_1.Message.addToRepeatedWrapperField(message, 1, ChatMessage.deserialize(reader), ChatMessage));
+                    break;
+                case 2:
+                    reader.readMessage(message.chat_metadata, () => message.chat_metadata = ChatInfo.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -2353,6 +2564,11 @@ export class ChatMessage extends pb_1.Message {
         message_id?: string;
         references?: RAGDocumentReference[];
         rag_enabled?: boolean;
+        model?: string;
+        input_tokens?: number;
+        output_tokens?: number;
+        cached_tokens?: number;
+        cost?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [4], this.#one_of_decls);
@@ -2371,6 +2587,21 @@ export class ChatMessage extends pb_1.Message {
             }
             if ("rag_enabled" in data && data.rag_enabled != undefined) {
                 this.rag_enabled = data.rag_enabled;
+            }
+            if ("model" in data && data.model != undefined) {
+                this.model = data.model;
+            }
+            if ("input_tokens" in data && data.input_tokens != undefined) {
+                this.input_tokens = data.input_tokens;
+            }
+            if ("output_tokens" in data && data.output_tokens != undefined) {
+                this.output_tokens = data.output_tokens;
+            }
+            if ("cached_tokens" in data && data.cached_tokens != undefined) {
+                this.cached_tokens = data.cached_tokens;
+            }
+            if ("cost" in data && data.cost != undefined) {
+                this.cost = data.cost;
             }
         }
     }
@@ -2404,12 +2635,47 @@ export class ChatMessage extends pb_1.Message {
     set rag_enabled(value: boolean) {
         pb_1.Message.setField(this, 5, value);
     }
+    get model() {
+        return pb_1.Message.getFieldWithDefault(this, 6, "") as string;
+    }
+    set model(value: string) {
+        pb_1.Message.setField(this, 6, value);
+    }
+    get input_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 7, 0) as number;
+    }
+    set input_tokens(value: number) {
+        pb_1.Message.setField(this, 7, value);
+    }
+    get output_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 8, 0) as number;
+    }
+    set output_tokens(value: number) {
+        pb_1.Message.setField(this, 8, value);
+    }
+    get cached_tokens() {
+        return pb_1.Message.getFieldWithDefault(this, 9, 0) as number;
+    }
+    set cached_tokens(value: number) {
+        pb_1.Message.setField(this, 9, value);
+    }
+    get cost() {
+        return pb_1.Message.getFieldWithDefault(this, 10, 0) as number;
+    }
+    set cost(value: number) {
+        pb_1.Message.setField(this, 10, value);
+    }
     static fromObject(data: {
         role?: string;
         content?: string;
         message_id?: string;
         references?: ReturnType<typeof RAGDocumentReference.prototype.toObject>[];
         rag_enabled?: boolean;
+        model?: string;
+        input_tokens?: number;
+        output_tokens?: number;
+        cached_tokens?: number;
+        cost?: number;
     }): ChatMessage {
         const message = new ChatMessage({});
         if (data.role != null) {
@@ -2427,6 +2693,21 @@ export class ChatMessage extends pb_1.Message {
         if (data.rag_enabled != null) {
             message.rag_enabled = data.rag_enabled;
         }
+        if (data.model != null) {
+            message.model = data.model;
+        }
+        if (data.input_tokens != null) {
+            message.input_tokens = data.input_tokens;
+        }
+        if (data.output_tokens != null) {
+            message.output_tokens = data.output_tokens;
+        }
+        if (data.cached_tokens != null) {
+            message.cached_tokens = data.cached_tokens;
+        }
+        if (data.cost != null) {
+            message.cost = data.cost;
+        }
         return message;
     }
     toObject() {
@@ -2436,6 +2717,11 @@ export class ChatMessage extends pb_1.Message {
             message_id?: string;
             references?: ReturnType<typeof RAGDocumentReference.prototype.toObject>[];
             rag_enabled?: boolean;
+            model?: string;
+            input_tokens?: number;
+            output_tokens?: number;
+            cached_tokens?: number;
+            cost?: number;
         } = {};
         if (this.role != null) {
             data.role = this.role;
@@ -2451,6 +2737,21 @@ export class ChatMessage extends pb_1.Message {
         }
         if (this.rag_enabled != null) {
             data.rag_enabled = this.rag_enabled;
+        }
+        if (this.model != null) {
+            data.model = this.model;
+        }
+        if (this.input_tokens != null) {
+            data.input_tokens = this.input_tokens;
+        }
+        if (this.output_tokens != null) {
+            data.output_tokens = this.output_tokens;
+        }
+        if (this.cached_tokens != null) {
+            data.cached_tokens = this.cached_tokens;
+        }
+        if (this.cost != null) {
+            data.cost = this.cost;
         }
         return data;
     }
@@ -2468,6 +2769,16 @@ export class ChatMessage extends pb_1.Message {
             writer.writeRepeatedMessage(4, this.references, (item: RAGDocumentReference) => item.serialize(writer));
         if (this.rag_enabled != false)
             writer.writeBool(5, this.rag_enabled);
+        if (this.model.length)
+            writer.writeString(6, this.model);
+        if (this.input_tokens != 0)
+            writer.writeInt32(7, this.input_tokens);
+        if (this.output_tokens != 0)
+            writer.writeInt32(8, this.output_tokens);
+        if (this.cached_tokens != 0)
+            writer.writeInt32(9, this.cached_tokens);
+        if (this.cost != 0)
+            writer.writeFloat(10, this.cost);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -2491,6 +2802,21 @@ export class ChatMessage extends pb_1.Message {
                     break;
                 case 5:
                     message.rag_enabled = reader.readBool();
+                    break;
+                case 6:
+                    message.model = reader.readString();
+                    break;
+                case 7:
+                    message.input_tokens = reader.readInt32();
+                    break;
+                case 8:
+                    message.output_tokens = reader.readInt32();
+                    break;
+                case 9:
+                    message.cached_tokens = reader.readInt32();
+                    break;
+                case 10:
+                    message.cost = reader.readFloat();
                     break;
                 default: reader.skipField();
             }
@@ -2666,6 +2992,10 @@ export class ChatInfo extends pb_1.Message {
     constructor(data?: any[] | {
         chatId?: string;
         name?: string;
+        cost?: number;
+        input_token_count?: number;
+        output_token_count?: number;
+        cached_token_count?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -2675,6 +3005,18 @@ export class ChatInfo extends pb_1.Message {
             }
             if ("name" in data && data.name != undefined) {
                 this.name = data.name;
+            }
+            if ("cost" in data && data.cost != undefined) {
+                this.cost = data.cost;
+            }
+            if ("input_token_count" in data && data.input_token_count != undefined) {
+                this.input_token_count = data.input_token_count;
+            }
+            if ("output_token_count" in data && data.output_token_count != undefined) {
+                this.output_token_count = data.output_token_count;
+            }
+            if ("cached_token_count" in data && data.cached_token_count != undefined) {
+                this.cached_token_count = data.cached_token_count;
             }
         }
     }
@@ -2690,9 +3032,37 @@ export class ChatInfo extends pb_1.Message {
     set name(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
+    get cost() {
+        return pb_1.Message.getFieldWithDefault(this, 3, 0) as number;
+    }
+    set cost(value: number) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get input_token_count() {
+        return pb_1.Message.getFieldWithDefault(this, 4, 0) as number;
+    }
+    set input_token_count(value: number) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    get output_token_count() {
+        return pb_1.Message.getFieldWithDefault(this, 5, 0) as number;
+    }
+    set output_token_count(value: number) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    get cached_token_count() {
+        return pb_1.Message.getFieldWithDefault(this, 6, 0) as number;
+    }
+    set cached_token_count(value: number) {
+        pb_1.Message.setField(this, 6, value);
+    }
     static fromObject(data: {
         chatId?: string;
         name?: string;
+        cost?: number;
+        input_token_count?: number;
+        output_token_count?: number;
+        cached_token_count?: number;
     }): ChatInfo {
         const message = new ChatInfo({});
         if (data.chatId != null) {
@@ -2701,18 +3071,46 @@ export class ChatInfo extends pb_1.Message {
         if (data.name != null) {
             message.name = data.name;
         }
+        if (data.cost != null) {
+            message.cost = data.cost;
+        }
+        if (data.input_token_count != null) {
+            message.input_token_count = data.input_token_count;
+        }
+        if (data.output_token_count != null) {
+            message.output_token_count = data.output_token_count;
+        }
+        if (data.cached_token_count != null) {
+            message.cached_token_count = data.cached_token_count;
+        }
         return message;
     }
     toObject() {
         const data: {
             chatId?: string;
             name?: string;
+            cost?: number;
+            input_token_count?: number;
+            output_token_count?: number;
+            cached_token_count?: number;
         } = {};
         if (this.chatId != null) {
             data.chatId = this.chatId;
         }
         if (this.name != null) {
             data.name = this.name;
+        }
+        if (this.cost != null) {
+            data.cost = this.cost;
+        }
+        if (this.input_token_count != null) {
+            data.input_token_count = this.input_token_count;
+        }
+        if (this.output_token_count != null) {
+            data.output_token_count = this.output_token_count;
+        }
+        if (this.cached_token_count != null) {
+            data.cached_token_count = this.cached_token_count;
         }
         return data;
     }
@@ -2724,6 +3122,14 @@ export class ChatInfo extends pb_1.Message {
             writer.writeString(1, this.chatId);
         if (this.name.length)
             writer.writeString(2, this.name);
+        if (this.cost != 0)
+            writer.writeFloat(3, this.cost);
+        if (this.input_token_count != 0)
+            writer.writeInt32(4, this.input_token_count);
+        if (this.output_token_count != 0)
+            writer.writeInt32(5, this.output_token_count);
+        if (this.cached_token_count != 0)
+            writer.writeInt32(6, this.cached_token_count);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -2738,6 +3144,18 @@ export class ChatInfo extends pb_1.Message {
                     break;
                 case 2:
                     message.name = reader.readString();
+                    break;
+                case 3:
+                    message.cost = reader.readFloat();
+                    break;
+                case 4:
+                    message.input_token_count = reader.readInt32();
+                    break;
+                case 5:
+                    message.output_token_count = reader.readInt32();
+                    break;
+                case 6:
+                    message.cached_token_count = reader.readInt32();
                     break;
                 default: reader.skipField();
             }

@@ -26,6 +26,7 @@ import {
   RAGDocumentReferenceRequest,
   RAGDocumentReference,
   DeleteDocumentRequest,
+  ResponseSummary,
   DeleteChatRequest,
   DeleteChatRequestOperation,
   RestoreChatRequest,
@@ -104,6 +105,13 @@ export const fetchChatMessages = async (chatId: string) => {
         }
       });
     }
+
+    if (res.chat_metadata) {
+      $chatMetadata.set(res.chat_metadata);
+    } else {
+      $chatMetadata.set(null);
+    }
+
     
     // Set document references if any exist
     if (allReferences.length > 0) {
@@ -126,6 +134,10 @@ export const fetchChatMessages = async (chatId: string) => {
 
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
+export const $responseSummaries = atom<Record<string, ResponseSummary>>({});
+
+export const $currentUserMessageId = atom<string>("");
+export const $currentAssistantMessageId = atom<string | null>(null);
 
 const addMessageToHistory = (message: ChatMessage) => {
   const currentState = $currentChatMessages.get();
@@ -177,9 +189,14 @@ const isFirstMessageInChat = (): boolean => {
   return !currentState.data || currentState.data.length === 0;
 };
 
+export const $chatMetadata = atom<ChatInfo | null>(null);
+
+
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
+  $currentUserMessageId.set("");
+  $currentAssistantMessageId.set(null);
 
   const isFirstMessage = isFirstMessageInChat();
   const isNewlyBranched = $isNewlyBranched.get();
@@ -222,8 +239,18 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     if (res.has_text) {
       assistantResponse += res.text;
       $streamingMessage.set(assistantResponse);
+    } else if (res.has_request_message_id) {
+      $currentUserMessageId.set(res.request_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
+      const currentSummaries = $responseSummaries.get();
+      $responseSummaries.set({
+        ...currentSummaries,
+        [res.summary.message_id]: res.summary,
+      });
+      $currentAssistantMessageId.set(messageId);
+
+
     } else if (res.has_document_reference && ragEnabled) {
       // Only process document references if RAG is enabled
       const docRefList = res.document_reference;
@@ -245,8 +272,10 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       $currentDocumentReferences.set([...currentChatReferences]);
       $showDocumentReferences.set(true);
       
-    }
-  });
+    }else if (res.has_chat_metadata) {
+      $chatMetadata.set(res.chat_metadata);
+    };
+  } );
 
   stream.on("end", () => {
     const userMessage = ChatMessage.fromObject({
@@ -607,7 +636,6 @@ export async function ListChatBranch (chatId: string) {
     const res = await chat.ListChatBranch(ListChatBranchRequest.fromObject({
       chat_id: chatId,
     }),{});
-    console.log('response from branch chat list', res.branch_chat_list)
     $listChatBranch.set(res.branch_chat_list);
   } catch (error) {
     console.error('Failed to fetch branch chat list:', error);
@@ -618,6 +646,10 @@ export async function ListChatBranch (chatId: string) {
 $currentChatId.listen((newChatId) => {
   $streamingMessage.set("");
   $currentChatMessage.set("");
+  $responseSummaries.set({});
+  $currentUserMessageId.set("");
+  $currentAssistantMessageId.set(null);
+  $chatMetadata.set(null);
 
   // fetch branch chat list
   if (newChatId) {

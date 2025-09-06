@@ -36,7 +36,7 @@ import {
   fetchRAGDocumentReference,
   $currentUserMessageId,
   $chatMetadata,
-  $messageSummaries,
+  $responseSummaries,
   $currentAssistantMessageId,
 } from "@/store/chat";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
@@ -54,8 +54,7 @@ import {
 } from "@/components/ui/dialog";
 import type {
   ChatMessage,
-  MessageSummary,
-  RAGDocumentReference, RAGDocumentReferenceChunk,
+  RAGDocumentReference, RAGDocumentReferenceChunk, ResponseSummary,
 } from "proto/chatservice";
 
 
@@ -132,7 +131,7 @@ interface MessageProps {
   projectId?: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  messageSummary?: MessageSummary;
+  messageSummary?: ResponseSummary;
 }
 
 function formatCostAndTokens(
@@ -463,7 +462,7 @@ export function Chat() {
   const listChatBranch = useStore($listChatBranch);
   const ragDocumentDetails = useStore($ragDocumentDetails);
   const currentUserMessageId = useStore($currentUserMessageId);
-  const messageSummaries = useStore($messageSummaries);
+  const responseSummaries = useStore($responseSummaries);
   const currentAssistantMessageId = useStore($currentAssistantMessageId);
 
 
@@ -545,7 +544,7 @@ export function Chat() {
           </div>
         ) : (
           combinedMessages.map((message,index) => {
-            const summaryForThis = messageSummaries[message.message_id || ""];
+            const summaryForThis = responseSummaries[message.message_id || ""];
 
             return (
               <Message

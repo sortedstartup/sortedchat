@@ -1057,7 +1057,7 @@ type ChatResponse struct {
 	//
 	//	*ChatResponse_Text
 	//	*ChatResponse_Summary
-	//	*ChatResponse_UserMessageId
+	//	*ChatResponse_RequestMessageId
 	//	*ChatResponse_DocumentReference
 	//	*ChatResponse_ChatMetadata
 	Response      isChatResponse_Response `protobuf_oneof:"response"`
@@ -1111,7 +1111,7 @@ func (x *ChatResponse) GetText() string {
 	return ""
 }
 
-func (x *ChatResponse) GetSummary() *MessageSummary {
+func (x *ChatResponse) GetSummary() *ResponseSummary {
 	if x != nil {
 		if x, ok := x.Response.(*ChatResponse_Summary); ok {
 			return x.Summary
@@ -1120,10 +1120,10 @@ func (x *ChatResponse) GetSummary() *MessageSummary {
 	return nil
 }
 
-func (x *ChatResponse) GetUserMessageId() string {
+func (x *ChatResponse) GetRequestMessageId() string {
 	if x != nil {
-		if x, ok := x.Response.(*ChatResponse_UserMessageId); ok {
-			return x.UserMessageId
+		if x, ok := x.Response.(*ChatResponse_RequestMessageId); ok {
+			return x.RequestMessageId
 		}
 	}
 	return ""
@@ -1158,11 +1158,11 @@ type ChatResponse_Text struct {
 type ChatResponse_Summary struct {
 	// was introduced to send message id, because it is generated server side
 	// sending one of the multiple oneof's help us do all of this in one streaming API call
-	Summary *MessageSummary `protobuf:"bytes,2,opt,name=summary,proto3,oneof"`
+	Summary *ResponseSummary `protobuf:"bytes,2,opt,name=summary,proto3,oneof"`
 }
 
-type ChatResponse_UserMessageId struct {
-	UserMessageId string `protobuf:"bytes,3,opt,name=user_message_id,json=userMessageId,proto3,oneof"`
+type ChatResponse_RequestMessageId struct {
+	RequestMessageId string `protobuf:"bytes,3,opt,name=request_message_id,json=requestMessageId,proto3,oneof"`
 }
 
 type ChatResponse_DocumentReference struct {
@@ -1177,7 +1177,7 @@ func (*ChatResponse_Text) isChatResponse_Response() {}
 
 func (*ChatResponse_Summary) isChatResponse_Response() {}
 
-func (*ChatResponse_UserMessageId) isChatResponse_Response() {}
+func (*ChatResponse_RequestMessageId) isChatResponse_Response() {}
 
 func (*ChatResponse_DocumentReference) isChatResponse_Response() {}
 
@@ -1288,7 +1288,7 @@ func (x *RAGDocumentReference) GetChunks() []*RAGDocumentReference_Chunk {
 	return nil
 }
 
-type MessageSummary struct {
+type ResponseSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
@@ -1300,20 +1300,20 @@ type MessageSummary struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *MessageSummary) Reset() {
-	*x = MessageSummary{}
+func (x *ResponseSummary) Reset() {
+	*x = ResponseSummary{}
 	mi := &file_chatservice_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MessageSummary) String() string {
+func (x *ResponseSummary) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MessageSummary) ProtoMessage() {}
+func (*ResponseSummary) ProtoMessage() {}
 
-func (x *MessageSummary) ProtoReflect() protoreflect.Message {
+func (x *ResponseSummary) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1325,47 +1325,47 @@ func (x *MessageSummary) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MessageSummary.ProtoReflect.Descriptor instead.
-func (*MessageSummary) Descriptor() ([]byte, []int) {
+// Deprecated: Use ResponseSummary.ProtoReflect.Descriptor instead.
+func (*ResponseSummary) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *MessageSummary) GetMessageId() string {
+func (x *ResponseSummary) GetMessageId() string {
 	if x != nil {
 		return x.MessageId
 	}
 	return ""
 }
 
-func (x *MessageSummary) GetModel() string {
+func (x *ResponseSummary) GetModel() string {
 	if x != nil {
 		return x.Model
 	}
 	return ""
 }
 
-func (x *MessageSummary) GetInputTokens() int32 {
+func (x *ResponseSummary) GetInputTokens() int32 {
 	if x != nil {
 		return x.InputTokens
 	}
 	return 0
 }
 
-func (x *MessageSummary) GetOutputTokens() int32 {
+func (x *ResponseSummary) GetOutputTokens() int32 {
 	if x != nil {
 		return x.OutputTokens
 	}
 	return 0
 }
 
-func (x *MessageSummary) GetCachedTokens() int32 {
+func (x *ResponseSummary) GetCachedTokens() int32 {
 	if x != nil {
 		return x.CachedTokens
 	}
 	return 0
 }
 
-func (x *MessageSummary) GetCost() float32 {
+func (x *ResponseSummary) GetCost() float32 {
 	if x != nil {
 		return x.Cost
 	}
@@ -3127,11 +3127,11 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12\x16\n" +
 	"\x06chatId\x18\x02 \x01(\tR\x06chatId\x12\x14\n" +
 	"\x05model\x18\x03 \x01(\tR\x05model\x12C\n" +
-	"\x0fproject_context\x18\x04 \x01(\v2\x1a.sortedchat.ProjectContextR\x0eprojectContext\"\xad\x02\n" +
+	"\x0fproject_context\x18\x04 \x01(\v2\x1a.sortedchat.ProjectContextR\x0eprojectContext\"\xb4\x02\n" +
 	"\fChatResponse\x12\x14\n" +
-	"\x04text\x18\x01 \x01(\tH\x00R\x04text\x126\n" +
-	"\asummary\x18\x02 \x01(\v2\x1a.sortedchat.MessageSummaryH\x00R\asummary\x12(\n" +
-	"\x0fuser_message_id\x18\x03 \x01(\tH\x00R\ruserMessageId\x12\\\n" +
+	"\x04text\x18\x01 \x01(\tH\x00R\x04text\x127\n" +
+	"\asummary\x18\x02 \x01(\v2\x1b.sortedchat.ResponseSummaryH\x00R\asummary\x12.\n" +
+	"\x12request_message_id\x18\x03 \x01(\tH\x00R\x10requestMessageId\x12\\\n" +
 	"\x12document_reference\x18\x04 \x01(\v2+.sortedchat.RAGDocumentReferenceSummaryListH\x00R\x11documentReference\x12;\n" +
 	"\rchat_metadata\x18\x05 \x01(\v2\x14.sortedchat.ChatInfoH\x00R\fchatMetadataB\n" +
 	"\n" +
@@ -3154,8 +3154,8 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"start_byte\x18\x04 \x01(\x05R\tstartByte\x12\x19\n" +
 	"\bend_byte\x18\x05 \x01(\x05R\aendByte\x12 \n" +
-	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"\xc6\x01\n" +
-	"\x0eMessageSummary\x12\x1d\n" +
+	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"\xc7\x01\n" +
+	"\x0fResponseSummary\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x14\n" +
 	"\x05model\x18\x02 \x01(\tR\x05model\x12!\n" +
@@ -3350,7 +3350,7 @@ var file_chatservice_proto_goTypes = []any{
 	(*ChatResponse)(nil),                            // 21: sortedchat.ChatResponse
 	(*RAGDocumentReferenceSummaryList)(nil),         // 22: sortedchat.RAGDocumentReferenceSummaryList
 	(*RAGDocumentReference)(nil),                    // 23: sortedchat.RAGDocumentReference
-	(*MessageSummary)(nil),                          // 24: sortedchat.MessageSummary
+	(*ResponseSummary)(nil),                         // 24: sortedchat.ResponseSummary
 	(*GetHistoryRequest)(nil),                       // 25: sortedchat.GetHistoryRequest
 	(*GetHistoryResponse)(nil),                      // 26: sortedchat.GetHistoryResponse
 	(*ChatMessage)(nil),                             // 27: sortedchat.ChatMessage
@@ -3388,7 +3388,7 @@ var file_chatservice_proto_depIdxs = []int32{
 	12, // 2: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
 	12, // 3: sortedchat.SetSettingRequest.settings:type_name -> sortedchat.Settings
 	19, // 4: sortedchat.ChatRequest.project_context:type_name -> sortedchat.ProjectContext
-	24, // 5: sortedchat.ChatResponse.summary:type_name -> sortedchat.MessageSummary
+	24, // 5: sortedchat.ChatResponse.summary:type_name -> sortedchat.ResponseSummary
 	22, // 6: sortedchat.ChatResponse.document_reference:type_name -> sortedchat.RAGDocumentReferenceSummaryList
 	30, // 7: sortedchat.ChatResponse.chat_metadata:type_name -> sortedchat.ChatInfo
 	53, // 8: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
@@ -3458,7 +3458,7 @@ func file_chatservice_proto_init() {
 	file_chatservice_proto_msgTypes[19].OneofWrappers = []any{
 		(*ChatResponse_Text)(nil),
 		(*ChatResponse_Summary)(nil),
-		(*ChatResponse_UserMessageId)(nil),
+		(*ChatResponse_RequestMessageId)(nil),
 		(*ChatResponse_DocumentReference)(nil),
 		(*ChatResponse_ChatMetadata)(nil),
 	}

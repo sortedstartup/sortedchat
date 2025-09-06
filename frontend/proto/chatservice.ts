@@ -1579,31 +1579,31 @@ export class ChatResponse extends pb_1.Message {
     constructor(data?: any[] | ({} & (({
         text?: string;
         summary?: never;
-        user_message_id?: never;
+        request_message_id?: never;
         document_reference?: never;
         chat_metadata?: never;
     } | {
         text?: never;
-        summary?: MessageSummary;
-        user_message_id?: never;
-        document_reference?: never;
-        chat_metadata?: never;
-    } | {
-        text?: never;
-        summary?: never;
-        user_message_id?: string;
+        summary?: ResponseSummary;
+        request_message_id?: never;
         document_reference?: never;
         chat_metadata?: never;
     } | {
         text?: never;
         summary?: never;
-        user_message_id?: never;
+        request_message_id?: string;
+        document_reference?: never;
+        chat_metadata?: never;
+    } | {
+        text?: never;
+        summary?: never;
+        request_message_id?: never;
         document_reference?: RAGDocumentReferenceSummaryList;
         chat_metadata?: never;
     } | {
         text?: never;
         summary?: never;
-        user_message_id?: never;
+        request_message_id?: never;
         document_reference?: never;
         chat_metadata?: ChatInfo;
     })))) {
@@ -1616,8 +1616,8 @@ export class ChatResponse extends pb_1.Message {
             if ("summary" in data && data.summary != undefined) {
                 this.summary = data.summary;
             }
-            if ("user_message_id" in data && data.user_message_id != undefined) {
-                this.user_message_id = data.user_message_id;
+            if ("request_message_id" in data && data.request_message_id != undefined) {
+                this.request_message_id = data.request_message_id;
             }
             if ("document_reference" in data && data.document_reference != undefined) {
                 this.document_reference = data.document_reference;
@@ -1637,21 +1637,21 @@ export class ChatResponse extends pb_1.Message {
         return pb_1.Message.getField(this, 1) != null;
     }
     get summary() {
-        return pb_1.Message.getWrapperField(this, MessageSummary, 2) as MessageSummary;
+        return pb_1.Message.getWrapperField(this, ResponseSummary, 2) as ResponseSummary;
     }
-    set summary(value: MessageSummary) {
+    set summary(value: ResponseSummary) {
         pb_1.Message.setOneofWrapperField(this, 2, this.#one_of_decls[0], value);
     }
     get has_summary() {
         return pb_1.Message.getField(this, 2) != null;
     }
-    get user_message_id() {
+    get request_message_id() {
         return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
     }
-    set user_message_id(value: string) {
+    set request_message_id(value: string) {
         pb_1.Message.setOneofField(this, 3, this.#one_of_decls[0], value);
     }
-    get has_user_message_id() {
+    get has_request_message_id() {
         return pb_1.Message.getField(this, 3) != null;
     }
     get document_reference() {
@@ -1674,12 +1674,12 @@ export class ChatResponse extends pb_1.Message {
     }
     get response() {
         const cases: {
-            [index: number]: "none" | "text" | "summary" | "user_message_id" | "document_reference" | "chat_metadata";
+            [index: number]: "none" | "text" | "summary" | "request_message_id" | "document_reference" | "chat_metadata";
         } = {
             0: "none",
             1: "text",
             2: "summary",
-            3: "user_message_id",
+            3: "request_message_id",
             4: "document_reference",
             5: "chat_metadata"
         };
@@ -1687,8 +1687,8 @@ export class ChatResponse extends pb_1.Message {
     }
     static fromObject(data: {
         text?: string;
-        summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
-        user_message_id?: string;
+        summary?: ReturnType<typeof ResponseSummary.prototype.toObject>;
+        request_message_id?: string;
         document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
         chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
     }): ChatResponse {
@@ -1697,10 +1697,10 @@ export class ChatResponse extends pb_1.Message {
             message.text = data.text;
         }
         if (data.summary != null) {
-            message.summary = MessageSummary.fromObject(data.summary);
+            message.summary = ResponseSummary.fromObject(data.summary);
         }
-        if (data.user_message_id != null) {
-            message.user_message_id = data.user_message_id;
+        if (data.request_message_id != null) {
+            message.request_message_id = data.request_message_id;
         }
         if (data.document_reference != null) {
             message.document_reference = RAGDocumentReferenceSummaryList.fromObject(data.document_reference);
@@ -1713,8 +1713,8 @@ export class ChatResponse extends pb_1.Message {
     toObject() {
         const data: {
             text?: string;
-            summary?: ReturnType<typeof MessageSummary.prototype.toObject>;
-            user_message_id?: string;
+            summary?: ReturnType<typeof ResponseSummary.prototype.toObject>;
+            request_message_id?: string;
             document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
             chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
         } = {};
@@ -1724,8 +1724,8 @@ export class ChatResponse extends pb_1.Message {
         if (this.summary != null) {
             data.summary = this.summary.toObject();
         }
-        if (this.user_message_id != null) {
-            data.user_message_id = this.user_message_id;
+        if (this.request_message_id != null) {
+            data.request_message_id = this.request_message_id;
         }
         if (this.document_reference != null) {
             data.document_reference = this.document_reference.toObject();
@@ -1743,8 +1743,8 @@ export class ChatResponse extends pb_1.Message {
             writer.writeString(1, this.text);
         if (this.has_summary)
             writer.writeMessage(2, this.summary, () => this.summary.serialize(writer));
-        if (this.has_user_message_id)
-            writer.writeString(3, this.user_message_id);
+        if (this.has_request_message_id)
+            writer.writeString(3, this.request_message_id);
         if (this.has_document_reference)
             writer.writeMessage(4, this.document_reference, () => this.document_reference.serialize(writer));
         if (this.has_chat_metadata)
@@ -1762,10 +1762,10 @@ export class ChatResponse extends pb_1.Message {
                     message.text = reader.readString();
                     break;
                 case 2:
-                    reader.readMessage(message.summary, () => message.summary = MessageSummary.deserialize(reader));
+                    reader.readMessage(message.summary, () => message.summary = ResponseSummary.deserialize(reader));
                     break;
                 case 3:
-                    message.user_message_id = reader.readString();
+                    message.request_message_id = reader.readString();
                     break;
                 case 4:
                     reader.readMessage(message.document_reference, () => message.document_reference = RAGDocumentReferenceSummaryList.deserialize(reader));
@@ -2214,7 +2214,7 @@ export class RAGDocumentReferenceChunk extends pb_1.Message {
         return RAGDocumentReferenceChunk.deserialize(bytes);
     }
 }
-export class MessageSummary extends pb_1.Message {
+export class ResponseSummary extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         message_id?: string;
@@ -2290,8 +2290,8 @@ export class MessageSummary extends pb_1.Message {
         output_tokens?: number;
         cached_tokens?: number;
         cost?: number;
-    }): MessageSummary {
-        const message = new MessageSummary({});
+    }): ResponseSummary {
+        const message = new ResponseSummary({});
         if (data.message_id != null) {
             message.message_id = data.message_id;
         }
@@ -2360,8 +2360,8 @@ export class MessageSummary extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): MessageSummary {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new MessageSummary();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ResponseSummary {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ResponseSummary();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -2392,8 +2392,8 @@ export class MessageSummary extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): MessageSummary {
-        return MessageSummary.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ResponseSummary {
+        return ResponseSummary.deserialize(bytes);
     }
 }
 export class GetHistoryRequest extends pb_1.Message {

@@ -546,7 +546,7 @@ func (s *SQLiteDAO) RenameChat(userID string, chatId string, name string) error 
 	return nil
 }
 
-func (s *SQLiteDAO) AddModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
+func (s *SQLiteDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
 	_, err := s.db.Exec(`
 		INSERT INTO model_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
 		VALUES (?, ?, ?, ?, ?, ?, ?)

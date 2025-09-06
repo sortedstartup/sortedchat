@@ -126,10 +126,11 @@ message ChatRequest {
 message ChatResponse {
   oneof response {
     string text = 1;
-    // was introduced to send message id, because it is generated server side
+    // was introduced to send assistant message id, because it is generated server side
     // sending one of the multiple oneof's help us do all of this in one streaming API call
-    MessageSummary summary = 2;
-    string user_message_id = 3;
+    ResponseSummary summary = 2;
+    // message id of user message(question to llm)
+    string request_message_id = 3;
     RAGDocumentReferenceSummaryList document_reference = 4; 
     ChatInfo chat_metadata = 5;
   }
@@ -157,7 +158,7 @@ message RAGDocumentReference {
   }
 }
 
-message MessageSummary {
+message ResponseSummary {
   string message_id = 1;
   string model = 2;
   int32 input_tokens = 3;

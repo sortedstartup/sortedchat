@@ -183,30 +183,33 @@ func TestAddChatMessageWithTokens(t *testing.T) {
 		},
 	}
 
+	daoInstance := SetupSQLiteInMemoryTestDB(t)
+
 	for _, model := range modelMetadata {
 		t.Run(fmt.Sprintf("Model_%s", model.model), func(t *testing.T) {
+			// Add the model once per model test group
+			err := daoInstance.UpsertModel(model.model, model.modelDisplayName, "", model.modelProvider,
+				model.inputTokenCost, model.outputTokenCost, model.cachedTokenCost)
+			if err != nil {
+				t.Fatalf("failed to add model: %v", err)
+			}
+
 			for _, tc := range tokenTestCases {
 				t.Run(tc.name, func(t *testing.T) {
-					// Setup fresh database for each test case
-					daoInstance := SetupSQLiteInMemoryTestDB(t)
+					// Generate unique IDs for this test case to avoid conflicts
+					userID := fmt.Sprintf("user_%s_%s", model.model, strings.ReplaceAll(tc.name, " ", "_"))
+					chatID := fmt.Sprintf("chat_%s_%s", model.model, strings.ReplaceAll(tc.name, " ", "_"))
 
 					// Pre-insert a chat into chat_list to satisfy foreign key constraint
-					err := daoInstance.CreateChat("user123", "chat123", "Test Chat", "")
+					err := daoInstance.CreateChat(userID, chatID, "Test Chat", "")
 					if err != nil {
 						t.Fatalf("failed to create chat: %v", err)
 					}
 
-					// Add the model for this test case
-					err = daoInstance.AddModel(model.model, model.modelDisplayName, "", model.modelProvider,
-						model.inputTokenCost, model.outputTokenCost, model.cachedTokenCost)
-					if err != nil {
-						t.Fatalf("failed to add model: %v", err)
-					}
-
 					// Execute the function under test
 					summary, err := daoInstance.AddChatMessageWithTokens(
-						"user123",
-						"chat123",
+						userID,
+						chatID,
 						tc.role,
 						tc.message,
 						model.model,
@@ -264,7 +267,7 @@ func TestAddChatMessageWithTokens(t *testing.T) {
 					err = daoInstance.db.QueryRow(`
 						SELECT COUNT(*) FROM chat_messages 
 						WHERE chat_id = ? AND user_id = ? AND role = ?`,
-						"chat123", "user123", tc.role).Scan(&count)
+						chatID, userID, tc.role).Scan(&count)
 					if err != nil {
 						t.Fatalf("failed to query chat_messages: %v", err)
 					}
@@ -278,7 +281,7 @@ func TestAddChatMessageWithTokens(t *testing.T) {
 					err = daoInstance.db.QueryRow(`
 						SELECT cost, input_token_count, output_token_count, cached_token_count
 						FROM chat_list WHERE chat_id = ? AND user_id = ?`,
-						"chat123", "user123").Scan(&totalCost, &totalInput, &totalOutput, &totalCached)
+						chatID, userID).Scan(&totalCost, &totalInput, &totalOutput, &totalCached)
 					if err != nil {
 						t.Fatalf("failed to query chat_list: %v", err)
 					}

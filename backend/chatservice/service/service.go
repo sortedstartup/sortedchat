@@ -186,7 +186,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	// Save user message with RAG document references if available
-	var userMessageId string
+	var requestMessageId string
 	var referencesJSON string
 	if len(ragChunks) > 0 {
 		// Create the RAG JSON structure from chunks
@@ -198,13 +198,13 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			referencesJSON = string(referencesBytes)
 		}
 	}
-	userMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, model, 0, 0, 0, referencesJSON, ragEnabled)
+	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, model, 0, 0, 0, referencesJSON, ragEnabled)
 	if err != nil {
 		return fmt.Errorf("failed to insert user message: %v", err)
 	}
 	if err := stream(&pb.ChatResponse{
-		Response: &pb.ChatResponse_UserMessageId{
-			UserMessageId: userMessageId,
+		Response: &pb.ChatResponse_RequestMessageId{
+			RequestMessageId: requestMessageId,
 		},
 	}); err != nil {
 		return fmt.Errorf("failed to send message summary: %v", err)
@@ -333,7 +333,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
-			pbSummary := &pb.MessageSummary{
+			pbSummary := &pb.ResponseSummary{
 				MessageId:    daoSummary.MessageId,
 				Model:        model,
 				InputTokens:  int32(daoSummary.InputTokenCount),

@@ -26,7 +26,7 @@ import {
   RAGDocumentReferenceRequest,
   RAGDocumentReference,
   DeleteDocumentRequest,
-  MessageSummary,
+  ResponseSummary,
   DeleteChatRequest,
   DeleteChatRequestOperation,
   RestoreChatRequest,
@@ -134,7 +134,7 @@ export const fetchChatMessages = async (chatId: string) => {
 
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
-export const $messageSummaries = atom<Record<string, MessageSummary>>({});
+export const $responseSummaries = atom<Record<string, ResponseSummary>>({});
 
 export const $currentUserMessageId = atom<string>("");
 export const $currentAssistantMessageId = atom<string | null>(null);
@@ -239,13 +239,12 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     if (res.has_text) {
       assistantResponse += res.text;
       $streamingMessage.set(assistantResponse);
-    } else if (res.has_user_message_id) {
-      console.log("res.user_message_id", res.user_message_id);
-      $currentUserMessageId.set(res.user_message_id); //(user) message id is set in the store
+    } else if (res.has_request_message_id) {
+      $currentUserMessageId.set(res.request_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
-      const currentSummaries = $messageSummaries.get();
-      $messageSummaries.set({
+      const currentSummaries = $responseSummaries.get();
+      $responseSummaries.set({
         ...currentSummaries,
         [res.summary.message_id]: res.summary,
       });
@@ -647,7 +646,7 @@ export async function ListChatBranch (chatId: string) {
 $currentChatId.listen((newChatId) => {
   $streamingMessage.set("");
   $currentChatMessage.set("");
-  $messageSummaries.set({});
+  $responseSummaries.set({});
   $currentUserMessageId.set("");
   $currentAssistantMessageId.set(null);
   $chatMetadata.set(null);

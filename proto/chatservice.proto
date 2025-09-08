@@ -128,7 +128,7 @@ message ChatResponse {
     string text = 1;
     // was introduced to send assistant message id, because it is generated server side
     // sending one of the multiple oneof's help us do all of this in one streaming API call
-    MessageSummary summary = 2;
+    ResponseSummary summary = 2;
     RAGDocumentReferenceSummaryList document_reference = 3; 
   }
 }

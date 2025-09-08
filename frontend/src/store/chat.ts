@@ -31,6 +31,7 @@ import {
   DeleteChatRequestOperation,
   RestoreChatRequest,
   RenameChatRequest,
+  ChatProgress,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -190,6 +191,7 @@ const isFirstMessageInChat = (): boolean => {
 };
 
 export const $chatMetadata = atom<ChatInfo | null>(null);
+export const $chatProgress = atom<ChatProgress | null>(null);
 
 
 export const doChat = (msg: string,projectId: string | undefined) => {
@@ -274,7 +276,9 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       
     }else if (res.has_chat_metadata) {
       $chatMetadata.set(res.chat_metadata);
-    };
+    } else if (res.has_progress) {
+      $chatProgress.set(res.progress);
+    }
   } );
 
   stream.on("end", () => {
@@ -297,6 +301,9 @@ export const doChat = (msg: string,projectId: string | undefined) => {
 
     $streamingMessage.set("");
     $currentChatMessage.set("");
+
+    $chatProgress.set(null);
+
     
     // Clear document references if RAG is disabled
     if (!ragEnabled) {
@@ -315,7 +322,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     console.error("Stream error:", err);
     $streamingMessage.set("");
     toast.error("An error occurred while receiving the response. Please try again.");  
-
+    $chatProgress.set(null);
     
     // Reset RAG to enabled for project chats even on error
     if (projectId) {

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import {
@@ -14,7 +13,8 @@ import {
   ArrowUp,
   ArrowDown,
   DollarSign,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
@@ -38,6 +38,7 @@ import {
   $chatMetadata,
   $responseSummaries,
   $currentAssistantMessageId,
+  $chatProgress,
 } from "@/store/chat";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
 import {
@@ -54,9 +55,27 @@ import {
 } from "@/components/ui/dialog";
 import type {
   ChatMessage,
-  RAGDocumentReference, RAGDocumentReferenceChunk, ResponseSummary,
+  RAGDocumentReference, RAGDocumentReferenceChunk, ResponseSummary,ChatProgress,
 } from "proto/chatservice";
 
+function getProgressText(state: number): string {
+  switch (state) {
+    case 0: // SENDING_REQUEST_TO_LLM
+      return "Sending request...";
+    case 1: // REQUEST_SENT_TO_LLM
+      return "Request sent to LLM...";
+    case 2: // FIRST_RESPONSE_RECEIVED
+      return "Response received from LLM...";
+    case 3: // FIRST_TOKEN_RECEIVED
+      return "First token received from LLM...";
+    case 4: // TOKENS_STREAMING
+      return "Tokens streaming from LLM...";
+    case 5: // TOKENS_STOPPED
+      return "Finalizing...";
+    default:
+      return "Processing...";
+  }
+}
 
 function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undefined }) {
   const [expandedChunks, setExpandedChunks] = useState<Set<number>>(new Set());
@@ -121,9 +140,8 @@ function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undef
   );
 }
 
-
 interface MessageProps {
-  message: ChatMessage;
+  message: ChatMessage & { isProgress?: boolean };
   onCopyMessage: (content: string, messageId: string) => void;
   onViewRAGDetails: (messageId: string, docId: string, fileName: string) => void;
   onBranchChat: (messageId: string) => void;
@@ -132,6 +150,7 @@ interface MessageProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   messageSummary?: ResponseSummary;
+  chatProgress?: ChatProgress;
 }
 
 function formatCostAndTokens(
@@ -159,10 +178,12 @@ function Message({
   isExpanded,
   onToggleExpand,
   messageSummary,
+  chatProgress,
 }: MessageProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const isUser = message.role === "user";
+  const isProgress = message.isProgress;
 
   const { costDisplay, cachedTokensDisplay } = formatCostAndTokens(
     messageSummary?.cost ?? message?.cost,
@@ -188,16 +209,23 @@ function Message({
         )}
 
         <div className={`flex-1 min-w-0 text-${isUser ? "right" : "left"}`}>
-          <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
+          {isProgress ? (
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{chatProgress?.message || getProgressText(chatProgress?.state || 0)}</span>
+            </div>
+          ) : (
+            <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
+          )}
 
-          {!isUser && projectId && message.rag_enabled == false && (
+          {!isUser && !isProgress && projectId && message.rag_enabled == false && (
             <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
               <FileX className="h-3 w-3 mr-1" />
               RAG not enabled
             </div>
           )}
 
-          {!isUser && message.references && message?.references.length > 0 && (
+          {!isUser && !isProgress && message.references && message?.references.length > 0 && (
             <div className="mt-3">
               <div className="text-xs text-gray-500 mb-2">Sources:</div>
               <div className="flex flex-wrap gap-2">
@@ -225,7 +253,7 @@ function Message({
             </div>
           )}
 
-          {!isUser && (
+          {!isUser && !isProgress && (
             <div className="flex justify-between mt-3">
               <div className="flex items-center space-x-2">
                 <Button
@@ -464,9 +492,12 @@ export function Chat() {
   const currentUserMessageId = useStore($currentUserMessageId);
   const responseSummaries = useStore($responseSummaries);
   const currentAssistantMessageId = useStore($currentAssistantMessageId);
-
+  const chatProgress = useStore($chatProgress);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Show progress as assistant message when there's progress but no streaming content yet
+  const showProgressAsMessage = chatProgress && !streamingMessage?.trim();
 
   useEffect(() => {
     if (chatId) {
@@ -525,6 +556,12 @@ export function Chat() {
   const combinedMessages = [
     ...(data || []),
     ...(currentChatMessage?.trim() ? [{ message_id: currentUserMessageId, role: "user", content: currentChatMessage }] : []),
+    ...(showProgressAsMessage ? [{ 
+      message_id: Math.random().toString(36).substring(2, 15), //this should be unique
+      role: "assistant", 
+      content: "",
+      isProgress: true 
+    }] : []),
     ...(streamingMessage?.trim() ? [{ message_id: currentAssistantMessageId, role: "assistant", content: streamingMessage }] : []),
   ];
 
@@ -549,7 +586,7 @@ export function Chat() {
             return (
               <Message
                 key={index}
-                message={message as ChatMessage}
+                message={message as ChatMessage & { isProgress?: boolean }}
                 onCopyMessage={handleCopyMessage}
                 onViewRAGDetails={handleViewRAGDetails}
                 onBranchChat={BranchChat}
@@ -558,9 +595,12 @@ export function Chat() {
                 isExpanded={isExpanded}
                 onToggleExpand={handleToggleExpand}
                 messageSummary={summaryForThis || undefined}
+                chatProgress={chatProgress || undefined}
               />
-          )
-}))}
+            );
+          })
+        )}
+        
         <div ref={messagesEndRef} />
         {listChatBranch.length > 0 && (
           <div className="bg-gray-50 border-t py-4 px-4">

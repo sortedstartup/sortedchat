@@ -1575,18 +1575,20 @@ export class ChatRequest extends pb_1.Message {
     }
 }
 export class ChatResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [[1, 2, 3, 4]];
+    #one_of_decls: number[][] = [[1, 2, 3, 4, 5, 6]];
     constructor(data?: any[] | ({} & (({
         text?: string;
         summary?: never;
         request_message_id?: never;
         document_reference?: never;
+        chat_metadata?: never;
         progress?: never;
     } | {
         text?: never;
         summary?: ResponseSummary;
         request_message_id?: never;
         document_reference?: never;
+        chat_metadata?: never;
         progress?: never;
     } | {
         text?: never;
@@ -1594,16 +1596,27 @@ export class ChatResponse extends pb_1.Message {
         request_message_id?: string;
         document_reference?: never;
         chat_metadata?: never;
+        progress?: never;
     } | {
         text?: never;
         summary?: never;
         request_message_id?: never;
         document_reference?: RAGDocumentReferenceSummaryList;
+        chat_metadata?: never;
         progress?: never;
     } | {
         text?: never;
         summary?: never;
+        request_message_id?: never;
         document_reference?: never;
+        chat_metadata?: ChatInfo;
+        progress?: never;
+    } | {
+        text?: never;
+        summary?: never;
+        request_message_id?: never;
+        document_reference?: never;
+        chat_metadata?: never;
         progress?: ChatProgress;
     })))) {
         super();
@@ -1620,6 +1633,9 @@ export class ChatResponse extends pb_1.Message {
             }
             if ("document_reference" in data && data.document_reference != undefined) {
                 this.document_reference = data.document_reference;
+            }
+            if ("chat_metadata" in data && data.chat_metadata != undefined) {
+                this.chat_metadata = data.chat_metadata;
             }
             if ("progress" in data && data.progress != undefined) {
                 this.progress = data.progress;
@@ -1660,34 +1676,46 @@ export class ChatResponse extends pb_1.Message {
         pb_1.Message.setOneofWrapperField(this, 4, this.#one_of_decls[0], value);
     }
     get has_document_reference() {
-        return pb_1.Message.getField(this, 3) != null;
+        return pb_1.Message.getField(this, 4) != null;
+    }
+    get chat_metadata() {
+        return pb_1.Message.getWrapperField(this, ChatInfo, 5) as ChatInfo;
+    }
+    set chat_metadata(value: ChatInfo) {
+        pb_1.Message.setOneofWrapperField(this, 5, this.#one_of_decls[0], value);
+    }
+    get has_chat_metadata() {
+        return pb_1.Message.getField(this, 5) != null;
     }
     get progress() {
-        return pb_1.Message.getWrapperField(this, ChatProgress, 4) as ChatProgress;
+        return pb_1.Message.getWrapperField(this, ChatProgress, 6) as ChatProgress;
     }
     set progress(value: ChatProgress) {
-        pb_1.Message.setOneofWrapperField(this, 4, this.#one_of_decls[0], value);
+        pb_1.Message.setOneofWrapperField(this, 6, this.#one_of_decls[0], value);
     }
     get has_progress() {
-        return pb_1.Message.getField(this, 4) != null;
+        return pb_1.Message.getField(this, 6) != null;
     }
     get response() {
         const cases: {
-            [index: number]: "none" | "text" | "summary" | "document_reference" | "progress";
+            [index: number]: "none" | "text" | "summary" | "request_message_id" | "document_reference" | "chat_metadata" | "progress";
         } = {
             0: "none",
             1: "text",
             2: "summary",
-            3: "document_reference",
-            4: "progress"
+            3: "request_message_id",
+            4: "document_reference",
+            5: "chat_metadata",
+            6: "progress"
         };
-        return cases[pb_1.Message.computeOneofCase(this, [1, 2, 3, 4])];
+        return cases[pb_1.Message.computeOneofCase(this, [1, 2, 3, 4, 5, 6])];
     }
     static fromObject(data: {
         text?: string;
         summary?: ReturnType<typeof ResponseSummary.prototype.toObject>;
         request_message_id?: string;
         document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
+        chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
         progress?: ReturnType<typeof ChatProgress.prototype.toObject>;
     }): ChatResponse {
         const message = new ChatResponse({});
@@ -1703,6 +1731,9 @@ export class ChatResponse extends pb_1.Message {
         if (data.document_reference != null) {
             message.document_reference = RAGDocumentReferenceSummaryList.fromObject(data.document_reference);
         }
+        if (data.chat_metadata != null) {
+            message.chat_metadata = ChatInfo.fromObject(data.chat_metadata);
+        }
         if (data.progress != null) {
             message.progress = ChatProgress.fromObject(data.progress);
         }
@@ -1714,6 +1745,7 @@ export class ChatResponse extends pb_1.Message {
             summary?: ReturnType<typeof ResponseSummary.prototype.toObject>;
             request_message_id?: string;
             document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
+            chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
             progress?: ReturnType<typeof ChatProgress.prototype.toObject>;
         } = {};
         if (this.text != null) {
@@ -1727,6 +1759,9 @@ export class ChatResponse extends pb_1.Message {
         }
         if (this.document_reference != null) {
             data.document_reference = this.document_reference.toObject();
+        }
+        if (this.chat_metadata != null) {
+            data.chat_metadata = this.chat_metadata.toObject();
         }
         if (this.progress != null) {
             data.progress = this.progress.toObject();
@@ -1744,9 +1779,11 @@ export class ChatResponse extends pb_1.Message {
         if (this.has_request_message_id)
             writer.writeString(3, this.request_message_id);
         if (this.has_document_reference)
-            writer.writeMessage(3, this.document_reference, () => this.document_reference.serialize(writer));
+            writer.writeMessage(4, this.document_reference, () => this.document_reference.serialize(writer));
+        if (this.has_chat_metadata)
+            writer.writeMessage(5, this.chat_metadata, () => this.chat_metadata.serialize(writer));
         if (this.has_progress)
-            writer.writeMessage(4, this.progress, () => this.progress.serialize(writer));
+            writer.writeMessage(6, this.progress, () => this.progress.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1768,7 +1805,10 @@ export class ChatResponse extends pb_1.Message {
                 case 4:
                     reader.readMessage(message.document_reference, () => message.document_reference = RAGDocumentReferenceSummaryList.deserialize(reader));
                     break;
-                case 4:
+                case 5:
+                    reader.readMessage(message.chat_metadata, () => message.chat_metadata = ChatInfo.deserialize(reader));
+                    break;
+                case 6:
                     reader.readMessage(message.progress, () => message.progress = ChatProgress.deserialize(reader));
                     break;
                 default: reader.skipField();

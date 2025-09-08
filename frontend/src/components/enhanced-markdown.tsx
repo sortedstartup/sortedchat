@@ -5,6 +5,11 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import MermaidChart from '@/components/mermaid-chart';
+import { memo } from 'react';
+import KaTeXRenderer from './katex';
+import remarkMath from 'remark-math';
+
 
 interface EnhancedMarkdownProps {
   children: string;
@@ -26,6 +31,7 @@ const CodeComponent = ({ inline, className, children }: any) => {
       console.error('Failed to copy text:', err);
     }
   };
+
   const isInline = inline || codeString.length < 40;
   if (isInline) {
     return (
@@ -43,14 +49,14 @@ const CodeComponent = ({ inline, className, children }: any) => {
         </div>
       )}
 
-        <Button
-          size="sm"
-          variant="ghost"
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 h-8 w-8 p-0 bg-gray-800/80 hover:bg-gray-700/80"
-          onClick={copyToClipboard}
-        >
-          {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4 text-gray-300" />}
-        </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 h-8 w-8 p-0 bg-gray-800/80 hover:bg-gray-700/80"
+        onClick={copyToClipboard}
+      >
+        {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4 text-gray-300" />}
+      </Button>
 
       <SyntaxHighlighter
         style={oneDark}
@@ -70,18 +76,32 @@ const CodeComponent = ({ inline, className, children }: any) => {
     </div>
   );
 };
-
-export function EnhancedMarkdown({ children}: EnhancedMarkdownProps) {
+export const EnhancedMarkdown = memo(({ children }: EnhancedMarkdownProps) => {
   return (
     <div className="prose prose-sm max-w-none dark:prose-invert">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm,remarkMath]}
         components={{
-          code: (props) => <CodeComponent {...props} />,
+          code: ({ className, children, ...props }) => {
+            const codeString = String(children || '');
+            const match = /language-(\w+)/.exec(className || '');
+            const language = match ? match[1] : 'text';
+            if ( language === 'mermaid') {
+              return <MermaidChart chart={codeString} className="my-4 flex justify-center" />;
+            }
+            if ( language === 'math') {
+              return <KaTeXRenderer formula={codeString} />;
+            }
+            return (
+              <CodeComponent className={className} {...props}>
+                {children}
+              </CodeComponent>
+            );
+          },
           p: (props) => <p className="mb-1 last:mb-0 " {...props} />,
-          ul: (props) => <ul className="mb-1 ml-8 list-disc space-y-0" {...props} />,
-          ol: (props) => <ol className="mb-1 ml-8 list-decimal space-y-0" {...props} />,
-          li: (props) => <li className="mb-1 leading-normal pl-2" {...props} />,
+          ul: (props) => <ul className="mb-2 ml-8 list-disc space-y-0" {...props} />,
+          ol: (props) => <ol className="mb-2 ml-8 list-decimal space-y-0" {...props} />,
+          li: (props) => <li className="mb-2 leading-normal pl-2" {...props} />,
           h1: (props) => <h1 className="text-xl font-bold mb-0 mt-0 first:mt-0" {...props} />,
           h2: (props) => <h2 className="text-lg font-bold mb-0 mt-0 first:mt-0" {...props} />,
           h3: (props) => <h3 className="text-base font-bold mb-0 mt-0 first:mt-0" {...props} />,
@@ -123,4 +143,4 @@ export function EnhancedMarkdown({ children}: EnhancedMarkdownProps) {
       </ReactMarkdown>
     </div>
   );
-}
+});

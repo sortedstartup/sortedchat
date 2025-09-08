@@ -2,6 +2,7 @@ package dao
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -90,29 +91,59 @@ func (p *PostgresDAO) SaveChatName(userID string, chatId string, name string) er
 }
 
 // AddChatMessage adds a message to a chat
-func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) error {
-	_, err := p.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES ($1, $2, $3, $4, $5)", chatId, role, content, userID, ragEnabled)
-	return err
+func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
+	var messageId string
+
+	// Handle empty or whitespace references by setting it to empty JSON object
+	trimmedRef := strings.TrimSpace(references)
+	if trimmedRef == "" {
+		trimmedRef = "[]"
+	}
+
+	// Validate references JSON
+	var temp interface{}
+	if err := json.Unmarshal([]byte(trimmedRef), &temp); err != nil {
+		return "", errors.New("invalid JSON format for references field: " + err.Error())
+	}
+
+	// Insert into DB
+	err := p.db.Get(&messageId,
+		`INSERT INTO chat_messages
+        (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
+        RETURNING id`,
+		chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, trimmedRef)
+	if err != nil {
+		return "", err
+	}
+
+	return messageId, nil
 }
 
-// GetChatMessages retrieves all messages for a given chat
+// GetChatMessages retrieves all messages for a given chat - need to add cost
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
+	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cost, 0) as cost, COALESCE(cached_token_count, 0) as cached_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	return messages, err
 }
 
 // GetChatList retrieves all chats for a user
-func (p *PostgresDAO) GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error) {
+func (p *PostgresDAO) GetChatList(userID string, projectID string, softDeleted bool) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
-	var err error
+
+	query := "SELECT chat_id, name FROM chat_list WHERE soft_deleted = ? AND parent_chat_id IS NULL"
+	args := []interface{}{softDeleted}
 
 	if projectID == "" || projectID == "null" {
-		err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND user_id = $1", userID)
+		query += " AND project_id IS NULL AND user_id = ?"
+		args = append(args, userID)
 	} else {
-		err = p.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = $1 AND user_id = $2", projectID, userID)
+		query += " AND project_id = ? AND user_id = ?"
+		args = append(args, projectID, userID)
 	}
 
+	query = p.db.Rebind(query)
+	err := p.db.Select(&chats, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,28 +158,89 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string) ([]*proto.Cha
 	return result, nil
 }
 
-func (p *PostgresDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (int64, error) {
-	// PostgreSQL doesn't have LastInsertId(), so we use RETURNING
-	var messageId int64
-	var referencesValue interface{}
+func (p *PostgresDAO) AddChatMessageWithTokens(
+	userID string,
+	chatId string,
+	role string,
+	content string,
+	model string,
+	inputTokens int,
+	outputTokens int,
+	cachedTokens int,
+	references string,
+	ragEnabled bool,
+) (MessageSummary, error) {
 
-	// Handle JSON insertion for JSONB field
+	var messageId string
+	var cost float64
+	var referencesValue interface{}
 	if references == "" {
 		referencesValue = nil
 	} else {
 		referencesValue = references
 	}
 
-	err := p.db.Get(&messageId, `
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references, rag_enabled)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id`,
-		chatId, role, content, model, inputTokens, outputTokens, userID, referencesValue, ragEnabled)
+	sqlQuery := `
+		WITH ins AS (
+			INSERT INTO chat_messages (
+				chat_id, role, content, model,
+				input_token_count, output_token_count, cached_token_count,
+				user_id, document_references, rag_enabled
+			)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			RETURNING id
+		),
+		prices AS (
+			SELECT input_token_cost, output_token_cost, cached_token_cost
+			FROM model_metadata WHERE id = $4
+		),
+		calc AS (
+			SELECT (p.input_token_cost * $5
+				+ p.output_token_cost * $6
+				+ p.cached_token_cost * $7) / 1000000.0 AS cost
+			FROM prices p
+		),
+		upd_msg AS (
+			UPDATE chat_messages m
+			SET cost = c.cost
+			FROM calc c
+			WHERE m.id = (SELECT id FROM ins)
+		)
+		, upd_chat AS (
+			UPDATE chat_list cl
+			SET cost               = COALESCE(cl.cost,0) + c.cost,
+				input_token_count  = COALESCE(cl.input_token_count,0) + $5,
+				output_token_count = COALESCE(cl.output_token_count,0) + $6,
+				cached_token_count = COALESCE(cl.cached_token_count,0) + $7
+			FROM calc c
+			WHERE cl.chat_id = $11 AND cl.user_id = $8
+		)
+		SELECT ins.id, calc.cost
+		FROM ins, calc;
+		`
+
+	err := p.db.QueryRow(sqlQuery,
+		chatId, role, content, model,
+		inputTokens, outputTokens, cachedTokens,
+		userID, referencesValue, ragEnabled,
+		chatId, // $11
+	).Scan(&messageId, &cost)
+
 	if err != nil {
-		return 0, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return MessageSummary{}, errors.New("no message inserted or updated, no result returned")
+		}
+		return MessageSummary{}, err
 	}
 
-	return messageId, nil
+	return MessageSummary{
+		MessageId:        messageId,
+		Model:            model,
+		InputTokenCount:  inputTokens,
+		OutputTokenCount: outputTokens,
+		CachedTokenCount: cachedTokens,
+		Cost:             cost,
+	}, nil
 }
 
 // GetModels retrieves all available models
@@ -549,6 +641,148 @@ func (p *PostgresDAO) DeleteDocument(userID string, projectID string, docID stri
 	}
 
 	return nil
+}
+
+func (p *PostgresDAO) SoftDeleteChat(userID string, chatId string) error {
+	_, err := p.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id
+            FROM chat_list
+            WHERE chat_id = $1 AND user_id = $2
+            UNION ALL
+            SELECT c.chat_id
+            FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = $2
+        )
+        UPDATE chat_list
+        SET soft_deleted = TRUE
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = $2;
+    `, chatId, userID)
+	return err
+}
+
+func (p *PostgresDAO) DeleteChat(userID string, chatId string) (err error) {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// Delete messages under the hierarchy first
+	_, err = tx.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id
+            FROM chat_list
+            WHERE chat_id = $1 AND user_id = $2
+            UNION ALL
+            SELECT c.chat_id
+            FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+            WHERE c.user_id = $2
+        )
+        DELETE FROM chat_messages
+        WHERE user_id = $2
+          AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
+    `, chatId, userID)
+	if err != nil {
+		return err
+	}
+
+	// Delete chats from the hierarchy
+	_, err = tx.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id
+            FROM chat_list
+            WHERE chat_id = $1 AND user_id = $2
+            UNION ALL
+            SELECT c.chat_id
+            FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+            WHERE c.user_id = $2
+        )
+        DELETE FROM chat_list
+        WHERE user_id = $2
+          AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
+    `, chatId, userID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (p *PostgresDAO) RestoreChat(userID string, chatId string) error {
+	_, err := p.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id
+            FROM chat_list
+            WHERE chat_id = $1 AND user_id = $2
+            UNION ALL
+            SELECT c.chat_id
+            FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = $2
+        )
+        UPDATE chat_list
+        SET soft_deleted = FALSE
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = $2;
+    `, chatId, userID)
+	return err
+}
+
+func (p *PostgresDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
+	var isDeleted bool
+	err := p.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = $1 AND user_id = $2", chatId, userID)
+	if err != nil {
+		return false, err
+	}
+	return isDeleted, err
+}
+
+func (p *PostgresDAO) GetChatMetadata(userID string, chatId string) (ChatInfoRow, error) {
+	var chat ChatInfoRow
+	err := p.db.Get(&chat, "SELECT chat_id, name, COALESCE(cost,0) AS cost, COALESCE(input_token_count,0) AS input_token_count, COALESCE(output_token_count,0) AS output_token_count, COALESCE(cached_token_count,0) AS cached_token_count FROM chat_list WHERE chat_id = $1 AND user_id = $2", chatId, userID)
+	if err != nil {
+		return ChatInfoRow{}, err
+	}
+	return chat, nil
+}
+
+func (p *PostgresDAO) RenameChat(userID string, chatId string, name string) error {
+	result, err := p.db.Exec("UPDATE chat_list SET name = $1 WHERE chat_id = $2 AND user_id = $3", name, chatId, userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("chat not found or permission denied")
+	}
+	return nil
+}
+
+func (p *PostgresDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
+	_, err := p.db.Exec(`
+		INSERT INTO model_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (id) DO UPDATE SET
+			name = EXCLUDED.name,
+			url = EXCLUDED.url,
+			provider = EXCLUDED.provider,
+			input_token_cost = EXCLUDED.input_token_cost,
+			output_token_cost = EXCLUDED.output_token_cost,
+			cached_token_cost = EXCLUDED.cached_token_cost
+	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost)
+	return err
 }
 
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL

@@ -30,6 +30,10 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 	return &SQLiteDAO{db: db}, nil
 }
 
+func NewSQLiteInMemoryDAO(dbConn *sql.DB) (*SQLiteDAO, error) {
+	return &SQLiteDAO{db: sqlx.NewDb(dbConn, "sqlite3")}, nil
+}
+
 // CreateChat creates a new chat with the given ID and name
 func (s *SQLiteDAO) CreateChat(userID string, chatId string, name string, projectID string) error {
 	if projectID == "" || projectID == "null" {
@@ -59,29 +63,42 @@ func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) erro
 }
 
 // AddChatMessage adds a message to a chat
-func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, ragEnabled bool) error {
-	_, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled) VALUES (?, ?, ?, ?, ?)", chatId, role, content, userID, ragEnabled)
-	return err
+func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
+	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
+	if err != nil {
+		return "", err
+	}
+
+	messageId, err := result.LastInsertId()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%d", messageId), nil
 }
 
-// GetChatMessages retrieves all messages for a given chat
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
+	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
 	return messages, err
 }
 
 // GetChatList retrieves all chats for a user
-func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatInfo, error) {
+func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted bool) ([]*proto.ChatInfo, error) {
 	var chats []ChatInfoRow
-	var err error
+
+	query := "SELECT chat_id, name FROM chat_list WHERE soft_deleted = ? AND parent_chat_id IS NULL"
+	args := []interface{}{softDeleted}
 
 	if projectID == "" || projectID == "null" {
-		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id IS NULL AND user_id = ?", userID)
+		query += " AND project_id IS NULL AND user_id = ?"
+		args = append(args, userID)
 	} else {
-		err = s.db.Select(&chats, "SELECT chat_id, name FROM chat_list WHERE project_id = ? AND user_id = ?", projectID, userID)
+		query += " AND project_id = ? AND user_id = ?"
+		args = append(args, projectID, userID)
 	}
 
+	err := s.db.Select(&chats, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,17 +113,84 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string) ([]*proto.ChatI
 	return result, nil
 }
 
-func (s *SQLiteDAO) AddChatMessageWithTokens(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, references string, ragEnabled bool) (int64, error) {
+func (s *SQLiteDAO) AddChatMessageWithTokens(
+	userID string,
+	chatId string,
+	role string,
+	content string,
+	model string,
+	inputTokens int,
+	outputTokens int,
+	cachedTokens int,
+	references string,
+	ragEnabled bool,
+) (MessageSummary, error) {
+	// Insert the message first and capture its ID
 	result, err := s.db.Exec(`
-		INSERT INTO chat_messages (chat_id, role, content, model, input_token_count, output_token_count, user_id, document_references, rag_enabled)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		chatId, role, content, model, inputTokens, outputTokens, userID, references, ragEnabled)
+        INSERT INTO chat_messages (
+            chat_id, role, content, model,
+            input_token_count, output_token_count, cached_token_count,
+            user_id, document_references, rag_enabled
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		chatId, role, content, model,
+		inputTokens, outputTokens, cachedTokens,
+		userID, references, ragEnabled)
 	if err != nil {
-		return 0, err
+		return MessageSummary{}, err
 	}
 
 	messageId, err := result.LastInsertId()
-	return messageId, err
+	if err != nil {
+		return MessageSummary{}, err
+	}
+
+	// Get the model metadata for cost calculation
+	var inputCost, outputCost, cachedCost float64
+	err = s.db.QueryRow(`
+        SELECT input_token_cost, output_token_cost, cached_token_cost
+        FROM model_metadata
+        WHERE id = ?`, model).Scan(&inputCost, &outputCost, &cachedCost)
+	if err != nil {
+		return MessageSummary{}, fmt.Errorf("failed to get model metadata: %w", err)
+	}
+
+	// Calculate the cost
+	cost := (float64(inputTokens)*inputCost + float64(outputTokens)*outputCost + float64(cachedTokens)*cachedCost) / 1000000.0
+
+	// Update the message with the calculated cost
+	_, err = s.db.Exec(`
+        UPDATE chat_messages 
+        SET cost = ? 
+        WHERE id = ?`, cost, messageId)
+	if err != nil {
+		return MessageSummary{}, fmt.Errorf("failed to update message cost: %w", err)
+	}
+
+	// Update the chat_list with cumulative totals
+	_, err = s.db.Exec(`
+        UPDATE chat_list
+        SET
+            cost = COALESCE(cost, 0) + ?,
+            input_token_count = COALESCE(input_token_count, 0) + ?,
+            output_token_count = COALESCE(output_token_count, 0) + ?,
+            cached_token_count = COALESCE(cached_token_count, 0) + ?
+        WHERE chat_id = ? AND user_id = ?`,
+		cost, inputTokens, outputTokens, cachedTokens, chatId, userID)
+	if err != nil {
+		return MessageSummary{}, fmt.Errorf("failed to update chat_list: %w", err)
+	}
+
+	// Return the message summary
+	summary := MessageSummary{
+		MessageId:        fmt.Sprintf("%d", messageId),
+		Model:            model,
+		InputTokenCount:  inputTokens,
+		OutputTokenCount: outputTokens,
+		CachedTokenCount: cachedTokens,
+		Cost:             cost,
+	}
+
+	return summary, nil
 }
 
 // GetModels retrieves all available models
@@ -377,6 +461,140 @@ func (s *SQLiteDAO) DeleteDocument(userID string, projectID string, docID string
 	}
 
 	return nil
+}
+
+func (s *SQLiteDAO) SoftDeleteChat(userID string, chatId string) error {
+	_, err := s.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+            UNION ALL
+            SELECT c.chat_id FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = ?
+        )
+        UPDATE chat_list
+        SET soft_deleted = TRUE
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = ?;
+    `, chatId, userID, userID, userID)
+	return err
+}
+
+func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// Delete messages under the hierarchy first
+	// Create a temporary table to hold the chat IDs of the hierarchy
+	_, err = tx.Exec(`
+        CREATE TEMP TABLE chat_ids_to_delete AS
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+            UNION ALL
+            SELECT c.chat_id FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+            WHERE c.user_id = ?
+        )
+        SELECT chat_id FROM chat_hierarchy;
+    `, chatId, userID, userID)
+	if err != nil {
+		return err
+	}
+
+	// Delete messages using the temporary table
+	_, err = tx.Exec(`
+        DELETE FROM chat_messages
+        WHERE user_id = ?
+          AND chat_id IN (SELECT chat_id FROM chat_ids_to_delete);
+    `, userID)
+	if err != nil {
+		return err
+	}
+
+	// Delete chats using the temporary table
+	_, err = tx.Exec(`
+        DELETE FROM chat_list
+        WHERE user_id = ?
+          AND chat_id IN (SELECT chat_id FROM chat_ids_to_delete);
+    `, userID)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	return err
+}
+
+func (s *SQLiteDAO) RestoreChat(userID string, chatId string) error {
+	_, err := s.db.Exec(`
+        WITH RECURSIVE chat_hierarchy AS (
+            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+            UNION ALL
+            SELECT c.chat_id FROM chat_list c
+            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+			WHERE c.user_id = ?
+        )
+        UPDATE chat_list
+        SET soft_deleted = FALSE
+        WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
+        AND user_id = ?;
+    `, chatId, userID, userID, userID)
+	return err
+}
+
+func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
+	var isDeleted bool
+	err := s.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	if err != nil {
+		return false, err
+	}
+	return isDeleted, err
+}
+
+func (s *SQLiteDAO) GetChatMetadata(userID string, chatId string) (ChatInfoRow, error) {
+	var chat ChatInfoRow
+	err := s.db.Get(&chat, "SELECT chat_id, name, COALESCE(cost, 0) AS cost, COALESCE(input_token_count, 0) AS input_token_count, COALESCE(output_token_count, 0) AS output_token_count, COALESCE(cached_token_count, 0) AS cached_token_count FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
+	if err != nil {
+		return ChatInfoRow{}, err
+	}
+	return chat, nil
+}
+
+func (s *SQLiteDAO) RenameChat(userID string, chatId string, name string) error {
+	result, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ? AND user_id = ?", name, chatId, userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("chat not found or permission denied")
+	}
+	return nil
+}
+
+func (s *SQLiteDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
+	_, err := s.db.Exec(`
+		INSERT INTO model_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET
+			name = excluded.name,
+			url = excluded.url,
+			provider = excluded.provider,
+			input_token_cost = excluded.input_token_cost,
+			output_token_cost = excluded.output_token_cost,
+			cached_token_cost = excluded.cached_token_cost
+	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost)
+	return err
 }
 
 type SQLiteSettingsDAO struct {

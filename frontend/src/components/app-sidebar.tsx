@@ -1,4 +1,4 @@
-import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -10,6 +10,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,21 +40,34 @@ import {
   createNewChat,
   createProject,
   getProjectList,
+  getChatList,
+  DeleteChat,
+  RestoreChat,
+  $trashChatList,
+  RenameChat,
 } from "@/store/chat";
 import { authActions, $auth } from "@/auth/store/auth";
 import remarkGfm from "remark-gfm";
 import ReactMarkdown from "react-markdown";
+import { DeleteChatRequestOperation } from "../../proto/chatservice";
 
 export function AppSidebar() {
   const projectsList = useStore($projectList);
   const chatsList = useStore($chatList);
   const searchResults = useStore($searchResults);
+  const trashChatList = useStore($trashChatList);
   const auth = useStore($auth);
   
   const [projectName, setProjectName] = useState("");
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [localSearchText, setLocalSearchText] = useState("");
+  const [showSoftDeleted, setShowSoftDeleted] = useState(false);
+  
+  // Rename chat states
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [renameChatId, setRenameChatId] = useState("");
+  const [newChatName, setNewChatName] = useState("");
 
   const navigate = useNavigate();
 
@@ -140,6 +159,53 @@ export function AppSidebar() {
   const handleLogout = () => {
     authActions.clearToken();
     navigate("/login");
+  };
+
+  const handleMoveToTrash = async (chatId: string) => {
+    await DeleteChat(chatId, DeleteChatRequestOperation.SOFT_DELETE);
+    navigate("/");
+  };
+
+  const toggleSoftDeleteView = async () => {
+    const newShowSoftDeleted = !showSoftDeleted;
+    setShowSoftDeleted(newShowSoftDeleted);
+    getChatList($currentProjectId.get(), newShowSoftDeleted);
+  };
+
+  const handleDeleteChat = async (chatId: string) => {  
+    await DeleteChat(chatId, DeleteChatRequestOperation.DELETE);
+    navigate("/");
+  };
+
+  const handleRestoreChat = async (chatId: string) => {
+    await RestoreChat(chatId);
+    navigate("/");
+  };
+
+  // Rename chat handlers
+  const handleRenameClick = (chatId: string, currentName: string) => {
+    setRenameChatId(chatId);
+    setNewChatName(currentName || "");
+    setIsRenameDialogOpen(true);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (!newChatName.trim() || !renameChatId) return;
+    
+    try {
+      await RenameChat(renameChatId, newChatName.trim());
+      setIsRenameDialogOpen(false);
+      setRenameChatId("");
+      setNewChatName("");
+    } catch (error) {
+      console.error("Failed to rename chat:", error);
+    }
+  };
+
+  const handleRenameCancel = () => {
+    setIsRenameDialogOpen(false);
+    setRenameChatId("");
+    setNewChatName("");
   };
 
   return (
@@ -289,27 +355,135 @@ export function AppSidebar() {
           <SidebarSeparator />
 
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
-              Chats
-            </SidebarGroupLabel>
+            <div className="flex items-center justify-between">
+              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
+                {showSoftDeleted ? "Trash Chats" : "Chats"}
+              </SidebarGroupLabel>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={toggleSoftDeleteView}
+              >
+                {showSoftDeleted ? (
+                  <ArchiveRestore className="h-4 w-4" />
+                ) : (
+                  <Archive className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
             <SidebarGroupContent>
               <SidebarMenu>
-                {chatsList.map((chat) => (
+                {(showSoftDeleted ? trashChatList : chatsList).map((chat) => (
                   <SidebarMenuItem key={chat.chatId}>
-                    <SidebarMenuButton
-                      onClick={() => handleChatSelect(chat.chatId)}
-                    >
-                      <MessageCircle />
-                      <span className="flex items-center">
-                        {chat.name || "New Chat"}
-                      </span>
-                    </SidebarMenuButton>
+                    <div className="flex items-center justify-between w-full group">
+                      <SidebarMenuButton
+                        onClick={() => handleChatSelect(chat.chatId)}
+                        className="flex-1"
+                      >
+                        <MessageCircle />
+                        <span className={`flex items-center ${showSoftDeleted ? "text-red-700" : ""}`}>
+                          {chat.name || "New Chat"}
+                        </span>
+                      </SidebarMenuButton>
+                      
+                      {showSoftDeleted ? (
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            title="Restore"
+                            onClick={() => handleRestoreChat(chat.chatId)}
+                          >
+                            <ArchiveRestore className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Delete Permanently"
+                            onClick={() => handleDeleteChat(chat.chatId)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        // Dropdown menu for normal chats
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => handleRenameClick(chat.chatId, chat.name)}
+                              className="focus:bg-blue-50 focus:text-blue-600"
+                            >
+                              <Edit2 className="h-4 w-4 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleMoveToTrash(chat.chatId)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Move to Trash
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </div>
+
+        {/* Rename Chat Dialog */}
+        <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Chat</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Input
+                id="chat-name"
+                value={newChatName}
+                onChange={(e) => setNewChatName(e.target.value)}
+                placeholder="Enter new chat name"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleRenameConfirm();
+                  }
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRenameCancel}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleRenameConfirm}
+                disabled={!newChatName.trim()}
+              >
+                Rename
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="mt-auto border-t border-gray-200 dark:border-gray-700 pt-2">
           <SidebarGroup>

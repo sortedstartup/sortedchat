@@ -90,6 +90,14 @@ func MigrateDB_UsingConnection_Postgres(sqlDB *sql.DB, files embed.FS, directory
 	return nil
 }
 
+func MigrateDB_UsingConnectionDefaults(sqlDB *sql.DB) error {
+	return MigrateDB_UsingConnection_SQLite(sqlDB, sqliteMigrationFiles, "db/sqlite/scripts/migrations", MIGRATION_TABLE)
+}
+
+func SeedDB_UsingConnectionDefaults(sqlDB *sql.DB) error {
+	return MigrateDB_UsingConnection_SQLite(sqlDB, sqliteSeedFiles, "db/sqlite/scripts/seed", SEED_MIGRATION_TABLE)
+}
+
 func MigrateSQLite(dbURL string) error {
 	slog.Info("ChatService: Migrating SQLite database", "dbURL", dbURL)
 	sqlite_vec.Auto()

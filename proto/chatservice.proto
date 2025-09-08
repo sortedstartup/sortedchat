@@ -24,7 +24,38 @@ service SortedChat {
 
     rpc BranchAChat(BranchAChatRequest) returns (BranchAChatResponse);
     rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
+    rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse);
+    rpc RestoreChat(RestoreChatRequest) returns (RestoreChatResponse);
+    rpc RenameChat(RenameChatRequest) returns (RenameChatResponse);
 }
+
+message RenameChatRequest {
+  string chat_id = 1;
+  string name = 2;
+}
+message RenameChatResponse {
+  string message = 1;
+}
+
+message RestoreChatRequest {
+  string chat_id = 1;
+}
+message RestoreChatResponse {
+  string message = 1;
+}
+
+message DeleteChatRequest {
+  string chat_id = 1;
+  Operation operation = 2;
+  enum Operation {
+    DELETE = 0;
+    SOFT_DELETE = 1;
+  } 
+}
+message DeleteChatResponse {
+  string message = 1;
+}
+
 message DeleteDocumentRequest {
   string project_id = 1;
   string doc_id = 2;
@@ -95,29 +126,11 @@ message ChatRequest {
 message ChatResponse {
   oneof response {
     string text = 1;
-    // was introduced to send message id, because it is generated server side
+    // was introduced to send assistant message id, because it is generated server side
     // sending one of the multiple oneof's help us do all of this in one streaming API call
     MessageSummary summary = 2;
-
-    // used when running a RAG pipeline for files in projects
     RAGDocumentReferenceSummaryList document_reference = 3; 
-
-    ChatProgress progress = 4;
   }
-}
-
-message ChatProgress {
-  enum State {
-    SENDING_REQUEST_TO_LLM = 0;
-    REQUEST_SENT_TO_LLM = 1;
-    FIRST_RESPONSE_RECEIVED = 2;
-    FIRST_TOKEN_RECEIVED = 3;
-    TOKENS_STREAMING = 4;
-    TOKENS_STOPPED = 5;
-  }
-
-  State state = 1;
-  string message = 2;
 }
 
 // TODO: reasonable limits from server side, limit to 10 (constant in server side) docs
@@ -142,9 +155,8 @@ message RAGDocumentReference {
   }
 }
 
-message MessageSummary {
+message ResponseSummary {
   string message_id = 1;
-  //TODO: add tokens received, cost?, token speed 
 }
 
 message GetHistoryRequest {
@@ -153,6 +165,7 @@ message GetHistoryRequest {
 
 message GetHistoryResponse {
   repeated ChatMessage history = 1;
+  ChatInfo chat_metadata = 2;
 }
 
 message ChatMessage {
@@ -161,19 +174,31 @@ message ChatMessage {
   string message_id = 3;
   repeated RAGDocumentReference references = 4;
   bool rag_enabled = 5;
+  string model = 6;
+  int32 input_tokens = 7;
+  int32 output_tokens = 8;
+  int32 cached_tokens = 9;
+  float cost = 10;
 }
 
 message GetChatListRequest {
   string project_id = 1;
+  bool soft_deleted = 2; 
+  //later we create a filter object because we might have to add more filters
 }
 
 message GetChatListResponse {
   repeated ChatInfo chats = 1;
 }
 
+//total chat cost/token
 message ChatInfo {
   string chatId = 1;
   string name = 2;
+  float cost = 3;
+  int32 input_token_count = 4;
+  int32 output_token_count = 5;
+  int32 cached_token_count = 6;
 }
 
 message ModelListInfo {

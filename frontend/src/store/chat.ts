@@ -26,6 +26,11 @@ import {
   RAGDocumentReferenceRequest,
   RAGDocumentReference,
   DeleteDocumentRequest,
+  ResponseSummary,
+  DeleteChatRequest,
+  DeleteChatRequestOperation,
+  RestoreChatRequest,
+  RenameChatRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -100,6 +105,13 @@ export const fetchChatMessages = async (chatId: string) => {
         }
       });
     }
+
+    if (res.chat_metadata) {
+      $chatMetadata.set(res.chat_metadata);
+    } else {
+      $chatMetadata.set(null);
+    }
+
     
     // Set document references if any exist
     if (allReferences.length > 0) {
@@ -122,6 +134,10 @@ export const fetchChatMessages = async (chatId: string) => {
 
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
+export const $responseSummaries = atom<Record<string, ResponseSummary>>({});
+
+export const $currentUserMessageId = atom<string>("");
+export const $currentAssistantMessageId = atom<string | null>(null);
 
 const addMessageToHistory = (message: ChatMessage) => {
   const currentState = $currentChatMessages.get();
@@ -147,29 +163,40 @@ export const createNewChat = async (projectId?: string) => {
     CreateChatRequest.fromObject(requestObj),
     {}
   );
-  getChatList(projectId);
+  getChatList(projectId, false);
   return response.chat_id;
 };
 
-export const $projectChatList = atom<ChatInfo[]>([]);   
-export const getChatList = (projectId?: string) => {
-  const requestObj: GetChatListRequest = projectId
-    ? GetChatListRequest.fromObject({ project_id: projectId })
-    : new GetChatListRequest();
+export const $projectChatList = atom<ChatInfo[]>([]);
+export const $trashChatList = atom<ChatInfo[]>([]);
+
+export const getChatList = (projectId?: string, softDeleted?: boolean) => {
+
+  const requestObj = GetChatListRequest.fromObject({ project_id: projectId, soft_deleted: softDeleted });
 
   chat.GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
-    (projectId ? $projectChatList : $chatList).set(value.chats);
+    if (softDeleted) {
+      $trashChatList.set(value.chats);  
+    } else {
+      (projectId ? $projectChatList : $chatList).set(value.chats);
+    }
   });
 };
+
 
 const isFirstMessageInChat = (): boolean => {
   const currentState = $currentChatMessages.get();
   return !currentState.data || currentState.data.length === 0;
 };
 
+export const $chatMetadata = atom<ChatInfo | null>(null);
+
+
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
+  $currentUserMessageId.set("");
+  $currentAssistantMessageId.set(null);
 
   const isFirstMessage = isFirstMessageInChat();
   const isNewlyBranched = $isNewlyBranched.get();
@@ -212,9 +239,18 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     if (res.has_text) {
       assistantResponse += res.text;
       $streamingMessage.set(assistantResponse);
+    } else if (res.has_request_message_id) {
+      $currentUserMessageId.set(res.request_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
-      console.log('Received message ID:', messageId);
+      const currentSummaries = $responseSummaries.get();
+      $responseSummaries.set({
+        ...currentSummaries,
+        [res.summary.message_id]: res.summary,
+      });
+      $currentAssistantMessageId.set(messageId);
+
+
     } else if (res.has_document_reference && ragEnabled) {
       // Only process document references if RAG is enabled
       const docRefList = res.document_reference;
@@ -236,8 +272,10 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       $currentDocumentReferences.set([...currentChatReferences]);
       $showDocumentReferences.set(true);
       
-    }
-  });
+    }else if (res.has_chat_metadata) {
+      $chatMetadata.set(res.chat_metadata);
+    };
+  } );
 
   stream.on("end", () => {
     const userMessage = ChatMessage.fromObject({
@@ -506,7 +544,7 @@ $documents.listen((projectId) => {
 
 $currentProjectId.listen((newProjectId) => {
   if (newProjectId) {
-    getChatList(newProjectId);
+    getChatList(newProjectId, false);
   } else {
     $chatList.set([]);
   }
@@ -598,7 +636,6 @@ export async function ListChatBranch (chatId: string) {
     const res = await chat.ListChatBranch(ListChatBranchRequest.fromObject({
       chat_id: chatId,
     }),{});
-    console.log('response from branch chat list', res.branch_chat_list)
     $listChatBranch.set(res.branch_chat_list);
   } catch (error) {
     console.error('Failed to fetch branch chat list:', error);
@@ -609,6 +646,10 @@ export async function ListChatBranch (chatId: string) {
 $currentChatId.listen((newChatId) => {
   $streamingMessage.set("");
   $currentChatMessage.set("");
+  $responseSummaries.set({});
+  $currentUserMessageId.set("");
+  $currentAssistantMessageId.set(null);
+  $chatMetadata.set(null);
 
   // fetch branch chat list
   if (newChatId) {
@@ -646,7 +687,6 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
   });
 
   try {
-    console.log('Fetching RAG document reference for message:', messageId, 'project:', projectId, 'docId:', docId);
     const request = RAGDocumentReferenceRequest.fromObject({
       message_id: messageId,
       project_id: projectId,
@@ -676,3 +716,54 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
     throw error;
   }
 };
+
+export const DeleteChat = async (chatId: string, operation: DeleteChatRequestOperation) => {
+  try {
+    const res = await chat.DeleteChat(DeleteChatRequest.fromObject({ chat_id: chatId, operation: operation }), {});
+    toast.success(res.message);
+
+
+    if (operation === DeleteChatRequestOperation.SOFT_DELETE) {
+      getChatList(undefined, false);
+    }
+    else {
+      getChatList(undefined, true);
+    }
+
+    
+  } catch (error) {
+    console.error('Failed to Delete chat:', error);
+    toast.error(`Failed to Delete chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+export const RestoreChat = async (chatId: string) => {
+  try {
+    const res = await chat.RestoreChat(RestoreChatRequest.fromObject({ chat_id: chatId }), {});
+    toast.success(res.message);
+    getChatList(undefined, true);
+  } catch (error) {
+    console.error('Failed to Restore chat:', error);
+    toast.error(`Failed to Restore chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+export const RenameChat = async (chatId: string, name: string) => {
+  try {
+    const res = await chat.RenameChat(RenameChatRequest.fromObject({ chat_id: chatId, name: name }), {});
+    
+    toast.success(res.message);
+
+    const chatList = $chatList.get();
+    chatList.forEach((chat: ChatInfo) => {
+      if (chat.chatId === chatId) {
+        chat.name = name;
+      }
+    });
+    $chatList.set(chatList);
+    
+  } catch (error) {
+    console.error('Failed to Rename chat:', error);
+    toast.error(`Failed to Rename chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}

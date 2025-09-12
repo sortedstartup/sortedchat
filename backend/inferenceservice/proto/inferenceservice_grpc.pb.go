@@ -19,16 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	InferenceService_DownloadModel_FullMethodName  = "/sortedchat.InferenceService/DownloadModel"
-	InferenceService_GetLLMModels_FullMethodName   = "/sortedchat.InferenceService/GetLLMModels"
-	InferenceService_CancelDownload_FullMethodName = "/sortedchat.InferenceService/CancelDownload"
-	InferenceService_DeleteModel_FullMethodName    = "/sortedchat.InferenceService/DeleteModel"
+	InferenceService_Chat_FullMethodName           = "/sortedchat.inferenceservice.InferenceService/Chat"
+	InferenceService_DownloadModel_FullMethodName  = "/sortedchat.inferenceservice.InferenceService/DownloadModel"
+	InferenceService_GetLLMModels_FullMethodName   = "/sortedchat.inferenceservice.InferenceService/GetLLMModels"
+	InferenceService_CancelDownload_FullMethodName = "/sortedchat.inferenceservice.InferenceService/CancelDownload"
+	InferenceService_DeleteModel_FullMethodName    = "/sortedchat.inferenceservice.InferenceService/DeleteModel"
 )
 
 // InferenceServiceClient is the client API for InferenceService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InferenceServiceClient interface {
+	Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error)
 	DownloadModel(ctx context.Context, in *DownloadModelRequest, opts ...grpc.CallOption) (*DownloadModelResponse, error)
 	GetLLMModels(ctx context.Context, in *GetLLMModelsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetLLMModelsResponse], error)
 	CancelDownload(ctx context.Context, in *CancelDownloadRequest, opts ...grpc.CallOption) (*CancelDownloadResponse, error)
@@ -43,6 +45,25 @@ func NewInferenceServiceClient(cc grpc.ClientConnInterface) InferenceServiceClie
 	return &inferenceServiceClient{cc}
 }
 
+func (c *inferenceServiceClient) Chat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &InferenceService_ServiceDesc.Streams[0], InferenceService_Chat_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ChatRequest, ChatResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type InferenceService_ChatClient = grpc.ServerStreamingClient[ChatResponse]
+
 func (c *inferenceServiceClient) DownloadModel(ctx context.Context, in *DownloadModelRequest, opts ...grpc.CallOption) (*DownloadModelResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DownloadModelResponse)
@@ -55,7 +76,7 @@ func (c *inferenceServiceClient) DownloadModel(ctx context.Context, in *Download
 
 func (c *inferenceServiceClient) GetLLMModels(ctx context.Context, in *GetLLMModelsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetLLMModelsResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &InferenceService_ServiceDesc.Streams[0], InferenceService_GetLLMModels_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &InferenceService_ServiceDesc.Streams[1], InferenceService_GetLLMModels_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +117,7 @@ func (c *inferenceServiceClient) DeleteModel(ctx context.Context, in *DeleteMode
 // All implementations must embed UnimplementedInferenceServiceServer
 // for forward compatibility.
 type InferenceServiceServer interface {
+	Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error
 	DownloadModel(context.Context, *DownloadModelRequest) (*DownloadModelResponse, error)
 	GetLLMModels(*GetLLMModelsRequest, grpc.ServerStreamingServer[GetLLMModelsResponse]) error
 	CancelDownload(context.Context, *CancelDownloadRequest) (*CancelDownloadResponse, error)
@@ -110,6 +132,9 @@ type InferenceServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedInferenceServiceServer struct{}
 
+func (UnimplementedInferenceServiceServer) Chat(*ChatRequest, grpc.ServerStreamingServer[ChatResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
+}
 func (UnimplementedInferenceServiceServer) DownloadModel(context.Context, *DownloadModelRequest) (*DownloadModelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DownloadModel not implemented")
 }
@@ -142,6 +167,17 @@ func RegisterInferenceServiceServer(s grpc.ServiceRegistrar, srv InferenceServic
 	}
 	s.RegisterService(&InferenceService_ServiceDesc, srv)
 }
+
+func _InferenceService_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ChatRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(InferenceServiceServer).Chat(m, &grpc.GenericServerStream[ChatRequest, ChatResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type InferenceService_ChatServer = grpc.ServerStreamingServer[ChatResponse]
 
 func _InferenceService_DownloadModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DownloadModelRequest)
@@ -212,7 +248,7 @@ func _InferenceService_DeleteModel_Handler(srv interface{}, ctx context.Context,
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var InferenceService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "sortedchat.InferenceService",
+	ServiceName: "sortedchat.inferenceservice.InferenceService",
 	HandlerType: (*InferenceServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -229,6 +265,11 @@ var InferenceService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Chat",
+			Handler:       _InferenceService_Chat_Handler,
+			ServerStreams: true,
+		},
 		{
 			StreamName:    "GetLLMModels",
 			Handler:       _InferenceService_GetLLMModels_Handler,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"flag"
 	"io"
@@ -23,6 +24,7 @@ import (
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
 	authApi "sortedstartup/authservice/api"
@@ -162,17 +164,57 @@ func main() {
 	queue := queue.NewInMemoryQueue()
 	settingsManager := settings.NewSettingsManager(queue, daoFactory)
 
-	chatServiceApi := api.NewChatService(mux, queue, settingsManager, daoFactory)
+	// Create InferenceService first
+	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
+	inferenceServiceApi.Init(inferenceConfig)
+	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
+
+	// Create Unix domain socket for in-process gRPC communication
+	socketPath := "/tmp/inference-service.sock"
+
+	// Remove existing socket file if it exists
+	if err := os.RemoveAll(socketPath); err != nil {
+		log.Fatalf("Failed to remove existing socket: %v", err)
+	}
+
+	// Create Unix socket listener
+	unixListener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		log.Fatalf("Failed to listen on Unix socket: %v", err)
+	}
+
+	// Create a separate gRPC server for the client connection
+	clientGrpcServer := grpc.NewServer()
+	infereceProto.RegisterInferenceServiceServer(clientGrpcServer, inferenceServiceApi)
+
+	go func() {
+		if err := clientGrpcServer.Serve(unixListener); err != nil {
+			log.Fatalf("Failed to serve client gRPC server: %v", err)
+		}
+	}()
+
+	// Create client connection using Unix socket
+	unixDialer := func(ctx context.Context, address string) (net.Conn, error) {
+		return net.Dial("unix", socketPath)
+	}
+
+	inferenceConn, err := grpc.NewClient("unix:///tmp/inference-service.sock",
+		grpc.WithContextDialer(unixDialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to create inference service client: %v", err)
+	}
+	defer inferenceConn.Close()
+
+	inferenceClient := infereceProto.NewInferenceServiceClient(inferenceConn)
+
+	chatServiceApi := api.NewChatService(mux, queue, settingsManager, daoFactory, inferenceClient)
 	chatServiceApi.Init(config)
 	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
 
 	settingServiceApi := api.NewSettingService(queue, daoFactory)
 	settingServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
-
-	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
-	inferenceServiceApi.Init(inferenceConfig)
-	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 
 	authConfig, err := authDao.LoadConfig()
 	if err != nil {

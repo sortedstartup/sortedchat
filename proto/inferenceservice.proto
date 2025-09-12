@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package sortedchat;
+package sortedchat.inferenceservice;
 
 option go_package = "sortedstartup/inferenceservice/proto";
 
@@ -15,10 +15,77 @@ enum DownloadStatus {
 }
 
 service InferenceService {
+  rpc Chat(ChatRequest) returns (stream ChatResponse);
   rpc DownloadModel(DownloadModelRequest) returns (DownloadModelResponse);
   rpc GetLLMModels(GetLLMModelsRequest) returns (stream GetLLMModelsResponse);
   rpc CancelDownload(CancelDownloadRequest) returns (CancelDownloadResponse);
   rpc DeleteModel(DeleteModelRequest) returns (DeleteModelResponse);
+}
+
+message ChatRequest {
+    string text = 1;
+    string chatId = 2;
+    string model = 3;
+    ProjectContext project_context = 4;
+}
+
+message ProjectContext {
+  string project_id = 1;
+  bool rag_enabled = 2;
+}
+
+message ChatResponse {
+  oneof response {
+    string text = 1;
+    // was introduced to send assistant message id, because it is generated server side
+    // sending one of the multiple oneof's help us do all of this in one streaming API call
+    ResponseSummary summary = 2;
+    // message id of user message(question to llm)
+    string request_message_id = 3;
+    RAGDocumentReferenceSummaryList document_reference = 4;
+    ChatInfo chat_metadata = 5;
+  }
+}
+
+// TODO: reasonable limits from server side, limit to 10 (constant in server side) docs
+message RAGDocumentReferenceSummaryList {
+  repeated Summary summary = 1;
+  message Summary {
+    string doc_id = 1;
+    string file_name = 2;
+    int32 chunkCount = 3;
+  }
+}
+
+message RAGDocumentReference {
+  string doc_id = 1;
+  string file_name = 2;
+  repeated Chunk Chunks  = 3;
+  message Chunk  {
+    string chunk_text = 3;
+    int32 start_byte = 4;
+    int32 end_byte = 5;
+    float simillarity = 6;
+  }
+}
+
+message ResponseSummary {
+  string message_id = 1;
+  string model = 2;
+  int32 input_tokens = 3;
+  int32 output_tokens = 4;
+  int32 cached_tokens = 5;
+  float cost = 6;
+}
+
+//total chat cost/token
+message ChatInfo {
+  string chatId = 1;
+  string name = 2;
+  float cost = 3;
+  int32 input_token_count = 4;
+  int32 output_token_count = 5;
+  int32 cached_token_count = 6;
 }
 
 message DownloadProgress {
@@ -41,7 +108,7 @@ message Model {
   DownloadStatus status = 10;
   string filestore_id = 11;  // File path for downloadable models, null for non-downloadable
 }
-  
+
 message DownloadModelRequest {
   string model_name = 1;
 }

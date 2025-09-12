@@ -2,12 +2,15 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"sortedstartup/common/auth"
 	"sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
 	"sortedstartup/inferenceservice/service"
+
+	"google.golang.org/grpc"
 )
 
 type InferenceServiceAPI struct {
@@ -16,8 +19,6 @@ type InferenceServiceAPI struct {
 }
 
 var SQLITE_DB_URL = "db.sqlite"
-
-const HARDCODED_USER_ID = "0"
 
 func NewInferenceServiceAPI(daoFactory dao.DAOFactory) *InferenceServiceAPI {
 
@@ -155,4 +156,37 @@ func (s *InferenceServiceAPI) Init(config *dao.Config) {
 	if err != nil {
 		log.Fatalf("InferenceService: Failed to initialize: %v", err)
 	}
+}
+
+func (s *InferenceServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
+	userID, err := auth.GetUserIDFromContext_WithError(stream.Context())
+	// if err != nil {
+	// 	return err
+	// }
+	fmt.Println("userID", userID)
+	text := req.Text
+	modelName := req.Model
+
+	// Generate tokens using the inference service
+	fmt.Printf("model name %s, text %s\n", modelName, text)
+	tokenChan, err := s.service.Predict(stream.Context(), modelName, text)
+	if err != nil {
+		return err
+	}
+
+	// Stream tokens to the client
+	for token := range tokenChan {
+		// Send each token as it's generated
+		err := stream.Send(&pb.ChatResponse{
+			Response: &pb.ChatResponse_Text{
+				Text: token,
+			},
+		})
+		if err != nil {
+			// If streaming fails, break the loop
+			break
+		}
+	}
+
+	return nil
 }

@@ -2,7 +2,10 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"log"
+	"log/slog"
 	"net/http"
 
 	db "sortedstartup/chatservice/dao"
@@ -11,6 +14,7 @@ import (
 	"sortedstartup/chatservice/service"
 	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/common/auth"
+	inferenceProto "sortedstartup/inferenceservice/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -55,10 +59,11 @@ func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRe
 
 type ChatServiceAPI struct {
 	pb.UnimplementedSortedChatServer
-	service *service.ChatService
+	service         *service.ChatService
+	inferenceClient inferenceProto.InferenceServiceClient
 }
 
-func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory db.DAOFactory) *ChatServiceAPI {
+func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory db.DAOFactory, inferenceClient inferenceProto.InferenceServiceClient) *ChatServiceAPI {
 	settingsManager.LoadSettingsFromDB()
 
 	chatService, err := service.NewChatService(queue, settingsManager, daoFactory)
@@ -67,7 +72,8 @@ func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *sett
 	}
 
 	s := &ChatServiceAPI{
-		service: chatService,
+		service:         chatService,
+		inferenceClient: inferenceClient,
 	}
 
 	s.registerRoutes(mux)
@@ -81,9 +87,48 @@ func (s *ChatServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingSe
 	if err != nil {
 		return err
 	}
-	return s.service.Chat(stream.Context(), userID, req, func(response *pb.ChatResponse) error {
-		return stream.Send(response)
-	})
+	fmt.Println("userID", userID)
+
+	// Populate inference request with actual chat data
+	infereceChatRequest := &inferenceProto.ChatRequest{
+		Text:   req.GetText(),
+		ChatId: req.GetChatId(),
+		Model:  req.GetModel(),
+	}
+
+	fmt.Printf("calling inference client with text: %s model: %s\n", req.GetText(), req.GetModel())
+	x, err := s.inferenceClient.Chat(stream.Context(), infereceChatRequest)
+	if err != nil {
+		slog.Error("error ", err)
+		return err
+	}
+
+	for {
+		response, err := x.Recv()
+		if err != nil {
+			// Handle EOF - this means the stream has ended normally
+			if err == io.EOF {
+				return nil // Return nil to stop the stream gracefully
+			}
+			// Handle other errors
+			return err
+		}
+
+		// Create and send chat response
+		chatResponse := &pb.ChatResponse{
+			Response: &pb.ChatResponse_Text{
+				Text: response.GetText(),
+			},
+		}
+
+		if err := stream.Send(chatResponse); err != nil {
+			return err
+		}
+	}
+
+	// return s.service.Chat(stream.Context(), userID, req, func(response *pb.ChatResponse) error {
+	// 	return stream.Send(response)
+	// })
 }
 
 func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateChatNameRequest) (*pb.GenerateChatNameResponse, error) {

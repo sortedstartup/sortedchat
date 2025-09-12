@@ -197,7 +197,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 func (s *SQLiteDAO) GetModels() ([]proto.ModelListInfo, error) {
 	var models []Models
 
-	err := s.db.Select(&models, "SELECT id, name, capabilities FROM model_metadata")
+	err := s.db.Select(&models, "SELECT id, name, provider,url,input_token_cost,output_token_cost,capabilities FROM model_metadata")
 	if err != nil {
 		return nil, err
 	}

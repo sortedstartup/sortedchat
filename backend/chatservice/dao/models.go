@@ -98,29 +98,19 @@ type dbSettings struct {
 
 func parseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {
 	var caps CapabilitiesJSON
-
-	err := json.Unmarshal([]byte(capabilitiesJSON), &caps)
-	if err != nil {
+	if err := json.Unmarshal([]byte(capabilitiesJSON), &caps); err != nil {
 		return nil, err
 	}
 
+	toProto := func(c CapabilityJSON) *proto.Capability {
+		return &proto.Capability{Input: c.Input, Output: c.Output}
+	}
+
 	return &proto.ModelCapabilities{
-		Text: &proto.Capability{
-			Input:  caps.Text.Input,
-			Output: caps.Text.Output,
-		},
-		Audio: &proto.Capability{
-			Input:  caps.Audio.Input,
-			Output: caps.Audio.Output,
-		},
-		Video: &proto.Capability{
-			Input:  caps.Video.Input,
-			Output: caps.Video.Output,
-		},
-		Image: &proto.Capability{
-			Input:  caps.Image.Input,
-			Output: caps.Image.Output,
-		},
+		Text:     toProto(caps.Text),
+		Audio:    toProto(caps.Audio),
+		Video:    toProto(caps.Video),
+		Image:    toProto(caps.Image),
 		Realtime: caps.Realtime,
 	}, nil
 }

@@ -583,17 +583,9 @@ func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error
 		return nil, fmt.Errorf("failed to fetch models: %v", err)
 	}
 
-	pbModels := make([]*pb.ModelListInfo, 0, len(models))
+	pbModels := make([]*pb.ModelListInfo, len(models))
 	for i := range models {
-		pbModels = append(pbModels, &pb.ModelListInfo{
-			Id:              models[i].Id,
-			Label:           models[i].Label,
-			Provider:        models[i].Provider,
-			Url:             models[i].Url,
-			InputTokenCost:  models[i].InputTokenCost,
-			OutputTokenCost: models[i].OutputTokenCost,
-			Capabilities:    models[i].Capabilities,
-		})
+		pbModels[i] = &models[i]
 	}
 
 	return pbModels, nil

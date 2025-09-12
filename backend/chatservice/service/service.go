@@ -586,8 +586,13 @@ func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error
 	pbModels := make([]*pb.ModelListInfo, 0, len(models))
 	for i := range models {
 		pbModels = append(pbModels, &pb.ModelListInfo{
-			Id:    models[i].Id,
-			Label: models[i].Label,
+			Id:              models[i].Id,
+			Label:           models[i].Label,
+			Provider:        models[i].Provider,
+			Url:             models[i].Url,
+			InputTokenCost:  models[i].InputTokenCost,
+			OutputTokenCost: models[i].OutputTokenCost,
+			Capabilities:    models[i].Capabilities,
 		})
 	}
 

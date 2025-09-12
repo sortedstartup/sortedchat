@@ -1,5 +1,10 @@
 package dao
 
+import (
+	"encoding/json"
+	proto "sortedstartup/chatservice/proto"
+)
+
 type ChatMessageRow struct {
 	Role               string  `db:"role" json:"role"`
 	Content            string  `db:"content" json:"content"`
@@ -62,7 +67,60 @@ type ChatInfoRow struct {
 	CachedTokenCount int     `db:"cached_token_count"`
 }
 
+type Models struct {
+	ID              string  `db:"id"`
+	Name            string  `db:"name"`
+	Provider        string  `db:"provider"`
+	URL             string  `db:"url"`
+	InputTokenCost  float32 `db:"input_token_cost"`
+	OutputTokenCost float32 `db:"output_token_cost"`
+	Capabilities    string  `db:"capabilities"` // JSON string from SQLite
+}
+
+// Intermediate struct for JSON parsing
+type CapabilitiesJSON struct {
+	Text     CapabilityJSON `json:"text"`
+	Audio    CapabilityJSON `json:"audio"`
+	Video    CapabilityJSON `json:"video"`
+	Image    CapabilityJSON `json:"image"`
+	Realtime bool           `json:"realtime"`
+}
+
+type CapabilityJSON struct {
+	Input  bool `json:"input"`
+	Output bool `json:"output"`
+}
+
 type dbSettings struct {
 	Name     string `db:"name"`
 	Settings string `db:"settings"`
+}
+
+func parseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {
+	var caps CapabilitiesJSON
+
+	err := json.Unmarshal([]byte(capabilitiesJSON), &caps)
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.ModelCapabilities{
+		Text: &proto.Capability{
+			Input:  caps.Text.Input,
+			Output: caps.Text.Output,
+		},
+		Audio: &proto.Capability{
+			Input:  caps.Audio.Input,
+			Output: caps.Audio.Output,
+		},
+		Video: &proto.Capability{
+			Input:  caps.Video.Input,
+			Output: caps.Video.Output,
+		},
+		Image: &proto.Capability{
+			Input:  caps.Image.Input,
+			Output: caps.Image.Output,
+		},
+		Realtime: caps.Realtime,
+	}, nil
 }

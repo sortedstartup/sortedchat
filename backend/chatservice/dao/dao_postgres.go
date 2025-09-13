@@ -244,14 +244,14 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 }
 
 // GetModels retrieves all available models
-func (p *PostgresDAO) GetModels() ([]proto.ModelListInfo, error) {
+func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
 	var models []Models
-	err := p.db.Select(&models, "SELECT id, name,provider,url,input_token_cost,output_token_cost,capabilities FROM model_metadata")
+	err := p.db.Select(&models, "SELECT id, name,provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}'::jsonb)::text AS capabilities FROM model_metadata")
 	if err != nil {
 		return nil, err
 	}
 
-	var result []proto.ModelListInfo
+	var result []*proto.ModelListInfo
 	for _, m := range models {
 		// Parse capabilities JSON
 		capabilities, err := parseCapabilities(m.Capabilities)
@@ -259,7 +259,7 @@ func (p *PostgresDAO) GetModels() ([]proto.ModelListInfo, error) {
 			return nil, fmt.Errorf("failed to parse capabilities for model %s: %w", m.ID, err)
 		}
 
-		result = append(result, proto.ModelListInfo{
+		result = append(result, &proto.ModelListInfo{
 			Id:              m.ID,
 			Label:           m.Name,
 			Provider:        m.Provider,

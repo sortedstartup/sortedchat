@@ -194,15 +194,15 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 }
 
 // GetModels retrieves all available models
-func (s *SQLiteDAO) GetModels() ([]proto.ModelListInfo, error) {
+func (s *SQLiteDAO) GetModels() ([]*proto.ModelListInfo, error) {
 	var models []Models
 
-	err := s.db.Select(&models, "SELECT id, name, provider,url,input_token_cost,output_token_cost,capabilities FROM model_metadata")
+	err := s.db.Select(&models, "SELECT id, name, provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}') AS capabilities FROM model_metadata")
 	if err != nil {
 		return nil, err
 	}
 
-	var result []proto.ModelListInfo
+	var result []*proto.ModelListInfo
 	for _, m := range models {
 		// Parse capabilities JSON
 		capabilities, err := parseCapabilities(m.Capabilities)
@@ -210,7 +210,7 @@ func (s *SQLiteDAO) GetModels() ([]proto.ModelListInfo, error) {
 			return nil, fmt.Errorf("failed to parse capabilities for model %s: %w", m.ID, err)
 		}
 
-		result = append(result, proto.ModelListInfo{
+		result = append(result, &proto.ModelListInfo{
 			Id:              m.ID,
 			Label:           m.Name,
 			Provider:        m.Provider,

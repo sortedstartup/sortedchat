@@ -2,7 +2,9 @@ package dao
 
 import (
 	"encoding/json"
+	"fmt"
 	proto "sortedstartup/chatservice/proto"
+	"strings"
 )
 
 type ChatMessageRow struct {
@@ -97,12 +99,20 @@ type dbSettings struct {
 }
 
 func parseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {
+	if strings.TrimSpace(capabilitiesJSON) == "" {
+		return &proto.ModelCapabilities{}, nil
+	}
 	var caps CapabilitiesJSON
-	if err := json.Unmarshal([]byte(capabilitiesJSON), &caps); err != nil {
-		return nil, err
+	dec := json.NewDecoder(strings.NewReader(capabilitiesJSON))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&caps); err != nil {
+		return nil, fmt.Errorf("parse capabilities: %w", err)
 	}
 
 	toProto := func(c CapabilityJSON) *proto.Capability {
+		if !c.Input && !c.Output {
+			return nil
+		}
 		return &proto.Capability{Input: c.Input, Output: c.Output}
 	}
 

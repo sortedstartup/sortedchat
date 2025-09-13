@@ -1,0 +1,1 @@
+ALTER TABLE model_metadata ADD COLUMN capabilities JSONB NOT NULL DEFAULT '{}'::jsonb;

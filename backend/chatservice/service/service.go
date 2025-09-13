@@ -191,7 +191,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	var requestMessageId string
 	var referencesJSON string
 	if len(ragChunks) > 0 {
-		// Create the RAG JSON structure from chunks
 		ragDocuments := s.createRAGDocumentJSONFromChunks(ragChunks)
 		referencesBytes, err := json.Marshal(ragDocuments)
 		if err != nil {
@@ -232,7 +231,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_SENDING_REQUEST_TO_LLM, Message: "Request sent"}},
 	})
 
-	httpReq, err := http.NewRequest("POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}
@@ -276,9 +275,32 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	var fullResponse strings.Builder
 	var inputTokens, outputTokens, cachedTokens int
 
-	// Streaming response from LLM API
 	scanner := bufio.NewScanner(resp.Body)
 	firstToken := true
+
+	// Function to save partial response
+	savePartialResponse := func() {
+		assistantText := fullResponse.String()
+		if assistantText != "" {
+			var partialReferencesJSON string
+			if len(ragChunks) > 0 {
+				partialRagDocs := s.createRAGDocumentJSONFromChunks(ragChunks)
+				partialRefsBytes, err := json.Marshal(partialRagDocs)
+				if err != nil {
+					slog.Error("failed to marshal RAG document references for partial response", "error", err)
+				} else {
+					partialReferencesJSON = string(partialRefsBytes)
+				}
+			}
+			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
+			if err != nil {
+				slog.Error("failed to save partial assistant message", "error", err)
+			} else {
+				slog.Info("saved partial response to database", "length", len(assistantText))
+			}
+		}
+	}
+
 	for scanner.Scan() {
 		if firstToken {
 			stream(&pb.ChatResponse{
@@ -335,17 +357,22 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		if delta, ok := choice["delta"].(map[string]interface{}); ok {
 			if content, ok := delta["content"].(string); ok && content != "" {
 				fullResponse.WriteString(content)
-
-				if err := stream(&pb.ChatResponse{Response: &pb.ChatResponse_Text{
-					Text: content,
-				}}); err != nil {
+				if err := stream(&pb.ChatResponse{Response: &pb.ChatResponse_Text{Text: content}}); err != nil {
+					// If streaming fails, save partial response before returning error
+					slog.Error("failed to send stream response, saving partial response", "error", err)
+					savePartialResponse()
 					return fmt.Errorf("failed to send stream response: %v", err)
 				}
 			}
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
+		if ctx.Err() != nil {
+			slog.Info("streaming cancelled by client, saving partial response")
+		} else {
+			slog.Error("scanner error occurred, saving partial response", "error", err)
+		}
+		savePartialResponse() //save partial response
 		return fmt.Errorf("error reading stream: %v", err)
 	}
 
@@ -356,23 +383,21 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("failed to send completion progress: %v", err)
 	}
 
+	// Normal completion - save full response
 	assistantText := fullResponse.String()
 	if assistantText != "" {
-		var referencesJSON string
+		var finalReferencesJSON string
 		if len(ragChunks) > 0 {
-			// Create the new JSON structure as requested
-			ragDocuments := s.createRAGDocumentJSONFromChunks(ragChunks)
-			referencesBytes, err := json.Marshal(ragDocuments)
+			finalRagDocs := s.createRAGDocumentJSONFromChunks(ragChunks)
+			finalRefsBytes, err := json.Marshal(finalRagDocs)
 			if err != nil {
 				slog.Error("failed to marshal RAG document references", "error", err)
 			} else {
-				referencesJSON = string(referencesBytes)
+				finalReferencesJSON = string(finalRefsBytes)
 			}
 		}
-
-		// TODO: we dont save streaming response, if stream is killed we loose the message.
 		// TODO : scope for optimization, can be 1 sql call internally
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
 		if err != nil {
 			log.Printf("Failed to insert assistant message: %v", err)
 		} else {
@@ -384,11 +409,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				CachedTokens: int32(daoSummary.CachedTokenCount),
 				Cost:         float32(daoSummary.Cost),
 			}
-			if err := stream(&pb.ChatResponse{
-				Response: &pb.ChatResponse_Summary{
-					Summary: pbSummary,
-				},
-			}); err != nil {
+			if err := stream(&pb.ChatResponse{Response: &pb.ChatResponse_Summary{Summary: pbSummary}}); err != nil {
 				return fmt.Errorf("failed to send message summary: %v", err)
 			}
 		}
@@ -626,15 +647,7 @@ func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error
 		return nil, fmt.Errorf("failed to fetch models: %v", err)
 	}
 
-	pbModels := make([]*pb.ModelListInfo, 0, len(models))
-	for i := range models {
-		pbModels = append(pbModels, &pb.ModelListInfo{
-			Id:    models[i].Id,
-			Label: models[i].Label,
-		})
-	}
-
-	return pbModels, nil
+	return models, nil
 }
 
 func (s *ChatService) SearchChat(ctx context.Context, userID string, query string) ([]*pb.SearchResult, error) {

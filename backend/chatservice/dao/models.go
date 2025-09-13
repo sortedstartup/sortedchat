@@ -1,5 +1,12 @@
 package dao
 
+import (
+	"encoding/json"
+	"fmt"
+	proto "sortedstartup/chatservice/proto"
+	"strings"
+)
+
 type ChatMessageRow struct {
 	Role               string  `db:"role" json:"role"`
 	Content            string  `db:"content" json:"content"`
@@ -62,7 +69,58 @@ type ChatInfoRow struct {
 	CachedTokenCount int     `db:"cached_token_count"`
 }
 
+type Models struct {
+	ID              string  `db:"id"`
+	Name            string  `db:"name"`
+	Provider        string  `db:"provider"`
+	URL             string  `db:"url"`
+	InputTokenCost  float32 `db:"input_token_cost"`
+	OutputTokenCost float32 `db:"output_token_cost"`
+	Capabilities    string  `db:"capabilities"` // JSON string from SQLite
+}
+
+// Intermediate struct for JSON parsing
+type CapabilitiesJSON struct {
+	Text     CapabilityJSON `json:"text"`
+	Audio    CapabilityJSON `json:"audio"`
+	Video    CapabilityJSON `json:"video"`
+	Image    CapabilityJSON `json:"image"`
+	Realtime bool           `json:"realtime"`
+}
+
+type CapabilityJSON struct {
+	Input  bool `json:"input"`
+	Output bool `json:"output"`
+}
+
 type dbSettings struct {
 	Name     string `db:"name"`
 	Settings string `db:"settings"`
+}
+
+func parseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {
+	if strings.TrimSpace(capabilitiesJSON) == "" {
+		return &proto.ModelCapabilities{}, nil
+	}
+	var caps CapabilitiesJSON
+	dec := json.NewDecoder(strings.NewReader(capabilitiesJSON))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&caps); err != nil {
+		return nil, fmt.Errorf("parse capabilities: %w", err)
+	}
+
+	toProto := func(c CapabilityJSON) *proto.Capability {
+		if !c.Input && !c.Output {
+			return nil
+		}
+		return &proto.Capability{Input: c.Input, Output: c.Output}
+	}
+
+	return &proto.ModelCapabilities{
+		Text:     toProto(caps.Text),
+		Audio:    toProto(caps.Audio),
+		Video:    toProto(caps.Video),
+		Image:    toProto(caps.Image),
+		Realtime: caps.Realtime,
+	}, nil
 }

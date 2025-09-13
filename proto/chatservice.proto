@@ -231,6 +231,20 @@ message ModelListInfo {
   string url = 4;
   float input_token_cost = 5;
   float output_token_cost = 6;
+  ModelCapabilities capabilities = 7;
+}
+
+message ModelCapabilities {
+  Capability text = 1;
+  Capability audio = 2;
+  Capability video = 3;
+  Capability image = 4;
+  bool realtime = 5;
+}
+
+message Capability {
+  bool input = 1;
+  bool output = 2;
 }
 
 message ListModelsRequest {}

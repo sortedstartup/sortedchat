@@ -14,7 +14,8 @@ import {
   ArrowDown,
   DollarSign,
   ChevronRight,
-  Loader2
+  Loader2,
+  Square // Add Square icon for stop button
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
@@ -39,6 +40,8 @@ import {
   $responseSummaries,
   $currentAssistantMessageId,
   $chatProgress,
+  stream,
+  $isStreaming,
 } from "@/store/chat";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
 import {
@@ -355,19 +358,28 @@ function ChatInputBox({
   const selectedModel = useStore($selectedModel);
   const ragEnabled = useStore($ragEnabled);
   const chatMetadata = useStore($chatMetadata);
+  const isStreaming = useStore($isStreaming);
 
   const handleSend = () => {
-    if (inputValue.trim()) {
+    if (inputValue.trim() && !isStreaming) {
       onSendMessage(inputValue);
       setInputValue("");
     }
   };
 
+  const handleStop = () => {
+    $isStreaming.set(false);
+    if (stream) {
+      stream.cancel();
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Avoid sending while the user is composing text (IME)
+    // Avoid sending while the user is composing text (IME) or while streaming
     if (
       e.key === "Enter" &&
       !e.shiftKey &&
+      !isStreaming &&
       !(e.nativeEvent?.isComposing || (e as any).isComposing)
     ) {
       e.preventDefault();
@@ -396,6 +408,7 @@ function ChatInputBox({
                 checked={ragEnabled}
                 onChange={toggleRagEnabled}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                disabled={isStreaming} // Disable during streaming
               />
               <span>Enable RAG (Retrieval-Augmented Generation)</span>
             </label>
@@ -404,16 +417,21 @@ function ChatInputBox({
 
         <div className="relative rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
           <ChatInput
-            placeholder="Ask anything"
+            placeholder={isStreaming ? "Response is being generated..." : "Ask anything"}
             className="min-h-12 resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
+            disabled={isStreaming} // Disable input during streaming
           />
           <div className="flex items-center justify-between p-3 pt-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs"
+                >
                   {selectedModel || "Select Model"}
                 </Button>
               </DropdownMenuTrigger>
@@ -428,14 +446,27 @@ function ChatInputBox({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              size="sm"
-              className="bg-black hover:bg-gray-800 text-white px-4"
-              onClick={handleSend}
-              disabled={!inputValue.trim()}
-            >
-              <CornerDownLeft className="size-3.5" />
-            </Button>
+            
+            {isStreaming ? (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="px-4"
+                onClick={handleStop}
+                title="Stop Streaming"
+              >
+                <Square className="size-3.5" />
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="bg-black hover:bg-gray-800 text-white px-4"
+                onClick={handleSend}
+                disabled={!inputValue.trim()}
+              >
+                <CornerDownLeft className="size-3.5" />
+              </Button>
+            )}
           </div>
         </div>
       </div>

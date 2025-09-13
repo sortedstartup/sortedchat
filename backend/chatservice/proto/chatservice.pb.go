@@ -1225,11 +1225,13 @@ type ChatResponse_Text struct {
 
 type ChatResponse_Summary struct {
 	// was introduced to send assistant message id, because it is generated server side
+	// was introduced to send assistant message id, because it is generated server side
 	// sending one of the multiple oneof's help us do all of this in one streaming API call
 	Summary *ResponseSummary `protobuf:"bytes,2,opt,name=summary,proto3,oneof"`
 }
 
 type ChatResponse_RequestMessageId struct {
+	// message id of user message(question to llm)
 	// message id of user message(question to llm)
 	RequestMessageId string `protobuf:"bytes,3,opt,name=request_message_id,json=requestMessageId,proto3,oneof"`
 }
@@ -1900,6 +1902,7 @@ type ModelListInfo struct {
 	Url             string                 `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
 	InputTokenCost  float32                `protobuf:"fixed32,5,opt,name=input_token_cost,json=inputTokenCost,proto3" json:"input_token_cost,omitempty"`
 	OutputTokenCost float32                `protobuf:"fixed32,6,opt,name=output_token_cost,json=outputTokenCost,proto3" json:"output_token_cost,omitempty"`
+	Capabilities    *ModelCapabilities     `protobuf:"bytes,7,opt,name=capabilities,proto3" json:"capabilities,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1974,6 +1977,141 @@ func (x *ModelListInfo) GetOutputTokenCost() float32 {
 		return x.OutputTokenCost
 	}
 	return 0
+}
+
+func (x *ModelListInfo) GetCapabilities() *ModelCapabilities {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+type ModelCapabilities struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Text          *Capability            `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	Audio         *Capability            `protobuf:"bytes,2,opt,name=audio,proto3" json:"audio,omitempty"`
+	Video         *Capability            `protobuf:"bytes,3,opt,name=video,proto3" json:"video,omitempty"`
+	Image         *Capability            `protobuf:"bytes,4,opt,name=image,proto3" json:"image,omitempty"`
+	Realtime      bool                   `protobuf:"varint,5,opt,name=realtime,proto3" json:"realtime,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelCapabilities) Reset() {
+	*x = ModelCapabilities{}
+	mi := &file_chatservice_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelCapabilities) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelCapabilities) ProtoMessage() {}
+
+func (x *ModelCapabilities) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelCapabilities.ProtoReflect.Descriptor instead.
+func (*ModelCapabilities) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *ModelCapabilities) GetText() *Capability {
+	if x != nil {
+		return x.Text
+	}
+	return nil
+}
+
+func (x *ModelCapabilities) GetAudio() *Capability {
+	if x != nil {
+		return x.Audio
+	}
+	return nil
+}
+
+func (x *ModelCapabilities) GetVideo() *Capability {
+	if x != nil {
+		return x.Video
+	}
+	return nil
+}
+
+func (x *ModelCapabilities) GetImage() *Capability {
+	if x != nil {
+		return x.Image
+	}
+	return nil
+}
+
+func (x *ModelCapabilities) GetRealtime() bool {
+	if x != nil {
+		return x.Realtime
+	}
+	return false
+}
+
+type Capability struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Input         bool                   `protobuf:"varint,1,opt,name=input,proto3" json:"input,omitempty"`
+	Output        bool                   `protobuf:"varint,2,opt,name=output,proto3" json:"output,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Capability) Reset() {
+	*x = Capability{}
+	mi := &file_chatservice_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Capability) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Capability) ProtoMessage() {}
+
+func (x *Capability) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Capability.ProtoReflect.Descriptor instead.
+func (*Capability) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *Capability) GetInput() bool {
+	if x != nil {
+		return x.Input
+	}
+	return false
+}
+
+func (x *Capability) GetOutput() bool {
+	if x != nil {
+		return x.Output
+	}
+	return false
 }
 
 type ListModelsRequest struct {
@@ -3334,14 +3472,25 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x04cost\x18\x03 \x01(\x02R\x04cost\x12*\n" +
 	"\x11input_token_count\x18\x04 \x01(\x05R\x0finputTokenCount\x12,\n" +
 	"\x12output_token_count\x18\x05 \x01(\x05R\x10outputTokenCount\x12,\n" +
-	"\x12cached_token_count\x18\x06 \x01(\x05R\x10cachedTokenCount\"\xb9\x01\n" +
+	"\x12cached_token_count\x18\x06 \x01(\x05R\x10cachedTokenCount\"\xfc\x01\n" +
 	"\rModelListInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x1a\n" +
 	"\bprovider\x18\x03 \x01(\tR\bprovider\x12\x10\n" +
 	"\x03url\x18\x04 \x01(\tR\x03url\x12(\n" +
 	"\x10input_token_cost\x18\x05 \x01(\x02R\x0einputTokenCost\x12*\n" +
-	"\x11output_token_cost\x18\x06 \x01(\x02R\x0foutputTokenCost\"\x13\n" +
+	"\x11output_token_cost\x18\x06 \x01(\x02R\x0foutputTokenCost\x12A\n" +
+	"\fcapabilities\x18\a \x01(\v2\x1d.sortedchat.ModelCapabilitiesR\fcapabilities\"\xe5\x01\n" +
+	"\x11ModelCapabilities\x12*\n" +
+	"\x04text\x18\x01 \x01(\v2\x16.sortedchat.CapabilityR\x04text\x12,\n" +
+	"\x05audio\x18\x02 \x01(\v2\x16.sortedchat.CapabilityR\x05audio\x12,\n" +
+	"\x05video\x18\x03 \x01(\v2\x16.sortedchat.CapabilityR\x05video\x12,\n" +
+	"\x05image\x18\x04 \x01(\v2\x16.sortedchat.CapabilityR\x05image\x12\x1a\n" +
+	"\brealtime\x18\x05 \x01(\bR\brealtime\":\n" +
+	"\n" +
+	"Capability\x12\x14\n" +
+	"\x05input\x18\x01 \x01(\bR\x05input\x12\x16\n" +
+	"\x06output\x18\x02 \x01(\bR\x06output\"\x13\n" +
 	"\x11ListModelsRequest\"G\n" +
 	"\x12ListModelsResponse\x121\n" +
 	"\x06models\x18\x01 \x03(\v2\x19.sortedchat.ModelListInfoR\x06models\")\n" +

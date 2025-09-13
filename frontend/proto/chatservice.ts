@@ -3314,6 +3314,7 @@ export class ModelListInfo extends pb_1.Message {
         url?: string;
         input_token_cost?: number;
         output_token_cost?: number;
+        capabilities?: ModelCapabilities;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -3335,6 +3336,9 @@ export class ModelListInfo extends pb_1.Message {
             }
             if ("output_token_cost" in data && data.output_token_cost != undefined) {
                 this.output_token_cost = data.output_token_cost;
+            }
+            if ("capabilities" in data && data.capabilities != undefined) {
+                this.capabilities = data.capabilities;
             }
         }
     }
@@ -3374,6 +3378,15 @@ export class ModelListInfo extends pb_1.Message {
     set output_token_cost(value: number) {
         pb_1.Message.setField(this, 6, value);
     }
+    get capabilities() {
+        return pb_1.Message.getWrapperField(this, ModelCapabilities, 7) as ModelCapabilities;
+    }
+    set capabilities(value: ModelCapabilities) {
+        pb_1.Message.setWrapperField(this, 7, value);
+    }
+    get has_capabilities() {
+        return pb_1.Message.getField(this, 7) != null;
+    }
     static fromObject(data: {
         id?: string;
         label?: string;
@@ -3381,6 +3394,7 @@ export class ModelListInfo extends pb_1.Message {
         url?: string;
         input_token_cost?: number;
         output_token_cost?: number;
+        capabilities?: ReturnType<typeof ModelCapabilities.prototype.toObject>;
     }): ModelListInfo {
         const message = new ModelListInfo({});
         if (data.id != null) {
@@ -3401,6 +3415,9 @@ export class ModelListInfo extends pb_1.Message {
         if (data.output_token_cost != null) {
             message.output_token_cost = data.output_token_cost;
         }
+        if (data.capabilities != null) {
+            message.capabilities = ModelCapabilities.fromObject(data.capabilities);
+        }
         return message;
     }
     toObject() {
@@ -3411,6 +3428,7 @@ export class ModelListInfo extends pb_1.Message {
             url?: string;
             input_token_cost?: number;
             output_token_cost?: number;
+            capabilities?: ReturnType<typeof ModelCapabilities.prototype.toObject>;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -3430,6 +3448,9 @@ export class ModelListInfo extends pb_1.Message {
         if (this.output_token_cost != null) {
             data.output_token_cost = this.output_token_cost;
         }
+        if (this.capabilities != null) {
+            data.capabilities = this.capabilities.toObject();
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -3448,6 +3469,8 @@ export class ModelListInfo extends pb_1.Message {
             writer.writeFloat(5, this.input_token_cost);
         if (this.output_token_cost != 0)
             writer.writeFloat(6, this.output_token_cost);
+        if (this.has_capabilities)
+            writer.writeMessage(7, this.capabilities, () => this.capabilities.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -3475,6 +3498,9 @@ export class ModelListInfo extends pb_1.Message {
                 case 6:
                     message.output_token_cost = reader.readFloat();
                     break;
+                case 7:
+                    reader.readMessage(message.capabilities, () => message.capabilities = ModelCapabilities.deserialize(reader));
+                    break;
                 default: reader.skipField();
             }
         }
@@ -3485,6 +3511,267 @@ export class ModelListInfo extends pb_1.Message {
     }
     static deserializeBinary(bytes: Uint8Array): ModelListInfo {
         return ModelListInfo.deserialize(bytes);
+    }
+}
+export class ModelCapabilities extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        text?: Capability;
+        audio?: Capability;
+        video?: Capability;
+        image?: Capability;
+        realtime?: boolean;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("text" in data && data.text != undefined) {
+                this.text = data.text;
+            }
+            if ("audio" in data && data.audio != undefined) {
+                this.audio = data.audio;
+            }
+            if ("video" in data && data.video != undefined) {
+                this.video = data.video;
+            }
+            if ("image" in data && data.image != undefined) {
+                this.image = data.image;
+            }
+            if ("realtime" in data && data.realtime != undefined) {
+                this.realtime = data.realtime;
+            }
+        }
+    }
+    get text() {
+        return pb_1.Message.getWrapperField(this, Capability, 1) as Capability;
+    }
+    set text(value: Capability) {
+        pb_1.Message.setWrapperField(this, 1, value);
+    }
+    get has_text() {
+        return pb_1.Message.getField(this, 1) != null;
+    }
+    get audio() {
+        return pb_1.Message.getWrapperField(this, Capability, 2) as Capability;
+    }
+    set audio(value: Capability) {
+        pb_1.Message.setWrapperField(this, 2, value);
+    }
+    get has_audio() {
+        return pb_1.Message.getField(this, 2) != null;
+    }
+    get video() {
+        return pb_1.Message.getWrapperField(this, Capability, 3) as Capability;
+    }
+    set video(value: Capability) {
+        pb_1.Message.setWrapperField(this, 3, value);
+    }
+    get has_video() {
+        return pb_1.Message.getField(this, 3) != null;
+    }
+    get image() {
+        return pb_1.Message.getWrapperField(this, Capability, 4) as Capability;
+    }
+    set image(value: Capability) {
+        pb_1.Message.setWrapperField(this, 4, value);
+    }
+    get has_image() {
+        return pb_1.Message.getField(this, 4) != null;
+    }
+    get realtime() {
+        return pb_1.Message.getFieldWithDefault(this, 5, false) as boolean;
+    }
+    set realtime(value: boolean) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    static fromObject(data: {
+        text?: ReturnType<typeof Capability.prototype.toObject>;
+        audio?: ReturnType<typeof Capability.prototype.toObject>;
+        video?: ReturnType<typeof Capability.prototype.toObject>;
+        image?: ReturnType<typeof Capability.prototype.toObject>;
+        realtime?: boolean;
+    }): ModelCapabilities {
+        const message = new ModelCapabilities({});
+        if (data.text != null) {
+            message.text = Capability.fromObject(data.text);
+        }
+        if (data.audio != null) {
+            message.audio = Capability.fromObject(data.audio);
+        }
+        if (data.video != null) {
+            message.video = Capability.fromObject(data.video);
+        }
+        if (data.image != null) {
+            message.image = Capability.fromObject(data.image);
+        }
+        if (data.realtime != null) {
+            message.realtime = data.realtime;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            text?: ReturnType<typeof Capability.prototype.toObject>;
+            audio?: ReturnType<typeof Capability.prototype.toObject>;
+            video?: ReturnType<typeof Capability.prototype.toObject>;
+            image?: ReturnType<typeof Capability.prototype.toObject>;
+            realtime?: boolean;
+        } = {};
+        if (this.text != null) {
+            data.text = this.text.toObject();
+        }
+        if (this.audio != null) {
+            data.audio = this.audio.toObject();
+        }
+        if (this.video != null) {
+            data.video = this.video.toObject();
+        }
+        if (this.image != null) {
+            data.image = this.image.toObject();
+        }
+        if (this.realtime != null) {
+            data.realtime = this.realtime;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.has_text)
+            writer.writeMessage(1, this.text, () => this.text.serialize(writer));
+        if (this.has_audio)
+            writer.writeMessage(2, this.audio, () => this.audio.serialize(writer));
+        if (this.has_video)
+            writer.writeMessage(3, this.video, () => this.video.serialize(writer));
+        if (this.has_image)
+            writer.writeMessage(4, this.image, () => this.image.serialize(writer));
+        if (this.realtime != false)
+            writer.writeBool(5, this.realtime);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ModelCapabilities {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ModelCapabilities();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.text, () => message.text = Capability.deserialize(reader));
+                    break;
+                case 2:
+                    reader.readMessage(message.audio, () => message.audio = Capability.deserialize(reader));
+                    break;
+                case 3:
+                    reader.readMessage(message.video, () => message.video = Capability.deserialize(reader));
+                    break;
+                case 4:
+                    reader.readMessage(message.image, () => message.image = Capability.deserialize(reader));
+                    break;
+                case 5:
+                    message.realtime = reader.readBool();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ModelCapabilities {
+        return ModelCapabilities.deserialize(bytes);
+    }
+}
+export class Capability extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        input?: boolean;
+        output?: boolean;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("input" in data && data.input != undefined) {
+                this.input = data.input;
+            }
+            if ("output" in data && data.output != undefined) {
+                this.output = data.output;
+            }
+        }
+    }
+    get input() {
+        return pb_1.Message.getFieldWithDefault(this, 1, false) as boolean;
+    }
+    set input(value: boolean) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get output() {
+        return pb_1.Message.getFieldWithDefault(this, 2, false) as boolean;
+    }
+    set output(value: boolean) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        input?: boolean;
+        output?: boolean;
+    }): Capability {
+        const message = new Capability({});
+        if (data.input != null) {
+            message.input = data.input;
+        }
+        if (data.output != null) {
+            message.output = data.output;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            input?: boolean;
+            output?: boolean;
+        } = {};
+        if (this.input != null) {
+            data.input = this.input;
+        }
+        if (this.output != null) {
+            data.output = this.output;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.input != false)
+            writer.writeBool(1, this.input);
+        if (this.output != false)
+            writer.writeBool(2, this.output);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): Capability {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new Capability();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.input = reader.readBool();
+                    break;
+                case 2:
+                    message.output = reader.readBool();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): Capability {
+        return Capability.deserialize(bytes);
     }
 }
 export class ListModelsRequest extends pb_1.Message {

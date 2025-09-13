@@ -15,6 +15,7 @@ import (
 	"net/http/httptrace"
 	"os"
 	"strings"
+	"time"
 
 	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
@@ -227,10 +228,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("failed to marshal request: %v", err)
 	}
 
-	stream(&pb.ChatResponse{
-		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_SENDING_REQUEST_TO_LLM, Message: "Request sent"}},
-	})
-
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
@@ -246,20 +243,27 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	// This is awesome!, in go I was easily able to find out exactly when the request was sent
 	trace := &httptrace.ClientTrace{
 		WroteRequest: func(info httptrace.WroteRequestInfo) {
-			stream(&pb.ChatResponse{
-				Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_REQUEST_SENT_TO_LLM, Message: ""}},
-			})
+			if err := stream(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Progress{
+					Progress: &pb.ChatProgress{State: pb.ChatProgress_REQUEST_SENT_TO_LLM, Message: ""}},
+			}); err != nil {
+				slog.Error("failed to send progress (sent)", "error", err)
+			}
 		},
 		GotFirstResponseByte: func() {
-			stream(&pb.ChatResponse{
-				Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_FIRST_RESPONSE_RECEIVED, Message: ""}},
-			})
+			if err := stream(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Progress{
+					Progress: &pb.ChatProgress{State: pb.ChatProgress_FIRST_RESPONSE_RECEIVED, Message: ""}},
+			}); err != nil {
+				slog.Error("failed to send progress (first byte)", "error", err)
+			}
 
 		},
 	}
 
 	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
-	resp, err := http.DefaultClient.Do(httpReq)
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Do(httpReq)
 	if err != nil {
 		return fmt.Errorf("OpenAI request failed: %v", err)
 	}

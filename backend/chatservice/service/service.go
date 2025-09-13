@@ -604,15 +604,7 @@ func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error
 		return nil, fmt.Errorf("failed to fetch models: %v", err)
 	}
 
-	pbModels := make([]*pb.ModelListInfo, 0, len(models))
-	for i := range models {
-		pbModels = append(pbModels, &pb.ModelListInfo{
-			Id:    models[i].Id,
-			Label: models[i].Label,
-		})
-	}
-
-	return pbModels, nil
+	return models, nil
 }
 
 func (s *ChatService) SearchChat(ctx context.Context, userID string, query string) ([]*pb.SearchResult, error) {

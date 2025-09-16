@@ -133,7 +133,22 @@ message ChatResponse {
     string request_message_id = 3;
     RAGDocumentReferenceSummaryList document_reference = 4; 
     ChatInfo chat_metadata = 5;
+    ChatProgress progress = 6;
   }
+}
+
+message ChatProgress {
+  enum State {
+    SENDING_REQUEST_TO_LLM = 0;
+    REQUEST_SENT_TO_LLM = 1;
+    FIRST_RESPONSE_RECEIVED = 2;
+    FIRST_TOKEN_RECEIVED = 3;
+    TOKENS_STREAMING = 4;
+    TOKENS_STOPPED = 5;
+  }
+
+  State state = 1;
+  string message = 2;
 }
 
 // TODO: reasonable limits from server side, limit to 10 (constant in server side) docs
@@ -216,6 +231,20 @@ message ModelListInfo {
   string url = 4;
   float input_token_cost = 5;
   float output_token_cost = 6;
+  ModelCapabilities capabilities = 7;
+}
+
+message ModelCapabilities {
+  Capability text = 1;
+  Capability audio = 2;
+  Capability video = 3;
+  Capability image = 4;
+  bool realtime = 5;
+}
+
+message Capability {
+  bool input = 1;
+  bool output = 2;
 }
 
 message ListModelsRequest {}

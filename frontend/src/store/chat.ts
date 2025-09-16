@@ -31,9 +31,11 @@ import {
   DeleteChatRequestOperation,
   RestoreChatRequest,
   RenameChatRequest,
+  ChatProgress,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
+import type { ClientReadableStream } from "grpc-web";
 
 // Create chat client with JWT authentication
 var chat = new SortedChatClient(
@@ -190,8 +192,10 @@ const isFirstMessageInChat = (): boolean => {
 };
 
 export const $chatMetadata = atom<ChatInfo | null>(null);
+export const $chatProgress = atom<ChatProgress | null>(null);
 
-
+export let stream: ClientReadableStream<ChatResponse> | null = null;
+export let $isStreaming = atom<boolean>(false);
 export const doChat = (msg: string,projectId: string | undefined) => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
@@ -222,7 +226,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
   }
 
   // grpc call
-  const stream = chat.Chat(
+   stream = chat.Chat(
     ChatRequest.fromObject({
       text: msg,
       chatId: $currentChatId.get(),
@@ -239,6 +243,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     if (res.has_text) {
       assistantResponse += res.text;
       $streamingMessage.set(assistantResponse);
+      $isStreaming.set(true);
     } else if (res.has_request_message_id) {
       $currentUserMessageId.set(res.request_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
@@ -274,7 +279,9 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       
     }else if (res.has_chat_metadata) {
       $chatMetadata.set(res.chat_metadata);
-    };
+    } else if (res.has_progress) {
+      $chatProgress.set(res.progress);
+    }
   } );
 
   stream.on("end", () => {
@@ -295,8 +302,13 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     addMessageToHistory(userMessage);
     addMessageToHistory(assistantMessage);
 
+    $isStreaming.set(false);
+
     $streamingMessage.set("");
     $currentChatMessage.set("");
+
+    $chatProgress.set(null);
+
     
     // Clear document references if RAG is disabled
     if (!ragEnabled) {
@@ -315,7 +327,8 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     console.error("Stream error:", err);
     $streamingMessage.set("");
     toast.error("An error occurred while receiving the response. Please try again.");  
-
+    $chatProgress.set(null);    
+    $isStreaming.set(false);
     
     // Reset RAG to enabled for project chats even on error
     if (projectId) {

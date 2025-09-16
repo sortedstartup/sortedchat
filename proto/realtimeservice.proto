@@ -10,6 +10,7 @@ service RealtimeService {
 }
 
 message OfferRequest {
+  // this is the browsers SDP, created in browser using pc.createOffer()
   string offer = 1;
   string model = 2;
 

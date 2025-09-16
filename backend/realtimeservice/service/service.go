@@ -28,7 +28,7 @@ func (s *RealtimeService) Init(config *dao.Config) {
 }
 
 var OPENAI_API_KEY = os.Getenv("OPENAI_API_KEY")
-var clientPC *webrtc.PeerConnection
+var backendPC *webrtc.PeerConnection
 var openaiPC *webrtc.PeerConnection
 var clientOutboundTrack *webrtc.TrackLocalStaticRTP
 var clientDataChannel *webrtc.DataChannel
@@ -36,6 +36,7 @@ var openaiDataChannel *webrtc.DataChannel
 var openAIConnected = false
 
 func (s *RealtimeService) Offer(offer *pb.OfferRequest) (string, error) {
+
 	fmt.Println("🚀 Setting up WebRTC...")
 
 	config := webrtc.Configuration{
@@ -46,7 +47,7 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest) (string, error) {
 
 	var err error
 
-	clientPC, err = webrtc.NewPeerConnection(config)
+	backendPC, err = webrtc.NewPeerConnection(config)
 	if err != nil {
 		return "", err
 	}
@@ -57,30 +58,32 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest) (string, error) {
 	}
 
 	// ICE forwarding
-	clientPC.OnICECandidate(func(c *webrtc.ICECandidate) {
+	backendPC.OnICECandidate(func(c *webrtc.ICECandidate) {
 		if c != nil {
+			fmt.Printf("📡 Client.OnICECandidate: %s\n", c.ToJSON())
 			openaiPC.AddICECandidate(c.ToJSON())
 		}
 	})
 
 	openaiPC.OnICECandidate(func(c *webrtc.ICECandidate) {
 		if c != nil {
-			clientPC.AddICECandidate(c.ToJSON())
+			fmt.Printf("🤖 OpenAI.OnICECandidate: %s\n", c.ToJSON())
+			backendPC.AddICECandidate(c.ToJSON())
 		}
 	})
 
 	// Connection status
-	clientPC.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
-		fmt.Printf("📡 Client: %s\n", s)
+	backendPC.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
+		fmt.Printf("📡 Client.OnConnectionStateChange: %s\n", s)
 	})
 
 	openaiPC.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
-		fmt.Printf("🤖 OpenAI: %s\n", s)
+		fmt.Printf("🤖 OpenAI.OnConnectionStateChange: %s\n", s)
 	})
 
 	// THIS IS THE KEY: Just like Node.js - add tracks when received from client
 	// Audio from Client -> OpenAI (and save to file)
-	clientPC.OnTrack(func(remoteTrack *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+	backendPC.OnTrack(func(remoteTrack *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		fmt.Println("🎤 Audio: Client -> OpenAI (relay + save)")
 		fmt.Printf("Track details: kind=%s, id=%s\n", remoteTrack.Kind(), remoteTrack.ID())
 
@@ -224,7 +227,7 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest) (string, error) {
 	// 	fmt.Println("❌ OpenAI data channel closed")
 	// })
 
-	if err := clientPC.SetRemoteDescription(webrtc.SessionDescription{
+	if err := backendPC.SetRemoteDescription(webrtc.SessionDescription{
 		Type: webrtc.SDPTypeOffer,
 		SDP:  offer.Offer,
 	}); err != nil {
@@ -241,7 +244,7 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest) (string, error) {
 		fmt.Printf("Error creating placeholder outbound track: %v\n", err)
 	} else {
 		clientOutboundTrack = placeholder
-		if _, err := clientPC.AddTrack(clientOutboundTrack); err != nil {
+		if _, err := backendPC.AddTrack(clientOutboundTrack); err != nil {
 			fmt.Printf("Error adding placeholder outbound track to clientPC: %v\n", err)
 			// keep going; audio won't reach client unless added
 		} else {
@@ -249,15 +252,67 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest) (string, error) {
 		}
 	}
 
-	clientAnswer, err := clientPC.CreateAnswer(nil)
+	clientAnswer, err := backendPC.CreateAnswer(nil)
 	if err != nil {
 		return "", err
 	}
-	if err := clientPC.SetLocalDescription(clientAnswer); err != nil {
+	if err := backendPC.SetLocalDescription(clientAnswer); err != nil {
 		return "", err
 	}
 
 	return clientAnswer.SDP, nil
+}
+
+func (s *RealtimeService) Offer2(offer *pb.OfferRequest) (string, error) {
+	var err error
+	config := webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{
+			{URLs: []string{"stun:stun.l.google.com:19302"}},
+		},
+	}
+
+	backendPC, err = webrtc.NewPeerConnection(config)
+	if err != nil {
+		return "", err
+	}
+
+	// ------- Adding Empty Audio Track to backendPC -------
+	// emptyAudioTrack, err := webrtc.NewTrackLocalStaticRTP(
+	// 	webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 44000, Channels: 1},
+	// 	"openai-audio", "pion-openai",
+	// )
+	// if err != nil {
+	// 	slog.Error("error creating empty audio track", "error", err)
+	// 	return "", err
+	// }
+	// if _, err := backendPC.AddTrack(emptyAudioTrack); err != nil {
+	// 	slog.Error("error adding empty audio track to backendPC", "error", err)
+	// 	return "", err
+	// }
+	// ------- Adding Empty Audio Track to backendPC -------
+
+	slog.Info("Setting backendPC.remote description")
+	if err := backendPC.SetRemoteDescription(webrtc.SessionDescription{
+		Type: webrtc.SDPTypeOffer,
+		SDP:  offer.Offer,
+	}); err != nil {
+		slog.Error("error setting backendPC.remote description", "error", err)
+		return "", err
+	}
+
+	answerForBrowser, err := backendPC.CreateAnswer(nil)
+	if err != nil {
+		slog.Error("error creating backendPC.answer", "error", err)
+		return "", err
+	}
+
+	slog.Info("Setting backendPC.local description")
+	if err := backendPC.SetLocalDescription(answerForBrowser); err != nil {
+		slog.Error("error setting backendPC.local description", "error", err)
+		return "", err
+	}
+
+	return answerForBrowser.SDP, nil
 }
 
 func connectToOpenAIWithAudio() {
@@ -265,14 +320,14 @@ func connectToOpenAIWithAudio() {
 	fmt.Println("🔗 Now connecting to OpenAI with audio...")
 
 	// Create offer AFTER we have audio tracks (like Node.js)
-	openaiOffer, err := openaiPC.CreateOffer(nil)
+	offerForOpenAI, err := openaiPC.CreateOffer(nil)
 	if err != nil {
 		fmt.Printf("Error creating OpenAI offer: %v\n", err)
 		return
 	}
 
-	openaiPC.SetLocalDescription(openaiOffer)
-	fmt.Printf("OpenAI Offer created with %d characters\n", len(openaiOffer.SDP))
+	openaiPC.SetLocalDescription(offerForOpenAI)
+	fmt.Printf("OpenAI Offer created with %d characters\n", len(offerForOpenAI.SDP))
 
 	// Get token
 	token, err := getOpenAIToken()
@@ -282,7 +337,7 @@ func connectToOpenAIWithAudio() {
 	}
 
 	// Connect to OpenAI
-	if err := connectToOpenAI(openaiOffer, token); err != nil {
+	if err := connectToOpenAI(offerForOpenAI, token); err != nil {
 		fmt.Printf("OpenAI error: %v\n", err)
 		return
 	}
@@ -427,21 +482,21 @@ func dumpUsageToFile(message map[string]interface{}) {
 }
 
 func (s *RealtimeService) IceCandidate(candidate string) (string, error) {
-	if clientPC == nil {
+	if backendPC == nil {
 		return "", fmt.Errorf("client peer connection not initialized")
 	}
 
 	// Check if remote description is set
-	if clientPC.RemoteDescription() == nil {
+	if backendPC.RemoteDescription() == nil {
 		return "", fmt.Errorf("remote description not set, cannot add ICE candidate")
 	}
 
-	if err := clientPC.AddICECandidate(webrtc.ICECandidateInit{
+	if err := backendPC.AddICECandidate(webrtc.ICECandidateInit{
 		Candidate: candidate,
 	}); err != nil {
-		fmt.Println("Error adding ICE candidate", err)
+		slog.Error("error adding ICE candidate", "error", err)
 		return "", err
 	}
-	fmt.Println("Connecte")
+	slog.Debug("Ice Candidate added", "candidate", candidate)
 	return "connected", nil
 }

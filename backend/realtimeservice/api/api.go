@@ -27,7 +27,7 @@ func (s *RealtimeServiceAPI) Init(config *dao.Config) {
 }
 
 func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*pb.OfferResponse, error) {
-	offer, err := s.service.Offer(req)
+	offer, err := s.service.Offer2(req)
 	if err != nil {
 		return nil, err
 	}

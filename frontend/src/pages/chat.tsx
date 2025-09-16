@@ -15,7 +15,8 @@ import {
   DollarSign,
   ChevronRight,
   Loader2,
-  Square // Add Square icon for stop button
+  Square,
+  Mic // Add Mic icon for audio button
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
@@ -56,9 +57,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { RealtimeAudioModal } from "../components/AudioRealtimeModal"; // Import the audio modal
 import type {
   ChatMessage,
-  RAGDocumentReference, RAGDocumentReferenceChunk, ResponseSummary,ChatProgress,
+  RAGDocumentReference, 
+  RAGDocumentReferenceChunk, 
+  ResponseSummary,
+  ChatProgress,
 } from "proto/chatservice";
 
 function getProgressText(state: number): string {
@@ -344,6 +349,7 @@ function ChatInputBox({
   onSendMessage: (message: string) => void;
 }) {
   const [inputValue, setInputValue] = useState("");
+  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false); // Add state for audio modal
   const [showDetailedTokens, setShowDetailedTokens] = useState(() => {
     const saved = localStorage.getItem('showDetailedTokens');
     return saved ? JSON.parse(saved) : false;
@@ -354,6 +360,7 @@ function ChatInputBox({
     setShowDetailedTokens(newValue);
     localStorage.setItem('showDetailedTokens', JSON.stringify(newValue));
   };
+  
   const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
   const ragEnabled = useStore($ragEnabled);
@@ -392,114 +399,132 @@ function ChatInputBox({
   };
 
   const { costDisplay, cachedTokensDisplay } = formatCostAndTokens(
-    chatMetadata?.cost ,
+    chatMetadata?.cost,
     chatMetadata?.cached_token_count
   );
 
   return (
-    <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
-      <div className="w-full max-w-none px-4">
-        {/* RAG Toggle for Project Chats */}
-        {projectId && (
-          <div className="flex items-center mb-3">
-            <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ragEnabled}
-                onChange={toggleRagEnabled}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                disabled={isStreaming} // Disable during streaming
-              />
-              <span>Enable RAG (Retrieval-Augmented Generation)</span>
-            </label>
-          </div>
-        )}
-
-        <div className="relative rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-          <ChatInput
-            placeholder={isStreaming ? "Response is being generated..." : "Ask anything"}
-            className="min-h-12 resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isStreaming} // Disable input during streaming
-          />
-          <div className="flex items-center justify-between p-3 pt-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-xs"
-                >
-                  {selectedModel || "Select Model"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {availableModels.map((model) => (
-                  <DropdownMenuItem
-                    key={model.id || model.label}
-                    onClick={() => handleModelSelect(model.id)}
-                  >
-                    {model.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {isStreaming ? (
-              <Button
-                size="sm"
-                variant="destructive"
-                className="px-4"
-                onClick={handleStop}
-                title="Stop Streaming"
-              >
-                <Square className="size-3.5" />
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                className="bg-black hover:bg-gray-800 text-white px-4"
-                onClick={handleSend}
-                disabled={!inputValue.trim()}
-              >
-                <CornerDownLeft className="size-3.5" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="text-sm text-gray-500 mt-2 flex flex-row gap-2 px-6">
-        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
-          <ArrowUp className="size-3" />
-          <span>{chatMetadata?.input_token_count}</span>
-        </div>
-        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
-          <ArrowDown className="size-3" />
-          <span>{chatMetadata?.output_token_count}</span>
-        </div>
-        <button 
-          onClick={toggleDetailedTokens}
-          className="flex items-center gap-1 text-gray-400 hover:text-gray-600 transition-colors px-1"
-          aria-label={showDetailedTokens ? "Hide detailed token usage" : "Show detailed token usage"}
-        >
-          <ChevronRight className={`size-3 transition-transform ${showDetailedTokens ? 'rotate-90' : ''}`} />
-        </button>
-        {showDetailedTokens && (
-          <>
-            
-            {cachedTokensDisplay && <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
-              <span>{cachedTokensDisplay} cached tokens</span>
-            </div>}
-            <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
-              <DollarSign className="size-3"/>
-              <span>{costDisplay}</span>
+    <>
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+        <div className="w-full max-w-none px-4">
+          {/* RAG Toggle for Project Chats */}
+          {projectId && (
+            <div className="flex items-center mb-3">
+              <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={ragEnabled}
+                  onChange={toggleRagEnabled}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  disabled={isStreaming} // Disable during streaming
+                />
+                <span>Enable RAG (Retrieval-Augmented Generation)</span>
+              </label>
             </div>
-          </>
-        )}
+          )}
+
+          <div className="relative rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+            <ChatInput
+              placeholder={isStreaming ? "Response is being generated..." : "Ask anything"}
+              className="min-h-12 resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isStreaming} // Disable input during streaming
+            />
+            <div className="flex items-center justify-between p-3 pt-0">
+              <div className="flex items-center space-x-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      {selectedModel || "Select Model"}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {availableModels.map((model) => (
+                      <DropdownMenuItem
+                        key={model.id || model.label}
+                        onClick={() => handleModelSelect(model.id)}
+                      >
+                        {model.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                {/* Add Audio Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAudioModalOpen(true)}
+                  className="text-xs"
+                  disabled={isStreaming}
+                  title="Start Voice Conversation"
+                >
+                  <Mic className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              
+              {isStreaming ? (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="px-4"
+                  onClick={handleStop}
+                  title="Stop Streaming"
+                >
+                  <Square className="size-3.5" />
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  className="bg-black hover:bg-gray-800 text-white px-4"
+                  onClick={handleSend}
+                  disabled={!inputValue.trim()}
+                >
+                  <CornerDownLeft className="size-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="text-sm text-gray-500 mt-2 flex flex-row gap-2 px-6">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+            <ArrowDown className="size-3" />
+            <span>{chatMetadata?.output_token_count}</span>
+          </div>
+          <button 
+            onClick={toggleDetailedTokens}
+            className="flex items-center gap-1 text-gray-400 hover:text-gray-600 transition-colors px-1"
+            aria-label={showDetailedTokens ? "Hide detailed token usage" : "Show detailed token usage"}
+          >
+            <ChevronRight className={`size-3 transition-transform ${showDetailedTokens ? 'rotate-90' : ''}`} />
+          </button>
+          {showDetailedTokens && (
+            <>
+              
+              {cachedTokensDisplay && <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+                <span>{cachedTokensDisplay} cached tokens</span>
+              </div>}
+              <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+                <DollarSign className="size-3"/>
+                <span>{costDisplay}</span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+      
+      {/* Audio Modal */}
+      <RealtimeAudioModal 
+        isOpen={isAudioModalOpen}
+        onClose={() => setIsAudioModalOpen(false)}
+      />
+    </>
   );
 }
 

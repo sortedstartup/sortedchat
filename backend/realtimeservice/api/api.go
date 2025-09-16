@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"sortedstartup/realtimeservice/dao"
 	pb "sortedstartup/realtimeservice/proto"
 	"sortedstartup/realtimeservice/service"
@@ -26,7 +27,22 @@ func (s *RealtimeServiceAPI) Init(config *dao.Config) {
 }
 
 func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*pb.OfferResponse, error) {
+	offer, err := s.service.Offer(req)
+	if err != nil {
+		return nil, err
+	}
 	return &pb.OfferResponse{
-		Offer: "Offer",
+		Offer: offer,
+	}, nil
+}
+
+func (s *RealtimeServiceAPI) IceCandidate(ctx context.Context, req *pb.IceCandidateRequest) (*pb.IceCandidateResponse, error) {
+	message, err := s.service.IceCandidate(req.Candidate)
+	if err != nil {
+		fmt.Println("Error adding ICE candidate", err)
+		return nil, err
+	}
+	return &pb.IceCandidateResponse{
+		Message: message,
 	}, nil
 }

@@ -6,6 +6,7 @@ option go_package = "sortedstartup/realtimeservice/proto";
 
 service RealtimeService {
    rpc Offer(OfferRequest) returns (OfferResponse);
+   rpc IceCandidate(IceCandidateRequest) returns (IceCandidateResponse);
 }
 
 message OfferRequest {
@@ -20,3 +21,10 @@ message OfferResponse {
   string offer = 1;
 }
 
+message IceCandidateRequest {
+  string candidate = 1;
+}
+
+message IceCandidateResponse {
+  string message = 1;
+}

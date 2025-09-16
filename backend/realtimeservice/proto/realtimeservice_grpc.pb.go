@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RealtimeService_Offer_FullMethodName = "/sortedchat.RealtimeService/Offer"
+	RealtimeService_Offer_FullMethodName        = "/sortedchat.RealtimeService/Offer"
+	RealtimeService_IceCandidate_FullMethodName = "/sortedchat.RealtimeService/IceCandidate"
 )
 
 // RealtimeServiceClient is the client API for RealtimeService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RealtimeServiceClient interface {
 	Offer(ctx context.Context, in *OfferRequest, opts ...grpc.CallOption) (*OfferResponse, error)
+	IceCandidate(ctx context.Context, in *IceCandidateRequest, opts ...grpc.CallOption) (*IceCandidateResponse, error)
 }
 
 type realtimeServiceClient struct {
@@ -47,11 +49,22 @@ func (c *realtimeServiceClient) Offer(ctx context.Context, in *OfferRequest, opt
 	return out, nil
 }
 
+func (c *realtimeServiceClient) IceCandidate(ctx context.Context, in *IceCandidateRequest, opts ...grpc.CallOption) (*IceCandidateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IceCandidateResponse)
+	err := c.cc.Invoke(ctx, RealtimeService_IceCandidate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RealtimeServiceServer is the server API for RealtimeService service.
 // All implementations must embed UnimplementedRealtimeServiceServer
 // for forward compatibility.
 type RealtimeServiceServer interface {
 	Offer(context.Context, *OfferRequest) (*OfferResponse, error)
+	IceCandidate(context.Context, *IceCandidateRequest) (*IceCandidateResponse, error)
 	mustEmbedUnimplementedRealtimeServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedRealtimeServiceServer struct{}
 
 func (UnimplementedRealtimeServiceServer) Offer(context.Context, *OfferRequest) (*OfferResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Offer not implemented")
+}
+func (UnimplementedRealtimeServiceServer) IceCandidate(context.Context, *IceCandidateRequest) (*IceCandidateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IceCandidate not implemented")
 }
 func (UnimplementedRealtimeServiceServer) mustEmbedUnimplementedRealtimeServiceServer() {}
 func (UnimplementedRealtimeServiceServer) testEmbeddedByValue()                         {}
@@ -104,6 +120,24 @@ func _RealtimeService_Offer_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RealtimeService_IceCandidate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IceCandidateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RealtimeServiceServer).IceCandidate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RealtimeService_IceCandidate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RealtimeServiceServer).IceCandidate(ctx, req.(*IceCandidateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RealtimeService_ServiceDesc is the grpc.ServiceDesc for RealtimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var RealtimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Offer",
 			Handler:    _RealtimeService_Offer_Handler,
+		},
+		{
+			MethodName: "IceCandidate",
+			Handler:    _RealtimeService_IceCandidate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

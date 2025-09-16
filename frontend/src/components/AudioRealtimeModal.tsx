@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Phone, PhoneOff, Volume2 } from "lucide-react";
+import { iceCandidate, offerRequest } from '@/store/realtime';
 
 interface RealtimeAudioModalProps {
   isOpen: boolean;
@@ -34,13 +35,9 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
 
-      pc.onicecandidate = (event) => {
+      pc.onicecandidate = async (event) => {
         if (event.candidate) {
-          fetch("http://localhost:3000/ice-candidate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ candidate: event.candidate }),
-          }).catch(() => {});
+           iceCandidate(JSON.stringify({ candidate: event.candidate }));
         }
       };
 
@@ -82,9 +79,9 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           type: "session.update",
           session: {
             type: "realtime",
-            // modalities: ["audio"],
-            // voice: "alloy",
-            // turn_detection: { type: "server_vad" },
+            modalities: ["audio"],
+            voice: "alloy",
+            turn_detection: { type: "server_vad" },
             instructions: "You are helpful. Answer in ENGLISH only."
           }
         }));
@@ -123,18 +120,15 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const response = await fetch("http://localhost:3000/webrtc-offer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ offer: offer }),
-      });
+     const response =  await offerRequest(String( offer.sdp ));
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+     const answer = {
+      type: "answer",
+      sdp: String(response)
+     }
 
-      const { answer } = await response.json();
-      await pc.setRemoteDescription(answer);
+
+      await pc.setRemoteDescription(answer as unknown as RTCSessionDescription);
 
     } catch (error) {
       console.error("Failed:", error);

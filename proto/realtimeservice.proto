@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package sortedchat;
+
+option go_package = "sortedstartup/realtimeservice/proto";
+
+service RealtimeService {
+   rpc Offer(OfferRequest) returns (OfferResponse);
+}
+
+message OfferRequest {
+  string offer = 1;
+  string model = 2;
+
+  // we should look at project level real time call support
+  //string project_id = 3;
+}
+
+message OfferResponse {
+  string offer = 1;
+}
+

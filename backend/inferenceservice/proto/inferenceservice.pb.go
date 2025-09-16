@@ -80,19 +80,546 @@ func (DownloadStatus) EnumDescriptor() ([]byte, []int) {
 	return file_inferenceservice_proto_rawDescGZIP(), []int{0}
 }
 
+type ChatRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Text           string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	ChatId         string                 `protobuf:"bytes,2,opt,name=chatId,proto3" json:"chatId,omitempty"`
+	Model          string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
+	ProjectContext *ProjectContext        `protobuf:"bytes,4,opt,name=project_context,json=projectContext,proto3" json:"project_context,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ChatRequest) Reset() {
+	*x = ChatRequest{}
+	mi := &file_inferenceservice_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatRequest) ProtoMessage() {}
+
+func (x *ChatRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatRequest.ProtoReflect.Descriptor instead.
+func (*ChatRequest) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ChatRequest) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *ChatRequest) GetChatId() string {
+	if x != nil {
+		return x.ChatId
+	}
+	return ""
+}
+
+func (x *ChatRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *ChatRequest) GetProjectContext() *ProjectContext {
+	if x != nil {
+		return x.ProjectContext
+	}
+	return nil
+}
+
+type ProjectContext struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	RagEnabled    bool                   `protobuf:"varint,2,opt,name=rag_enabled,json=ragEnabled,proto3" json:"rag_enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectContext) Reset() {
+	*x = ProjectContext{}
+	mi := &file_inferenceservice_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectContext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectContext) ProtoMessage() {}
+
+func (x *ProjectContext) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectContext.ProtoReflect.Descriptor instead.
+func (*ProjectContext) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ProjectContext) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *ProjectContext) GetRagEnabled() bool {
+	if x != nil {
+		return x.RagEnabled
+	}
+	return false
+}
+
+type ChatResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Response:
+	//
+	//	*ChatResponse_Text
+	//	*ChatResponse_Summary
+	//	*ChatResponse_RequestMessageId
+	//	*ChatResponse_DocumentReference
+	//	*ChatResponse_ChatMetadata
+	Response      isChatResponse_Response `protobuf_oneof:"response"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChatResponse) Reset() {
+	*x = ChatResponse{}
+	mi := &file_inferenceservice_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatResponse) ProtoMessage() {}
+
+func (x *ChatResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatResponse.ProtoReflect.Descriptor instead.
+func (*ChatResponse) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ChatResponse) GetResponse() isChatResponse_Response {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *ChatResponse) GetText() string {
+	if x != nil {
+		if x, ok := x.Response.(*ChatResponse_Text); ok {
+			return x.Text
+		}
+	}
+	return ""
+}
+
+func (x *ChatResponse) GetSummary() *ResponseSummary {
+	if x != nil {
+		if x, ok := x.Response.(*ChatResponse_Summary); ok {
+			return x.Summary
+		}
+	}
+	return nil
+}
+
+func (x *ChatResponse) GetRequestMessageId() string {
+	if x != nil {
+		if x, ok := x.Response.(*ChatResponse_RequestMessageId); ok {
+			return x.RequestMessageId
+		}
+	}
+	return ""
+}
+
+func (x *ChatResponse) GetDocumentReference() *RAGDocumentReferenceSummaryList {
+	if x != nil {
+		if x, ok := x.Response.(*ChatResponse_DocumentReference); ok {
+			return x.DocumentReference
+		}
+	}
+	return nil
+}
+
+func (x *ChatResponse) GetChatMetadata() *ChatInfo {
+	if x != nil {
+		if x, ok := x.Response.(*ChatResponse_ChatMetadata); ok {
+			return x.ChatMetadata
+		}
+	}
+	return nil
+}
+
+type isChatResponse_Response interface {
+	isChatResponse_Response()
+}
+
+type ChatResponse_Text struct {
+	Text string `protobuf:"bytes,1,opt,name=text,proto3,oneof"`
+}
+
+type ChatResponse_Summary struct {
+	// was introduced to send assistant message id, because it is generated server side
+	// sending one of the multiple oneof's help us do all of this in one streaming API call
+	Summary *ResponseSummary `protobuf:"bytes,2,opt,name=summary,proto3,oneof"`
+}
+
+type ChatResponse_RequestMessageId struct {
+	// message id of user message(question to llm)
+	RequestMessageId string `protobuf:"bytes,3,opt,name=request_message_id,json=requestMessageId,proto3,oneof"`
+}
+
+type ChatResponse_DocumentReference struct {
+	DocumentReference *RAGDocumentReferenceSummaryList `protobuf:"bytes,4,opt,name=document_reference,json=documentReference,proto3,oneof"`
+}
+
+type ChatResponse_ChatMetadata struct {
+	ChatMetadata *ChatInfo `protobuf:"bytes,5,opt,name=chat_metadata,json=chatMetadata,proto3,oneof"`
+}
+
+func (*ChatResponse_Text) isChatResponse_Response() {}
+
+func (*ChatResponse_Summary) isChatResponse_Response() {}
+
+func (*ChatResponse_RequestMessageId) isChatResponse_Response() {}
+
+func (*ChatResponse_DocumentReference) isChatResponse_Response() {}
+
+func (*ChatResponse_ChatMetadata) isChatResponse_Response() {}
+
+// TODO: reasonable limits from server side, limit to 10 (constant in server side) docs
+type RAGDocumentReferenceSummaryList struct {
+	state         protoimpl.MessageState                     `protogen:"open.v1"`
+	Summary       []*RAGDocumentReferenceSummaryList_Summary `protobuf:"bytes,1,rep,name=summary,proto3" json:"summary,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReferenceSummaryList) Reset() {
+	*x = RAGDocumentReferenceSummaryList{}
+	mi := &file_inferenceservice_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReferenceSummaryList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReferenceSummaryList) ProtoMessage() {}
+
+func (x *RAGDocumentReferenceSummaryList) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReferenceSummaryList.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReferenceSummaryList) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RAGDocumentReferenceSummaryList) GetSummary() []*RAGDocumentReferenceSummaryList_Summary {
+	if x != nil {
+		return x.Summary
+	}
+	return nil
+}
+
+type RAGDocumentReference struct {
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	DocId         string                        `protobuf:"bytes,1,opt,name=doc_id,json=docId,proto3" json:"doc_id,omitempty"`
+	FileName      string                        `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	Chunks        []*RAGDocumentReference_Chunk `protobuf:"bytes,3,rep,name=Chunks,proto3" json:"Chunks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReference) Reset() {
+	*x = RAGDocumentReference{}
+	mi := &file_inferenceservice_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReference) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReference) ProtoMessage() {}
+
+func (x *RAGDocumentReference) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReference.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReference) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *RAGDocumentReference) GetDocId() string {
+	if x != nil {
+		return x.DocId
+	}
+	return ""
+}
+
+func (x *RAGDocumentReference) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *RAGDocumentReference) GetChunks() []*RAGDocumentReference_Chunk {
+	if x != nil {
+		return x.Chunks
+	}
+	return nil
+}
+
+type ResponseSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	InputTokens   int32                  `protobuf:"varint,3,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
+	OutputTokens  int32                  `protobuf:"varint,4,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
+	CachedTokens  int32                  `protobuf:"varint,5,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
+	Cost          float32                `protobuf:"fixed32,6,opt,name=cost,proto3" json:"cost,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResponseSummary) Reset() {
+	*x = ResponseSummary{}
+	mi := &file_inferenceservice_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResponseSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResponseSummary) ProtoMessage() {}
+
+func (x *ResponseSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResponseSummary.ProtoReflect.Descriptor instead.
+func (*ResponseSummary) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ResponseSummary) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *ResponseSummary) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *ResponseSummary) GetInputTokens() int32 {
+	if x != nil {
+		return x.InputTokens
+	}
+	return 0
+}
+
+func (x *ResponseSummary) GetOutputTokens() int32 {
+	if x != nil {
+		return x.OutputTokens
+	}
+	return 0
+}
+
+func (x *ResponseSummary) GetCachedTokens() int32 {
+	if x != nil {
+		return x.CachedTokens
+	}
+	return 0
+}
+
+func (x *ResponseSummary) GetCost() float32 {
+	if x != nil {
+		return x.Cost
+	}
+	return 0
+}
+
+// total chat cost/token
+type ChatInfo struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ChatId           string                 `protobuf:"bytes,1,opt,name=chatId,proto3" json:"chatId,omitempty"`
+	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Cost             float32                `protobuf:"fixed32,3,opt,name=cost,proto3" json:"cost,omitempty"`
+	InputTokenCount  int32                  `protobuf:"varint,4,opt,name=input_token_count,json=inputTokenCount,proto3" json:"input_token_count,omitempty"`
+	OutputTokenCount int32                  `protobuf:"varint,5,opt,name=output_token_count,json=outputTokenCount,proto3" json:"output_token_count,omitempty"`
+	CachedTokenCount int32                  `protobuf:"varint,6,opt,name=cached_token_count,json=cachedTokenCount,proto3" json:"cached_token_count,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ChatInfo) Reset() {
+	*x = ChatInfo{}
+	mi := &file_inferenceservice_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatInfo) ProtoMessage() {}
+
+func (x *ChatInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatInfo.ProtoReflect.Descriptor instead.
+func (*ChatInfo) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ChatInfo) GetChatId() string {
+	if x != nil {
+		return x.ChatId
+	}
+	return ""
+}
+
+func (x *ChatInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ChatInfo) GetCost() float32 {
+	if x != nil {
+		return x.Cost
+	}
+	return 0
+}
+
+func (x *ChatInfo) GetInputTokenCount() int32 {
+	if x != nil {
+		return x.InputTokenCount
+	}
+	return 0
+}
+
+func (x *ChatInfo) GetOutputTokenCount() int32 {
+	if x != nil {
+		return x.OutputTokenCount
+	}
+	return 0
+}
+
+func (x *ChatInfo) GetCachedTokenCount() int32 {
+	if x != nil {
+		return x.CachedTokenCount
+	}
+	return 0
+}
+
 type DownloadProgress struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	FileSize      int64                  `protobuf:"varint,1,opt,name=file_size,json=fileSize,proto3" json:"file_size,omitempty"`            // Total file size in bytes
-	Status        DownloadStatus         `protobuf:"varint,2,opt,name=status,proto3,enum=sortedchat.DownloadStatus" json:"status,omitempty"` // Download status
-	Progress      int32                  `protobuf:"varint,3,opt,name=progress,proto3" json:"progress,omitempty"`                            // Progress percentage (0-100)
-	Speed         int64                  `protobuf:"varint,4,opt,name=speed,proto3" json:"speed,omitempty"`                                  // Download speed in kilobytes per second
+	FileSize      int64                  `protobuf:"varint,1,opt,name=file_size,json=fileSize,proto3" json:"file_size,omitempty"`                             // Total file size in bytes
+	Status        DownloadStatus         `protobuf:"varint,2,opt,name=status,proto3,enum=sortedchat.inferenceservice.DownloadStatus" json:"status,omitempty"` // Download status
+	Progress      int32                  `protobuf:"varint,3,opt,name=progress,proto3" json:"progress,omitempty"`                                             // Progress percentage (0-100)
+	Speed         int64                  `protobuf:"varint,4,opt,name=speed,proto3" json:"speed,omitempty"`                                                   // Download speed in kilobytes per second
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DownloadProgress) Reset() {
 	*x = DownloadProgress{}
-	mi := &file_inferenceservice_proto_msgTypes[0]
+	mi := &file_inferenceservice_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -104,7 +631,7 @@ func (x *DownloadProgress) String() string {
 func (*DownloadProgress) ProtoMessage() {}
 
 func (x *DownloadProgress) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[0]
+	mi := &file_inferenceservice_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -117,7 +644,7 @@ func (x *DownloadProgress) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadProgress.ProtoReflect.Descriptor instead.
 func (*DownloadProgress) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{0}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DownloadProgress) GetFileSize() int64 {
@@ -159,7 +686,7 @@ type Model struct {
 	Progress        *DownloadProgress      `protobuf:"bytes,7,opt,name=progress,proto3" json:"progress,omitempty"`
 	IsDownloaded    bool                   `protobuf:"varint,8,opt,name=is_downloaded,json=isDownloaded,proto3" json:"is_downloaded,omitempty"`
 	IsDownloadable  bool                   `protobuf:"varint,9,opt,name=is_downloadable,json=isDownloadable,proto3" json:"is_downloadable,omitempty"`
-	Status          DownloadStatus         `protobuf:"varint,10,opt,name=status,proto3,enum=sortedchat.DownloadStatus" json:"status,omitempty"`
+	Status          DownloadStatus         `protobuf:"varint,10,opt,name=status,proto3,enum=sortedchat.inferenceservice.DownloadStatus" json:"status,omitempty"`
 	FilestoreId     string                 `protobuf:"bytes,11,opt,name=filestore_id,json=filestoreId,proto3" json:"filestore_id,omitempty"` // File path for downloadable models, null for non-downloadable
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -167,7 +694,7 @@ type Model struct {
 
 func (x *Model) Reset() {
 	*x = Model{}
-	mi := &file_inferenceservice_proto_msgTypes[1]
+	mi := &file_inferenceservice_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -179,7 +706,7 @@ func (x *Model) String() string {
 func (*Model) ProtoMessage() {}
 
 func (x *Model) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[1]
+	mi := &file_inferenceservice_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -192,7 +719,7 @@ func (x *Model) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Model.ProtoReflect.Descriptor instead.
 func (*Model) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{1}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Model) GetId() string {
@@ -281,7 +808,7 @@ type DownloadModelRequest struct {
 
 func (x *DownloadModelRequest) Reset() {
 	*x = DownloadModelRequest{}
-	mi := &file_inferenceservice_proto_msgTypes[2]
+	mi := &file_inferenceservice_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -293,7 +820,7 @@ func (x *DownloadModelRequest) String() string {
 func (*DownloadModelRequest) ProtoMessage() {}
 
 func (x *DownloadModelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[2]
+	mi := &file_inferenceservice_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -306,7 +833,7 @@ func (x *DownloadModelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadModelRequest.ProtoReflect.Descriptor instead.
 func (*DownloadModelRequest) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{2}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DownloadModelRequest) GetModelName() string {
@@ -325,7 +852,7 @@ type DownloadModelResponse struct {
 
 func (x *DownloadModelResponse) Reset() {
 	*x = DownloadModelResponse{}
-	mi := &file_inferenceservice_proto_msgTypes[3]
+	mi := &file_inferenceservice_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -337,7 +864,7 @@ func (x *DownloadModelResponse) String() string {
 func (*DownloadModelResponse) ProtoMessage() {}
 
 func (x *DownloadModelResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[3]
+	mi := &file_inferenceservice_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -350,7 +877,7 @@ func (x *DownloadModelResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadModelResponse.ProtoReflect.Descriptor instead.
 func (*DownloadModelResponse) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{3}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DownloadModelResponse) GetMessage() string {
@@ -368,7 +895,7 @@ type GetLLMModelsRequest struct {
 
 func (x *GetLLMModelsRequest) Reset() {
 	*x = GetLLMModelsRequest{}
-	mi := &file_inferenceservice_proto_msgTypes[4]
+	mi := &file_inferenceservice_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -380,7 +907,7 @@ func (x *GetLLMModelsRequest) String() string {
 func (*GetLLMModelsRequest) ProtoMessage() {}
 
 func (x *GetLLMModelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[4]
+	mi := &file_inferenceservice_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -393,7 +920,7 @@ func (x *GetLLMModelsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLLMModelsRequest.ProtoReflect.Descriptor instead.
 func (*GetLLMModelsRequest) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{4}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{11}
 }
 
 type GetLLMModelsResponse struct {
@@ -405,7 +932,7 @@ type GetLLMModelsResponse struct {
 
 func (x *GetLLMModelsResponse) Reset() {
 	*x = GetLLMModelsResponse{}
-	mi := &file_inferenceservice_proto_msgTypes[5]
+	mi := &file_inferenceservice_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -417,7 +944,7 @@ func (x *GetLLMModelsResponse) String() string {
 func (*GetLLMModelsResponse) ProtoMessage() {}
 
 func (x *GetLLMModelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[5]
+	mi := &file_inferenceservice_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -430,7 +957,7 @@ func (x *GetLLMModelsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLLMModelsResponse.ProtoReflect.Descriptor instead.
 func (*GetLLMModelsResponse) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{5}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetLLMModelsResponse) GetModels() []*Model {
@@ -449,7 +976,7 @@ type CancelDownloadRequest struct {
 
 func (x *CancelDownloadRequest) Reset() {
 	*x = CancelDownloadRequest{}
-	mi := &file_inferenceservice_proto_msgTypes[6]
+	mi := &file_inferenceservice_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -461,7 +988,7 @@ func (x *CancelDownloadRequest) String() string {
 func (*CancelDownloadRequest) ProtoMessage() {}
 
 func (x *CancelDownloadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[6]
+	mi := &file_inferenceservice_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -474,7 +1001,7 @@ func (x *CancelDownloadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelDownloadRequest.ProtoReflect.Descriptor instead.
 func (*CancelDownloadRequest) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{6}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CancelDownloadRequest) GetModelName() string {
@@ -493,7 +1020,7 @@ type CancelDownloadResponse struct {
 
 func (x *CancelDownloadResponse) Reset() {
 	*x = CancelDownloadResponse{}
-	mi := &file_inferenceservice_proto_msgTypes[7]
+	mi := &file_inferenceservice_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -505,7 +1032,7 @@ func (x *CancelDownloadResponse) String() string {
 func (*CancelDownloadResponse) ProtoMessage() {}
 
 func (x *CancelDownloadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[7]
+	mi := &file_inferenceservice_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -518,7 +1045,7 @@ func (x *CancelDownloadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelDownloadResponse.ProtoReflect.Descriptor instead.
 func (*CancelDownloadResponse) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{7}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CancelDownloadResponse) GetMessage() string {
@@ -537,7 +1064,7 @@ type DeleteModelRequest struct {
 
 func (x *DeleteModelRequest) Reset() {
 	*x = DeleteModelRequest{}
-	mi := &file_inferenceservice_proto_msgTypes[8]
+	mi := &file_inferenceservice_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -549,7 +1076,7 @@ func (x *DeleteModelRequest) String() string {
 func (*DeleteModelRequest) ProtoMessage() {}
 
 func (x *DeleteModelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[8]
+	mi := &file_inferenceservice_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -562,7 +1089,7 @@ func (x *DeleteModelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteModelRequest.ProtoReflect.Descriptor instead.
 func (*DeleteModelRequest) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{8}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *DeleteModelRequest) GetModelName() string {
@@ -581,7 +1108,7 @@ type DeleteModelResponse struct {
 
 func (x *DeleteModelResponse) Reset() {
 	*x = DeleteModelResponse{}
-	mi := &file_inferenceservice_proto_msgTypes[9]
+	mi := &file_inferenceservice_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -593,7 +1120,7 @@ func (x *DeleteModelResponse) String() string {
 func (*DeleteModelResponse) ProtoMessage() {}
 
 func (x *DeleteModelResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_inferenceservice_proto_msgTypes[9]
+	mi := &file_inferenceservice_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -606,7 +1133,7 @@ func (x *DeleteModelResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteModelResponse.ProtoReflect.Descriptor instead.
 func (*DeleteModelResponse) Descriptor() ([]byte, []int) {
-	return file_inferenceservice_proto_rawDescGZIP(), []int{9}
+	return file_inferenceservice_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *DeleteModelResponse) GetMessage() string {
@@ -616,38 +1143,217 @@ func (x *DeleteModelResponse) GetMessage() string {
 	return ""
 }
 
+type RAGDocumentReferenceSummaryList_Summary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DocId         string                 `protobuf:"bytes,1,opt,name=doc_id,json=docId,proto3" json:"doc_id,omitempty"`
+	FileName      string                 `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	ChunkCount    int32                  `protobuf:"varint,3,opt,name=chunkCount,proto3" json:"chunkCount,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) Reset() {
+	*x = RAGDocumentReferenceSummaryList_Summary{}
+	mi := &file_inferenceservice_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReferenceSummaryList_Summary) ProtoMessage() {}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReferenceSummaryList_Summary.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReferenceSummaryList_Summary) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{3, 0}
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) GetDocId() string {
+	if x != nil {
+		return x.DocId
+	}
+	return ""
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *RAGDocumentReferenceSummaryList_Summary) GetChunkCount() int32 {
+	if x != nil {
+		return x.ChunkCount
+	}
+	return 0
+}
+
+type RAGDocumentReference_Chunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChunkText     string                 `protobuf:"bytes,3,opt,name=chunk_text,json=chunkText,proto3" json:"chunk_text,omitempty"`
+	StartByte     int32                  `protobuf:"varint,4,opt,name=start_byte,json=startByte,proto3" json:"start_byte,omitempty"`
+	EndByte       int32                  `protobuf:"varint,5,opt,name=end_byte,json=endByte,proto3" json:"end_byte,omitempty"`
+	Simillarity   float32                `protobuf:"fixed32,6,opt,name=simillarity,proto3" json:"simillarity,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RAGDocumentReference_Chunk) Reset() {
+	*x = RAGDocumentReference_Chunk{}
+	mi := &file_inferenceservice_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RAGDocumentReference_Chunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RAGDocumentReference_Chunk) ProtoMessage() {}
+
+func (x *RAGDocumentReference_Chunk) ProtoReflect() protoreflect.Message {
+	mi := &file_inferenceservice_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RAGDocumentReference_Chunk.ProtoReflect.Descriptor instead.
+func (*RAGDocumentReference_Chunk) Descriptor() ([]byte, []int) {
+	return file_inferenceservice_proto_rawDescGZIP(), []int{4, 0}
+}
+
+func (x *RAGDocumentReference_Chunk) GetChunkText() string {
+	if x != nil {
+		return x.ChunkText
+	}
+	return ""
+}
+
+func (x *RAGDocumentReference_Chunk) GetStartByte() int32 {
+	if x != nil {
+		return x.StartByte
+	}
+	return 0
+}
+
+func (x *RAGDocumentReference_Chunk) GetEndByte() int32 {
+	if x != nil {
+		return x.EndByte
+	}
+	return 0
+}
+
+func (x *RAGDocumentReference_Chunk) GetSimillarity() float32 {
+	if x != nil {
+		return x.Simillarity
+	}
+	return 0
+}
+
 var File_inferenceservice_proto protoreflect.FileDescriptor
 
 const file_inferenceservice_proto_rawDesc = "" +
 	"\n" +
-	"\x16inferenceservice.proto\x12\n" +
-	"sortedchat\"\x95\x01\n" +
+	"\x16inferenceservice.proto\x12\x1bsortedchat.inferenceservice\"\xa5\x01\n" +
+	"\vChatRequest\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\x12\x16\n" +
+	"\x06chatId\x18\x02 \x01(\tR\x06chatId\x12\x14\n" +
+	"\x05model\x18\x03 \x01(\tR\x05model\x12T\n" +
+	"\x0fproject_context\x18\x04 \x01(\v2+.sortedchat.inferenceservice.ProjectContextR\x0eprojectContext\"P\n" +
+	"\x0eProjectContext\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x1f\n" +
+	"\vrag_enabled\x18\x02 \x01(\bR\n" +
+	"ragEnabled\"\xe7\x02\n" +
+	"\fChatResponse\x12\x14\n" +
+	"\x04text\x18\x01 \x01(\tH\x00R\x04text\x12H\n" +
+	"\asummary\x18\x02 \x01(\v2,.sortedchat.inferenceservice.ResponseSummaryH\x00R\asummary\x12.\n" +
+	"\x12request_message_id\x18\x03 \x01(\tH\x00R\x10requestMessageId\x12m\n" +
+	"\x12document_reference\x18\x04 \x01(\v2<.sortedchat.inferenceservice.RAGDocumentReferenceSummaryListH\x00R\x11documentReference\x12L\n" +
+	"\rchat_metadata\x18\x05 \x01(\v2%.sortedchat.inferenceservice.ChatInfoH\x00R\fchatMetadataB\n" +
+	"\n" +
+	"\bresponse\"\xe0\x01\n" +
+	"\x1fRAGDocumentReferenceSummaryList\x12^\n" +
+	"\asummary\x18\x01 \x03(\v2D.sortedchat.inferenceservice.RAGDocumentReferenceSummaryList.SummaryR\asummary\x1a]\n" +
+	"\aSummary\x12\x15\n" +
+	"\x06doc_id\x18\x01 \x01(\tR\x05docId\x12\x1b\n" +
+	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12\x1e\n" +
+	"\n" +
+	"chunkCount\x18\x03 \x01(\x05R\n" +
+	"chunkCount\"\xa0\x02\n" +
+	"\x14RAGDocumentReference\x12\x15\n" +
+	"\x06doc_id\x18\x01 \x01(\tR\x05docId\x12\x1b\n" +
+	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12O\n" +
+	"\x06Chunks\x18\x03 \x03(\v27.sortedchat.inferenceservice.RAGDocumentReference.ChunkR\x06Chunks\x1a\x82\x01\n" +
+	"\x05Chunk\x12\x1d\n" +
+	"\n" +
+	"chunk_text\x18\x03 \x01(\tR\tchunkText\x12\x1d\n" +
+	"\n" +
+	"start_byte\x18\x04 \x01(\x05R\tstartByte\x12\x19\n" +
+	"\bend_byte\x18\x05 \x01(\x05R\aendByte\x12 \n" +
+	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"\xc7\x01\n" +
+	"\x0fResponseSummary\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\x12!\n" +
+	"\finput_tokens\x18\x03 \x01(\x05R\vinputTokens\x12#\n" +
+	"\routput_tokens\x18\x04 \x01(\x05R\foutputTokens\x12#\n" +
+	"\rcached_tokens\x18\x05 \x01(\x05R\fcachedTokens\x12\x12\n" +
+	"\x04cost\x18\x06 \x01(\x02R\x04cost\"\xd2\x01\n" +
+	"\bChatInfo\x12\x16\n" +
+	"\x06chatId\x18\x01 \x01(\tR\x06chatId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04cost\x18\x03 \x01(\x02R\x04cost\x12*\n" +
+	"\x11input_token_count\x18\x04 \x01(\x05R\x0finputTokenCount\x12,\n" +
+	"\x12output_token_count\x18\x05 \x01(\x05R\x10outputTokenCount\x12,\n" +
+	"\x12cached_token_count\x18\x06 \x01(\x05R\x10cachedTokenCount\"\xa6\x01\n" +
 	"\x10DownloadProgress\x12\x1b\n" +
-	"\tfile_size\x18\x01 \x01(\x03R\bfileSize\x122\n" +
-	"\x06status\x18\x02 \x01(\x0e2\x1a.sortedchat.DownloadStatusR\x06status\x12\x1a\n" +
+	"\tfile_size\x18\x01 \x01(\x03R\bfileSize\x12C\n" +
+	"\x06status\x18\x02 \x01(\x0e2+.sortedchat.inferenceservice.DownloadStatusR\x06status\x12\x1a\n" +
 	"\bprogress\x18\x03 \x01(\x05R\bprogress\x12\x14\n" +
-	"\x05speed\x18\x04 \x01(\x03R\x05speed\"\x8e\x03\n" +
+	"\x05speed\x18\x04 \x01(\x03R\x05speed\"\xb0\x03\n" +
 	"\x05Model\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x10\n" +
 	"\x03url\x18\x03 \x01(\tR\x03url\x12\x1a\n" +
 	"\bprovider\x18\x04 \x01(\tR\bprovider\x12(\n" +
 	"\x10input_token_cost\x18\x05 \x01(\x01R\x0einputTokenCost\x12*\n" +
-	"\x11output_token_cost\x18\x06 \x01(\x01R\x0foutputTokenCost\x128\n" +
-	"\bprogress\x18\a \x01(\v2\x1c.sortedchat.DownloadProgressR\bprogress\x12#\n" +
+	"\x11output_token_cost\x18\x06 \x01(\x01R\x0foutputTokenCost\x12I\n" +
+	"\bprogress\x18\a \x01(\v2-.sortedchat.inferenceservice.DownloadProgressR\bprogress\x12#\n" +
 	"\ris_downloaded\x18\b \x01(\bR\fisDownloaded\x12'\n" +
-	"\x0fis_downloadable\x18\t \x01(\bR\x0eisDownloadable\x122\n" +
+	"\x0fis_downloadable\x18\t \x01(\bR\x0eisDownloadable\x12C\n" +
 	"\x06status\x18\n" +
-	" \x01(\x0e2\x1a.sortedchat.DownloadStatusR\x06status\x12!\n" +
+	" \x01(\x0e2+.sortedchat.inferenceservice.DownloadStatusR\x06status\x12!\n" +
 	"\ffilestore_id\x18\v \x01(\tR\vfilestoreId\"5\n" +
 	"\x14DownloadModelRequest\x12\x1d\n" +
 	"\n" +
 	"model_name\x18\x01 \x01(\tR\tmodelName\"1\n" +
 	"\x15DownloadModelResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"\x15\n" +
-	"\x13GetLLMModelsRequest\"A\n" +
-	"\x14GetLLMModelsResponse\x12)\n" +
-	"\x06models\x18\x01 \x03(\v2\x11.sortedchat.ModelR\x06models\"6\n" +
+	"\x13GetLLMModelsRequest\"R\n" +
+	"\x14GetLLMModelsResponse\x12:\n" +
+	"\x06models\x18\x01 \x03(\v2\".sortedchat.inferenceservice.ModelR\x06models\"6\n" +
 	"\x15CancelDownloadRequest\x12\x1d\n" +
 	"\n" +
 	"model_name\x18\x01 \x01(\tR\tmodelName\"2\n" +
@@ -666,12 +1372,13 @@ const file_inferenceservice_proto_rawDesc = "" +
 	"\n" +
 	"\x06FAILED\x10\x04\x12\x0e\n" +
 	"\n" +
-	"CANCELLING\x10\x052\xe6\x02\n" +
-	"\x10InferenceService\x12T\n" +
-	"\rDownloadModel\x12 .sortedchat.DownloadModelRequest\x1a!.sortedchat.DownloadModelResponse\x12S\n" +
-	"\fGetLLMModels\x12\x1f.sortedchat.GetLLMModelsRequest\x1a .sortedchat.GetLLMModelsResponse0\x01\x12W\n" +
-	"\x0eCancelDownload\x12!.sortedchat.CancelDownloadRequest\x1a\".sortedchat.CancelDownloadResponse\x12N\n" +
-	"\vDeleteModel\x12\x1e.sortedchat.DeleteModelRequest\x1a\x1f.sortedchat.DeleteModelResponseB&Z$sortedstartup/inferenceservice/protob\x06proto3"
+	"CANCELLING\x10\x052\xcd\x04\n" +
+	"\x10InferenceService\x12]\n" +
+	"\x04Chat\x12(.sortedchat.inferenceservice.ChatRequest\x1a).sortedchat.inferenceservice.ChatResponse0\x01\x12v\n" +
+	"\rDownloadModel\x121.sortedchat.inferenceservice.DownloadModelRequest\x1a2.sortedchat.inferenceservice.DownloadModelResponse\x12u\n" +
+	"\fGetLLMModels\x120.sortedchat.inferenceservice.GetLLMModelsRequest\x1a1.sortedchat.inferenceservice.GetLLMModelsResponse0\x01\x12y\n" +
+	"\x0eCancelDownload\x122.sortedchat.inferenceservice.CancelDownloadRequest\x1a3.sortedchat.inferenceservice.CancelDownloadResponse\x12p\n" +
+	"\vDeleteModel\x12/.sortedchat.inferenceservice.DeleteModelRequest\x1a0.sortedchat.inferenceservice.DeleteModelResponseB&Z$sortedstartup/inferenceservice/protob\x06proto3"
 
 var (
 	file_inferenceservice_proto_rawDescOnce sync.Once
@@ -686,38 +1393,55 @@ func file_inferenceservice_proto_rawDescGZIP() []byte {
 }
 
 var file_inferenceservice_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_inferenceservice_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_inferenceservice_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_inferenceservice_proto_goTypes = []any{
-	(DownloadStatus)(0),            // 0: sortedchat.DownloadStatus
-	(*DownloadProgress)(nil),       // 1: sortedchat.DownloadProgress
-	(*Model)(nil),                  // 2: sortedchat.Model
-	(*DownloadModelRequest)(nil),   // 3: sortedchat.DownloadModelRequest
-	(*DownloadModelResponse)(nil),  // 4: sortedchat.DownloadModelResponse
-	(*GetLLMModelsRequest)(nil),    // 5: sortedchat.GetLLMModelsRequest
-	(*GetLLMModelsResponse)(nil),   // 6: sortedchat.GetLLMModelsResponse
-	(*CancelDownloadRequest)(nil),  // 7: sortedchat.CancelDownloadRequest
-	(*CancelDownloadResponse)(nil), // 8: sortedchat.CancelDownloadResponse
-	(*DeleteModelRequest)(nil),     // 9: sortedchat.DeleteModelRequest
-	(*DeleteModelResponse)(nil),    // 10: sortedchat.DeleteModelResponse
+	(DownloadStatus)(0),                             // 0: sortedchat.inferenceservice.DownloadStatus
+	(*ChatRequest)(nil),                             // 1: sortedchat.inferenceservice.ChatRequest
+	(*ProjectContext)(nil),                          // 2: sortedchat.inferenceservice.ProjectContext
+	(*ChatResponse)(nil),                            // 3: sortedchat.inferenceservice.ChatResponse
+	(*RAGDocumentReferenceSummaryList)(nil),         // 4: sortedchat.inferenceservice.RAGDocumentReferenceSummaryList
+	(*RAGDocumentReference)(nil),                    // 5: sortedchat.inferenceservice.RAGDocumentReference
+	(*ResponseSummary)(nil),                         // 6: sortedchat.inferenceservice.ResponseSummary
+	(*ChatInfo)(nil),                                // 7: sortedchat.inferenceservice.ChatInfo
+	(*DownloadProgress)(nil),                        // 8: sortedchat.inferenceservice.DownloadProgress
+	(*Model)(nil),                                   // 9: sortedchat.inferenceservice.Model
+	(*DownloadModelRequest)(nil),                    // 10: sortedchat.inferenceservice.DownloadModelRequest
+	(*DownloadModelResponse)(nil),                   // 11: sortedchat.inferenceservice.DownloadModelResponse
+	(*GetLLMModelsRequest)(nil),                     // 12: sortedchat.inferenceservice.GetLLMModelsRequest
+	(*GetLLMModelsResponse)(nil),                    // 13: sortedchat.inferenceservice.GetLLMModelsResponse
+	(*CancelDownloadRequest)(nil),                   // 14: sortedchat.inferenceservice.CancelDownloadRequest
+	(*CancelDownloadResponse)(nil),                  // 15: sortedchat.inferenceservice.CancelDownloadResponse
+	(*DeleteModelRequest)(nil),                      // 16: sortedchat.inferenceservice.DeleteModelRequest
+	(*DeleteModelResponse)(nil),                     // 17: sortedchat.inferenceservice.DeleteModelResponse
+	(*RAGDocumentReferenceSummaryList_Summary)(nil), // 18: sortedchat.inferenceservice.RAGDocumentReferenceSummaryList.Summary
+	(*RAGDocumentReference_Chunk)(nil),              // 19: sortedchat.inferenceservice.RAGDocumentReference.Chunk
 }
 var file_inferenceservice_proto_depIdxs = []int32{
-	0,  // 0: sortedchat.DownloadProgress.status:type_name -> sortedchat.DownloadStatus
-	1,  // 1: sortedchat.Model.progress:type_name -> sortedchat.DownloadProgress
-	0,  // 2: sortedchat.Model.status:type_name -> sortedchat.DownloadStatus
-	2,  // 3: sortedchat.GetLLMModelsResponse.models:type_name -> sortedchat.Model
-	3,  // 4: sortedchat.InferenceService.DownloadModel:input_type -> sortedchat.DownloadModelRequest
-	5,  // 5: sortedchat.InferenceService.GetLLMModels:input_type -> sortedchat.GetLLMModelsRequest
-	7,  // 6: sortedchat.InferenceService.CancelDownload:input_type -> sortedchat.CancelDownloadRequest
-	9,  // 7: sortedchat.InferenceService.DeleteModel:input_type -> sortedchat.DeleteModelRequest
-	4,  // 8: sortedchat.InferenceService.DownloadModel:output_type -> sortedchat.DownloadModelResponse
-	6,  // 9: sortedchat.InferenceService.GetLLMModels:output_type -> sortedchat.GetLLMModelsResponse
-	8,  // 10: sortedchat.InferenceService.CancelDownload:output_type -> sortedchat.CancelDownloadResponse
-	10, // 11: sortedchat.InferenceService.DeleteModel:output_type -> sortedchat.DeleteModelResponse
-	8,  // [8:12] is the sub-list for method output_type
-	4,  // [4:8] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	2,  // 0: sortedchat.inferenceservice.ChatRequest.project_context:type_name -> sortedchat.inferenceservice.ProjectContext
+	6,  // 1: sortedchat.inferenceservice.ChatResponse.summary:type_name -> sortedchat.inferenceservice.ResponseSummary
+	4,  // 2: sortedchat.inferenceservice.ChatResponse.document_reference:type_name -> sortedchat.inferenceservice.RAGDocumentReferenceSummaryList
+	7,  // 3: sortedchat.inferenceservice.ChatResponse.chat_metadata:type_name -> sortedchat.inferenceservice.ChatInfo
+	18, // 4: sortedchat.inferenceservice.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.inferenceservice.RAGDocumentReferenceSummaryList.Summary
+	19, // 5: sortedchat.inferenceservice.RAGDocumentReference.Chunks:type_name -> sortedchat.inferenceservice.RAGDocumentReference.Chunk
+	0,  // 6: sortedchat.inferenceservice.DownloadProgress.status:type_name -> sortedchat.inferenceservice.DownloadStatus
+	8,  // 7: sortedchat.inferenceservice.Model.progress:type_name -> sortedchat.inferenceservice.DownloadProgress
+	0,  // 8: sortedchat.inferenceservice.Model.status:type_name -> sortedchat.inferenceservice.DownloadStatus
+	9,  // 9: sortedchat.inferenceservice.GetLLMModelsResponse.models:type_name -> sortedchat.inferenceservice.Model
+	1,  // 10: sortedchat.inferenceservice.InferenceService.Chat:input_type -> sortedchat.inferenceservice.ChatRequest
+	10, // 11: sortedchat.inferenceservice.InferenceService.DownloadModel:input_type -> sortedchat.inferenceservice.DownloadModelRequest
+	12, // 12: sortedchat.inferenceservice.InferenceService.GetLLMModels:input_type -> sortedchat.inferenceservice.GetLLMModelsRequest
+	14, // 13: sortedchat.inferenceservice.InferenceService.CancelDownload:input_type -> sortedchat.inferenceservice.CancelDownloadRequest
+	16, // 14: sortedchat.inferenceservice.InferenceService.DeleteModel:input_type -> sortedchat.inferenceservice.DeleteModelRequest
+	3,  // 15: sortedchat.inferenceservice.InferenceService.Chat:output_type -> sortedchat.inferenceservice.ChatResponse
+	11, // 16: sortedchat.inferenceservice.InferenceService.DownloadModel:output_type -> sortedchat.inferenceservice.DownloadModelResponse
+	13, // 17: sortedchat.inferenceservice.InferenceService.GetLLMModels:output_type -> sortedchat.inferenceservice.GetLLMModelsResponse
+	15, // 18: sortedchat.inferenceservice.InferenceService.CancelDownload:output_type -> sortedchat.inferenceservice.CancelDownloadResponse
+	17, // 19: sortedchat.inferenceservice.InferenceService.DeleteModel:output_type -> sortedchat.inferenceservice.DeleteModelResponse
+	15, // [15:20] is the sub-list for method output_type
+	10, // [10:15] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_inferenceservice_proto_init() }
@@ -725,13 +1449,20 @@ func file_inferenceservice_proto_init() {
 	if File_inferenceservice_proto != nil {
 		return
 	}
+	file_inferenceservice_proto_msgTypes[2].OneofWrappers = []any{
+		(*ChatResponse_Text)(nil),
+		(*ChatResponse_Summary)(nil),
+		(*ChatResponse_RequestMessageId)(nil),
+		(*ChatResponse_DocumentReference)(nil),
+		(*ChatResponse_ChatMetadata)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_inferenceservice_proto_rawDesc), len(file_inferenceservice_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

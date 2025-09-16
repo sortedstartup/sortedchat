@@ -33,6 +33,11 @@ import (
 	inferenceApi "sortedstartup/inferenceservice/api"
 	inferenceDao "sortedstartup/inferenceservice/dao"
 	infereceProto "sortedstartup/inferenceservice/proto"
+
+	realtimeApi "sortedstartup/realtimeservice/api"
+	realtimeDao "sortedstartup/realtimeservice/dao"
+
+	realtimeProto "sortedstartup/realtimeservice/proto"
 )
 
 const (
@@ -159,6 +164,22 @@ func main() {
 		}
 	}()
 
+	realtimeConfig, err := realtimeDao.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	realtimeDaoFactory, err := realtimeDao.NewDAOFactory(realtimeConfig)
+	if err != nil {
+		log.Fatalf("Failed to create DAO factory: %v", err)
+	}
+	defer func() {
+		if err := realtimeDaoFactory.Close(); err != nil {
+			slog.Error("Error closing DAO factory", "error", err)
+			log.Printf("Error closing DAO factory: %v", err)
+		}
+	}()
+
 	queue := queue.NewInMemoryQueue()
 	settingsManager := settings.NewSettingsManager(queue, daoFactory)
 
@@ -173,6 +194,10 @@ func main() {
 	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
 	inferenceServiceApi.Init(inferenceConfig)
 	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
+
+	realtimeServiceApi := realtimeApi.NewRealtimeServiceAPI(realtimeDaoFactory)
+	realtimeServiceApi.Init(realtimeConfig)
+	realtimeProto.RegisterRealtimeServiceServer(grpcServer, realtimeServiceApi)
 
 	authConfig, err := authDao.LoadConfig()
 	if err != nil {

@@ -4,6 +4,7 @@ use (
 	./chatservice
 	./inferenceservice
 	./authservice
+	./realtimeservice
 	./common
 	./mono
 )

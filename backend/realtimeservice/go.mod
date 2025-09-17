@@ -3,9 +3,12 @@ module sortedstartup/realtimeservice
 go 1.24.3
 
 require (
+	github.com/gorilla/websocket v1.5.3
+	github.com/pion/rtp v1.8.7
 	github.com/pion/webrtc/v3 v3.3.6
 	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.9
+	gopkg.in/hraban/opus.v2 v2.0.0-20230925203106-0188a62cb302
 )
 
 require (
@@ -19,7 +22,6 @@ require (
 	github.com/pion/mdns v0.0.12 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.14 // indirect
-	github.com/pion/rtp v1.8.7 // indirect
 	github.com/pion/sctp v1.8.19 // indirect
 	github.com/pion/sdp/v3 v3.0.9 // indirect
 	github.com/pion/srtp/v2 v2.0.20 // indirect

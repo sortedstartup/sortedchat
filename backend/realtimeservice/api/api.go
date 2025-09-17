@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"sortedstartup/common/auth"
 	"sortedstartup/realtimeservice/dao"
 	pb "sortedstartup/realtimeservice/proto"
 	"sortedstartup/realtimeservice/service"
@@ -27,7 +28,12 @@ func (s *RealtimeServiceAPI) Init(config *dao.Config) {
 }
 
 func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*pb.OfferResponse, error) {
-	offer, err := s.service.Offer2(req)
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	offer, err := s.service.Offer(req, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +43,11 @@ func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*
 }
 
 func (s *RealtimeServiceAPI) IceCandidate(ctx context.Context, req *pb.IceCandidateRequest) (*pb.IceCandidateResponse, error) {
-	message, err := s.service.IceCandidate(req.Candidate)
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		return nil, err
+	}
+	message, err := s.service.IceCandidate(req.Candidate, userID)
 	if err != nil {
 		fmt.Println("Error adding ICE candidate", err)
 		return nil, err

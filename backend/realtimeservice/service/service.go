@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -41,6 +40,7 @@ var userConnections = make(map[string]*PeerConnection)
 func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, error) {
 	browserToBackendPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
+		slog.Error("error creating browser to backend PC", "userID", userID, "error", err)
 		return "", err
 	}
 
@@ -50,13 +50,13 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, 
 		"openai-to-browser", "pion-openai",
 	)
 	if err != nil {
-		slog.Error("error creating OpenAI to browser track", "error", err)
+		slog.Error("error creating OpenAI to browser track", "userID", userID, "error", err)
 		return "", err
 	}
 
 	// Add the track to browser connection BEFORE setting remote description
 	if _, err := browserToBackendPC.AddTrack(openaiBackendTrack); err != nil {
-		slog.Error("error adding OpenAI to browser track", "error", err)
+		slog.Error("error adding OpenAI to backend track", "userID", userID, "error", err)
 		return "", err
 	}
 
@@ -68,6 +68,7 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, 
 
 			// Store this track for copying to OpenAI later
 			if userConnections[userID] != nil && userConnections[userID].browserBackendTrack != nil {
+				slog.Info("Copying audio track from browser to OpenAI", "userID", userID)
 				copyAudioTrack(track, userConnections[userID].browserBackendTrack, userID, "Browser->OpenAI")
 			}
 		}
@@ -77,18 +78,18 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, 
 		Type: webrtc.SDPTypeOffer,
 		SDP:  offer.Offer,
 	}); err != nil {
-		slog.Error("error setting backendPC.remote description", "error", err)
+		slog.Error("error setting backendPC.remote description", "userID", userID, "error", err)
 		return "", err
 	}
 
 	answerForBrowser, err := browserToBackendPC.CreateAnswer(nil)
 	if err != nil {
-		slog.Error("error creating backendPC.answer", "error", err)
+		slog.Error("error creating backendPC.answer", "userID", userID, "error", err)
 		return "", err
 	}
 
 	if err := browserToBackendPC.SetLocalDescription(answerForBrowser); err != nil {
-		slog.Error("error setting backendPC.local description", "error", err)
+		slog.Error("error setting backendPC.local description", "userID", userID, "error", err)
 		return "", err
 	}
 
@@ -108,6 +109,7 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, 
 func connectToOpenai(userID string) error {
 	backendToOpenAIPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
+		slog.Error("error creating backend to OpenAI PC", "userID", userID, "error", err)
 		return err
 	}
 
@@ -117,13 +119,13 @@ func connectToOpenai(userID string) error {
 		"browser-to-openai", "pion-browser",
 	)
 	if err != nil {
-		slog.Error("error creating browser to OpenAI track", "error", err)
+		slog.Error("error creating browser to OpenAI track", "userID", userID, "error", err)
 		return err
 	}
 
 	// Add track to OpenAI connection
 	if _, err := backendToOpenAIPC.AddTrack(browserBackendTrack); err != nil {
-		slog.Error("error adding browser to OpenAI track", "error", err)
+		slog.Error("error adding browser to OpenAI track", "userID", userID, "error", err)
 		return err
 	}
 
@@ -139,6 +141,7 @@ func connectToOpenai(userID string) error {
 
 			// Copy OpenAI audio to browser
 			if userConnections[userID] != nil && userConnections[userID].openaiBackendTrack != nil {
+				slog.Info("Copying audio track from OpenAI to browser", "userID", userID)
 				copyAudioTrack(track, userConnections[userID].openaiBackendTrack, userID, "OpenAI->Browser")
 			}
 		}
@@ -147,23 +150,23 @@ func connectToOpenai(userID string) error {
 	// Create offer for OpenAI
 	offerForOpenAI, err := backendToOpenAIPC.CreateOffer(nil)
 	if err != nil {
-		fmt.Printf("Error creating OpenAI offer: %v\n", err)
+		slog.Error("Error creating OpenAI offer", "userID", userID, "error", err)
 		return err
 	}
 
 	backendToOpenAIPC.SetLocalDescription(offerForOpenAI)
-	fmt.Printf("OpenAI Offer created with %d characters\n", len(offerForOpenAI.SDP))
+	slog.Info("OpenAI Offer created with %d characters", "userID", userID, "length", len(offerForOpenAI.SDP))
 
 	// Get ephemeral token
 	token, err := getEphemeralToken()
 	if err != nil {
-		fmt.Printf("Token error: %v\n", err)
+		slog.Error("Token error", "userID", userID, "error", err)
 		return err
 	}
 
 	responseBody, err := getOpenaiSDP(offerForOpenAI, token)
 	if err != nil {
-		fmt.Printf("OpenAI error: %v\n", err)
+		slog.Error("OpenAI error", "userID", userID, "error", err)
 		return err
 	}
 
@@ -171,10 +174,11 @@ func connectToOpenai(userID string) error {
 		Type: webrtc.SDPTypeAnswer,
 		SDP:  responseBody,
 	}); err != nil {
+		slog.Error("error setting backend to OpenAI PC remote description", "userID", userID, "error", err)
 		return err
 	}
 
-	log.Println("Connected to OpenAI with bidirectional audio copying")
+	slog.Info("Connected to OpenAI with bidirectional audio copying", "userID", userID)
 	return nil
 }
 
@@ -199,6 +203,7 @@ func getEphemeralToken() (string, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		slog.Error("error getting ephemeral token", "error", err)
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -207,8 +212,10 @@ func getEphemeralToken() (string, error) {
 	json.NewDecoder(resp.Body).Decode(&result)
 
 	if value, ok := result["value"].(string); ok {
+		slog.Info("ephemeral token received", "token", value)
 		return value, nil
 	}
+	slog.Error("no token received")
 	return "", fmt.Errorf("no token received")
 }
 
@@ -222,6 +229,7 @@ func getOpenaiSDP(offer webrtc.SessionDescription, token string) (string, error)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		slog.Error("error getting OpenAI SDP", "error", err)
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -230,11 +238,12 @@ func getOpenaiSDP(offer webrtc.SessionDescription, token string) (string, error)
 	buf.ReadFrom(resp.Body)
 	responseBody := buf.String()
 
-	fmt.Printf("Response Status: %d\n", resp.StatusCode)
-	fmt.Printf("Response Body Length: %d chars\n", len(responseBody))
+	slog.Info("Response Status: %d", "status", resp.StatusCode)
+	slog.Info("Response Body Length: %d chars", "length", len(responseBody))
 
 	// Accept both 200 and 201
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+		slog.Error("error getting OpenAI SDP", "status", resp.StatusCode, "body", responseBody)
 		return "", fmt.Errorf("status %d: %s", resp.StatusCode, responseBody)
 	}
 
@@ -243,18 +252,20 @@ func getOpenaiSDP(offer webrtc.SessionDescription, token string) (string, error)
 
 func (s *RealtimeService) IceCandidate(candidate string, userID string) (string, error) {
 	if userConnections[userID].browserConnection == nil {
+		slog.Error("client peer connection not initialized", "userID", userID)
 		return "", fmt.Errorf("client peer connection not initialized")
 	}
 
 	// Check if remote description is set
 	if userConnections[userID].browserConnection.RemoteDescription() == nil {
+		slog.Error("remote description not set, cannot add ICE candidate", "userID", userID)
 		return "", fmt.Errorf("remote description not set, cannot add ICE candidate")
 	}
 
 	if err := userConnections[userID].browserConnection.AddICECandidate(webrtc.ICECandidateInit{
 		Candidate: candidate,
 	}); err != nil {
-		slog.Error("error adding ICE candidate", "error", err)
+		slog.Error("error adding ICE candidate", "userID", userID, "error", err)
 		return "", err
 	}
 	return "connected", nil

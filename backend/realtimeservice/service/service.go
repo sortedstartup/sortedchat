@@ -162,7 +162,7 @@ func connectToOpenai(userID string) error {
 		}
 	})
 
-	// ---- [Data Channel Event Logging] ----
+	// ---- [Data Channel and Event Logging for testing] ----
 	openaiDataChannel, _ := backendToOpenAIpc.CreateDataChannel("openai", nil)
 	initEventLogging()
 	openaiDataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
@@ -214,9 +214,6 @@ func connectToOpenai(userID string) error {
 		}
 	})
 
-	// ============== NO CUSTOM KEEPALIVES ==============
-	// WebRTC takes care of this. No need to "ping" or poke OpenAI with unrecognized events.
-
 	// --- Create Offer for OpenAI ---
 	offerForOpenAI, err := backendToOpenAIpc.CreateOffer(nil)
 	if err != nil {
@@ -251,6 +248,7 @@ func connectToOpenai(userID string) error {
 }
 
 // Logging file for OpenAI events
+// ----------------------for testing----------------------
 var eventLogFile *os.File
 
 func initEventLogging() {
@@ -264,6 +262,8 @@ func initEventLogging() {
 	}
 	fmt.Printf("📝 Logging to: %s\n", filename)
 }
+
+//----------------------for testing----------------------
 
 func getEphemeralToken() (string, error) {
 	config := map[string]interface{}{

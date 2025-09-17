@@ -43,6 +43,27 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, 
 		return "", err
 	}
 
+	browserToBackendPC.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+		slog.Info("Received track from browser", "trackID", track.ID(), "kind", track.Kind(), "userID", userID)
+
+		if track.Kind() == webrtc.RTPCodecTypeAudio {
+
+			// Start reading audio data in a goroutine
+			go func() {
+				buffer := make([]byte, 1400)
+				for {
+					n, _, err := track.Read(buffer)
+					if err != nil {
+						slog.Error("Error reading audio data", "error", err)
+						return
+					}
+					// Log that we received audio data
+					slog.Info("Received audio data", "bytes", n, "userID", userID)
+				}
+			}()
+		}
+	})
+
 	if err := browserToBackendPC.SetRemoteDescription(webrtc.SessionDescription{
 		Type: webrtc.SDPTypeOffer,
 		SDP:  offer.Offer,
@@ -80,6 +101,21 @@ func connectToOpenai(userID string) error {
 		return err
 	}
 
+	// add empty audio track to backendToOpenAIPC
+	emptyAudioTrack, err := webrtc.NewTrackLocalStaticRTP(
+		webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 44000, Channels: 1},
+		"openai-audio", "pion-openai",
+	)
+	if err != nil {
+		slog.Error("error creating empty audio track", "error", err)
+		return err
+	}
+	if _, err := backendToOpenAIPC.AddTrack(emptyAudioTrack); err != nil {
+		slog.Error("error adding empty audio track to backendPC", "error", err)
+		return err
+	}
+
+	// create offer for openai
 	offerForOpenAI, err := backendToOpenAIPC.CreateOffer(nil)
 	if err != nil {
 		fmt.Printf("Error creating OpenAI offer: %v\n", err)

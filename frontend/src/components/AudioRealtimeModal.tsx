@@ -27,6 +27,26 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Handle audio context for autoplay policies
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+          console.log('Audio context resumed after user interaction');
+        });
+      }
+    };
+
+    document.addEventListener('click', handleUserInteraction, { once: true });
+    document.addEventListener('keydown', handleUserInteraction, { once: true });
+    
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+    };
+  }, []);
+
   const handleConnection = async () => {
     try {
       setConnectionState('connecting');
@@ -53,13 +73,73 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
         }
       };
 
-      pc.ontrack = (e) => {
-        console.log("🔊 Audio received");
-        if (!audioElementRef.current) {
-          audioElementRef.current = document.createElement("audio");
-          audioElementRef.current.autoplay = true;
+      // FIXED: Proper audio track handling
+      pc.ontrack = (event) => {
+        console.log("🔊 Audio track received:", {
+          kind: event.track.kind,
+          id: event.track.id,
+          streams: event.streams.length,
+          enabled: event.track.enabled,
+          muted: event.track.muted
+        });
+        
+        if (event.track.kind === 'audio') {
+          // Create or get audio element
+          if (!audioElementRef.current) {
+            audioElementRef.current = document.createElement("audio");
+            audioElementRef.current.autoplay = true;
+            audioElementRef.current.controls = true; // For debugging
+            audioElementRef.current.volume = 1.0;
+            
+            // Add to DOM temporarily for debugging
+            audioElementRef.current.style.position = 'fixed';
+            audioElementRef.current.style.bottom = '10px';
+            audioElementRef.current.style.right = '10px';
+            audioElementRef.current.style.zIndex = '9999';
+            audioElementRef.current.style.width = '300px';
+            document.body.appendChild(audioElementRef.current);
+          }
+          
+          // Set audio source
+          if (event.streams && event.streams[0]) {
+            audioElementRef.current.srcObject = event.streams[0];
+          } else {
+            // Create stream from track if not provided
+            const stream = new MediaStream([event.track]);
+            audioElementRef.current.srcObject = stream;
+          }
+          
+          // Ensure playback starts
+          audioElementRef.current.play().then(() => {
+            console.log("✅ Audio playback started successfully");
+            setStatusMessage("🔊 Audio playing - Speaking...");
+          }).catch(err => {
+            console.error("❌ Audio play failed:", err);
+            setStatusMessage("⚠️ Audio play failed - Check permissions");
+            
+            // Try to resume audio context if suspended
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            if (audioContext.state === 'suspended') {
+              audioContext.resume().then(() => {
+                console.log("Audio context resumed, retrying play...");
+                audioElementRef.current?.play();
+              });
+            }
+          });
+          
+          // Monitor track events
+          event.track.addEventListener('ended', () => {
+            console.log("Audio track ended");
+          });
+          
+          event.track.addEventListener('mute', () => {
+            console.log("Audio track muted");
+          });
+          
+          event.track.addEventListener('unmute', () => {
+            console.log("Audio track unmuted");
+          });
         }
-        audioElementRef.current.srcObject = e.streams[0];
       };
 
       // Add microphone
@@ -120,13 +200,12 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-     const response =  await offerRequest(String( offer.sdp ));
+      const response = await offerRequest(String(offer.sdp));
 
-     const answer = {
-      type: "answer",
-      sdp: String(response)
-     }
-
+      const answer = {
+        type: "answer",
+        sdp: String(response)
+      }
 
       await pc.setRemoteDescription(answer as unknown as RTCSessionDescription);
 
@@ -148,8 +227,16 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       streamRef.current = null;
     }
     
+    // Properly cleanup audio element
     if (audioElementRef.current) {
+      audioElementRef.current.pause();
       audioElementRef.current.srcObject = null;
+      
+      // Remove from DOM if added
+      if (audioElementRef.current.parentNode) {
+        audioElementRef.current.parentNode.removeChild(audioElementRef.current);
+      }
+      
       audioElementRef.current = null;
     }
     
@@ -253,7 +340,6 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
               <Button
                 onClick={handleConnection}
                 className="bg-green-600 hover:bg-green-700 text-white px-6"
-                // disabled={connectionState === 'connected'}
               >
                 <Phone className="h-4 w-4 mr-2" />
                 Connect
@@ -285,6 +371,9 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           <div className="text-xs text-gray-500 text-center space-y-1">
             <p>Click Connect to start voice conversation</p>
             <p>Speak naturally - the AI will respond with voice</p>
+            {connectionState === 'connected' && (
+              <p className="text-blue-600 font-medium">Audio controls appear in bottom-right corner</p>
+            )}
           </div>
         </div>
       </DialogContent>

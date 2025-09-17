@@ -29,38 +29,47 @@ func (s *RealtimeService) Init(config *dao.Config) {
 var OPENAI_API_KEY = os.Getenv("OPENAI_API_KEY")
 
 type PeerConnection struct {
-	browserConnection *webrtc.PeerConnection
-	openaiConnection  *webrtc.PeerConnection
+	browserConnection   *webrtc.PeerConnection
+	openaiConnection    *webrtc.PeerConnection
+	browserBackendTrack *webrtc.TrackLocalStaticRTP
+	openaiBackendTrack  *webrtc.TrackLocalStaticRTP
 }
 
 // userID -> PeerConnection (browserConnection and openaiConnection)
 var userConnections = make(map[string]*PeerConnection)
 
 func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, error) {
-
 	browserToBackendPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		return "", err
 	}
 
+	// Create track to send OpenAI audio TO browser (add before processing offer)
+	openaiBackendTrack, err := webrtc.NewTrackLocalStaticRTP(
+		webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 48000, Channels: 2},
+		"openai-to-browser", "pion-openai",
+	)
+	if err != nil {
+		slog.Error("error creating OpenAI to browser track", "error", err)
+		return "", err
+	}
+
+	// Add the track to browser connection BEFORE setting remote description
+	if _, err := browserToBackendPC.AddTrack(openaiBackendTrack); err != nil {
+		slog.Error("error adding OpenAI to browser track", "error", err)
+		return "", err
+	}
+
+	// OnTrack handler to receive audio FROM browser
 	browserToBackendPC.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		slog.Info("Received track from browser", "trackID", track.ID(), "kind", track.Kind(), "userID", userID)
-
 		if track.Kind() == webrtc.RTPCodecTypeAudio {
+			slog.Info("Audio track received from browser", "userID", userID, "SSRC", track.SSRC())
 
-			// Start reading audio data in a goroutine
-			go func() {
-				buffer := make([]byte, 1400)
-				for {
-					n, _, err := track.Read(buffer)
-					if err != nil {
-						slog.Error("Error reading audio data", "error", err)
-						return
-					}
-					// Log that we received audio data
-					slog.Info("Received audio data", "bytes", n, "userID", userID)
-				}
-			}()
+			// Store this track for copying to OpenAI later
+			if userConnections[userID] != nil && userConnections[userID].browserBackendTrack != nil {
+				copyAudioTrack(track, userConnections[userID].browserBackendTrack, userID, "Browser->OpenAI")
+			}
 		}
 	})
 
@@ -83,39 +92,59 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, 
 		return "", err
 	}
 
+	// Initialize connection structure
 	userConnections[userID] = &PeerConnection{
-		browserConnection: browserToBackendPC,
-		openaiConnection:  nil,
+		browserConnection:   browserToBackendPC,
+		openaiConnection:    nil,
+		browserBackendTrack: nil,
+		openaiBackendTrack:  openaiBackendTrack,
 	}
 
 	go connectToOpenai(userID)
-
 	return answerForBrowser.SDP, nil
 }
 
 // peer connection to openai
 func connectToOpenai(userID string) error {
-
 	backendToOpenAIPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		return err
 	}
 
-	// add empty audio track to backendToOpenAIPC
-	emptyAudioTrack, err := webrtc.NewTrackLocalStaticRTP(
-		webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 44000, Channels: 1},
-		"openai-audio", "pion-openai",
+	// Create track to send browser audio TO OpenAI
+	browserBackendTrack, err := webrtc.NewTrackLocalStaticRTP(
+		webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 48000, Channels: 2},
+		"browser-to-openai", "pion-browser",
 	)
 	if err != nil {
-		slog.Error("error creating empty audio track", "error", err)
-		return err
-	}
-	if _, err := backendToOpenAIPC.AddTrack(emptyAudioTrack); err != nil {
-		slog.Error("error adding empty audio track to backendPC", "error", err)
+		slog.Error("error creating browser to OpenAI track", "error", err)
 		return err
 	}
 
-	// create offer for openai
+	// Add track to OpenAI connection
+	if _, err := backendToOpenAIPC.AddTrack(browserBackendTrack); err != nil {
+		slog.Error("error adding browser to OpenAI track", "error", err)
+		return err
+	}
+
+	// Store the track for copying from browser
+	userConnections[userID].browserBackendTrack = browserBackendTrack
+	userConnections[userID].openaiConnection = backendToOpenAIPC
+
+	// OnTrack handler to receive audio FROM OpenAI
+	backendToOpenAIPC.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+		slog.Info("Received track from OpenAI", "trackID", track.ID(), "kind", track.Kind(), "userID", userID)
+		if track.Kind() == webrtc.RTPCodecTypeAudio {
+			slog.Info("Audio track received from OpenAI", "userID", userID, "SSRC", track.SSRC())
+
+			// Copy OpenAI audio to browser
+			if userConnections[userID] != nil && userConnections[userID].openaiBackendTrack != nil {
+				copyAudioTrack(track, userConnections[userID].openaiBackendTrack, userID, "OpenAI->Browser")
+			}
+		}
+	})
+
+	// Create offer for OpenAI
 	offerForOpenAI, err := backendToOpenAIPC.CreateOffer(nil)
 	if err != nil {
 		fmt.Printf("Error creating OpenAI offer: %v\n", err)
@@ -125,7 +154,7 @@ func connectToOpenai(userID string) error {
 	backendToOpenAIPC.SetLocalDescription(offerForOpenAI)
 	fmt.Printf("OpenAI Offer created with %d characters\n", len(offerForOpenAI.SDP))
 
-	// Get ephemral token
+	// Get ephemeral token
 	token, err := getEphemeralToken()
 	if err != nil {
 		fmt.Printf("Token error: %v\n", err)
@@ -138,12 +167,14 @@ func connectToOpenai(userID string) error {
 		return err
 	}
 
-	backendToOpenAIPC.SetRemoteDescription(webrtc.SessionDescription{
+	if err := backendToOpenAIPC.SetRemoteDescription(webrtc.SessionDescription{
 		Type: webrtc.SDPTypeAnswer,
 		SDP:  responseBody,
-	})
-	userConnections[userID].openaiConnection = backendToOpenAIPC
-	log.Println("Connected to OpenAI ")
+	}); err != nil {
+		return err
+	}
+
+	log.Println("Connected to OpenAI with bidirectional audio copying")
 	return nil
 }
 
@@ -227,4 +258,26 @@ func (s *RealtimeService) IceCandidate(candidate string, userID string) (string,
 		return "", err
 	}
 	return "connected", nil
+}
+
+// Generic function to copy audio from source track to destination track
+func copyAudioTrack(sourceTrack *webrtc.TrackRemote, destTrack *webrtc.TrackLocalStaticRTP, userID, direction string) {
+	go func() {
+		buffer := make([]byte, 1400)
+		for {
+			n, _, err := sourceTrack.Read(buffer)
+			if err != nil {
+				slog.Error("Error reading from source track", "direction", direction, "error", err)
+				return
+			}
+
+			// Copy to destination track
+			if _, err := destTrack.Write(buffer[:n]); err != nil {
+				slog.Error("Error writing to destination track", "direction", direction, "error", err)
+				return
+			}
+
+			slog.Info("Copied audio data", "direction", direction, "bytes", n, "userID", userID)
+		}
+	}()
 }

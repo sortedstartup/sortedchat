@@ -88,9 +88,11 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       };
 
       dataChannel.onmessage = async (event) => {
+        console.log("event", event);
         try {
           let text;
           if (typeof event.data === "string") {
+            console.log("event.data", event.data);
             text = event.data;
           } else if (event.data instanceof ArrayBuffer) {
             text = new TextDecoder().decode(event.data);
@@ -99,6 +101,10 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           } else {
             console.warn("Unknown data type:", typeof event.data);
             return;
+          }
+
+          if(event.data === "OpenAI:usage") {
+            console.log("OpenAI:usage", event.data);
           }
 
           try {

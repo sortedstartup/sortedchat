@@ -34,8 +34,10 @@ type PeerConnection struct {
 	browserConnection    *webrtc.PeerConnection
 	openaiConnection     *webrtc.PeerConnection
 	geminiRealtime       *GeminiRealtime
+	openaiRealtime       *OpenAIRealtime
 	backendToOpenAITrack *webrtc.TrackLocalStaticRTP
 	openaiBackendTrack   *webrtc.TrackLocalStaticRTP
+	dataChannelManager   *DataChannelManager
 }
 
 // userID -> PeerConnection
@@ -81,12 +83,22 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 				}
 			} else {
 				// Handle audio through OpenAI (existing logic)
-				if userConn.backendToOpenAITrack != nil {
-					slog.Info("Copying audio track from browser to OpenAI", "userID", userID)
-					copyAudioTrack(track, userConn.backendToOpenAITrack, userID, "Browser->OpenAI")
+				// if userConn.backendToOpenAITrack != nil {
+				slog.Info("Copying audio track from browser to OpenAI", "userID", userID)
+				// copyAudioTrack(track, userConn.backendToOpenAITrack, userID, "Browser->OpenAI")
+				if userConn.openaiRealtime != nil {
+					slog.Info("Handling audio track with OpenAI", "userID", userID)
+					go userConn.openaiRealtime.HandleAudioTrack(track)
 				}
+				// }
 			}
 		}
+	})
+	// datachannel, _ := browserToBackendPC.CreateDataChannel("datachannel", nil)
+	var datachannel *webrtc.DataChannel
+	browserToBackendPC.OnDataChannel(func(dc *webrtc.DataChannel) {
+		datachannel = dc
+		slog.Info("Data channel opened", "userID", userID)
 	})
 
 	if err := browserToBackendPC.SetRemoteDescription(webrtc.SessionDescription{
@@ -113,13 +125,14 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 		geminiRealtime:       nil,
 		backendToOpenAITrack: nil,
 		openaiBackendTrack:   openaiBackendTrack,
+		dataChannelManager:   NewDataChannelManager(userID, datachannel, s),
 	}
 
 	// Connect to the appropriate AI service
 	if model == "gemini" {
 		go s.connectToGemini(userID)
 	} else {
-		go connectToOpenai(userID)
+		go s.connectToOpenai(userID)
 	}
 
 	return answerForBrowser.SDP, nil
@@ -153,151 +166,204 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 	return nil
 }
 
-func connectToOpenai(userID string) error {
-	backendToOpenAIpc, err := webrtc.NewPeerConnection(webrtc.Configuration{})
+func (s *RealtimeService) connectToOpenai(userID string) error {
+	userConn := userConnections[userID]
+	if userConn == nil {
+		slog.Error("User connection not found for OpenAI setup", "userID", userID)
+		return fmt.Errorf("user connection not found")
+	}
+
+	openaiRealtime, err := NewOpenAIRealtime(userID, userConn.openaiBackendTrack, userConn.dataChannelManager)
 	if err != nil {
-		slog.Error("error creating backend to OpenAI PC", "userID", userID, "error", err)
+		slog.Error("Failed to create OpenAI realtime instance", "userID", userID, "error", err)
 		return err
 	}
 
-	backendToOpenAITrack, err := webrtc.NewTrackLocalStaticRTP(
-		webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 48000, Channels: 2},
-		"browser-to-openai-track", "pion-browser",
-	)
-	if err != nil {
-		slog.Error("error creating backend to OpenAI mic track", "userID", userID, "error", err)
-		return err
-	}
-	if _, err := backendToOpenAIpc.AddTrack(backendToOpenAITrack); err != nil {
-		slog.Error("error adding backend to OpenAI mic track", "userID", userID, "error", err)
+	userConn.openaiRealtime = openaiRealtime
+
+	if err := openaiRealtime.Connect(); err != nil {
+		slog.Error("Failed to connect to OpenAI", "userID", userID, "error", err)
 		return err
 	}
 
-	userConnections[userID].backendToOpenAITrack = backendToOpenAITrack
-	userConnections[userID].openaiConnection = backendToOpenAIpc
-
-	backendToOpenAIpc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-		slog.Info("Received track from OpenAI", "trackID", track.ID(), "kind", track.Kind(), "userID", userID)
-		if track.Kind() == webrtc.RTPCodecTypeAudio {
-			slog.Info("Audio track received from OpenAI", "userID", userID, "SSRC", track.SSRC())
-			if userConnections[userID] != nil && userConnections[userID].openaiBackendTrack != nil {
-				slog.Info("Copying audio track from OpenAI to browser", "userID", userID)
-				copyAudioTrack(track, userConnections[userID].openaiBackendTrack, userID, "OpenAI->Browser")
-			}
-		}
-	})
-
-	// ---- [Connection Events/Logging] ----
-	var disconnectInitiator string = "unknown"
-	backendToOpenAIpc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-		timestamp := time.Now().Format("2006-01-02 15:04:05.000")
-		switch state {
-		case webrtc.PeerConnectionStateDisconnected:
-			disconnectInitiator = "network-issue"
-			slog.Warn("OpenAI connection DISCONNECTED", "timestamp", timestamp, "initiator", "network-or-timeout", "userID", userID)
-		case webrtc.PeerConnectionStateFailed:
-			disconnectInitiator = "connection-failed"
-			slog.Error("OpenAI connection FAILED", "timestamp", timestamp, "initiator", "ice-failure", "userID", userID)
-		case webrtc.PeerConnectionStateClosed:
-			slog.Info("OpenAI connection CLOSED", "timestamp", timestamp, "initiator", disconnectInitiator, "userID", userID)
-		}
-	})
-	backendToOpenAIpc.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
-		timestamp := time.Now().Format("2006-01-02 15:04:05.000")
-		switch state {
-		case webrtc.ICEConnectionStateDisconnected:
-			disconnectInitiator = "ice-timeout"
-			slog.Warn("ICE Disconnected - OpenAI side timeout", "timestamp", timestamp, "reason", "keepalive-timeout-or-network-issue", "userID", userID)
-		case webrtc.ICEConnectionStateFailed:
-			disconnectInitiator = "ice-failed"
-			slog.Error("ICE Failed - Network unreachable", "timestamp", timestamp, "reason", "network-path-failed", "userID", userID)
-		}
-	})
-
-	// ---- [Data Channel and Event Logging for testing] ----
-	openaiDataChannel, _ := backendToOpenAIpc.CreateDataChannel("openai", nil)
-	initEventLogging()
-	openaiDataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
-		var message map[string]interface{}
-		if err := json.Unmarshal(msg.Data, &message); err != nil {
-			// Log raw data
-			if eventLogFile != nil {
-				timestamp := time.Now().Format("2006-01-02 15:04:05")
-				eventLogFile.WriteString(fmt.Sprintf("\n=== RAW_DATA | %s ===\n", timestamp))
-				eventLogFile.WriteString(string(msg.Data))
-				eventLogFile.WriteString("\n")
-				eventLogFile.Sync()
-			}
-		} else {
-			msgType, _ := message["type"].(string)
-			if eventLogFile != nil {
-				timestamp := time.Now().Format("2006-01-02 15:04:05")
-				eventLogFile.WriteString(fmt.Sprintf("\n=== %s | %s ===\n", msgType, timestamp))
-				prettyJSON, _ := json.MarshalIndent(message, "", "  ")
-				eventLogFile.WriteString(string(prettyJSON))
-				eventLogFile.WriteString("\n")
-				eventLogFile.Sync()
-			}
-		}
-	})
-	openaiDataChannel.OnClose(func() {
-		timestamp := time.Now().Format("2006-01-02 15:04:05.000")
-		peerState := backendToOpenAIpc.ConnectionState()
-		iceState := backendToOpenAIpc.ICEConnectionState()
-		var closeReason string
-		switch {
-		case peerState == webrtc.PeerConnectionStateClosed:
-			closeReason = "peer-connection-closed"
-		case iceState == webrtc.ICEConnectionStateDisconnected:
-			closeReason = "ice-timeout"
-		case iceState == webrtc.ICEConnectionStateFailed:
-			closeReason = "ice-failed"
-		default:
-			closeReason = "data-channel-closed"
-		}
-		slog.Info("❌ OpenAI data channel closed", "timestamp", timestamp, "closeReason", closeReason, "peerState", peerState.String(), "iceState", iceState.String(), "initiator", disconnectInitiator, "userID", userID)
-		if eventLogFile != nil {
-			eventLogFile.WriteString(fmt.Sprintf("\n=== DATA_CHANNEL_CLOSED | %s ===\n", timestamp))
-			eventLogFile.WriteString(fmt.Sprintf("Close Reason: %s\n", closeReason))
-			eventLogFile.WriteString(fmt.Sprintf("Peer State: %s\n", peerState.String()))
-			eventLogFile.WriteString(fmt.Sprintf("ICE State: %s\n", iceState.String()))
-			eventLogFile.WriteString(fmt.Sprintf("Suspected Initiator: %s\n", disconnectInitiator))
-			eventLogFile.Sync()
-		}
-	})
-
-	// --- Create Offer for OpenAI ---
-	offerForOpenAI, err := backendToOpenAIpc.CreateOffer(nil)
-	if err != nil {
-		slog.Error("Error creating OpenAI offer", "userID", userID, "error", err)
-		return err
-	}
-
-	backendToOpenAIpc.SetLocalDescription(offerForOpenAI)
-	slog.Info("SDP Offer for OpenAI created with %d characters", "userID", userID, "length", len(offerForOpenAI.SDP))
-
-	// --- Get ephemeral token/session ---
-	ephemeralToken, err := getEphemeralToken()
-	if err != nil {
-		slog.Error("Ephemeral Token error", "userID", userID, "error", err)
-		return err
-	}
-	openAISDPAnswer, err := getOpenAISDPAnswer(offerForOpenAI, ephemeralToken)
-	if err != nil {
-		slog.Error("OpenAI SDP Answer error", "userID", userID, "error", err)
-		return err
-	}
-
-	if err := backendToOpenAIpc.SetRemoteDescription(webrtc.SessionDescription{
-		Type: webrtc.SDPTypeAnswer,
-		SDP:  openAISDPAnswer,
-	}); err != nil {
-		slog.Error("error setting backend to OpenAI PC remote description", "userID", userID, "error", err)
-		return err
-	}
-	slog.Info("Connected to OpenAI with bidirectional audio copying", "userID", userID)
+	slog.Info("Successfully connected to OpenAI", "userID", userID)
 	return nil
 }
+
+func (s *RealtimeService) Cleanup(userID string) error {
+	userConn := userConnections[userID]
+	if userConn == nil {
+		return nil
+	}
+
+	// Close AI connections
+	if userConn.geminiRealtime != nil {
+		userConn.geminiRealtime.Close()
+	}
+	if userConn.openaiRealtime != nil {
+		userConn.openaiRealtime.Close()
+	}
+
+	// Close data channel manager
+	if userConn.dataChannelManager != nil {
+		userConn.dataChannelManager.Close()
+	}
+
+	// Close WebRTC connection
+	if userConn.browserConnection != nil {
+		userConn.browserConnection.Close()
+	}
+
+	delete(userConnections, userID)
+	slog.Info("Cleaned up user connection", "userID", userID)
+	return nil
+}
+
+// func connectToOpenai(userID string) error {
+// 	backendToOpenAIpc, err := webrtc.NewPeerConnection(webrtc.Configuration{})
+// 	if err != nil {
+// 		slog.Error("error creating backend to OpenAI PC", "userID", userID, "error", err)
+// 		return err
+// 	}
+
+// 	backendToOpenAITrack, err := webrtc.NewTrackLocalStaticRTP(
+// 		webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 48000, Channels: 2},
+// 		"browser-to-openai-track", "pion-browser",
+// 	)
+// 	if err != nil {
+// 		slog.Error("error creating backend to OpenAI mic track", "userID", userID, "error", err)
+// 		return err
+// 	}
+// 	if _, err := backendToOpenAIpc.AddTrack(backendToOpenAITrack); err != nil {
+// 		slog.Error("error adding backend to OpenAI mic track", "userID", userID, "error", err)
+// 		return err
+// 	}
+
+// 	userConnections[userID].backendToOpenAITrack = backendToOpenAITrack
+// 	userConnections[userID].openaiConnection = backendToOpenAIpc
+
+// 	backendToOpenAIpc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+// 		slog.Info("Received track from OpenAI", "trackID", track.ID(), "kind", track.Kind(), "userID", userID)
+// 		if track.Kind() == webrtc.RTPCodecTypeAudio {
+// 			slog.Info("Audio track received from OpenAI", "userID", userID, "SSRC", track.SSRC())
+// 			if userConnections[userID] != nil && userConnections[userID].openaiBackendTrack != nil {
+// 				slog.Info("Copying audio track from OpenAI to browser", "userID", userID)
+// 				copyAudioTrack(track, userConnections[userID].openaiBackendTrack, userID, "OpenAI->Browser")
+// 			}
+// 		}
+// 	})
+
+// 	// ---- [Connection Events/Logging] ----
+// 	var disconnectInitiator string = "unknown"
+// 	backendToOpenAIpc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+// 		timestamp := time.Now().Format("2006-01-02 15:04:05.000")
+// 		switch state {
+// 		case webrtc.PeerConnectionStateDisconnected:
+// 			disconnectInitiator = "network-issue"
+// 			slog.Warn("OpenAI connection DISCONNECTED", "timestamp", timestamp, "initiator", "network-or-timeout", "userID", userID)
+// 		case webrtc.PeerConnectionStateFailed:
+// 			disconnectInitiator = "connection-failed"
+// 			slog.Error("OpenAI connection FAILED", "timestamp", timestamp, "initiator", "ice-failure", "userID", userID)
+// 		case webrtc.PeerConnectionStateClosed:
+// 			slog.Info("OpenAI connection CLOSED", "timestamp", timestamp, "initiator", disconnectInitiator, "userID", userID)
+// 		}
+// 	})
+// 	backendToOpenAIpc.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
+// 		timestamp := time.Now().Format("2006-01-02 15:04:05.000")
+// 		switch state {
+// 		case webrtc.ICEConnectionStateDisconnected:
+// 			disconnectInitiator = "ice-timeout"
+// 			slog.Warn("ICE Disconnected - OpenAI side timeout", "timestamp", timestamp, "reason", "keepalive-timeout-or-network-issue", "userID", userID)
+// 		case webrtc.ICEConnectionStateFailed:
+// 			disconnectInitiator = "ice-failed"
+// 			slog.Error("ICE Failed - Network unreachable", "timestamp", timestamp, "reason", "network-path-failed", "userID", userID)
+// 		}
+// 	})
+
+// 	// ---- [Data Channel and Event Logging for testing] ----
+// 	openaiDataChannel, _ := backendToOpenAIpc.CreateDataChannel("openai", nil)
+// 	initEventLogging()
+// 	openaiDataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
+// 		var message map[string]interface{}
+// 		if err := json.Unmarshal(msg.Data, &message); err != nil {
+// 			// Log raw data
+// 			if eventLogFile != nil {
+// 				timestamp := time.Now().Format("2006-01-02 15:04:05")
+// 				eventLogFile.WriteString(fmt.Sprintf("\n=== RAW_DATA | %s ===\n", timestamp))
+// 				eventLogFile.WriteString(string(msg.Data))
+// 				eventLogFile.WriteString("\n")
+// 				eventLogFile.Sync()
+// 			}
+// 		} else {
+// 			msgType, _ := message["type"].(string)
+// 			if eventLogFile != nil {
+// 				timestamp := time.Now().Format("2006-01-02 15:04:05")
+// 				eventLogFile.WriteString(fmt.Sprintf("\n=== %s | %s ===\n", msgType, timestamp))
+// 				prettyJSON, _ := json.MarshalIndent(message, "", "  ")
+// 				eventLogFile.WriteString(string(prettyJSON))
+// 				eventLogFile.WriteString("\n")
+// 				eventLogFile.Sync()
+// 			}
+// 		}
+// 	})
+// 	openaiDataChannel.OnClose(func() {
+// 		timestamp := time.Now().Format("2006-01-02 15:04:05.000")
+// 		peerState := backendToOpenAIpc.ConnectionState()
+// 		iceState := backendToOpenAIpc.ICEConnectionState()
+// 		var closeReason string
+// 		switch {
+// 		case peerState == webrtc.PeerConnectionStateClosed:
+// 			closeReason = "peer-connection-closed"
+// 		case iceState == webrtc.ICEConnectionStateDisconnected:
+// 			closeReason = "ice-timeout"
+// 		case iceState == webrtc.ICEConnectionStateFailed:
+// 			closeReason = "ice-failed"
+// 		default:
+// 			closeReason = "data-channel-closed"
+// 		}
+// 		slog.Info("❌ OpenAI data channel closed", "timestamp", timestamp, "closeReason", closeReason, "peerState", peerState.String(), "iceState", iceState.String(), "initiator", disconnectInitiator, "userID", userID)
+// 		if eventLogFile != nil {
+// 			eventLogFile.WriteString(fmt.Sprintf("\n=== DATA_CHANNEL_CLOSED | %s ===\n", timestamp))
+// 			eventLogFile.WriteString(fmt.Sprintf("Close Reason: %s\n", closeReason))
+// 			eventLogFile.WriteString(fmt.Sprintf("Peer State: %s\n", peerState.String()))
+// 			eventLogFile.WriteString(fmt.Sprintf("ICE State: %s\n", iceState.String()))
+// 			eventLogFile.WriteString(fmt.Sprintf("Suspected Initiator: %s\n", disconnectInitiator))
+// 			eventLogFile.Sync()
+// 		}
+// 	})
+
+// 	// --- Create Offer for OpenAI ---
+// 	offerForOpenAI, err := backendToOpenAIpc.CreateOffer(nil)
+// 	if err != nil {
+// 		slog.Error("Error creating OpenAI offer", "userID", userID, "error", err)
+// 		return err
+// 	}
+
+// 	backendToOpenAIpc.SetLocalDescription(offerForOpenAI)
+// 	slog.Info("SDP Offer for OpenAI created with %d characters", "userID", userID, "length", len(offerForOpenAI.SDP))
+
+// 	// --- Get ephemeral token/session ---
+// 	ephemeralToken, err := getEphemeralToken()
+// 	if err != nil {
+// 		slog.Error("Ephemeral Token error", "userID", userID, "error", err)
+// 		return err
+// 	}
+// 	openAISDPAnswer, err := getOpenAISDPAnswer(offerForOpenAI, ephemeralToken)
+// 	if err != nil {
+// 		slog.Error("OpenAI SDP Answer error", "userID", userID, "error", err)
+// 		return err
+// 	}
+
+// 	if err := backendToOpenAIpc.SetRemoteDescription(webrtc.SessionDescription{
+// 		Type: webrtc.SDPTypeAnswer,
+// 		SDP:  openAISDPAnswer,
+// 	}); err != nil {
+// 		slog.Error("error setting backend to OpenAI PC remote description", "userID", userID, "error", err)
+// 		return err
+// 	}
+// 	slog.Info("Connected to OpenAI with bidirectional audio copying", "userID", userID)
+// 	return nil
+// }
 
 // Logging file for OpenAI events
 // ----------------------for testing----------------------
@@ -384,20 +450,33 @@ func getOpenAISDPAnswer(offer webrtc.SessionDescription, ephemeralToken string) 
 }
 
 func (s *RealtimeService) IceCandidate(candidate string, userID string) (string, error) {
-	if userConnections[userID].browserConnection == nil {
-		slog.Error("client peer connection not initialized", "userID", userID)
-		return "", fmt.Errorf("client peer connection not initialized")
+	// First check if the user connection exists
+	userConn := userConnections[userID]
+	if userConn == nil {
+		slog.Error("user connection not found", "userID", userID)
+		return "", fmt.Errorf("user connection not found for userID: %s", userID)
 	}
-	if userConnections[userID].browserConnection.RemoteDescription() == nil {
+
+	// Then check if the browser connection exists
+	if userConn.browserConnection == nil {
+		slog.Error("browser peer connection not initialized", "userID", userID)
+		return "", fmt.Errorf("browser peer connection not initialized for userID: %s", userID)
+	}
+
+	// Check if remote description is set
+	if userConn.browserConnection.RemoteDescription() == nil {
 		slog.Error("remote description not set, cannot add ICE candidate", "userID", userID)
-		return "", fmt.Errorf("remote description not set, cannot add ICE candidate")
+		return "", fmt.Errorf("remote description not set, cannot add ICE candidate for userID: %s", userID)
 	}
-	if err := userConnections[userID].browserConnection.AddICECandidate(webrtc.ICECandidateInit{
+
+	// Add ICE candidate
+	if err := userConn.browserConnection.AddICECandidate(webrtc.ICECandidateInit{
 		Candidate: candidate,
 	}); err != nil {
 		slog.Error("error adding ICE candidate", "userID", userID, "error", err)
 		return "", err
 	}
+
 	return "connected", nil
 }
 

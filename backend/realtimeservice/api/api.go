@@ -33,7 +33,7 @@ func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*
 		return nil, err
 	}
 
-	offer, err := s.service.Offer(req, userID)
+	offer, err := s.service.Offer(req.Offer, req.Model, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,8 @@ const client = new RealtimeServiceClient(import.meta.env.VITE_API_URL, {}, creat
 export const offerRequest = async (offer: string) => {
     const req = new OfferRequest({
         offer: offer,
-        model: "gpt-4o-mini-realtime-preview",
+        // model: "gpt-4o-mini-realtime-preview",
+        model: "gemini",
     });
     const res = await client.Offer(req, {});
     console.log("offerRequest", res);

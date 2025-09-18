@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"sortedstartup/realtimeservice/dao"
-	pb "sortedstartup/realtimeservice/proto"
 	"time"
 
 	"github.com/pion/webrtc/v3"
@@ -34,6 +33,7 @@ var OPENAI_API_KEY = os.Getenv("OPENAI_API_KEY")
 type PeerConnection struct {
 	browserConnection    *webrtc.PeerConnection
 	openaiConnection     *webrtc.PeerConnection
+	geminiRealtime       *GeminiRealtime
 	backendToOpenAITrack *webrtc.TrackLocalStaticRTP
 	openaiBackendTrack   *webrtc.TrackLocalStaticRTP
 }
@@ -41,7 +41,7 @@ type PeerConnection struct {
 // userID -> PeerConnection
 var userConnections = make(map[string]*PeerConnection)
 
-func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, error) {
+func (s *RealtimeService) Offer(offer string, model string, userID string) (string, error) {
 	browserToBackendPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		slog.Error("error creating browser to backend PC", "userID", userID, "error", err)
@@ -50,32 +50,48 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, 
 
 	openaiBackendTrack, err := webrtc.NewTrackLocalStaticRTP(
 		webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 48000, Channels: 2},
-		"openai-backend-track", "pion-openai",
+		"ai-backend-track", "pion-ai",
 	)
 	if err != nil {
-		slog.Error("error creating OpenAI to browser track", "userID", userID, "error", err)
+		slog.Error("error creating AI to browser track", "userID", userID, "error", err)
 		return "", err
 	}
 	if _, err := browserToBackendPC.AddTrack(openaiBackendTrack); err != nil {
-		slog.Error("error adding OpenAI to backend track", "userID", userID, "error", err)
+		slog.Error("error adding AI to backend track", "userID", userID, "error", err)
 		return "", err
 	}
 
 	// OnTrack handler (get browser audio)
 	browserToBackendPC.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-		slog.Info("Received track from browser", "trackID", track.ID(), "kind", track.Kind(), "userID", userID)
+		slog.Info("Received track from browser", "trackID", track.ID(), "kind", track.Kind(), "userID", userID, "model", model)
 		if track.Kind() == webrtc.RTPCodecTypeAudio {
-			slog.Info("Audio track received from browser", "userID", userID, "SSRC", track.SSRC())
-			if userCon := userConnections[userID]; userCon != nil && userCon.backendToOpenAITrack != nil {
-				slog.Info("Copying audio track from browser to OpenAI", "userID", userID)
-				copyAudioTrack(track, userCon.backendToOpenAITrack, userID, "Browser->OpenAI")
+			slog.Info("Audio track received from browser", "userID", userID, "SSRC", track.SSRC(), "model", model)
+
+			userConn := userConnections[userID]
+			if userConn == nil {
+				slog.Error("User connection not found", "userID", userID)
+				return
+			}
+
+			if model == "gemini" {
+				// Handle audio through Gemini
+				if userConn.geminiRealtime != nil {
+					slog.Info("Handling audio track with Gemini", "userID", userID)
+					go userConn.geminiRealtime.HandleAudioTrack(track)
+				}
+			} else {
+				// Handle audio through OpenAI (existing logic)
+				if userConn.backendToOpenAITrack != nil {
+					slog.Info("Copying audio track from browser to OpenAI", "userID", userID)
+					copyAudioTrack(track, userConn.backendToOpenAITrack, userID, "Browser->OpenAI")
+				}
 			}
 		}
 	})
 
 	if err := browserToBackendPC.SetRemoteDescription(webrtc.SessionDescription{
 		Type: webrtc.SDPTypeOffer,
-		SDP:  offer.Offer,
+		SDP:  offer,
 	}); err != nil {
 		slog.Error("error setting backendPC.remote description", "userID", userID, "error", err)
 		return "", err
@@ -94,11 +110,47 @@ func (s *RealtimeService) Offer(offer *pb.OfferRequest, userID string) (string, 
 	userConnections[userID] = &PeerConnection{
 		browserConnection:    browserToBackendPC,
 		openaiConnection:     nil,
+		geminiRealtime:       nil,
 		backendToOpenAITrack: nil,
 		openaiBackendTrack:   openaiBackendTrack,
 	}
-	go connectToOpenai(userID)
+
+	// Connect to the appropriate AI service
+	if model == "gemini" {
+		go s.connectToGemini(userID)
+	} else {
+		go connectToOpenai(userID)
+	}
+
 	return answerForBrowser.SDP, nil
+}
+
+// connectToGemini establishes connection to Gemini Live API
+func (s *RealtimeService) connectToGemini(userID string) error {
+	userConn := userConnections[userID]
+	if userConn == nil {
+		slog.Error("User connection not found for Gemini setup", "userID", userID)
+		return fmt.Errorf("user connection not found")
+	}
+
+	// Create Gemini realtime instance
+	geminiRealtime, err := NewGeminiRealtime(userID, userConn.openaiBackendTrack)
+	if err != nil {
+		slog.Error("Failed to create Gemini realtime instance", "userID", userID, "error", err)
+		return err
+	}
+
+	// Store the Gemini instance
+	userConn.geminiRealtime = geminiRealtime
+
+	// Connect to Gemini
+	if err := geminiRealtime.Connect(); err != nil {
+		slog.Error("Failed to connect to Gemini", "userID", userID, "error", err)
+		return err
+	}
+
+	slog.Info("Successfully connected to Gemini", "userID", userID)
+	return nil
 }
 
 func connectToOpenai(userID string) error {

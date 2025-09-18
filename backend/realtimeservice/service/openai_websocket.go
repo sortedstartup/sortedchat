@@ -162,6 +162,26 @@ func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 	}, nil
 }
 
+// SetDataChannelManager sets the data channel manager (used when it becomes available later)
+func (o *OpenAIRealtime) SetDataChannelManager(dcm *DataChannelManager) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	o.dataChannelManager = dcm
+}
+
+// sendDataChannelMessage safely sends a message via data channel if available
+func (o *OpenAIRealtime) sendDataChannelMessage(messageType, model string) {
+	o.mu.RLock()
+	dcm := o.dataChannelManager
+	o.mu.RUnlock()
+
+	if dcm != nil {
+		dcm.sendMessage(messageType, model)
+	} else {
+		slog.Debug("Data channel manager not available, skipping message", "userID", o.userID, "messageType", messageType)
+	}
+}
+
 // Connect establishes WebSocket connection to OpenAI Realtime API
 func (o *OpenAIRealtime) Connect() error {
 	slog.Info("Connecting to OpenAI Realtime API", "userID", o.userID)
@@ -320,23 +340,23 @@ func (o *OpenAIRealtime) handleResponses() {
 
 		switch eventType {
 		case "session.created":
-			o.dataChannelManager.sendMessage("OpenAI:session created", "session created")
+			o.sendDataChannelMessage("OpenAI:session created", "session created")
 			slog.Info("OpenAI session created", "userID", o.userID)
 
 		case "session.updated":
-			o.dataChannelManager.sendMessage("OpenAI:session updated", "session updated")
+			o.sendDataChannelMessage("OpenAI:session updated", "session updated")
 			slog.Info("OpenAI session updated", "userID", o.userID)
 
 		case "response.audio.delta":
 			// This is the key event for receiving audio chunks
 			if delta, ok := response["delta"].(string); ok && delta != "" {
-				o.dataChannelManager.sendMessage("OpenAI:audio chunks recieved from llm", "delta")
+				o.sendDataChannelMessage("OpenAI:audio chunks recieved from llm", "delta")
 				slog.Info("Received audio delta from OpenAI", "userID", o.userID, "chars", len(delta))
 				o.sendAudioToClient(delta)
 			}
 
 		case "response.audio.done":
-			o.dataChannelManager.sendMessage("OpenAI:complete audio response from llm", "done")
+			o.sendDataChannelMessage("OpenAI:complete audio response from llm", "done")
 			slog.Info("OpenAI audio response completed", "userID", o.userID)
 
 		case "response.audio_transcript.delta":
@@ -350,29 +370,29 @@ func (o *OpenAIRealtime) handleResponses() {
 			}
 
 		case "input_audio_buffer.speech_started":
-			o.dataChannelManager.sendMessage("OpenAI:speech started", "speech started")
+			o.sendDataChannelMessage("OpenAI:speech started", "speech started")
 			slog.Info("OpenAI detected speech start", "userID", o.userID)
 
 		case "input_audio_buffer.speech_stopped":
-			o.dataChannelManager.sendMessage("OpenAI:speech stopped", "speech stopped")
+			o.sendDataChannelMessage("OpenAI:speech stopped", "speech stopped")
 			slog.Info("OpenAI detected speech stop", "userID", o.userID)
 
 		case "input_audio_buffer.committed":
-			o.dataChannelManager.sendMessage("OpenAI:audio buffer committed", "audio buffer committed")
+			o.sendDataChannelMessage("OpenAI:audio buffer committed", "audio buffer committed")
 			slog.Info("OpenAI audio buffer committed", "userID", o.userID)
 
 		case "conversation.item.created":
-			o.dataChannelManager.sendMessage("OpenAI:conversation item created", "conversation item created")
+			o.sendDataChannelMessage("OpenAI:conversation item created", "conversation item created")
 			slog.Info("OpenAI conversation item created", "userID", o.userID)
 
 		case "conversation.item.input_audio_transcription.completed":
-			o.dataChannelManager.sendMessage("OpenAI:input transcription completed", "input transcription completed")
+			o.sendDataChannelMessage("OpenAI:input transcription completed", "input transcription completed")
 			if transcript, ok := response["transcript"].(string); ok {
 				slog.Info("OpenAI input transcription", "userID", o.userID, "text", transcript)
 			}
 
 		case "response.created":
-			o.dataChannelManager.sendMessage("OpenAI:response created", "response created")
+			o.sendDataChannelMessage("OpenAI:response created", "response created")
 			slog.Info("OpenAI response created", "userID", o.userID)
 
 		case "response.output_item.added":
@@ -382,7 +402,7 @@ func (o *OpenAIRealtime) handleResponses() {
 			slog.Info("OpenAI response content part added", "userID", o.userID)
 
 		case "response.done":
-			o.dataChannelManager.sendMessage("OpenAI:response completed", "response completed")
+			o.sendDataChannelMessage("OpenAI:response completed", "response completed")
 
 			// Convert the response map to JSON bytes first, then unmarshal to struct
 			responseBytes, err := json.Marshal(response)
@@ -403,18 +423,18 @@ func (o *OpenAIRealtime) handleResponses() {
 			// Send basic usage info
 			usageMsg := fmt.Sprintf("Usage - Total: %d, Input: %d, Output: %d",
 				usage.TotalTokens, usage.InputTokens, usage.OutputTokens)
-			o.dataChannelManager.sendMessage("OpenAI:usage", usageMsg)
+			o.sendDataChannelMessage("OpenAI:usage", usageMsg)
 
 			// Send detailed token breakdown
 			inputDetails := usage.InputTokenDetails
 			detailMsg := fmt.Sprintf("Input Details - Text: %d, Audio: %d, Cached: %d",
 				inputDetails.TextTokens, inputDetails.AudioTokens, inputDetails.CachedTokens)
-			o.dataChannelManager.sendMessage("OpenAI:input_details", detailMsg)
+			o.sendDataChannelMessage("OpenAI:input_details", detailMsg)
 
 			outputDetails := usage.OutputTokenDetails
 			outputMsg := fmt.Sprintf("Output Details - Text: %d, Audio: %d",
 				outputDetails.TextTokens, outputDetails.AudioTokens)
-			o.dataChannelManager.sendMessage("OpenAI:output_details", outputMsg)
+			o.sendDataChannelMessage("OpenAI:output_details", outputMsg)
 
 			slog.Info("OpenAI response completed", "userID", o.userID)
 

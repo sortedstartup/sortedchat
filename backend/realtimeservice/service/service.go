@@ -1,5 +1,3 @@
-// service/realtimeservice.go
-
 package service
 
 import (
@@ -63,6 +61,16 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 		return "", err
 	}
 
+	// Create user connection early so we can reference it in callbacks
+	userConnections[userID] = &PeerConnection{
+		browserConnection:    browserToBackendPC,
+		openaiConnection:     nil,
+		geminiRealtime:       nil,
+		backendToOpenAITrack: nil,
+		openaiBackendTrack:   openaiBackendTrack,
+		dataChannelManager:   nil, // Will be set when data channel is created
+	}
+
 	// OnTrack handler (get browser audio)
 	browserToBackendPC.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		slog.Info("Received track from browser", "trackID", track.ID(), "kind", track.Kind(), "userID", userID, "model", model)
@@ -94,11 +102,24 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 			}
 		}
 	})
-	// datachannel, _ := browserToBackendPC.CreateDataChannel("datachannel", nil)
-	var datachannel *webrtc.DataChannel
+
+	// Handle data channel creation
 	browserToBackendPC.OnDataChannel(func(dc *webrtc.DataChannel) {
-		datachannel = dc
-		slog.Info("Data channel opened", "userID", userID)
+		slog.Info("Data channel created", "userID", userID)
+
+		userConn := userConnections[userID]
+		if userConn == nil {
+			slog.Error("User connection not found when setting up data channel", "userID", userID)
+			return
+		}
+
+		// Create and assign the data channel manager
+		userConn.dataChannelManager = NewDataChannelManager(userID, dc, s)
+
+		// If OpenAI realtime is already created, set the data channel manager
+		if userConn.openaiRealtime != nil {
+			userConn.openaiRealtime.SetDataChannelManager(userConn.dataChannelManager)
+		}
 	})
 
 	if err := browserToBackendPC.SetRemoteDescription(webrtc.SessionDescription{
@@ -117,15 +138,6 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 	if err := browserToBackendPC.SetLocalDescription(answerForBrowser); err != nil {
 		slog.Error("error setting backendPC.local description", "userID", userID, "error", err)
 		return "", err
-	}
-
-	userConnections[userID] = &PeerConnection{
-		browserConnection:    browserToBackendPC,
-		openaiConnection:     nil,
-		geminiRealtime:       nil,
-		backendToOpenAITrack: nil,
-		openaiBackendTrack:   openaiBackendTrack,
-		dataChannelManager:   NewDataChannelManager(userID, datachannel, s),
 	}
 
 	// Connect to the appropriate AI service

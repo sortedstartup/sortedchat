@@ -67,7 +67,6 @@ func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Opus encoder: %v", err)
 	}
-	opusEncoder.SetBitrate(64000) // 64kbps can be changed as per need
 
 	opusDecoder, err := opus.NewDecoder(48000, 1)
 	if err != nil {

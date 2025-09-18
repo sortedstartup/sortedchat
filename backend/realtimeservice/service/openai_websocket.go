@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"sync"
@@ -34,29 +33,20 @@ type OpenAIRealtime struct {
 
 // OpenAI message types based on the actual API response format
 type OpenAIMessage struct {
-	EventID  string                  `json:"event_id,omitempty"`
-	Type     string                  `json:"type"`
-	Session  *OpenAISession          `json:"session,omitempty"`
-	Audio    string                  `json:"audio,omitempty"`
-	Response *OpenAIResponseConfig   `json:"response,omitempty"`
-	Item     *OpenAIConversationItem `json:"item,omitempty"`
+	Type    string         `json:"type"`
+	Session *OpenAISession `json:"session,omitempty"`
+	Audio   string         `json:"audio,omitempty"`
 }
 
 // Session structure based on the actual API response format from your logs
 type OpenAISession struct {
-	Instructions            string                    `json:"instructions,omitempty"`
-	Voice                   string                    `json:"voice,omitempty"`
-	InputAudioFormat        string                    `json:"input_audio_format,omitempty"`
-	OutputAudioFormat       string                    `json:"output_audio_format,omitempty"`
-	InputAudioTranscription *OpenAIAudioTranscription `json:"input_audio_transcription,omitempty"`
-	TurnDetection           *OpenAITurnDetection      `json:"turn_detection,omitempty"`
-	MaxResponseOutputTokens interface{}               `json:"max_response_output_tokens,omitempty"`
-	Modalities              []string                  `json:"modalities,omitempty"`
-	Speed                   float64                   `json:"speed,omitempty"`
-}
-
-type OpenAIAudioTranscription struct {
-	Model string `json:"model"`
+	Instructions            string               `json:"instructions,omitempty"`
+	Voice                   string               `json:"voice,omitempty"`
+	InputAudioFormat        string               `json:"input_audio_format,omitempty"`
+	OutputAudioFormat       string               `json:"output_audio_format,omitempty"`
+	TurnDetection           *OpenAITurnDetection `json:"turn_detection,omitempty"`
+	MaxResponseOutputTokens interface{}          `json:"max_response_output_tokens,omitempty"`
+	Modalities              []string             `json:"modalities,omitempty"`
 }
 
 // Turn detection based on actual API response structure
@@ -68,16 +58,6 @@ type OpenAITurnDetection struct {
 	CreateResponse    bool        `json:"create_response,omitempty"`
 	InterruptResponse bool        `json:"interrupt_response,omitempty"`
 	IdleTimeoutMs     interface{} `json:"idle_timeout_ms,omitempty"`
-}
-
-type OpenAIResponseConfig struct {
-	Modalities []string `json:"modalities,omitempty"`
-}
-
-type OpenAIConversationItem struct {
-	Type    string        `json:"type"`
-	Role    string        `json:"role,omitempty"`
-	Content []interface{} `json:"content,omitempty"`
 }
 
 type ResponseDoneEvent struct {
@@ -133,6 +113,7 @@ type CachedTokenDetails struct {
 
 // NewOpenAIRealtime creates a new OpenAIRealtime instance
 func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP, dataChannelManager *DataChannelManager) (*OpenAIRealtime, error) {
+
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		return nil, fmt.Errorf("OPENAI_API_KEY environment variable is required")
@@ -143,7 +124,6 @@ func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Opus encoder: %v", err)
 	}
-	opusEncoder.SetBitrate(64000) // 64kbps
 
 	opusDecoder, err := opus.NewDecoder(48000, 1)
 	if err != nil {
@@ -170,13 +150,13 @@ func (o *OpenAIRealtime) SetDataChannelManager(dcm *DataChannelManager) {
 }
 
 // sendDataChannelMessage safely sends a message via data channel if available
-func (o *OpenAIRealtime) sendDataChannelMessage(messageType, model string) {
+func (o *OpenAIRealtime) sendDataChannelMessage(messageType string, model string, data interface{}) {
 	o.mu.RLock()
 	dcm := o.dataChannelManager
 	o.mu.RUnlock()
 
 	if dcm != nil {
-		dcm.sendMessage(messageType, model)
+		dcm.sendMessage(messageType, model, data)
 	} else {
 		slog.Debug("Data channel manager not available, skipping message", "userID", o.userID, "messageType", messageType)
 	}
@@ -241,8 +221,8 @@ func (o *OpenAIRealtime) Connect() error {
 }
 
 // HandleAudioTrack processes incoming audio from WebRTC track
+// converting opus/48000 to pcm/24000 and sending to OpenAI
 func (o *OpenAIRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
-	log.Println("Starting audio track handling for OpenAI", "userID", o.userID)
 	slog.Info("Starting audio track handling for OpenAI", "userID", o.userID)
 
 	opusPacket := &codecs.OpusPacket{}
@@ -261,7 +241,7 @@ func (o *OpenAIRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 			continue
 		}
 
-		// Decode Opus to PCM
+		// Decode Opus to PCM 20ms at 48kHz
 		pcmData := make([]int16, 960) // 20ms at 48kHz
 		n, err := o.opusDecoder.Decode(opusData, pcmData)
 		if err != nil {
@@ -271,7 +251,7 @@ func (o *OpenAIRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		// Accumulate PCM data
 		pcmBuffer = append(pcmBuffer, pcmData[:n]...)
 
-		if len(pcmBuffer) >= 24000 {
+		if len(pcmBuffer) >= 4800 {
 			// Downsample to 24kHz for OpenAI (OpenAI uses 24kHz PCM16)
 			pcm24kHz := o.downsample48to24(pcmBuffer)
 
@@ -316,7 +296,7 @@ func (o *OpenAIRealtime) SendAudio(audioData []byte) {
 func (o *OpenAIRealtime) handleResponses() {
 	for {
 		o.mu.RLock()
-		connected := o.connected
+		connected := o.connected //connected to OpenAI status
 		o.mu.RUnlock()
 
 		if !connected {
@@ -327,7 +307,7 @@ func (o *OpenAIRealtime) handleResponses() {
 		if err := o.ws.ReadJSON(&response); err != nil {
 			slog.Error("OpenAI connection closed", "userID", o.userID, "error", err)
 			o.mu.Lock()
-			o.connected = false
+			o.connected = false //set connected to false if connection is closed
 			o.mu.Unlock()
 			return
 		}
@@ -340,23 +320,23 @@ func (o *OpenAIRealtime) handleResponses() {
 
 		switch eventType {
 		case "session.created":
-			o.sendDataChannelMessage("OpenAI:session created", "session created")
+			o.sendDataChannelMessage("OpenAI:session created", "session created", nil)
 			slog.Info("OpenAI session created", "userID", o.userID)
 
 		case "session.updated":
-			o.sendDataChannelMessage("OpenAI:session updated", "session updated")
+			o.sendDataChannelMessage("OpenAI:session updated", "session updated", nil)
 			slog.Info("OpenAI session updated", "userID", o.userID)
 
 		case "response.audio.delta":
 			// This is the key event for receiving audio chunks
 			if delta, ok := response["delta"].(string); ok && delta != "" {
-				o.sendDataChannelMessage("OpenAI:audio chunks recieved from llm", "delta")
+				o.sendDataChannelMessage("OpenAI:audio chunks recieved from llm", "delta", nil)
 				slog.Info("Received audio delta from OpenAI", "userID", o.userID, "chars", len(delta))
 				o.sendAudioToClient(delta)
 			}
 
 		case "response.audio.done":
-			o.sendDataChannelMessage("OpenAI:complete audio response from llm", "done")
+			o.sendDataChannelMessage("OpenAI:complete audio response from llm", "done", nil)
 			slog.Info("OpenAI audio response completed", "userID", o.userID)
 
 		case "response.audio_transcript.delta":
@@ -370,29 +350,29 @@ func (o *OpenAIRealtime) handleResponses() {
 			}
 
 		case "input_audio_buffer.speech_started":
-			o.sendDataChannelMessage("OpenAI:speech started", "speech started")
+			o.sendDataChannelMessage("OpenAI:speech started", "speech started", nil)
 			slog.Info("OpenAI detected speech start", "userID", o.userID)
 
 		case "input_audio_buffer.speech_stopped":
-			o.sendDataChannelMessage("OpenAI:speech stopped", "speech stopped")
+			o.sendDataChannelMessage("OpenAI:speech stopped", "speech stopped", nil)
 			slog.Info("OpenAI detected speech stop", "userID", o.userID)
 
 		case "input_audio_buffer.committed":
-			o.sendDataChannelMessage("OpenAI:audio buffer committed", "audio buffer committed")
+			o.sendDataChannelMessage("OpenAI:audio buffer committed", "audio buffer committed", nil)
 			slog.Info("OpenAI audio buffer committed", "userID", o.userID)
 
 		case "conversation.item.created":
-			o.sendDataChannelMessage("OpenAI:conversation item created", "conversation item created")
+			o.sendDataChannelMessage("OpenAI:conversation item created", "conversation item created", nil)
 			slog.Info("OpenAI conversation item created", "userID", o.userID)
 
 		case "conversation.item.input_audio_transcription.completed":
-			o.sendDataChannelMessage("OpenAI:input transcription completed", "input transcription completed")
+			o.sendDataChannelMessage("OpenAI:input transcription completed", "input transcription completed", nil)
 			if transcript, ok := response["transcript"].(string); ok {
 				slog.Info("OpenAI input transcription", "userID", o.userID, "text", transcript)
 			}
 
 		case "response.created":
-			o.sendDataChannelMessage("OpenAI:response created", "response created")
+			o.sendDataChannelMessage("OpenAI:response created", "response created", nil)
 			slog.Info("OpenAI response created", "userID", o.userID)
 
 		case "response.output_item.added":
@@ -402,7 +382,7 @@ func (o *OpenAIRealtime) handleResponses() {
 			slog.Info("OpenAI response content part added", "userID", o.userID)
 
 		case "response.done":
-			o.sendDataChannelMessage("OpenAI:response completed", "response completed")
+			o.sendDataChannelMessage("OpenAI:response completed", "response completed", nil)
 
 			// Convert the response map to JSON bytes first, then unmarshal to struct
 			responseBytes, err := json.Marshal(response)
@@ -420,21 +400,26 @@ func (o *OpenAIRealtime) handleResponses() {
 			// Now you have type-safe access to usage data
 			usage := responseDone.Response.Usage
 
-			// Send basic usage info
-			usageMsg := fmt.Sprintf("Usage - Total: %d, Input: %d, Output: %d",
-				usage.TotalTokens, usage.InputTokens, usage.OutputTokens)
-			o.sendDataChannelMessage("OpenAI:usage", usageMsg)
+			// Send basic usage info as structured data
+			o.dataChannelManager.sendMessageWithData("OpenAI:usage", "openai", map[string]interface{}{
+				"total_tokens":  usage.TotalTokens,
+				"input_tokens":  usage.InputTokens,
+				"output_tokens": usage.OutputTokens,
+			})
 
-			// Send detailed token breakdown
+			// Send detailed token breakdown as structured data
 			inputDetails := usage.InputTokenDetails
-			detailMsg := fmt.Sprintf("Input Details - Text: %d, Audio: %d, Cached: %d",
-				inputDetails.TextTokens, inputDetails.AudioTokens, inputDetails.CachedTokens)
-			o.sendDataChannelMessage("OpenAI:input_details", detailMsg)
+			o.dataChannelManager.sendMessageWithData("OpenAI:input_details", "openai", map[string]interface{}{
+				"text_tokens":   inputDetails.TextTokens,
+				"audio_tokens":  inputDetails.AudioTokens,
+				"cached_tokens": inputDetails.CachedTokens,
+			})
 
 			outputDetails := usage.OutputTokenDetails
-			outputMsg := fmt.Sprintf("Output Details - Text: %d, Audio: %d",
-				outputDetails.TextTokens, outputDetails.AudioTokens)
-			o.sendDataChannelMessage("OpenAI:output_details", outputMsg)
+			o.dataChannelManager.sendMessageWithData("OpenAI:output_details", "openai", map[string]interface{}{
+				"text_tokens":  outputDetails.TextTokens,
+				"audio_tokens": outputDetails.AudioTokens,
+			})
 
 			slog.Info("OpenAI response completed", "userID", o.userID)
 
@@ -489,7 +474,7 @@ func (o *OpenAIRealtime) sendAudioToClient(base64Audio string) {
 		frame := pcm48kHz[i:end]
 
 		// Encode to Opus
-		opusData := make([]byte, 4000)
+		opusData := make([]byte, 4800)
 		n, err := o.opusEncoder.Encode(frame, opusData)
 		if err != nil {
 			slog.Error("Opus encoding error", "userID", o.userID, "error", err)

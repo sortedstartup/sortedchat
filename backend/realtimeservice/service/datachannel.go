@@ -18,8 +18,9 @@ type DataChannelManager struct {
 
 // DataChannelMessage represents messages sent through data channel
 type DataChannelMessage struct {
-	Type  string `json:"type"`
-	Model string `json:"model,omitempty"` // Only used for switch_model
+	Type  string      `json:"type"`
+	Model string      `json:"model,omitempty"` // Only used for switch_model
+	Data  interface{} `json:"data,omitempty"`  // For structured payloads
 }
 
 // NewDataChannelManager creates a new data channel manager
@@ -72,23 +73,23 @@ func (dcm *DataChannelManager) handleDisconnect() {
 		err := dcm.service.Cleanup(dcm.userID)
 		if err != nil {
 			slog.Error("Failed to cleanup", "userID", dcm.userID, "error", err)
-			dcm.sendMessage("error", "failed to cleanup")
+			dcm.sendMessage("error", "failed to cleanup", nil)
 		}
 	}()
-	dcm.sendMessage("disconnected", "")
+	dcm.sendMessage("disconnected", "", nil)
 }
 
 // handleSwitchModel handles model switching
 func (dcm *DataChannelManager) handleSwitchModel(model string) {
 	if model == "" {
 		slog.Error("Model parameter missing", "userID", dcm.userID)
-		dcm.sendMessage("error", "model parameter required")
+		dcm.sendMessage("error", "model parameter required", nil)
 		return
 	}
 
 	if model != "openai" && model != "gemini" {
 		slog.Error("Unsupported model", "userID", dcm.userID, "model", model)
-		dcm.sendMessage("error", "unsupported model: "+model)
+		dcm.sendMessage("error", "unsupported model: "+model, nil)
 		return
 	}
 
@@ -121,18 +122,24 @@ func (dcm *DataChannelManager) handleSwitchModel(model string) {
 
 		if err != nil {
 			slog.Error("Failed to switch model", "userID", dcm.userID, "model", model, "error", err)
-			dcm.sendMessage("error", "failed to switch to "+model)
+			dcm.sendMessage("error", "failed to switch to "+model, nil)
 		} else {
-			dcm.sendMessage("model_switched", model)
+			dcm.sendMessage("model_switched", model, nil)
 		}
 	}()
 }
 
 // sendMessage sends a message to the browser
-func (dcm *DataChannelManager) sendMessage(messageType string, model string) {
+func (dcm *DataChannelManager) sendMessage(messageType string, model string, data interface{}) {
+	dcm.sendMessageWithData(messageType, model, nil)
+}
+
+// sendMessageWithData sends a message to the browser with structured data
+func (dcm *DataChannelManager) sendMessageWithData(messageType string, model string, data interface{}) {
 	msg := DataChannelMessage{
 		Type:  messageType,
 		Model: model,
+		Data:  data,
 	}
 
 	msgBytes, err := json.Marshal(msg)

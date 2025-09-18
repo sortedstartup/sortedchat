@@ -21,7 +21,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
   const [isListening, setIsListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Click Connect to start');
-  
+
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -31,20 +31,20 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
     try {
       setConnectionState('connecting');
       setStatusMessage('Connecting...');
-      
+
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
 
       pc.onicecandidate = async (event) => {
         if (event.candidate) {
-           iceCandidate(JSON.stringify({ candidate: event.candidate }));
+          iceCandidate(JSON.stringify({ candidate: event.candidate }));
         }
       };
 
       pc.onconnectionstatechange = () => {
         console.log("Connection state:", pc.connectionState);
         setStatusMessage(`Connection: ${pc.connectionState}`);
-        
+
         if (pc.connectionState === 'connected') {
           setConnectionState('connected');
         } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
@@ -68,11 +68,11 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       stream.getTracks().forEach(track => {
         pc.addTrack(track, stream);
       });
-      
+
       // Data channel
       const dataChannel = pc.createDataChannel("oai-events");
       dataChannelRef.current = dataChannel;
-      
+
       dataChannel.onopen = () => {
         console.log("✅ Data channel open");
         dataChannel.send(JSON.stringify({
@@ -89,6 +89,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
 
       dataChannel.onmessage = async (event) => {
         console.log("event", event);
+
         try {
           let text;
           if (typeof event.data === "string") {
@@ -103,14 +104,24 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
             return;
           }
 
-          if(event.data === "OpenAI:usage") {
-            console.log("OpenAI:usage", event.data);
-          }
-
+          // Now try to parse the text as JSON
           try {
-            const msg = JSON.parse(text);
-            console.log("📨", msg.type);
-            if (msg.type === "session.created") {
+            const message = JSON.parse(text);
+
+            if (message.type === "OpenAI:usage") {
+              console.log("OpenAI:usage", message.data);
+            }
+            if (message.type === "OpenAI:input_details") {
+              console.log("OpenAI:input_details", message.data);
+            }
+            if (message.type === "Gemini:output_details") {
+              console.log("OpenAI:output_details", message.data);
+            }
+
+            
+
+            console.log("📨", message.type);
+            if (message.type === "session.created") {
               setStatusMessage("✅ Ready - Speak!");
               setConnectionState('connected');
               setIsListening(true);
@@ -123,15 +134,16 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
         }
       };
 
+
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-     const response =  await offerRequest(String( offer.sdp ));
+      const response = await offerRequest(String(offer.sdp));
 
-     const answer = {
-      type: "answer",
-      sdp: String(response)
-     }
+      const answer = {
+        type: "answer",
+        sdp: String(response)
+      }
 
 
       await pc.setRemoteDescription(answer as unknown as RTCSessionDescription);
@@ -148,17 +160,17 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       pcRef.current.close();
       pcRef.current = null;
     }
-    
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    
+
     if (audioElementRef.current) {
       audioElementRef.current.srcObject = null;
       audioElementRef.current = null;
     }
-    
+
     dataChannelRef.current = null;
     setConnectionState('disconnected');
     setIsListening(false);
@@ -223,16 +235,15 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
             <span>Realtime Audio</span>
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Status Display */}
           <div className={`p-4 rounded-lg border ${getStatusBgColor()}`}>
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${
-                connectionState === 'connected' ? 'bg-green-500 animate-pulse' :
-                connectionState === 'connecting' ? 'bg-yellow-500 animate-pulse' :
-                connectionState === 'failed' ? 'bg-red-500' : 'bg-gray-400'
-              }`} />
+              <div className={`w-3 h-3 rounded-full ${connectionState === 'connected' ? 'bg-green-500 animate-pulse' :
+                  connectionState === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                    connectionState === 'failed' ? 'bg-red-500' : 'bg-gray-400'
+                }`} />
               <span className={`text-sm font-medium ${getStatusColor()}`}>
                 {statusMessage}
               </span>
@@ -259,7 +270,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
               <Button
                 onClick={handleConnection}
                 className="bg-green-600 hover:bg-green-700 text-white px-6"
-                // disabled={connectionState === 'connected'}
+              // disabled={connectionState === 'connected'}
               >
                 <Phone className="h-4 w-4 mr-2" />
                 Connect
@@ -274,7 +285,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                 >
                   {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </Button>
-                
+
                 <Button
                   onClick={handleDisconnect}
                   variant="destructive"

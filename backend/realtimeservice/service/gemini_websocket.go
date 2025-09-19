@@ -3,9 +3,7 @@ package service
 import (
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"sync"
@@ -19,16 +17,17 @@ import (
 
 // GeminiRealtime handles WebSocket communication with Gemini Live API
 type GeminiRealtime struct {
-	userID         string
-	apiKey         string
-	ws             *websocket.Conn
-	opusEncoder    *opus.Encoder
-	opusDecoder    *opus.Decoder
-	outboundTrack  *webrtc.TrackLocalStaticRTP
-	sequenceNumber uint16
-	timestamp      uint32
-	connected      bool
-	mu             sync.RWMutex
+	userID             string
+	apiKey             string
+	ws                 *websocket.Conn
+	opusEncoder        *opus.Encoder
+	opusDecoder        *opus.Decoder
+	outboundTrack      *webrtc.TrackLocalStaticRTP
+	sequenceNumber     uint16
+	timestamp          uint32
+	connected          bool
+	mu                 sync.RWMutex
+	dataChannelManager *DataChannelManager
 }
 
 // Gemini message types based on API docs
@@ -56,7 +55,7 @@ type GeminiMediaChunk struct {
 }
 
 // NewGeminiRealtime creates a new GeminiRealtime instance
-func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP) (*GeminiRealtime, error) {
+func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP, dataChannelManager *DataChannelManager) (*GeminiRealtime, error) {
 	apiKey := os.Getenv("GOOGLE_API_KEY")
 	if apiKey == "" {
 		return nil, fmt.Errorf("GOOGLE_API_KEY environment variable is required")
@@ -74,14 +73,34 @@ func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP)
 	}
 
 	return &GeminiRealtime{
-		userID:         userID,
-		apiKey:         apiKey,
-		opusEncoder:    opusEncoder,
-		opusDecoder:    opusDecoder,
-		outboundTrack:  outboundTrack,
-		sequenceNumber: 1,
-		timestamp:      1,
+		userID:             userID,
+		apiKey:             apiKey,
+		opusEncoder:        opusEncoder,
+		opusDecoder:        opusDecoder,
+		outboundTrack:      outboundTrack,
+		sequenceNumber:     1,
+		timestamp:          1,
+		dataChannelManager: dataChannelManager,
 	}, nil
+}
+
+func (g *GeminiRealtime) SetDataChannelManager(dcm *DataChannelManager) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.dataChannelManager = dcm
+}
+
+// sendDataChannelMessage safely sends a message via data channel if available
+func (g *GeminiRealtime) sendDataChannelMessage(messageType string, model string, data interface{}) {
+	g.mu.RLock()
+	dcm := g.dataChannelManager
+	g.mu.RUnlock()
+
+	if dcm != nil {
+		dcm.sendMessageWithData(messageType, model, data)
+	} else {
+		slog.Debug("Data channel manager not available, skipping message", "userID", g.userID, "messageType", messageType)
+	}
 }
 
 // Connect establishes WebSocket connection to Gemini Live API
@@ -135,8 +154,9 @@ func (g *GeminiRealtime) Connect() error {
 
 // HandleAudioTrack processes incoming audio from WebRTC track
 func (g *GeminiRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
-	log.Println("Starting audio track handling for Gemini", "userID", g.userID)
 	slog.Info("Starting audio track handling for Gemini", "userID", g.userID)
+
+	g.sendDataChannelMessage("Client_audio", "gemini", nil) //custom event
 
 	opusPacket := &codecs.OpusPacket{}
 	pcmBuffer := make([]int16, 0, 48000) // Buffer for 1 second at 48kHz
@@ -183,6 +203,7 @@ func (g *GeminiRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 
 // SendAudio sends audio data to Gemini
 func (g *GeminiRealtime) SendAudio(audioData []byte) {
+
 	g.mu.RLock()
 	connected := g.connected
 	g.mu.RUnlock()
@@ -203,6 +224,7 @@ func (g *GeminiRealtime) SendAudio(audioData []byte) {
 			},
 		},
 	}
+	g.sendDataChannelMessage("sent_audio", "gemini", nil) //custom event
 
 	if err := g.ws.WriteJSON(msg); err != nil {
 		slog.Error("Error sending to Gemini", "userID", g.userID, "error", err)
@@ -231,12 +253,6 @@ func (g *GeminiRealtime) handleResponses() {
 			return
 		}
 
-		// Debug: Print response structure in development
-		if slog.Default().Enabled(nil, slog.LevelDebug) {
-			responseBytes, _ := json.MarshalIndent(response, "", "  ")
-			slog.Debug("Gemini Response", "userID", g.userID, "response", string(responseBytes))
-		}
-
 		// Extract audio from serverContent response
 		if serverContent, ok := response["serverContent"].(map[string]interface{}); ok {
 			if modelTurn, ok := serverContent["modelTurn"].(map[string]interface{}); ok {
@@ -246,6 +262,7 @@ func (g *GeminiRealtime) handleResponses() {
 							if inlineData, ok := partMap["inlineData"].(map[string]interface{}); ok {
 								if audioData, ok := inlineData["data"].(string); ok {
 									slog.Info("Received audio from Gemini", "userID", g.userID, "chars", len(audioData))
+									g.sendDataChannelMessage("recieving_audio", "gemini", nil) //custom event
 									g.sendAudioToClient(audioData)
 								}
 							}

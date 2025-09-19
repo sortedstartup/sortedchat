@@ -2,11 +2,10 @@ import { createAuthenticatedClientOptions } from "../lib/auth";
 import { IceCandidateRequest, OfferRequest, RealtimeServiceClient } from "../../proto/realtimeservice";
 const client = new RealtimeServiceClient(import.meta.env.VITE_API_URL, {}, createAuthenticatedClientOptions());
 
-export const offerRequest = async (offer: string) => {
+export const offerRequest = async (offer: string, model: string) => {
     const req = new OfferRequest({
         offer: offer,
-        model: "gpt-4o-mini-realtime-preview",
-        // model: "gemini",
+        model: model,
     });
     const res = await client.Offer(req, {});
     console.log("offerRequest", res);

@@ -156,7 +156,7 @@ func (o *OpenAIRealtime) sendDataChannelMessage(messageType string, model string
 	o.mu.RUnlock()
 
 	if dcm != nil {
-		dcm.sendMessage(messageType, model, data)
+		dcm.sendMessageWithData(messageType, model, data)
 	} else {
 		slog.Debug("Data channel manager not available, skipping message", "userID", o.userID, "messageType", messageType)
 	}
@@ -225,6 +225,8 @@ func (o *OpenAIRealtime) Connect() error {
 func (o *OpenAIRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 	slog.Info("Starting audio track handling for OpenAI", "userID", o.userID)
 
+	o.sendDataChannelMessage("Client_audio", "openai", nil) //custom event
+
 	opusPacket := &codecs.OpusPacket{}
 	pcmBuffer := make([]int16, 0, 48000) // Buffer for 1 second at 48kHz
 
@@ -285,10 +287,10 @@ func (o *OpenAIRealtime) SendAudio(audioData []byte) {
 		Audio: encodedAudio,
 	}
 
+	o.sendDataChannelMessage("sent_audio", "openai", nil) //custom event
+
 	if err := o.ws.WriteJSON(msg); err != nil {
 		slog.Error("Error sending to OpenAI", "userID", o.userID, "error", err)
-	} else {
-		slog.Debug("Sent audio to OpenAI", "userID", o.userID, "bytes", len(audioData))
 	}
 }
 
@@ -382,7 +384,7 @@ func (o *OpenAIRealtime) handleResponses() {
 			slog.Info("OpenAI response content part added", "userID", o.userID)
 
 		case "response.done":
-			o.sendDataChannelMessage("OpenAI:response completed", "response completed", nil)
+			o.sendDataChannelMessage("response_completed", "openai", nil)
 
 			// Convert the response map to JSON bytes first, then unmarshal to struct
 			responseBytes, err := json.Marshal(response)
@@ -393,7 +395,7 @@ func (o *OpenAIRealtime) handleResponses() {
 
 			var responseDone ResponseDoneEvent
 			if err := json.Unmarshal(responseBytes, &responseDone); err != nil {
-				slog.Error("Failed to unmarshal response.done event", "error", err)
+				slog.Error("Failed to unmarshal response.done event", "openai", err)
 				break
 			}
 

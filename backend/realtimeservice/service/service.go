@@ -125,6 +125,10 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 		if userConn.openaiRealtime != nil {
 			userConn.openaiRealtime.SetDataChannelManager(userConn.dataChannelManager)
 		}
+
+		if userConn.geminiRealtime != nil {
+			userConn.geminiRealtime.SetDataChannelManager(userConn.dataChannelManager)
+		}
 	})
 
 	if err := browserToBackendPC.SetRemoteDescription(webrtc.SessionDescription{
@@ -165,7 +169,7 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 	}
 
 	// Create Gemini realtime instance
-	geminiRealtime, err := NewGeminiRealtime(userID, userConn.aiBackendTrack)
+	geminiRealtime, err := NewGeminiRealtime(userID, userConn.aiBackendTrack, userConn.dataChannelManager)
 	if err != nil {
 		slog.Error("Failed to create Gemini realtime instance", "userID", userID, "error", err)
 		return err
@@ -179,6 +183,8 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 		slog.Error("Failed to connect to Gemini", "userID", userID, "error", err)
 		return err
 	}
+
+	userConn.dataChannelManager.sendMessageWithData("connected", "gemini", nil)
 
 	slog.Info("Successfully connected to Gemini", "userID", userID)
 	return nil
@@ -205,13 +211,17 @@ func (s *RealtimeService) connectToOpenai(userID string) error {
 		return err
 	}
 
+	userConn.dataChannelManager.sendMessageWithData("connected", "openai", nil)
+
 	slog.Info("Successfully connected to OpenAI", "userID", userID)
 	return nil
 }
 
 func (s *RealtimeService) Cleanup(userID string) error {
+	slog.Info("Cleaning up user connection", "userID", userID)
 	userConn := userConnections[userID]
 	if userConn == nil {
+		slog.Error("User connection not found for cleanup", "userID", userID)
 		return nil
 	}
 

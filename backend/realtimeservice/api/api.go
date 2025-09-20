@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"fmt"
+	"log"
+	"log/slog"
 	"sortedstartup/common/auth"
 	"sortedstartup/realtimeservice/dao"
 	pb "sortedstartup/realtimeservice/proto"
@@ -18,12 +20,33 @@ var SQLITE_DB_URL = "db.sqlite"
 
 func NewRealtimeServiceAPI(daoFactory dao.DAOFactory) *RealtimeServiceAPI {
 
-	return &RealtimeServiceAPI{
+	r := &RealtimeServiceAPI{
 		service: service.NewRealtimeService(daoFactory),
 	}
+
+	return r
 }
 
 func (s *RealtimeServiceAPI) Init(config *dao.Config) {
+	switch config.Database.Type {
+	case dao.DatabaseTypeSQLite:
+		slog.Info("RealtimeService: Running SQLite migrations")
+		if err := dao.MigrateSQLite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("RealtimeService: Failed to migrate SQLite database: %v", err)
+		}
+		if err := dao.SeedSqlite(config.Database.SQLite.URL); err != nil {
+			log.Fatalf("RealtimeService: Failed to seed SQLite database: %v", err)
+		}
+	case dao.DatabaseTypePostgres:
+		slog.Info("RealtimeService: Running PostgreSQL migrations")
+		dsn := config.Database.Postgres.GetPostgresDSN()
+		if err := dao.MigratePostgres(dsn); err != nil {
+			log.Fatalf("RealtimeService: Failed to migrate PostgreSQL database: %v", err)
+		}
+		if err := dao.SeedPostgres(dsn); err != nil {
+			log.Fatalf("RealtimeService: Failed to seed PostgreSQL database: %v", err)
+		}
+	}
 	s.service.Init(config)
 }
 

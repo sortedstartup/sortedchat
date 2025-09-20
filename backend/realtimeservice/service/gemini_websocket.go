@@ -227,8 +227,6 @@ func (g *GeminiRealtime) SendAudio(audioData []byte) {
 
 	if err := g.ws.WriteJSON(msg); err != nil {
 		slog.Error("Error sending to Gemini", "userID", g.userID, "error", err)
-	} else {
-		slog.Debug("Sent audio to Gemini", "userID", g.userID, "bytes", len(audioData))
 	}
 }
 
@@ -342,7 +340,6 @@ func (g *GeminiRealtime) sendAudioToClient(base64Audio string) {
 		}
 	}
 
-	slog.Debug("Sent audio to client", "userID", g.userID, "bytes", len(pcmData))
 }
 
 // Close terminates the Gemini connection

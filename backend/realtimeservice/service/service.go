@@ -5,16 +5,21 @@ import (
 	"log/slog"
 	"os"
 	"sortedstartup/realtimeservice/dao"
+	"time"
 
 	"github.com/pion/webrtc/v3"
 )
 
 type RealtimeService struct {
-	dao dao.Dao
+	dao dao.DAO
 }
 
-func NewRealtimeService(dao dao.Dao) *RealtimeService {
-	return &RealtimeService{dao: dao}
+func NewRealtimeService(daoFactory dao.DAOFactory) *RealtimeService {
+	daoInstance, err := daoFactory.CreateDAO()
+	if err != nil {
+		slog.Error("Failed to create DAO: %v", err)
+	}
+	return &RealtimeService{dao: daoInstance}
 }
 
 func (s *RealtimeService) Init(config *dao.Config) {
@@ -31,6 +36,7 @@ type PeerConnection struct {
 	backendToOpenAITrack *webrtc.TrackLocalStaticRTP //backend-openai track
 	aiBackendTrack       *webrtc.TrackLocalStaticRTP //ai-backend track
 	dataChannelManager   *DataChannelManager         //data channel manager between backend and browser
+	audioChatDbID        string                      //audio chat database id
 }
 
 // map of userID -> PeerConnection
@@ -195,6 +201,13 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 	}
 
 	slog.Info("Successfully connected to Gemini", "userID", userID)
+	id, err := s.dao.CreateAudioChat(userID, "gemini", time.Now().Format(time.RFC3339), "") //check time
+	if err != nil {
+		slog.Error("Failed to create audio chat", "userID", userID, "error", err)
+		return err
+	}
+	userConn.audioChatDbID = id
+
 	return nil
 }
 
@@ -226,6 +239,13 @@ func (s *RealtimeService) connectToOpenai(userID string) error {
 	}
 
 	slog.Info("Successfully connected to OpenAI", "userID", userID)
+	id, err := s.dao.CreateAudioChat(userID, "openai", time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	if err != nil {
+		slog.Error("Failed to create audio chat", "userID", userID, "error", err)
+		return err
+	}
+	userConn.audioChatDbID = id
+
 	return nil
 }
 
@@ -255,6 +275,12 @@ func (s *RealtimeService) Cleanup(userID string) error {
 		userConn.browserConnection.Close()
 	}
 
+	if userConn.audioChatDbID != "" {
+		err := s.dao.UpdateAudioChat(userID, userConn.audioChatDbID, time.Now().Format(time.RFC3339))
+		if err != nil {
+			slog.Error("Failed to update audio chat", "userID", userID, "error", err)
+		}
+	}
 	delete(userConnections, userID)
 	slog.Info("Cleaned up user connection", "userID", userID)
 	return nil

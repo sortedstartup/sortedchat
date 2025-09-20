@@ -167,7 +167,7 @@ func (o *OpenAIRealtime) Connect() error {
 	slog.Info("Connecting to OpenAI Realtime API", "userID", o.userID)
 
 	// Use the correct URL format
-	wsURL := "wss://api.openai.com/v1/realtime?model=gpt-realtime"
+	wsURL := "wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview"
 
 	headers := make(map[string][]string)
 	headers["Authorization"] = []string{"Bearer " + o.apiKey}

@@ -184,8 +184,7 @@ func (g *GeminiRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		// Accumulate PCM data
 		pcmBuffer = append(pcmBuffer, pcmData[:n]...)
 
-		// Send to Gemini when we have ~500ms of data
-		if len(pcmBuffer) >= 24000 { // 0.5 seconds at 48kHz
+		if len(pcmBuffer) >= 4800 {
 			// Downsample to 16kHz for Gemini
 			pcm16kHz := g.downsample48to16(pcmBuffer)
 

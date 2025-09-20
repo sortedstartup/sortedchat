@@ -349,7 +349,6 @@ function ChatInputBox({
   onSendMessage: (message: string) => void;
 }) {
   const [inputValue, setInputValue] = useState("");
-  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false); // Add state for audio modal
   const [showDetailedTokens, setShowDetailedTokens] = useState(() => {
     const saved = localStorage.getItem('showDetailedTokens');
     return saved ? JSON.parse(saved) : false;
@@ -455,18 +454,6 @@ function ChatInputBox({
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                
-                {/* Add Audio Button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsAudioModalOpen(true)}
-                  className="text-xs"
-                  disabled={isStreaming}
-                  title="Start Voice Conversation"
-                >
-                  <Mic className="h-3.5 w-3.5" />
-                </Button>
               </div>
               
               {isStreaming ? (
@@ -518,12 +505,6 @@ function ChatInputBox({
           )}
         </div>
       </div>
-      
-      {/* Audio Modal */}
-      <RealtimeAudioModal 
-        isOpen={isAudioModalOpen}
-        onClose={() => setIsAudioModalOpen(false)}
-      />
     </>
   );
 }

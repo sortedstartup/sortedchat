@@ -60,6 +60,10 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 	}
 
 	// Create user connection early so we can reference it in callbacks
+	existingUserConn := userConnections[userID]
+	if existingUserConn != nil {
+		s.Cleanup(userID)
+	}
 	userConnections[userID] = &PeerConnection{
 		browserConnection:    browserToBackendPC,
 		openaiConnection:     nil,
@@ -184,7 +188,11 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 		return err
 	}
 
-	userConn.dataChannelManager.sendMessageWithData("connected", "gemini", nil)
+	if userConn.dataChannelManager != nil {
+		userConn.dataChannelManager.sendMessageWithData("connected", "gemini", nil)
+	} else {
+		slog.Debug("Data channel manager not yet available, skipping connected message", "userID", userID)
+	}
 
 	slog.Info("Successfully connected to Gemini", "userID", userID)
 	return nil
@@ -211,7 +219,11 @@ func (s *RealtimeService) connectToOpenai(userID string) error {
 		return err
 	}
 
-	userConn.dataChannelManager.sendMessageWithData("connected", "openai", nil)
+	if userConn.dataChannelManager != nil {
+		userConn.dataChannelManager.sendMessageWithData("connected", "openai", nil)
+	} else {
+		slog.Debug("Data channel manager not yet available, skipping connected message", "userID", userID)
+	}
 
 	slog.Info("Successfully connected to OpenAI", "userID", userID)
 	return nil

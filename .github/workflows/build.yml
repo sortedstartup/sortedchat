@@ -117,11 +117,11 @@ jobs:
           # Download Opus from official Xiph.org (creators of Opus codec)
           mkdir -p /tmp/opus-build && cd /tmp/opus-build
           
-          # Download from official Xiph.org releases
-          wget -q https://downloads.xiph.org/releases/opus/opus-1.4.tar.gz
-          echo "8298db61a8d2d7343a4a7cbb6b58c8e1  opus-1.4.tar.gz" | md5sum -c
-          tar -xzf opus-1.4.tar.gz
-          cd opus-1.4
+          # Download from official Xiph.org releases (use latest version 1.5.1)
+          wget -q https://downloads.xiph.org/releases/opus/opus-1.5.1.tar.gz
+          echo "b84610959b8d417b611aa12a22565e0a3732097c6389d19098d844543e340f85  opus-1.5.1.tar.gz" | sha256sum -c
+          tar -xzf opus-1.5.1.tar.gz
+          cd opus-1.5.1
           
           # Cross-compile for Windows x86_64
           ./configure --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 \
@@ -133,7 +133,7 @@ jobs:
           # Download and build OpusFile
           cd /tmp/opus-build
           wget -q https://downloads.xiph.org/releases/opus/opusfile-0.12.tar.gz
-          echo "4b5b78e40a8e9983ad08cc18b8cc6ee6  opusfile-0.12.tar.gz" | md5sum -c
+          echo "118d8601c12dd6a44f52423e68ca9083cc9f2bfe72da7a8c1acb22a80ae3550b  opusfile-0.12.tar.gz" | sha256sum -c
           tar -xzf opusfile-0.12.tar.gz
           cd opusfile-0.12
           
@@ -223,11 +223,10 @@ jobs:
       - name: Install macOS dependencies
         if: matrix.os == 'darwin'
         run: |
+          # Only install Opus (the new dependency we added)
+          # macOS has built-in WebKit, system frameworks for GUI
           brew update
-          # Install equivalent packages to Linux dependencies
-          # Linux ARM64: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config libgtk-3-dev:arm64 libwebkit2gtk-4.1-dev:arm64 libayatana-appindicator3-dev:arm64 librsvg2-dev:arm64 libglib2.0-dev:arm64 libglib2.0-dev-bin python3-packaging libopus-dev:arm64 libopusfile-dev:arm64
-          # macOS equivalents:
-          brew install glib gtk+3 webkitgtk librsvg pkg-config python@3.12 opus opusfile
+          brew install opus opusfile pkg-config
           
           # Set target architecture for later use
           if [ "${{ matrix.arch }}" = "amd64" ]; then

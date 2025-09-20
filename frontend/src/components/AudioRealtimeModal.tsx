@@ -36,7 +36,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
 
       pc.onicecandidate = async (event) => {
         if (event.candidate) {
-          iceCandidate(JSON.stringify({ candidate: event.candidate }));
+          iceCandidate(JSON.stringify( event.candidate.toJSON() ));
         }
       };
 

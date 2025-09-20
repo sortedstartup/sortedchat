@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -18,6 +19,7 @@ func NewRealtimeService(daoFactory dao.DAOFactory) *RealtimeService {
 	daoInstance, err := daoFactory.CreateDAO()
 	if err != nil {
 		slog.Error("Failed to create DAO: %v", err)
+		return nil
 	}
 	return &RealtimeService{dao: daoInstance}
 }
@@ -201,7 +203,7 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 	}
 
 	slog.Info("Successfully connected to Gemini", "userID", userID)
-	id, err := s.dao.CreateAudioChat(userID, "gemini", time.Now().Format(time.RFC3339), "") //check time
+	id, err := s.dao.CreateAudioChat(userID, "gemini", time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339)) //check time
 	if err != nil {
 		slog.Error("Failed to create audio chat", "userID", userID, "error", err)
 		return err
@@ -306,10 +308,14 @@ func (s *RealtimeService) IceCandidate(candidate string, userID string) (string,
 		return "", fmt.Errorf("remote description not set, cannot add ICE candidate for userID: %s", userID)
 	}
 
+	var iceCandidateInit webrtc.ICECandidateInit
+	if err := json.Unmarshal([]byte(candidate), &iceCandidateInit); err != nil {
+		slog.Error("error unmarshaling ICE candidate", "userID", userID, "error", err)
+		return "", err
+	}
+
 	// Add ICE candidate
-	if err := userConn.browserConnection.AddICECandidate(webrtc.ICECandidateInit{
-		Candidate: candidate,
-	}); err != nil {
+	if err := userConn.browserConnection.AddICECandidate(iceCandidateInit); err != nil {
 		slog.Error("error adding ICE candidate", "userID", userID, "error", err)
 		return "", err
 	}

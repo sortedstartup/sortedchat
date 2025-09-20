@@ -3,12 +3,12 @@ package service
 import (
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"sync"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/gorilla/websocket"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
@@ -386,16 +386,10 @@ func (o *OpenAIRealtime) handleResponses() {
 		case "response.done":
 			o.sendDataChannelMessage("response_completed", "openai", nil)
 
-			// Convert the response map to JSON bytes first, then unmarshal to struct
-			responseBytes, err := json.Marshal(response)
-			if err != nil {
-				slog.Error("Failed to marshal response", "error", err)
-				break
-			}
-
+			// Using mapstructure to decode the response
 			var responseDone ResponseDoneEvent
-			if err := json.Unmarshal(responseBytes, &responseDone); err != nil {
-				slog.Error("Failed to unmarshal response.done event", "openai", err)
+			if err := mapstructure.Decode(response, &responseDone); err != nil {
+				slog.Error("Failed to decode response", "error", err)
 				break
 			}
 
@@ -533,6 +527,7 @@ func (o *OpenAIRealtime) IsConnected() bool {
 // Helper functions
 
 // downsample48to24 converts 48kHz PCM to 24kHz (2:1 ratio)
+// might need to change this logic and use github.com/zaf/resample for better quality
 func (o *OpenAIRealtime) downsample48to24(input []int16) []int16 {
 	output := make([]int16, len(input)/2)
 	for i := 0; i < len(output); i++ {

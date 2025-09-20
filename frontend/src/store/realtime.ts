@@ -16,6 +16,5 @@ export const iceCandidate = async (candidate: string) => {
     const req = new IceCandidateRequest({
         candidate: candidate,
     });
-    const res = await client.IceCandidate(req, {});
-    console.log("iceCandidate", res);
+    await client.IceCandidate(req, {});
 }

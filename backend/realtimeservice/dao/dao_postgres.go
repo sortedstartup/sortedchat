@@ -69,5 +69,5 @@ func (d *PostgresDAO) UpdateAudioChat(userID string, id string, endTime string) 
 		slog.Error("Failed to update audio chat postgres", "error", err)
 		return err
 	}
-	return err
+	return nil
 }

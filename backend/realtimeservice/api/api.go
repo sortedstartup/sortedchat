@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"log/slog"
 	"sortedstartup/common/auth"
@@ -72,7 +71,7 @@ func (s *RealtimeServiceAPI) IceCandidate(ctx context.Context, req *pb.IceCandid
 	}
 	message, err := s.service.IceCandidate(req.Candidate, userID)
 	if err != nil {
-		fmt.Println("Error adding ICE candidate", err)
+		slog.Error("Error adding ICE candidate", "error", err)
 		return nil, err
 	}
 	return &pb.IceCandidateResponse{

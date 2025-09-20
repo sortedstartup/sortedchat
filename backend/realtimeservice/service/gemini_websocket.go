@@ -59,9 +59,9 @@ type GeminiMediaChunk struct {
 
 // NewGeminiRealtime creates a new GeminiRealtime instance
 func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP, dataChannelManager *DataChannelManager) (*GeminiRealtime, error) {
-	apiKey := os.Getenv("GOOGLE_API_KEY")
+	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		return nil, fmt.Errorf("GOOGLE_API_KEY environment variable is required")
+		return nil, fmt.Errorf("GEMINI_API_KEY environment variable is required")
 	}
 
 	// Initialize Opus encoder/decoder

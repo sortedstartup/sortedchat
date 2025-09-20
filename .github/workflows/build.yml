@@ -108,14 +108,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Install MinGW-w64 for Windows cross-compilation
+      - name: Skip Windows builds (temporary)
         if: matrix.os == 'windows'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y mingw-w64
-          # TEMPORARY: Skip Windows builds until we have secure Opus cross-compilation
           echo "Windows cross-compilation disabled until secure Opus libraries are available"
-          exit 1
+          exit 0
 
       - name: Restore APT caches
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -194,8 +191,17 @@ jobs:
       - name: Install macOS dependencies
         if: matrix.os == 'darwin'
         run: |
+          # Update brew and install both architectures of opus libraries
           brew update
+          # Install native architecture first
           brew install opus opusfile pkg-config
+          
+          # For cross-compilation, we need to set the right flags in the build step
+          if [ "${{ matrix.arch }}" = "amd64" ]; then
+            echo "MACOS_CROSS_COMPILE=x86_64" >> $GITHUB_ENV
+          else
+            echo "MACOS_CROSS_COMPILE=arm64" >> $GITHUB_ENV
+          fi
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -203,6 +209,7 @@ jobs:
           go-version: '1.24.3'
 
       - name: Build Go backend - desktop app and server
+        if: matrix.os != 'windows'
         working-directory: backend
         run: |
           export GOOS=${{ matrix.os }}
@@ -215,11 +222,19 @@ jobs:
           export BINARY_NAME_SERVER=sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
           export BINARY_NAME_APP=sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
 
-          # Windows
-          if [ "${{ matrix.os }}" = "windows" ]; then 
-            export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe";
-            export BINARY_NAME_APP="$BINARY_NAME_APP.exe";
-            export CC=x86_64-w64-mingw32-gcc
+
+
+          # macOS cross-compilation setup
+          if [ "${{ matrix.os }}" = "darwin" ]; then
+            if [ "$MACOS_CROSS_COMPILE" = "x86_64" ]; then
+              export CC="clang -arch x86_64"
+              export CGO_CFLAGS="$CGO_CFLAGS -arch x86_64"
+              export CGO_LDFLAGS="-arch x86_64"
+            elif [ "$MACOS_CROSS_COMPILE" = "arm64" ]; then
+              export CC="clang -arch arm64"
+              export CGO_CFLAGS="$CGO_CFLAGS -arch arm64" 
+              export CGO_LDFLAGS="-arch arm64"
+            fi
           fi
 
           # Linux ARM64 - Fix cross-compilation issues
@@ -243,6 +258,7 @@ jobs:
           go build -buildvcs=false -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_APP ./mono
 
       - name: Upload server binary as artifact
+        if: matrix.os != 'windows'
         uses: actions/upload-artifact@v4
         with:
           name: sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
@@ -250,6 +266,7 @@ jobs:
           retention-days: 10
 
       - name: Upload app binary as artifact
+        if: matrix.os != 'windows'
         uses: actions/upload-artifact@v4
         with:
           name: sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}

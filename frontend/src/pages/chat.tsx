@@ -16,7 +16,6 @@ import {
   ChevronRight,
   Loader2,
   Square,
-  Mic // Add Mic icon for audio button
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
@@ -57,7 +56,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { RealtimeAudioModal } from "../components/AudioRealtimeModal"; // Import the audio modal
 import type {
   ChatMessage,
   RAGDocumentReference, 

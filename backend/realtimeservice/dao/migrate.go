@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	"log"
 	"log/slog"
 
 	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
@@ -38,7 +37,7 @@ var postgresSeedFiles embed.FS
 func MigrateDB_UsingConnection_SQLite(sqlDB *sql.DB, files embed.FS, directoryInFS string, migrationsTable string) error {
 	_files, err := iofs.New(files, directoryInFS)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to create iofs instance: %w", err)
 	}
 
 	dbInstance, err := sqlite.WithInstance(sqlDB, &sqlite.Config{MigrationsTable: migrationsTable})
@@ -66,7 +65,7 @@ func MigrateDB_UsingConnection_SQLite(sqlDB *sql.DB, files embed.FS, directoryIn
 func MigrateDB_UsingConnection_Postgres(sqlDB *sql.DB, files embed.FS, directoryInFS string, migrationsTable string) error {
 	_files, err := iofs.New(files, directoryInFS)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to create iofs instance: %w", err)
 	}
 
 	dbInstance, err := postgres.WithInstance(sqlDB, &postgres.Config{MigrationsTable: migrationsTable})

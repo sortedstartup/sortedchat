@@ -7,14 +7,26 @@ export const offerRequest = async (offer: string, model: string) => {
         offer: offer,
         model: model,
     });
-    const res = await client.Offer(req, {});
-    console.log("offerRequest", res);
-    return res;
+    try {
+        const res = await client.Offer(req, {});
+        console.log("offerRequest", res);
+        return res;
+    } catch (error) {
+        console.error("Failed to send offer request:", error);
+        throw error;
+    }
 }
 
 export const iceCandidate = async (candidate: string) => {
     const req = new IceCandidateRequest({
         candidate: candidate,
     });
-    await client.IceCandidate(req, {});
+    try {
+        const res = await client.IceCandidate(req, {});
+        console.log("iceCandidate", res);
+        return res;
+    } catch (error) {
+        console.error("Failed to send ICE candidate:", error);
+        throw error;
+    }
 }

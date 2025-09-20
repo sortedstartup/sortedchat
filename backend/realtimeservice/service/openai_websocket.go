@@ -3,12 +3,12 @@ package service
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"sync"
 
-	"github.com/go-viper/mapstructure/v2"
 	"github.com/gorilla/websocket"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
@@ -386,10 +386,14 @@ func (o *OpenAIRealtime) handleResponses() {
 		case "response.done":
 			o.sendDataChannelMessage("response_completed", "openai", nil)
 
-			// Using mapstructure to decode the response
+			responseBytes, err := json.Marshal(response)
+			if err != nil {
+				slog.Error("Failed to marshal response", "error", err)
+				break
+			}
 			var responseDone ResponseDoneEvent
-			if err := mapstructure.Decode(response, &responseDone); err != nil {
-				slog.Error("Failed to decode response", "error", err)
+			if err := json.Unmarshal(responseBytes, &responseDone); err != nil {
+				slog.Error("Failed to unmarshal response.done event", "openai", err)
 				break
 			}
 
@@ -397,7 +401,7 @@ func (o *OpenAIRealtime) handleResponses() {
 			usage := responseDone.Response.Usage
 
 			// Send basic usage info as structured data
-			o.dataChannelManager.sendMessageWithData("OpenAI:usage", "openai", map[string]interface{}{
+			o.sendDataChannelMessage("OpenAI:usage", "openai", map[string]interface{}{
 				"total_tokens":  usage.TotalTokens,
 				"input_tokens":  usage.InputTokens,
 				"output_tokens": usage.OutputTokens,
@@ -405,14 +409,14 @@ func (o *OpenAIRealtime) handleResponses() {
 
 			// Send detailed token breakdown as structured data
 			inputDetails := usage.InputTokenDetails
-			o.dataChannelManager.sendMessageWithData("OpenAI:input_details", "openai", map[string]interface{}{
+			o.sendDataChannelMessage("OpenAI:input_details", "openai", map[string]interface{}{
 				"text_tokens":   inputDetails.TextTokens,
 				"audio_tokens":  inputDetails.AudioTokens,
 				"cached_tokens": inputDetails.CachedTokens,
 			})
 
 			outputDetails := usage.OutputTokenDetails
-			o.dataChannelManager.sendMessageWithData("OpenAI:output_details", "openai", map[string]interface{}{
+			o.sendDataChannelMessage("OpenAI:output_details", "openai", map[string]interface{}{
 				"text_tokens":  outputDetails.TextTokens,
 				"audio_tokens": outputDetails.AudioTokens,
 			})

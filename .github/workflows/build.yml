@@ -110,7 +110,12 @@ jobs:
 
       - name: Install MinGW-w64 for Windows cross-compilation
         if: matrix.os == 'windows'
-        run: sudo apt-get update && sudo apt-get install -y mingw-w64 libopus-dev libopusfile-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64
+          # TEMPORARY: Skip Windows builds until we have secure Opus cross-compilation
+          echo "Windows cross-compilation disabled until secure Opus libraries are available"
+          exit 1
 
       - name: Restore APT caches
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -183,15 +188,14 @@ jobs:
         run: |
             sudo apt-get update
 
-            # Toolchain + pkg-config
-            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
+            # Install ARM64 dependencies from package list
+            sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
 
-            # GUI deps for target (arm64)
-            sudo apt-get install -y \
-                gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config \
-                libgtk-3-dev:arm64 libwebkit2gtk-4.1-dev:arm64 \
-                libayatana-appindicator3-dev:arm64 librsvg2-dev:arm64 \
-                libglib2.0-dev:arm64 libglib2.0-dev-bin python3-packaging
+      - name: Install macOS dependencies
+        if: matrix.os == 'darwin'
+        run: |
+          brew update
+          brew install opus opusfile pkg-config
 
       - name: Set up Go
         uses: actions/setup-go@v5

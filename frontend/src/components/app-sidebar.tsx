@@ -1,4 +1,4 @@
-import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2 } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2, AudioLines } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -50,6 +50,7 @@ import { authActions, $auth } from "@/auth/store/auth";
 import remarkGfm from "remark-gfm";
 import ReactMarkdown from "react-markdown";
 import { DeleteChatRequestOperation } from "../../proto/chatservice";
+import { RealtimeAudioModal } from "./AudioRealtimeModal";
 
 export function AppSidebar() {
   const projectsList = useStore($projectList);
@@ -63,6 +64,8 @@ export function AppSidebar() {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [localSearchText, setLocalSearchText] = useState("");
   const [showSoftDeleted, setShowSoftDeleted] = useState(false);
+  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false); // Add state for audio modal
+
   
   // Rename chat states
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
@@ -223,6 +226,16 @@ export function AppSidebar() {
                     <button onClick={handleNewChat}>
                       <Plus />
                       <span>New Chat</span>
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <button onClick={() => setIsAudioModalOpen(true)}
+                    >
+                      <AudioLines />
+                      <span>New Realtime Voice Chat</span>
                     </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -521,6 +534,10 @@ export function AppSidebar() {
           </SidebarGroup>
         </div>
       </SidebarContent>
+      <RealtimeAudioModal 
+        isOpen={isAudioModalOpen}
+        onClose={() => setIsAudioModalOpen(false)}
+      />
     </Sidebar>
   );
 }

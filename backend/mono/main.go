@@ -50,6 +50,9 @@ const (
 var staticUIFS embed.FS
 
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	slog.SetDefault(logger)
+
 	// Parse command line flags
 	serverOnly := flag.Bool("server", false, "Start only the server without Wails GUI")
 	host := flag.String("host", defaultHost, "Host to bind the server to (default: all interfaces)")

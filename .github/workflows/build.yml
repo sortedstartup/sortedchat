@@ -108,9 +108,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Install MinGW-w64 for Windows cross-compilation
+      - name: Skip Windows builds (temporary)
         if: matrix.os == 'windows'
-        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+        run: |
+          echo "Windows cross-compilation disabled until secure Opus libraries are available"
+          exit 0
 
       - name: Restore APT caches
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -183,15 +185,23 @@ jobs:
         run: |
             sudo apt-get update
 
-            # Toolchain + pkg-config
-            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
+            # Install ARM64 dependencies from package list
+            sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
 
-            # GUI deps for target (arm64)
-            sudo apt-get install -y \
-                gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config \
-                libgtk-3-dev:arm64 libwebkit2gtk-4.1-dev:arm64 \
-                libayatana-appindicator3-dev:arm64 librsvg2-dev:arm64 \
-                libglib2.0-dev:arm64 libglib2.0-dev-bin python3-packaging
+      - name: Install macOS dependencies
+        if: matrix.os == 'darwin' && matrix.arch == 'arm64'
+        run: |
+          # Only build for native ARM64 architecture on macOS for now
+          # Cross-compilation to x86_64 requires external downloads which are security risks
+          brew update
+          brew install opus opusfile pkg-config
+
+      - name: Skip macOS x86_64 builds (temporary)
+        if: matrix.os == 'darwin' && matrix.arch == 'amd64'
+        run: |
+          echo "macOS x86_64 cross-compilation disabled due to architecture complexity"
+          echo "Use native x86_64 runners or disable this combination until resolved"
+          exit 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -199,6 +209,7 @@ jobs:
           go-version: '1.24.3'
 
       - name: Build Go backend - desktop app and server
+        if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
         working-directory: backend
         run: |
           export GOOS=${{ matrix.os }}
@@ -211,12 +222,9 @@ jobs:
           export BINARY_NAME_SERVER=sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
           export BINARY_NAME_APP=sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
 
-          # Windows
-          if [ "${{ matrix.os }}" = "windows" ]; then 
-            export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe";
-            export BINARY_NAME_APP="$BINARY_NAME_APP.exe";
-            export CC=x86_64-w64-mingw32-gcc
-          fi
+
+
+
 
           # Linux ARM64 - Fix cross-compilation issues
           if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then 
@@ -239,6 +247,7 @@ jobs:
           go build -buildvcs=false -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_APP ./mono
 
       - name: Upload server binary as artifact
+        if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
         uses: actions/upload-artifact@v4
         with:
           name: sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
@@ -246,6 +255,7 @@ jobs:
           retention-days: 10
 
       - name: Upload app binary as artifact
+        if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
         uses: actions/upload-artifact@v4
         with:
           name: sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}

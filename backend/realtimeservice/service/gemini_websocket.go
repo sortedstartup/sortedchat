@@ -30,6 +30,9 @@ type GeminiRealtime struct {
 	dataChannelManager *DataChannelManager
 }
 
+const opusPayloadType = 111
+const ssrc = 1234
+
 // Gemini message types based on API docs
 type GeminiMessage struct {
 	Setup         *GeminiSetup         `json:"setup,omitempty"`
@@ -324,10 +327,10 @@ func (g *GeminiRealtime) sendAudioToClient(base64Audio string) {
 		rtpPacket := &rtp.Packet{
 			Header: rtp.Header{
 				Version:        2,
-				PayloadType:    111, // Opus
+				PayloadType:    opusPayloadType, // Opus
 				SequenceNumber: g.sequenceNumber,
 				Timestamp:      g.timestamp,
-				SSRC:           1234,
+				SSRC:           ssrc,
 			},
 			Payload: opusData[:n],
 		}
@@ -369,6 +372,7 @@ func (g *GeminiRealtime) IsConnected() bool {
 // Helper functions
 
 // downsample48to16 converts 48kHz PCM to 16kHz (3:1 ratio)
+// might need to change this logic and use github.com/zaf/resample for better quality
 func (g *GeminiRealtime) downsample48to16(input []int16) []int16 {
 	output := make([]int16, len(input)/3)
 	for i := 0; i < len(output); i++ {

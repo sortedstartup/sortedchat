@@ -36,7 +36,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
 
       pc.onicecandidate = async (event) => {
         if (event.candidate) {
-          iceCandidate(JSON.stringify({ candidate: event.candidate }));
+          iceCandidate(JSON.stringify( event.candidate.toJSON() ));
         }
       };
 
@@ -83,9 +83,11 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           const message = JSON.parse(text);
           
           if (message.type === "OpenAI:input_details") {
+            console.log("OpenAI:input_details", message.data);
             if (message.data.audio_tokens) setInputTokens(prev => prev + message.data.audio_tokens);
           }
           if (message.type === "OpenAI:output_details") {
+            console.log("OpenAI:output_details", message.data);
             if (message.data.audio_tokens) setOutputTokens(prev => prev + message.data.audio_tokens);
           }
           

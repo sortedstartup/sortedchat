@@ -386,13 +386,11 @@ func (o *OpenAIRealtime) handleResponses() {
 		case "response.done":
 			o.sendDataChannelMessage("response_completed", "openai", nil)
 
-			// Convert the response map to JSON bytes first, then unmarshal to struct
 			responseBytes, err := json.Marshal(response)
 			if err != nil {
 				slog.Error("Failed to marshal response", "error", err)
 				break
 			}
-
 			var responseDone ResponseDoneEvent
 			if err := json.Unmarshal(responseBytes, &responseDone); err != nil {
 				slog.Error("Failed to unmarshal response.done event", "openai", err)
@@ -403,7 +401,7 @@ func (o *OpenAIRealtime) handleResponses() {
 			usage := responseDone.Response.Usage
 
 			// Send basic usage info as structured data
-			o.dataChannelManager.sendMessageWithData("OpenAI:usage", "openai", map[string]interface{}{
+			o.sendDataChannelMessage("OpenAI:usage", "openai", map[string]interface{}{
 				"total_tokens":  usage.TotalTokens,
 				"input_tokens":  usage.InputTokens,
 				"output_tokens": usage.OutputTokens,
@@ -411,14 +409,14 @@ func (o *OpenAIRealtime) handleResponses() {
 
 			// Send detailed token breakdown as structured data
 			inputDetails := usage.InputTokenDetails
-			o.dataChannelManager.sendMessageWithData("OpenAI:input_details", "openai", map[string]interface{}{
+			o.sendDataChannelMessage("OpenAI:input_details", "openai", map[string]interface{}{
 				"text_tokens":   inputDetails.TextTokens,
 				"audio_tokens":  inputDetails.AudioTokens,
 				"cached_tokens": inputDetails.CachedTokens,
 			})
 
 			outputDetails := usage.OutputTokenDetails
-			o.dataChannelManager.sendMessageWithData("OpenAI:output_details", "openai", map[string]interface{}{
+			o.sendDataChannelMessage("OpenAI:output_details", "openai", map[string]interface{}{
 				"text_tokens":  outputDetails.TextTokens,
 				"audio_tokens": outputDetails.AudioTokens,
 			})
@@ -533,6 +531,7 @@ func (o *OpenAIRealtime) IsConnected() bool {
 // Helper functions
 
 // downsample48to24 converts 48kHz PCM to 24kHz (2:1 ratio)
+// might need to change this logic and use github.com/zaf/resample for better quality
 func (o *OpenAIRealtime) downsample48to24(input []int16) []int16 {
 	output := make([]int16, len(input)/2)
 	for i := 0; i < len(output); i++ {

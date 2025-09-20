@@ -164,6 +164,140 @@ export class OfferResponse extends pb_1.Message {
         return OfferResponse.deserialize(bytes);
     }
 }
+export class IceCandidateRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        candidate?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("candidate" in data && data.candidate != undefined) {
+                this.candidate = data.candidate;
+            }
+        }
+    }
+    get candidate() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set candidate(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        candidate?: string;
+    }): IceCandidateRequest {
+        const message = new IceCandidateRequest({});
+        if (data.candidate != null) {
+            message.candidate = data.candidate;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            candidate?: string;
+        } = {};
+        if (this.candidate != null) {
+            data.candidate = this.candidate;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.candidate.length)
+            writer.writeString(1, this.candidate);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): IceCandidateRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new IceCandidateRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.candidate = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): IceCandidateRequest {
+        return IceCandidateRequest.deserialize(bytes);
+    }
+}
+export class IceCandidateResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message?: string;
+    }): IceCandidateResponse {
+        const message = new IceCandidateResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): IceCandidateResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new IceCandidateResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): IceCandidateResponse {
+        return IceCandidateResponse.deserialize(bytes);
+    }
+}
 // Server-side service class removed for client-side compatibility
 export class RealtimeServiceClient {
     private _address: string;
@@ -178,5 +312,9 @@ export class RealtimeServiceClient {
     private static Offer = new grpc_web_1.MethodDescriptor<OfferRequest, OfferResponse>("/sortedchat.RealtimeService/Offer", grpc_web_1.MethodType.UNARY, OfferRequest, OfferResponse, (message: OfferRequest) => message.serialize(), OfferResponse.deserialize);
     Offer(message: OfferRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<OfferRequest, OfferResponse>(this._address + "/sortedchat.RealtimeService/Offer", message, metadata || {}, RealtimeServiceClient.Offer);
+    }
+    private static IceCandidate = new grpc_web_1.MethodDescriptor<IceCandidateRequest, IceCandidateResponse>("/sortedchat.RealtimeService/IceCandidate", grpc_web_1.MethodType.UNARY, IceCandidateRequest, IceCandidateResponse, (message: IceCandidateRequest) => message.serialize(), IceCandidateResponse.deserialize);
+    IceCandidate(message: IceCandidateRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<IceCandidateRequest, IceCandidateResponse>(this._address + "/sortedchat.RealtimeService/IceCandidate", message, metadata || {}, RealtimeServiceClient.IceCandidate);
     }
 }

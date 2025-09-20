@@ -6,9 +6,11 @@ option go_package = "sortedstartup/realtimeservice/proto";
 
 service RealtimeService {
    rpc Offer(OfferRequest) returns (OfferResponse);
+   rpc IceCandidate(IceCandidateRequest) returns (IceCandidateResponse);
 }
 
 message OfferRequest {
+  // this is the browsers SDP, created in browser using pc.createOffer()
   string offer = 1;
   string model = 2;
 
@@ -20,3 +22,10 @@ message OfferResponse {
   string offer = 1;
 }
 
+message IceCandidateRequest {
+  string candidate = 1;
+}
+
+message IceCandidateResponse {
+  string message = 1;
+}

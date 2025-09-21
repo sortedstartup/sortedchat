@@ -140,7 +140,21 @@ Follow the [Development Setup](#development-setup) section below.
    # For development: Install via MSYS2 or vcpkg
    ```
 
-4. **Node.js 20+ and pnpm** (for frontend development only)
+4. **GTK and WebKit Libraries** (for desktop application development)
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get update && sudo apt-get install libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev
+   
+   # CentOS/RHEL/Fedora
+   sudo yum install gtk3-devel webkit2gtk4.1-devel libsoup3-devel
+   # or
+   sudo dnf install gtk3-devel webkit2gtk4.1-devel libsoup3-devel
+   
+   # macOS (via Homebrew)
+   brew install gtk+3 webkit2gtk
+   ```
+
+5. **Node.js 20+ and pnpm** (for frontend development only)
    ```bash
    # Install Node.js from https://nodejs.org/
    npm install -g pnpm
@@ -148,7 +162,7 @@ Follow the [Development Setup](#development-setup) section below.
 
 ### Optional Dependencies
 
-5. **Ollama** (for local embeddings and RAG functionality)
+6. **Ollama** (for local embeddings and RAG functionality)
    ```bash
    # Install Ollama from https://ollama.ai/
    # macOS/Linux
@@ -161,7 +175,7 @@ Follow the [Development Setup](#development-setup) section below.
    ollama pull nomic-embed-text
    ```
 
-6. **Docker** (for PostgreSQL or full Docker deployment)
+7. **Docker** (for PostgreSQL or full Docker deployment)
    ```bash
    # Install Docker from https://docker.com/
    docker --version
@@ -211,7 +225,7 @@ git clone https://github.com/sortedstartup/sortedchat.git
 cd sortedchat
 ```
 
-### 2. Build Frontend (Optional - for development)
+### 2. Build Frontend 
 ```bash
 cd frontend
 pnpm install
@@ -228,9 +242,30 @@ CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
 **Application will be available at:** http://localhost:8080
 
 ### 4. Run Desktop Application (Development)
+
+> **Note**: Desktop application requires a GUI environment (X11 on Linux, native on macOS/Windows). For headless servers, containers, or WSL without GUI, use the web version (step 3) instead.
+
+```bash
+# Build frontend first (required for desktop app)
+cd frontend
+pnpm install
+pnpm run build
+
+# Create and copy frontend build to wails expected location
+mkdir -p ../backend/frontend-build-wails/dist
+cp -r dist/* ../backend/frontend-build-wails/dist/
+cd ..
+
+# Run desktop application (requires GUI environment)
+cd backend
+CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5,dev,webkit2_41" mono/env_dev.go mono/main.go mono/wails.go
+```
+
+**If you get GTK/X11 errors**, use the web version instead:
 ```bash
 cd backend
-CGO_CFLAGS="-I$(pwd)/../sqlite3" go run -tags "sqlite_fts5,dev,webkit2_41" main.go wails.go
+CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
+# Then open http://localhost:8080 in your browser
 ```
 
 ## Configuration

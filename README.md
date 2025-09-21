@@ -6,7 +6,7 @@ Sorted Chat is a UI to chat with multiple LLM models without being locked into o
 
 ### Option 1: Download Pre-built Binaries (Recommended)
 
-Download the latest binaries from [GitHub Releases](https://github.com/sortedstartup/sortedchat/releases) or [GitHub Actions artifacts](https://github.com/sortedstartup/sortedchat/actions).
+Download the latest binaries from [GitHub Releases](https://github.com/sortedstartup/sortedchat/releases)
 
 **Choose ONE binary based on your preference:**
 - **`sortedchat-app-*`**: Desktop application with native GUI *(Recommended)*
@@ -21,14 +21,31 @@ Download the latest binaries from [GitHub Releases](https://github.com/sortedsta
 
 #### Quick Setup for Binaries:
 
-**1. Download and make executable:**
+**1. Install required system dependencies (Linux only):**
 ```bash
-# Example for Linux amd64
-wget https://github.com/sortedstartup/sortedchat/releases/download/v1.0.0/sortedchat-app-linux-amd64
-chmod +x sortedchat-app-linux-amd64
+# Ubuntu/Debian
+sudo apt-get update && sudo apt-get install pkg-config libopus-dev libopusfile-dev
+
+# CentOS/RHEL/Fedora
+sudo yum install pkgconfig opus-devel opusfile-devel
+# or
+sudo dnf install pkgconfig opus-devel opusfile-devel
 ```
 
-**2. Set minimum environment variables:**
+**2. Download and make executable:**
+```bash
+# Example for Linux amd64
+
+# Desktop app (standalone GUI application)
+wget https://github.com/sortedstartup/sortedchat/releases/download/v0.0.6-rc1/sortedchat-app-linux-amd64
+chmod +x sortedchat-app-linux-amd64
+
+# OR Web server (access via browser at http://localhost:8080)
+wget https://github.com/sortedstartup/sortedchat/releases/download/v0.0.6-rc1/sortedchat-server-linux-amd64
+chmod +x sortedchat-server-linux-amd64
+```
+
+**3. Set minimum environment variables:**
 
 > **Note**: These variables are needed for **BOTH** desktop and web app binaries.
 
@@ -54,7 +71,7 @@ export APP_ISSUER=http://localhost:8080
 export OAUTH_ISSUER_URL=https://accounts.google.com
 ```
 
-**3. Run the application:**
+**4. Run the application:**
 ```bash
 # Desktop app (includes both frontend + backend)
 ./sortedchat-app-linux-amd64
@@ -105,7 +122,25 @@ Follow the [Development Setup](#development-setup) section below.
    # Or use chocolatey: choco install sqlite
    ```
 
-3. **Node.js 20+ and pnpm** (for frontend development only)
+3. **Opus Audio Libraries** (for real-time voice features)
+   ```bash
+   # macOS
+   brew install opus opusfile pkg-config
+   
+   # Ubuntu/Debian
+   sudo apt-get update && sudo apt-get install pkg-config libopus-dev libopusfile-dev
+   
+   # CentOS/RHEL/Fedora
+   sudo yum install pkgconfig opus-devel opusfile-devel
+   # or
+   sudo dnf install pkgconfig opus-devel opusfile-devel
+   
+   # Windows
+   # Usually included in pre-built binaries
+   # For development: Install via MSYS2 or vcpkg
+   ```
+
+4. **Node.js 20+ and pnpm** (for frontend development only)
    ```bash
    # Install Node.js from https://nodejs.org/
    npm install -g pnpm
@@ -113,7 +148,7 @@ Follow the [Development Setup](#development-setup) section below.
 
 ### Optional Dependencies
 
-4. **Ollama** (for local embeddings and RAG functionality)
+5. **Ollama** (for local embeddings and RAG functionality)
    ```bash
    # Install Ollama from https://ollama.ai/
    # macOS/Linux
@@ -126,7 +161,7 @@ Follow the [Development Setup](#development-setup) section below.
    ollama pull nomic-embed-text
    ```
 
-5. **Docker** (for PostgreSQL or full Docker deployment)
+6. **Docker** (for PostgreSQL or full Docker deployment)
    ```bash
    # Install Docker from https://docker.com/
    docker --version
@@ -184,7 +219,7 @@ pnpm run build
 cd ..
 ```
 
-### 3. Run Web Application
+### 3. Run Backend
 ```bash
 cd backend
 CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
@@ -406,36 +441,41 @@ psql -h localhost -p 5432 -U postgres -d sortedchat_dev
    - Install SQLite3 development headers
    - Ensure CGO_CFLAGS points to sqlite3 directory
 
-2. **"Ollama connection failed"**
+2. **"libopusfile.so.0: cannot open shared object file"**
+   - Install Opus audio libraries: `sudo apt-get install pkg-config libopus-dev libopusfile-dev`
+   - On macOS: `brew install opus opusfile pkg-config`
+   - Required for real-time voice features
+
+3. **"Ollama connection failed"**
    - Check if Ollama is running: `curl http://localhost:11434`
    - Verify OLLAMA_URL in settings page
 
-3. **"Build failed on Windows"**
+4. **"Build failed on Windows"**
    - Install MinGW-w64 or use WSL2
    - Ensure proper C compiler is available
 
-4. **"API calls failing"**
+5. **"API calls failing"**
    - Verify API keys in settings page
    - Check internet connectivity
    - Confirm API quotas/billing
 
-5. **"Port 8080 already in use"**
+6. **"Port 8080 already in use"**
    - **Desktop app**: No port needed, runs standalone
    - **Web app**: Stop other services or change port: `PORT=8081 ./sortedchat-server-*`
    - **Don't run both**: Choose either desktop OR web app, not both
 
-6. **"Google SSO redirects to internal.sortedchat.com"**
+7. **"Google SSO redirects to internal.sortedchat.com"**
    - **Root cause**: Missing frontend environment variables
    - **Solution**: Set `VITE_GOOGLE_OAUTH_URL=https://accounts.google.com/o/oauth2/v2/auth`
    - **Also set**: All `VITE_*` variables listed in Testing section above
    - **For desktop app**: Must set VITE_ vars before launching binary
 
-7. **"Desktop app SSO keeps loading"**
+8. **"Desktop app SSO keeps loading"**
    - Set `VITE_API_URL=http://localhost:8080` before starting desktop app
    - Ensure server binary is running on port 8080 
    - Check browser dev tools for CORS errors
 
-8. **"Google OAuth not configured error"**
+9. **"Google OAuth not configured error"**
    - Set `VITE_GOOGLE_CLIENT_ID` environment variable
    - Must match your Google Cloud Console OAuth app client ID
    - Restart application after setting environment variables

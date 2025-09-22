@@ -512,10 +512,10 @@ psql -h localhost -p 5432 -U postgres -d sortedchat_dev
 
 **Quick Commands Reference:**
 ```bash
-# Web app (SQLite)
+# Web app (SQLite) - from 'backend' directory
 CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
 
-# Desktop app  
+# Desktop app   - from 'backend' directory
 CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5,dev,webkit2_41" mono/env_dev.go mono/main.go mono/wails.go
 
 # PostgreSQL setup

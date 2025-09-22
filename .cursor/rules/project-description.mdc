@@ -22,3 +22,5 @@ commands
 
 - To start the monolith
 `go run ./mono` # from backend folder
+
+Note: Keep response short always

@@ -1,0 +1,175 @@
+<mxfile host="65bd71144e">
+    <diagram name="SortedChat Architecture" id="architecture">
+        <mxGraphModel dx="465" dy="1426" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="client-layer" value="CLIENT LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=16;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="40" width="1500" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="web-app" value="Web Application&#xa;React + TypeScript&#xa;Tailwind CSS&#xa;gRPC-Web" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="70" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="desktop-app" value="Desktop Application&#xa;React + TypeScript&#xa;Tailwind CSS&#xa;gRPC-Web" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="70" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="gateway-layer" value="API GATEWAY LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=16;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="200" width="1500" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="monolith" value="Go Monolith" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="230" width="1300" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="grpc-web" value="gRPC-Web&#xa;Handler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="130" y="260" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="auth-middleware" value="Auth&#xa;Middleware&#xa;JWT + SSO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="260" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="cors" value="CORS&#xa;Handler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="390" y="260" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="static-files" value="Static Files&#xa;SPA Routing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="260" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="rate-limit" value="Rate&#xa;Limiting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="260" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="health" value="Health Check&#xa;/health" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="780" y="260" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="microservices-layer" value="MICROSERVICES LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=16;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="390" width="1500" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="auth-service" value="Auth Service" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="420" width="280" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="sso" value="• SSO Integration&#xa;  - Google OAuth&#xa;  - Apple (Future)&#xa;  - GitHub (Future)&#xa;• JWT Management&#xa;• User Sessions" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="450" width="240" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="chat-service" value="Chat Service" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="420" width="280" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="chat-features" value="• Chat Management&#xa;• Message History&#xa;• RAG Pipeline&#xa;• Token Tracking&#xa;• Project Management&#xa;• Usage Dashboard" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="420" y="450" width="240" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="inference-service" value="Inference Service" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="420" width="280" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="inference-features" value="• Model Download&#xa;• Local Model Management&#xa;• llama.cpp Integration&#xa;• Model Status Tracking&#xa;• File Storage" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="450" width="240" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="auth-dao" value="Auth DAO&#xa;• User Management&#xa;• Session Storage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="580" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="chat-dao" value="Chat DAO&#xa;• Message Storage&#xa;• RAG Chunks&#xa;• Vector Embeddings&#xa;• Cost Tracking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="440" y="580" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="inference-dao" value="Inference DAO&#xa;• Model Metadata&#xa;• Download Progress&#xa;• File Paths" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="580" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="external-layer" value="EXTERNAL SERVICES LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="720" width="1500" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="litellm" value="LiteLLM Proxy" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="750" width="200" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="litellm-features" value="• Multi-LLM Gateway&#xa;  - OpenAI GPT&#xa;  - Google Gemini&#xa;  - Anthropic Claude&#xa;• API Key Management&#xa;• Rate Limiting" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="90" y="780" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="ollama" value="Ollama" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="750" width="200" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="ollama-features" value="• Embedding Models&#xa;  - nomic-embed-text&#xa;• Local Inference&#xa;• Vector Generation" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="780" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="filesystem" value="Local File System" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="750" width="200" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="filesystem-features" value="• Document Storage&#xa;  /filestore/objects/&#xa;• Downloaded Models&#xa;  /filestore/models/&#xa;• Static Assets" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="570" y="780" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="cloud-apis" value="Cloud LLM APIs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="750" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="local-models" value="Local Models&#xa;llama.cpp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="820" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="database-layer" value="DATABASE LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=16;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="960" width="1500" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="postgresql" value="PostgreSQL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="990" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="pg-features" value="• pgvector Extension&#xa;• Vector Similarity&#xa;• HNSW Indexing&#xa;• Production Ready" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="130" y="1020" width="180" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqlite" value="SQLite" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="990" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="sqlite-features" value="• sqlite-vss Extension&#xa;• Vector Similarity&#xa;• Vector Search&#xa;• Development/Embedded" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="370" y="1020" width="180" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="chat-data" value="Chat Data&#xa;• chat_messages&#xa;• chat_list&#xa;• projects&#xa;• model_metadata" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="990" width="150" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="rag-data" value="RAG Data&#xa;• rag_chunks&#xa;• embeddings&#xa;• documents&#xa;• project_docs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="990" width="150" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="system-data" value="System Data&#xa;• users&#xa;• sessions&#xa;• settings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="980" y="990" width="150" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="client-to-gateway" value="HTTPS/gRPC-Web" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;" parent="1" source="web-app" target="grpc-web" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="desktop-to-gateway" value="HTTPS/gRPC-Web" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;" parent="1" source="desktop-app" target="grpc-web" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="gateway-to-auth" value="gRPC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#d79b00;" parent="1" source="auth-middleware" target="auth-service" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="gateway-to-chat" value="gRPC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#d79b00;" parent="1" source="grpc-web" target="chat-service" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="gateway-to-inference" value="gRPC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#d79b00;" parent="1" source="grpc-web" target="inference-service" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="auth-to-dao" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9673a6;" parent="1" source="auth-service" target="auth-dao" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chat-to-dao" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9673a6;" parent="1" source="chat-service" target="chat-dao" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="inference-to-dao" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9673a6;" parent="1" source="inference-service" target="inference-dao" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chat-to-litellm" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;" parent="1" source="chat-service" target="litellm" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chat-to-ollama" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;" parent="1" source="chat-service" target="ollama" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="inference-to-filesystem" value="File I/O" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;" parent="1" source="inference-service" target="filesystem" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="litellm-to-cloud" value="API Calls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#b85450;" parent="1" source="litellm" target="cloud-apis" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="inference-to-local" value="Binary Exec" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#b85450;" parent="1" source="inference-service" target="local-models" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="dao-to-pg" value="SQL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#9673a6;" parent="1" source="chat-dao" target="postgresql" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="dao-to-sqlite" value="SQL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#9673a6;" parent="1" source="chat-dao" target="sqlite" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="title" value="SortedChat - AI Chat Application Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="10" width="500" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" value="🔄 Real-time Streaming | 🔐 Authentication | 📊 Analytics | 🤖 AI Models | 📁 File Storage | 💾 Database" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="1130" width="800" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

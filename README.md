@@ -519,7 +519,7 @@ CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
 CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5,dev,webkit2_41" mono/env_dev.go mono/main.go mono/wails.go
 
 # PostgreSQL setup
-docker run -d --name sortedchat_postgres_dev -e POSTGRES_DB=sortedchat_dev -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=dev_password -p 5432:5432 pgvector/pgvector:pg15
+docker run -d --name sortedchat_postgres_dev -e POSTGRES_DB=sortedchat_dev -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=dev_password -p 5432:5432 --restart unless-stopped pgvector/pgvector:pg15
 
 # Ollama setup
 ollama serve && ollama pull nomic-embed-text

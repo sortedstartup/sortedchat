@@ -331,7 +331,7 @@ To enable Google SSO login, you need to create OAuth credentials:
 
 ### Quick Steps:
 1. **Go to [Google Cloud Console](https://console.cloud.google.com/)**
-2. **Create/select project** → Enable "Google+ API" 
+2. **Create/select project**
 3. **APIs & Services** → **Credentials** → **"+ CREATE CREDENTIALS"** → **"OAuth Client IDs"**
 4. **Configure consent screen** (first time only):
    - App name: "SortedChat Local" 
@@ -499,18 +499,7 @@ psql -h localhost -p 5432 -U postgres -d sortedchat_dev
    - **Web app**: Stop other services or change port: `PORT=8081 ./sortedchat-server-*`
    - **Don't run both**: Choose either desktop OR web app, not both
 
-7. **"Google SSO redirects to internal.sortedchat.com"**
-   - **Root cause**: Missing frontend environment variables
-   - **Solution**: Set `VITE_GOOGLE_OAUTH_URL=https://accounts.google.com/o/oauth2/v2/auth`
-   - **Also set**: All `VITE_*` variables listed in Testing section above
-   - **For desktop app**: Must set VITE_ vars before launching binary
-
-8. **"Desktop app SSO keeps loading"**
-   - Set `VITE_API_URL=http://localhost:8080` before starting desktop app
-   - Ensure server binary is running on port 8080 
-   - Check browser dev tools for CORS errors
-
-9. **"Google OAuth not configured error"**
+7. **"Google OAuth not configured error"**
    - Set `VITE_GOOGLE_CLIENT_ID` environment variable
    - Must match your Google Cloud Console OAuth app client ID
    - Restart application after setting environment variables
@@ -527,7 +516,7 @@ psql -h localhost -p 5432 -U postgres -d sortedchat_dev
 CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
 
 # Desktop app  
-CGO_CFLAGS="-I$(pwd)/../sqlite3" go run -tags "sqlite_fts5,dev,webkit2_41" main.go wails.go
+CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5,dev,webkit2_41" mono/env_dev.go mono/main.go mono/wails.go
 
 # PostgreSQL setup
 docker run -d --name sortedchat_postgres_dev -e POSTGRES_DB=sortedchat_dev -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=dev_password -p 5432:5432 pgvector/pgvector:pg15

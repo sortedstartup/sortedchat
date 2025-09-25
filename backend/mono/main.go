@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"sortedstartup/chat/mono/util"
@@ -58,6 +59,7 @@ func main() {
 	host := flag.String("host", defaultHost, "Host to bind the server to (default: all interfaces)")
 	grpcPort := flag.String("grpc-port", defaultGrpcPort, "Port for gRPC server")
 	httpPort := flag.String("http-port", defaultHttpPort, "Port for HTTP server")
+	mode := flag.String("mode", "local", "Config mode: local or prod")
 	flag.Parse()
 
 	// Build addresses
@@ -114,6 +116,7 @@ func main() {
 		"/auth/callback",
 		"/",
 		"/index.html",
+		"/uiconfig.json",
 	})
 
 	// Skip authentication for path prefixes
@@ -122,6 +125,7 @@ func main() {
 		"/auth/",
 		"/static/",
 		"/assets/",
+		"/fakeoauth/",
 	})
 
 	mux := http.NewServeMux()
@@ -300,6 +304,42 @@ func main() {
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
+	})
+
+	// Add UI config endpoint - serves the correct config file based on mode
+	mux.HandleFunc("/uiconfig.json", func(w http.ResponseWriter, r *http.Request) {
+		var configFile string
+		if *mode == "prod" {
+			configFile = "uiconfig.internal.json"
+		} else {
+			configFile = "uiconfig.local.json"
+		}
+
+		// Try to read from embedded FS first
+		configContent, err := publicFS.Open(configFile)
+		if err != nil {
+			slog.Error("Failed to open config file from embedded FS", "file", configFile, "error", err)
+			// Fallback to file system
+			fullPath := filepath.Join("frontend", "public", configFile)
+			configContent, err = os.Open(fullPath)
+			if err != nil {
+				slog.Error("Failed to open config file from filesystem", "file", fullPath, "error", err)
+				http.Error(w, "Config file not found", http.StatusNotFound)
+				return
+			}
+		}
+		defer configContent.Close()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+
+		_, err = io.Copy(w, configContent)
+		if err != nil {
+			slog.Error("Failed to serve config file", "error", err)
+			http.Error(w, "Failed to serve config", http.StatusInternalServerError)
+		}
 	})
 
 	mux.HandleFunc("/", httpHandler)

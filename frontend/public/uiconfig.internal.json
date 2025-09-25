@@ -1,0 +1,8 @@
+{
+    "API_URL": "https://internal.sortedchat.com",
+    "API_UPLOAD_URL": "https://internal.sortedchat.com",
+    "GOOGLE_CLIENT_ID": "120883379229-eof7t025att2p5heoiueng8crnifaosl.apps.googleusercontent.com",
+    "GOOGLE_OAUTH_URL": "http://accounts.google.com/o/oauth2/v2/auth",
+    "GOOGLE_REDIRECT_URL": "https://internal.sortedchat.com/callback"
+  }
+  

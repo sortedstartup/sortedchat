@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
+import { getUIConfig } from '../../lib/config';
 
 
 export function LoginPage() {
@@ -22,9 +23,16 @@ export function LoginPage() {
     setError('');
 
     try {
-      // Get configuration from Vite environment variables
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URL;
+      // Get configuration from runtime config
+      const config = getUIConfig();
+      if (!config) {
+        setError('Application configuration not loaded.');
+        setIsLoading(false);
+        return;
+      }
+
+      const clientId = config.GOOGLE_CLIENT_ID;
+      const redirectUri = config.GOOGLE_REDIRECT_URL;
 
       if (!clientId) {
         setError('Google OAuth is not configured.');
@@ -42,8 +50,7 @@ export function LoginPage() {
         state: 'state', // In production, this should be a random value for CSRF protection
       });
 
-      const googleOAuthURL = `${import.meta.env.VITE_GOOGLE_OAUTH_URL}?${googleOAuthParams.toString()}`;
-      // const googleOAuthURL = `https://accounts.google.com/o/oauth2/v2/auth?${googleOAuthParams.toString()}`;
+      const googleOAuthURL = `${config.GOOGLE_OAUTH_URL}?${googleOAuthParams.toString()}`;
       
       console.log('Redirecting to Google OAuth:', googleOAuthURL);
       

@@ -35,11 +35,12 @@ import {
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
+import { getUIConfig } from "../lib/config";
 import type { ClientReadableStream } from "grpc-web";
 
 // Create chat client with JWT authentication
 var chat = new SortedChatClient(
-  import.meta.env.VITE_API_URL,
+  getUIConfig()?.API_URL || "http://localhost:8080",
   {},
   createAuthenticatedClientOptions()
 );

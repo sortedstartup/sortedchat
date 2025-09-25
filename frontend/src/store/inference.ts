@@ -3,8 +3,9 @@ import {
     DownloadModelRequest, InferenceServiceClient, GetLLMModelsRequest, Model, CancelDownloadRequest, DeleteModelRequest
 } from "../../proto/inferenceservice"
 import { createAuthenticatedClientOptions } from "../lib/auth";
+import { getUIConfig } from "../lib/config";
 
-const client = new InferenceServiceClient(import.meta.env.VITE_API_URL, {}, createAuthenticatedClientOptions());
+const client = new InferenceServiceClient(getUIConfig()?.API_URL || "http://localhost:8080", {}, createAuthenticatedClientOptions());
 
 export const $llmModels = atom<Model[]>([]);
 export const $isLoadingModels = atom<boolean>(false);

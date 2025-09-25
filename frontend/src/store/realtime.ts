@@ -1,6 +1,8 @@
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { IceCandidateRequest, OfferRequest, RealtimeServiceClient } from "../../proto/realtimeservice";
-const client = new RealtimeServiceClient(import.meta.env.VITE_API_URL, {}, createAuthenticatedClientOptions());
+import { getUIConfig } from "../lib/config";
+
+const client = new RealtimeServiceClient(getUIConfig()?.API_URL || "http://localhost:8080", {}, createAuthenticatedClientOptions());
 
 export const offerRequest = async (offer: string, model: string) => {
     const req = new OfferRequest({

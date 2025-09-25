@@ -1,7 +1,0 @@
-{
-  "API_URL": "http://localhost:8080",
-  "API_UPLOAD_URL": "http://localhost:8080",
-  "GOOGLE_CLIENT_ID": "fake_client_id",
-  "GOOGLE_OAUTH_URL": "http://localhost:8080/fakeoauth/oauth2/v2/auth",
-  "GOOGLE_REDIRECT_URL": "http://localhost:8080/callback"
-}

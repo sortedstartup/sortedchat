@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"sortedstartup/chat/mono/util"
@@ -59,7 +58,7 @@ func main() {
 	host := flag.String("host", defaultHost, "Host to bind the server to (default: all interfaces)")
 	grpcPort := flag.String("grpc-port", defaultGrpcPort, "Port for gRPC server")
 	httpPort := flag.String("http-port", defaultHttpPort, "Port for HTTP server")
-	mode := flag.String("mode", "local", "Config mode: local or prod")
+	uiConfigPath := flag.String("ui-config-path", "", "Path to UI config file (default: embedded public/config.json)")
 	flag.Parse()
 
 	// Build addresses
@@ -304,24 +303,22 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	// Add UI config endpoint - serves the correct config file based on mode
-	mux.HandleFunc("/uiconfig.json", func(w http.ResponseWriter, r *http.Request) {
-		var configFile string
-		if *mode == "prod" {
-			configFile = "uiconfig.internal.json"
-		} else {
-			configFile = "uiconfig.local.json"
-		}
+	// If uiConfigPath is set, serve that file, else serve embedded one
+	mux.HandleFunc("/config.json", func(w http.ResponseWriter, r *http.Request) {
+		var configContent io.ReadCloser
+		var err error
 
-		// Try to read from embedded FS first
-		configContent, err := publicFS.Open(configFile)
-		if err != nil {
-			slog.Error("Failed to open config file from embedded FS", "file", configFile, "error", err)
-			// Fallback to file system
-			fullPath := filepath.Join("frontend", "public", configFile)
-			configContent, err = os.Open(fullPath)
+		if *uiConfigPath != "" {
+			configContent, err = os.Open(*uiConfigPath)
 			if err != nil {
-				slog.Error("Failed to open config file from filesystem", "file", fullPath, "error", err)
+				slog.Error("Failed to open config file from custom path", "file", *uiConfigPath, "error", err)
+				http.Error(w, "Config file not found", http.StatusNotFound)
+				return
+			}
+		} else {
+			configContent, err = publicFS.Open("config.json")
+			if err != nil {
+				slog.Error("Failed to open config file from embedded FS", "error", err)
 				http.Error(w, "Config file not found", http.StatusNotFound)
 				return
 			}

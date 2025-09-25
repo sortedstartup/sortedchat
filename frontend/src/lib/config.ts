@@ -12,7 +12,7 @@ export async function loadUIConfig(): Promise<UIConfig> {
   if (config) return config;
   
   try {
-    const res = await fetch("/uiconfig.json");
+    const res = await fetch("/config.json");
     if (!res.ok) {
       throw new Error(`Failed to load config: ${res.status} ${res.statusText}`);
     }

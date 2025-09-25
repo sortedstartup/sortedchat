@@ -116,7 +116,6 @@ func main() {
 		"/auth/callback",
 		"/",
 		"/index.html",
-		"/uiconfig.json",
 	})
 
 	// Skip authentication for path prefixes
@@ -125,7 +124,6 @@ func main() {
 		"/auth/",
 		"/static/",
 		"/assets/",
-		"/fakeoauth/",
 	})
 
 	mux := http.NewServeMux()

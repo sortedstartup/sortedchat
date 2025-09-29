@@ -98,6 +98,8 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted boo
 		args = append(args, projectID, userID)
 	}
 
+	query += " ORDER BY id DESC"
+
 	err := s.db.Select(&chats, query, args...)
 	if err != nil {
 		return nil, err
@@ -488,7 +490,6 @@ func (s *SQLiteDAO) SoftDeleteChat(userID string, chatId string) error {
     `, chatId, userID, userID, userID)
 	return err
 }
-
 func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -500,17 +501,22 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
 		}
 	}()
 
-	// Delete messages under the hierarchy first
-	// Create a temporary table to hold the chat IDs of the hierarchy
+	// Drop temp table if it exists
+	_, err = tx.Exec(`DROP TABLE IF EXISTS chat_ids_to_delete;`)
+	if err != nil {
+		return err
+	}
+
+	// Create temporary table to hold chat IDs
 	_, err = tx.Exec(`
         CREATE TEMP TABLE chat_ids_to_delete AS
-        WITH RECURSIVE chat_hierarchy AS (
-            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
-            UNION ALL
-            SELECT c.chat_id FROM chat_list c
-            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
-            WHERE c.user_id = ?
-        )
+            WITH RECURSIVE chat_hierarchy AS (
+                SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+                UNION ALL
+                SELECT c.chat_id FROM chat_list c
+                JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+                WHERE c.user_id = ?
+            )
         SELECT chat_id FROM chat_hierarchy;
     `, chatId, userID, userID)
 	if err != nil {
@@ -529,8 +535,8 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
 
 	// Delete chats using the temporary table
 	_, err = tx.Exec(`
-        DELETE FROM chat_list
-        WHERE user_id = ?
+        DELETE FROM chat_list 
+        WHERE user_id = ? 
           AND chat_id IN (SELECT chat_id FROM chat_ids_to_delete);
     `, userID)
 	if err != nil {

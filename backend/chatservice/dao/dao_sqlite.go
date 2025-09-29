@@ -501,12 +501,6 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
 		}
 	}()
 
-	// Drop temp table if it exists
-	_, err = tx.Exec(`DROP TABLE IF EXISTS chat_ids_to_delete;`)
-	if err != nil {
-		return err
-	}
-
 	// Create temporary table to hold chat IDs
 	_, err = tx.Exec(`
         CREATE TEMP TABLE chat_ids_to_delete AS
@@ -539,6 +533,12 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
         WHERE user_id = ? 
           AND chat_id IN (SELECT chat_id FROM chat_ids_to_delete);
     `, userID)
+	if err != nil {
+		return err
+	}
+
+	// Drop temp table if it exists
+	_, err = tx.Exec(`DROP TABLE IF EXISTS chat_ids_to_delete;`)
 	if err != nil {
 		return err
 	}

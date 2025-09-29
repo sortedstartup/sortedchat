@@ -569,7 +569,7 @@ export function Chat() {
         scrollHeight: totalContentHeight, //total content height (like the full length of a long chat).
         clientHeight: viewportHeight, //visible window height (the viewport).
       } = container;
-      const isAtBottom = totalContentHeight - scrollFromTop - viewportHeight < 50; 
+      const isAtBottom = totalContentHeight - scrollFromTop - viewportHeight < 50;
       //if user is at bottom of the chat, it will autoscroll, else it will not.
 
       setIsUserScrolledUp(!isAtBottom);
@@ -589,7 +589,7 @@ export function Chat() {
 
 
   const handleSendMessage = (message: string) => {
-    setIsUserScrolledUp(false);  
+    setIsUserScrolledUp(false);
     doChat(message, projectId);
   };
 
@@ -631,64 +631,66 @@ export function Chat() {
   ];
 
   return (
-    <div
-      className={`flex flex-col h-full mx-auto w-full transition-all ${isExpanded ? "max-w-7xl" : "max-w-4xl"
-        }`}
-    >
+    <div className="flex flex-col h-full w-full">
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto min-h-0">
-        {loading ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            Loading messages...
-          </div>
-        ) : combinedMessages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            No messages yet
-          </div>
-        ) : (
-          combinedMessages.map((message,index) => {
-            const summaryForThis = responseSummaries[message.message_id || ""];
+        <div className={`mx-auto w-full transition-all ${isExpanded ? "max-w-7xl" : "max-w-4xl"}`}>
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Loading messages...
+            </div>
+          ) : combinedMessages.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              No messages yet
+            </div>
+          ) : (
+            combinedMessages.map((message, index) => {
+              const summaryForThis = responseSummaries[message.message_id || ""];
 
-            return (
-              <Message
-                key={index}
-                message={message as ChatMessage & { isProgress?: boolean }}
-                onCopyMessage={handleCopyMessage}
-                onViewRAGDetails={handleViewRAGDetails}
-                onBranchChat={BranchChat}
-                isCopied={copiedMessageId === message?.message_id}
-                projectId={projectId}
-                isExpanded={isExpanded}
-                onToggleExpand={handleToggleExpand}
-                messageSummary={summaryForThis || undefined}
-                chatProgress={chatProgress || undefined}
-              />
-            );
-          })
-        )}
+              return (
+                <Message
+                  key={index}
+                  message={message as ChatMessage & { isProgress?: boolean }}
+                  onCopyMessage={handleCopyMessage}
+                  onViewRAGDetails={handleViewRAGDetails}
+                  onBranchChat={BranchChat}
+                  isCopied={copiedMessageId === message?.message_id}
+                  projectId={projectId}
+                  isExpanded={isExpanded}
+                  onToggleExpand={handleToggleExpand}
+                  messageSummary={summaryForThis || undefined}
+                  chatProgress={chatProgress || undefined}
+                />
+              );
+            })
+          )}
 
-        <div ref={messagesEndRef} />
-        {listChatBranch.length > 0 && (
-          <div className="bg-gray-50 border-t py-4 px-4">
-            <div className="w-full max-w-none px-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Related Chats:</h3>
-              <div className="flex flex-wrap gap-2">
-                {listChatBranch.map((chat) => (
-                  <Button
-                    key={chat.chatId}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => goToChatBranch(chat.chatId)}
-                    className="text-xs"
-                  >
-                    {chat.name || "New Branch"}
-                  </Button>
-                ))}
+          <div ref={messagesEndRef} />
+          {listChatBranch.length > 0 && (
+            <div className="bg-gray-50 border-t py-4 px-4">
+              <div className="w-full max-w-none px-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Related Chats:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {listChatBranch.map((chat) => (
+                    <Button
+                      key={chat.chatId}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToChatBranch(chat.chatId)}
+                      className="text-xs"
+                    >
+                      {chat.name || "New Branch"}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-      <ChatInputBox projectId={projectId} onSendMessage={handleSendMessage} />
+      {/* <ChatInputBox projectId={projectId} onSendMessage={handleSendMessage} /> */}
+      <div className="mx-auto w-full max-w-4xl">
+        <ChatInputBox projectId={projectId} onSendMessage={handleSendMessage} />
+      </div>
       <Dialog
         open={!!selectedDocumentForDetails}
         onOpenChange={() => setSelectedDocumentForDetails(null)}

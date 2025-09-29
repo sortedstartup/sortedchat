@@ -479,6 +479,10 @@ function ChatInputBox({
         </div>
         <div className="text-sm text-gray-500 mt-2 flex flex-row gap-2 px-6">
           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+            <ArrowUp className="size-3" />
+            <span>{chatMetadata?.input_token_count}</span>
+          </div>
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
             <ArrowDown className="size-3" />
             <span>{chatMetadata?.output_token_count}</span>
           </div>

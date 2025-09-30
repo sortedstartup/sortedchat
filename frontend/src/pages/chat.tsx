@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { ChatInput } from "@/components/ui/chat/chat-input";
 import {
   CornerDownLeft,
   FileText,
@@ -351,6 +350,7 @@ function ChatInputBox({
     const saved = localStorage.getItem('showDetailedTokens');
     return saved ? JSON.parse(saved) : false;
   });
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const toggleDetailedTokens = () => {
     const newValue = !showDetailedTokens;
@@ -363,6 +363,19 @@ function ChatInputBox({
   const ragEnabled = useStore($ragEnabled);
   const chatMetadata = useStore($chatMetadata);
   const isStreaming = useStore($isStreaming);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      
+      // Calculate new height (min 48px, max 200px)
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 48), 200);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [inputValue]);
 
   const handleSend = () => {
     if (inputValue.trim() && !isStreaming) {
@@ -413,7 +426,7 @@ function ChatInputBox({
                   checked={ragEnabled}
                   onChange={toggleRagEnabled}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  disabled={isStreaming} // Disable during streaming
+                  disabled={isStreaming}
                 />
                 <span>Enable RAG (Retrieval-Augmented Generation)</span>
               </label>
@@ -421,13 +434,15 @@ function ChatInputBox({
           )}
 
           <div className="relative rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-            <ChatInput
+            <textarea
+              ref={textareaRef}
               placeholder={isStreaming ? "Response is being generated..." : "Ask anything"}
-              className="min-h-12 resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0"
+              className="w-full min-h-[48px] max-h-[200px] resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0 focus:outline-none overflow-y-auto"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isStreaming} // Disable input during streaming
+              disabled={isStreaming}
+              rows={1}
             />
             <div className="flex items-center justify-between p-3 pt-0">
               <div className="flex items-center space-x-2">
@@ -592,7 +607,7 @@ export function Chat() {
     ...(data || []),
     ...(currentChatMessage?.trim() ? [{ message_id: currentUserMessageId, role: "user", content: currentChatMessage }] : []),
     ...(showProgressAsMessage ? [{ 
-      message_id: Math.random().toString(36).substring(2, 15), //this should be unique
+      message_id: Math.random().toString(36).substring(2, 15),
       role: "assistant", 
       content: "",
       isProgress: true 

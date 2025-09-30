@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
 	"sortedstartup/chatservice/proto"
@@ -99,6 +100,7 @@ func (cm *SettingsManager) LoadSettingsFromProto(protoSettings *proto.Settings) 
 
 func (cm *SettingsManager) LoadSettings(settings_ *Settings) error {
 
+	slog.Info("settings:LoadSettings", "settings", settings_)
 	// The lock prevents race conditions when loading settings from the database
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
@@ -136,17 +138,19 @@ func (s *SettingsManager) StartSettingsChangedSubscriber() {
 }
 
 func (s *SettingsManager) LoadSettingsFromDB() error {
-
+	slog.Info("settings:LoadSettingsFromDB", "settingsManager", s)
 	settingsString, err := s.dao.GetSettingValue("settings")
 	if err != nil {
-		return err
+		slog.Error("settings:LoadSettingsFromDB", "error", "failed to get settings value", "error", err)
+		return fmt.Errorf("failed to get settings value")
 	}
 
 	//json decode the settings
 	var settings Settings
 	err = json.Unmarshal([]byte(settingsString), &settings)
 	if err != nil {
-		return err
+		slog.Error("settings:LoadSettingsFromDB", "error", "failed to unmarshal settings", "error", err)
+		return fmt.Errorf("failed to unmarshal settings")
 	}
 
 	return s.LoadSettings(&settings)

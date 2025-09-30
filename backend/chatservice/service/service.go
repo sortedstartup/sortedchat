@@ -100,39 +100,45 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 }
 
 func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatRequest, stream func(*pb.ChatResponse) error) error {
+	slog.Info("service:Chat", "userID", userID, "req", req)
 
 	projectID := req.GetProjectContext().GetProjectId()
 	ragEnabled := req.GetProjectContext().GetRagEnabled()
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
+		slog.Error("service:Chat", "error", "OpenAI API key not set")
 		return fmt.Errorf("OpenAI API key not set")
 	}
 
 	chatId := req.ChatId
 	if chatId == "" {
+		slog.Error("service:Chat", "error", "Chat ID is required to maintain context")
 		return fmt.Errorf("Chat ID is required to maintain context")
 	}
 
 	isDeleted, err := s.dao.IsChatDeleted(chatId, userID)
 	if err != nil {
-		return fmt.Errorf("error occured while checking chat id ")
+		slog.Error("service:Chat", "error", "failed to get chat status", "error", err, "chatId", chatId, "userID", userID)
+		return fmt.Errorf("failed to get chat status")
 	}
 
 	if isDeleted {
+		slog.Error("service:Chat", "error", "Chat is deleted, please create a new chat", "chatId", chatId, "userID", userID)
 		return fmt.Errorf("Chat is deleted, please create a new chat")
 	}
 
 	model := req.Model
 	if model == "" {
+		slog.Error("service:Chat", "error", "model is required", "chatId", chatId, "userID", userID)
 		return fmt.Errorf("model is required")
 	}
 
 	// Get chat history using DAO
 	history, err := s.dao.GetChatMessages(userID, chatId)
 	if err != nil {
-		slog.Error("failed to fetch message history", "error", err)
-		return fmt.Errorf("failed to fetch message history: %v", err)
+		slog.Error("service:Chat", "error", "failed to fetch message history", "error", err, "chatId", chatId, "userID", userID)
+		return fmt.Errorf("failed to fetch chat message")
 	}
 
 	userMessage := req.Text
@@ -142,7 +148,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	if projectID != "" && projectID != "null" && ragEnabled { // if this chat is in context of a project
 		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, req.Text)
 		if err != nil {
-			slog.Error("failed to retrieve similar chunks", "error", err)
+			slog.Error("service:Chat", "error", "failed to retrieve similar chunks", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else if len(chunks.Results) > 0 {
 			userMessage = chunks.Prompt
 			ragChunks = chunks.Results
@@ -159,7 +165,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				// Get document metadata
 				docMeta, err := s.dao.GetFileMetadata(docsID)
 				if err != nil {
-					slog.Error("failed to get document metadata", "error", err, "docs_id", docsID)
+					slog.Error("service:Chat", "error", "failed to get document metadata", "error", err, "docs_id", docsID)
 					continue
 				}
 
@@ -182,7 +188,8 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				}
 
 				if err := stream(response); err != nil {
-					return fmt.Errorf("failed to send document reference summary: %v", err)
+					slog.Error("service:Chat", "error", "failed to send document reference summary", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
+					return fmt.Errorf("failed to send document reference summary")
 				}
 			}
 		}
@@ -195,7 +202,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		ragDocuments := s.createRAGDocumentJSONFromChunks(ragChunks)
 		referencesBytes, err := json.Marshal(ragDocuments)
 		if err != nil {
-			slog.Error("failed to marshal RAG document references for user message", "error", err)
+			slog.Error("failed to marshal RAG document references for user message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else {
 			referencesJSON = string(referencesBytes)
 		}
@@ -893,10 +900,11 @@ func (s *ChatService) ListChatBranch(ctx context.Context, userID string, chatId 
 }
 
 func (s *ChatService) EmbeddingSubscriber() {
+	slog.Info("service:EmbeddingSubscriber", "chatService", s)
 	go func() {
 		sub, err := s.queue.Subscribe(context.Background(), events.GENERATE_EMBEDDINGS)
 		if err != nil {
-			fmt.Printf("Failed %v\n", err)
+			slog.Error("service:EmbeddingSubscriber", "error", "failed to subscribe to embedding generation event", "error", err)
 			return
 		}
 
@@ -905,20 +913,21 @@ func (s *ChatService) EmbeddingSubscriber() {
 			if err := json.Unmarshal(msg.Data, &payload); err == nil {
 
 				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_IN_PROGRESS)); updateErr != nil {
-					fmt.Printf("Failed to update embedding status to error: %v\n", updateErr)
+					slog.Error("service:EmbeddingSubscriber", "error", "failed to update embedding status to error", "error", updateErr)
+					continue
 				}
 
 				// Fetch project_id for docs_id
 				docMeta, err := s.dao.GetFileMetadata(payload.DocsID)
 				if err != nil {
-					fmt.Printf("Failed to fetch file metadata: %v\n", err)
+					slog.Error("service:EmbeddingSubscriber", "error", "failed to fetch file metadata from database", "error", err, "docsID", payload.DocsID)
 					continue
 				}
 
 				filePath := "filestore/objects/" + payload.DocsID
 				f, err := os.Open(filePath)
 				if err != nil {
-					fmt.Printf("Failed :%v\n", err)
+					slog.Error("service:EmbeddingSubscriber", "error", "failed to open file", "error", err, "docsID", payload.DocsID, "filePath", filePath)
 					continue
 				}
 
@@ -928,11 +937,11 @@ func (s *ChatService) EmbeddingSubscriber() {
 					"source":     docMeta.FileName,
 				}
 
-				result, err := s.pipeline.RunWithChunks(context.Background(), f, "text/plain", metadata)
+				result, err := s.pipeline.RunWithChunks(context.Background(), f, "text/plain", metadata) //WILL LOGGIFY THIS LATER
 				if err != nil {
-					fmt.Printf("Pipeline error: %v\n", err)
+					slog.Error("service:EmbeddingSubscriber", "error", "failed to run pipeline", "error", err, "metadata", metadata)
 					if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_ERROR)); updateErr != nil {
-						fmt.Printf("Failed to update embedding status to error: %v\n", updateErr)
+						slog.Error("service:EmbeddingSubscriber", "error", "failed to update embedding status to error", "error", updateErr, "docsID", payload.DocsID)
 					}
 					continue
 				}
@@ -944,18 +953,21 @@ func (s *ChatService) EmbeddingSubscriber() {
 				for _, chunk := range result.Chunks {
 					err := s.dao.SaveRAGChunk(docMeta.User, chunk.ID, chunk.ProjectID, chunk.DocsID, chunk.StartByte, chunk.EndByte)
 					if err != nil {
-						fmt.Printf("Failed to save chunk: %v", err)
+						slog.Error("service:EmbeddingSubscriber", "error", "failed to save chunk", "error", err, "chunkID", chunk.ID, "projectID", chunk.ProjectID, "docsID", chunk.DocsID)
 					}
 
 					if emb, ok := embeddingMap[chunk.ID]; ok {
 						if err := s.dao.SaveRAGChunkEmbedding(chunk.ID, emb.Vector); err != nil {
-							fmt.Printf("Failed to save embedding: %v\n", err)
+							slog.Error("service:EmbeddingSubscriber", "error", "failed to save embedding", "error", err, "chunkID", chunk.ID)
 						}
 					}
 				}
 				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_SUCCESS)); updateErr != nil {
-					fmt.Printf("Failed to update embedding status to success: %v\n", updateErr)
+					slog.Error("service:EmbeddingSubscriber", "error", "failed to update embedding status to success", "error", updateErr, "docsID", payload.DocsID)
 				}
+			} else {
+				slog.Error("service:EmbeddingSubscriber", "error", "failed to unmarshal message", "error", err, "msg", msg.Data)
+				continue
 			}
 		}
 	}()
@@ -963,6 +975,7 @@ func (s *ChatService) EmbeddingSubscriber() {
 
 // createRAGDocumentJSONFromChunks converts RAG chunks to the requested JSON structure
 func (s *ChatService) createRAGDocumentJSONFromChunks(ragChunks []rag.Result) []RAGDocumentJSON {
+	slog.Info("service:createRAGDocumentJSONFromChunks", "ragChunks", ragChunks)
 	// Group chunks by document ID
 	docChunksMap := make(map[string][]RAGDocumentChunk)
 
@@ -979,6 +992,7 @@ func (s *ChatService) createRAGDocumentJSONFromChunks(ragChunks []rag.Result) []
 	// Convert to the final structure
 	var ragDocuments []RAGDocumentJSON
 	for docID, chunks := range docChunksMap {
+		slog.Info("service:createRAGDocumentJSONFromChunks", "docID", docID, "chunks", chunks)
 		ragDocuments = append(ragDocuments, RAGDocumentJSON{
 			DocID:  docID,
 			Chunks: chunks,

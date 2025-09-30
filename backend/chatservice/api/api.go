@@ -2,7 +2,8 @@ package api
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 
 	db "sortedstartup/chatservice/dao"
@@ -23,17 +24,25 @@ type SettingServiceAPI struct {
 }
 
 func NewSettingService(queue queue.Queue, daoFactory db.DAOFactory) *SettingServiceAPI {
+	slog.Info("api:NewSettingService", "queue", queue, "daoFactory", daoFactory)
 	settingService := service.NewSettingService(queue, daoFactory)
+	if settingService == nil {
+		slog.Error("api:NewSettingService", "error", "failed to create setting service") //what to use Info or Error?
+		return nil
+	}
 	return &SettingServiceAPI{service: settingService}
 }
 
 func (s *SettingServiceAPI) Init() {
+	slog.Info("api:Init", "settingService", s.service)
 	s.service.Init()
 }
 
 func (s *SettingServiceAPI) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
+	slog.Info("api:GetSetting", "settingService", s.service)
 	settings, err := s.service.GetSetting(ctx)
 	if err != nil {
+		slog.Error("api:GetSetting", "failed to get settings", "error", err)
 		return nil, err
 	}
 
@@ -45,6 +54,7 @@ func (s *SettingServiceAPI) GetSetting(ctx context.Context, req *pb.GetSettingRe
 func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRequest) (*pb.SetSettingResponse, error) {
 	err := s.service.SetSetting(ctx, req.Settings)
 	if err != nil {
+		slog.Error("api:SetSetting", "error", "failed to set settings", "error", err)
 		return nil, err
 	}
 
@@ -59,11 +69,13 @@ type ChatServiceAPI struct {
 }
 
 func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory db.DAOFactory) *ChatServiceAPI {
+	slog.Info("api:NewChatService", "settingsManager", settingsManager, "daoFactory", daoFactory)
 	settingsManager.LoadSettingsFromDB()
 
 	chatService, err := service.NewChatService(queue, settingsManager, daoFactory)
 	if err != nil {
-		log.Fatalf("Failed to initialize ChatService: %v", err)
+		slog.Error("api:NewChatService", "error", "failed to initialize ChatService", "error", err)
+		return nil
 	}
 
 	s := &ChatServiceAPI{
@@ -79,7 +91,8 @@ func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *sett
 func (s *ChatServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
 	userID, err := auth.GetUserIDFromContext_WithError(stream.Context())
 	if err != nil {
-		return err
+		slog.Error("api:Chat", "error", "failed to get user ID from context", "error", err)
+		return fmt.Errorf("failed to get user ID")
 	}
 	return s.service.Chat(stream.Context(), userID, req, func(response *pb.ChatResponse) error {
 		return stream.Send(response)

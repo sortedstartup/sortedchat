@@ -17,6 +17,7 @@ const (
 
 // registerRoutes binds HTTP routes to the Server
 func (s *ChatServiceAPI) registerRoutes(mux *http.ServeMux) {
+	slog.Info("api:registerRoutes", "chatService", s)
 	mux.HandleFunc("/upload", s.handleUpload)
 	mux.HandleFunc("/documents/", s.handleDownload)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	proto "sortedstartup/chatservice/proto"
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
@@ -64,8 +65,10 @@ func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) erro
 
 // AddChatMessage adds a message to a chat
 func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
+	slog.Info("dao_sqlite:AddChatMessage", "chatId", chatId, "userID", userID)
 	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
 	if err != nil {
+		slog.Error("dao_sqlite:AddChatMessage", "error", "failed to add chat message", "error", err, "chatId", chatId, "userID", userID)
 		return "", err
 	}
 
@@ -78,9 +81,14 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 }
 
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
+	slog.Info("dao_sqlite:GetChatMessages", "chatId", chatId, "userID", userID)
 	var messages []ChatMessageRow
 	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
-	return messages, err
+	if err != nil {
+		slog.Error("dao_sqlite:GetChatMessages", "error", "failed to get chat messages", "error", err, "chatId", chatId, "userID", userID)
+		return nil, fmt.Errorf("failed to get chat messages")
+	}
+	return messages, nil
 }
 
 // GetChatList retrieves all chats for a user
@@ -335,10 +343,12 @@ func (s *SQLiteDAO) FilesList(userID string, project_id string) ([]DocumentListR
 }
 
 func (s *SQLiteDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
+	slog.Info("dao_sqlite:GetFileMetadata", "docsId", docsId)
 	var doc DocumentListRow
-	err := s.db.Get(&doc, `SELECT * FROM project_docs WHERE docs_id = ?`, docsId)
+	err := s.db.Get(&doc, `SELECT * FROM project_docs WHERE docs_id = ?`, docsId) //yaha user id aani chahiye ?
 	if err != nil {
-		return nil, err
+		slog.Error("dao_sqlite:GetFileMetadata", "error", "failed to get file metadata", "error", err, "docsId", docsId)
+		return nil, fmt.Errorf("failed to get document metadata")
 	}
 	return &doc, nil
 }
@@ -559,10 +569,12 @@ func (s *SQLiteDAO) RestoreChat(userID string, chatId string) error {
 }
 
 func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
+	slog.Info("dao_sqlite:IsChatDeleted", "chatId", chatId, "userID", userID)
 	var isDeleted bool
 	err := s.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	if err != nil {
-		return false, err
+		slog.Error("dao_sqlite:IsChatDeleted", "error", "failed to get chat deleted status", "error", err)
+		return false, fmt.Errorf("failed to get chat status")
 	}
 	return isDeleted, err
 }
@@ -619,14 +631,17 @@ func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
 }
 
 func (s *SQLiteSettingsDAO) GetSettingValue(settingName string) (string, error) {
+	slog.Info("dao_sqlite:GetSettingValue", "settingName", settingName)
 	var dbSetting dbSettings
 	err := s.db.Get(&dbSetting, "SELECT name, settings FROM settings WHERE name = ?", settingName)
 	if err != nil {
 		// Preserve sql.ErrNoRows so callers can distinguish between no rows and actual database errors
 		if err == sql.ErrNoRows {
-			return "", err
+			slog.Error("dao_sqlite:GetSettingValue", "error", "no rows found", "error", err)
+			return "", fmt.Errorf("no rows found")
 		}
-		return "", fmt.Errorf("failed to get setting '%s' from database: %w", settingName, err)
+		slog.Error("dao_sqlite:GetSettingValue", "error", "failed to get setting", "error", err)
+		return "", fmt.Errorf("failed to get setting from database")
 	}
 
 	return dbSetting.Settings, nil

@@ -205,8 +205,7 @@ function Message({
         } py-6 px-4`}
     >
       <div
-        className={`w-full max-w-none px-4 flex items-start space-x-4 justify-${isUser ? "end" : "start"
-          }`}
+        className={`w-full max-w-none px-4 flex items-start space-x-4 ${isUser ? "justify-end" : "justify-start"}`}
       >
         {!isUser && (
           <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium">
@@ -214,7 +213,7 @@ function Message({
           </div>
         )}
 
-        <div className={`flex-1 min-w-0 text-${isUser ? "right" : "left"}`}>
+        <div className={`flex-1 min-w-0 ${isUser ? "text-right" : "text-left"}`}>
           {isProgress ? (
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -573,7 +572,7 @@ export function Chat() {
         scrollHeight: totalContentHeight, //total content height (like the full length of a long chat).
         clientHeight: viewportHeight, //visible window height (the viewport).
       } = container;
-      const isAtBottom = totalContentHeight - scrollFromTop - viewportHeight < 50;
+      const isAtBottom = totalContentHeight - scrollFromTop - viewportHeight < 100;
       //if user is at bottom of the chat, it will autoscroll, else it will not.
 
       setIsUserScrolledUp(!isAtBottom);
@@ -626,7 +625,8 @@ export function Chat() {
     ...(data || []),
     ...(currentChatMessage?.trim() ? [{ message_id: currentUserMessageId, role: "user", content: currentChatMessage }] : []),
     ...(showProgressAsMessage ? [{
-      message_id: Math.random().toString(36).substring(2, 15), //this should be unique
+      message_id: "progress-indicator", //this should be unique
+
       role: "assistant",
       content: "",
       isProgress: true
@@ -691,7 +691,6 @@ export function Chat() {
           )}
         </div>
       </div>
-      {/* <ChatInputBox projectId={projectId} onSendMessage={handleSendMessage} /> */}
       <div className="mx-auto w-full max-w-4xl">
         <ChatInputBox projectId={projectId} onSendMessage={handleSendMessage} />
       </div>

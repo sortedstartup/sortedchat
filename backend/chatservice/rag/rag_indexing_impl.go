@@ -28,7 +28,7 @@ func (p *defaultPipeline) RunWithChunks(ctx context.Context, r io.Reader, mime s
 	slog.Info("rag_indexing_impl:RunWithChunks", "mime", mime, "metadata", metadata)
 	data, err := io.ReadAll(r)
 	if err != nil {
-		slog.Error("rag_indexing_impl:RunWithChunks", "error", "failed to read all", "error", err, "mime", mime, "metadata", metadata)
+		slog.Error("rag_indexing_impl:RunWithChunks", "step", "failed to read all", "error", err, "mime", mime, "metadata", metadata)
 		return RagIndexingPipelineResult{}, err
 	}
 	doc := Document{
@@ -39,12 +39,12 @@ func (p *defaultPipeline) RunWithChunks(ctx context.Context, r io.Reader, mime s
 	}
 	chunks, err := p.ch.Chunk(ctx, doc)
 	if err != nil {
-		slog.Error("rag_indexing_impl:RunWithChunks", "error", "failed to chunk", "error", err, "mime", mime, "metadata", metadata)
+		slog.Error("rag_indexing_impl:RunWithChunks", "step", "failed to chunk", "error", err, "mime", mime, "metadata", metadata)
 		return RagIndexingPipelineResult{}, err
 	}
 	embs, err := p.em.Embed(ctx, chunks)
 	if err != nil {
-		slog.Error("rag_indexing_impl:RunWithChunks", "error", "failed to embed", "error", err, "mime", mime, "metadata", metadata)
+		slog.Error("rag_indexing_impl:RunWithChunks", "step", "failed to embed", "error", err, "mime", mime, "metadata", metadata)
 		return RagIndexingPipelineResult{}, err
 	}
 	return RagIndexingPipelineResult{Chunks: chunks, Embeddings: embs}, nil
@@ -63,7 +63,7 @@ func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (
 	slog.Info("rag_indexing_impl:Extract", "mime", mime)
 	data, err := io.ReadAll(r)
 	if err != nil {
-		slog.Error("rag_indexing_impl:Extract", "error", "failed to read all", "error", err, "mime", mime)
+		slog.Error("rag_indexing_impl:Extract", "step", "failed to read all", "error", err, "mime", mime)
 		return Document{}, err
 	}
 
@@ -149,13 +149,13 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		}
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			slog.Error("rag_indexing_impl:Embed", "error", "failed to marshal request body", "error", err, "chunk", chunk, "model", e.Model)
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to marshal request body", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
 		ollama_url := e.SettingsManager.GetSettings().OllamaURL
 		req, err := http.NewRequestWithContext(ctx, "POST", ollama_url, bytes.NewBuffer(bodyBytes))
 		if err != nil {
-			slog.Error("rag_indexing_impl:Embed", "error", "failed to create request", "error", err, "chunk", chunk, "model", e.Model)
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to create request", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/json")
@@ -163,7 +163,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			slog.Error("rag_indexing_impl:Embed", "error", "failed to do request", "error", err, "chunk", chunk, "model", e.Model)
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to do request", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
 
@@ -174,7 +174,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
 			resp.Body.Close()
-			slog.Error("rag_indexing_impl:Embed", "error", "failed to decode response", "error", err, "chunk", chunk, "model", e.Model)
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to decode response", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
 		resp.Body.Close()

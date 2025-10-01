@@ -17,7 +17,7 @@ const (
 
 // registerRoutes binds HTTP routes to the Server
 func (s *ChatServiceAPI) registerRoutes(mux *http.ServeMux) {
-	slog.Info("api:registerRoutes", "chatService", s)
+	slog.Info("api:registerRoutes")
 	mux.HandleFunc("/upload", s.handleUpload)
 	mux.HandleFunc("/documents/", s.handleDownload)
 }
@@ -66,7 +66,7 @@ func (s *ChatServiceAPI) handleUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *ChatServiceAPI) handleDownload(w http.ResponseWriter, r *http.Request) {
-	slog.Info("api:handleDownload", "request", r)
+	slog.Info("api:handleDownload", "method", r.Method, "path", r.URL.Path)
 	docsId := strings.TrimPrefix(r.URL.Path, "/documents/")
 	if docsId == "" {
 		slog.Error("Missing document ID")

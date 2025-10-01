@@ -41,13 +41,13 @@ func BasicRetrievePipeline(ctx context.Context, retriever Retrieve, promptBuilde
 	slog.Info("rag_retrieval_impl:BasicRetrievePipeline", "embedding", embedding, "query", query, "params", params)
 	results, err := retriever(ctx, embedding, params)
 	if err != nil {
-		slog.Error("rag_retrieval_impl:BasicRetrievePipeline", "error", "failed to retrieve", "error", err, "embedding", embedding, "query", query, "params", params)
+		slog.Error("rag_retrieval_impl:BasicRetrievePipeline", "step", "failed to retrieve", "error", err, "embedding", embedding, "query", query, "params", params)
 		return nil, err
 	}
 
 	prompt, err := promptBuilder(ctx, query, results)
 	if err != nil {
-		slog.Error("rag_retrieval_impl:BasicRetrievePipeline", "error", "failed to build prompt", "error", err, "embedding", embedding, "query", query, "params", params)
+		slog.Error("rag_retrieval_impl:BasicRetrievePipeline", "step", "failed to build prompt", "error", err, "embedding", embedding, "query", query, "params", params)
 		return nil, err
 	}
 

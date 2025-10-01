@@ -100,7 +100,8 @@ func (cm *SettingsManager) LoadSettingsFromProto(protoSettings *proto.Settings) 
 
 func (cm *SettingsManager) LoadSettings(settings_ *Settings) error {
 
-	slog.Info("settings:LoadSettings", "settings", settings_)
+	slog.Info("settings:LoadSettings")
+
 	// The lock prevents race conditions when loading settings from the database
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
@@ -129,9 +130,9 @@ func (s *SettingsManager) StartSettingsChangedSubscriber() {
 			return
 		}
 		for msg := range sub {
-			slog.Info("settings:StartSettingsChangedSubscriber", "message", events.SETTINGS_CHANGED_EVENT, "data", string(msg.Data))
+			slog.Info("settings:StartSettingsChangedSubscriber", "message", events.SETTINGS_CHANGED_EVENT, "payload_bytes", len(msg.Data))
 			// reload settings from the database
-			slog.Info("settings:StartSettingsChangedSubscriber", "message", "Reloading settings from the database")
+			slog.Info("settings:StartSettingsChangedSubscriber", "action", "Reloading settings from the database")
 			s.LoadSettingsFromDB()
 
 		}

@@ -100,7 +100,7 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 }
 
 func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatRequest, stream func(*pb.ChatResponse) error) error {
-	slog.Info("service:Chat", "userID", userID, "req", req)
+	slog.Info("service:Chat", "userID", userID, "chatId", req.GetChatId(), "model", req.GetModel())
 
 	projectID := req.GetProjectContext().GetProjectId()
 	ragEnabled := req.GetProjectContext().GetRagEnabled()
@@ -980,7 +980,7 @@ func (s *ChatService) EmbeddingSubscriber() {
 			if err := json.Unmarshal(msg.Data, &payload); err == nil {
 
 				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_IN_PROGRESS)); updateErr != nil {
-					slog.Error("service:EmbeddingSubscriber", "error", "failed to update embedding status to error", "error", updateErr)
+					slog.Error("service:EmbeddingSubscriber", "error", "failed to update embedding status to in-progress", "error", updateErr, "docsID", payload.DocsID)
 					continue
 				}
 
@@ -1033,7 +1033,7 @@ func (s *ChatService) EmbeddingSubscriber() {
 					slog.Error("service:EmbeddingSubscriber", "error", "failed to update embedding status to success", "error", updateErr, "docsID", payload.DocsID)
 				}
 			} else {
-				slog.Error("service:EmbeddingSubscriber", "error", "failed to unmarshal message", "error", err, "msg", msg.Data)
+				slog.Error("service:EmbeddingSubscriber", "error", "failed to unmarshal message", "error", err, "msgID", msg.ID, "msgSubject", msg.Subject)
 				continue
 			}
 		}
@@ -1042,7 +1042,7 @@ func (s *ChatService) EmbeddingSubscriber() {
 
 // createRAGDocumentJSONFromChunks converts RAG chunks to the requested JSON structure
 func (s *ChatService) createRAGDocumentJSONFromChunks(ragChunks []rag.Result) []RAGDocumentJSON {
-	slog.Info("service:createRAGDocumentJSONFromChunks", "ragChunks", ragChunks)
+	slog.Info("service:createRAGDocumentJSONFromChunks", "ChunksCount", len(ragChunks))
 	// Group chunks by document ID
 	docChunksMap := make(map[string][]RAGDocumentChunk)
 
@@ -1059,7 +1059,8 @@ func (s *ChatService) createRAGDocumentJSONFromChunks(ragChunks []rag.Result) []
 	// Convert to the final structure
 	var ragDocuments []RAGDocumentJSON
 	for docID, chunks := range docChunksMap {
-		slog.Info("service:createRAGDocumentJSONFromChunks", "docID", docID, "chunks", chunks)
+		slog.Info("service:createRAGDocumentJSONFromChunks", "docID", docID, "chunkCount", len(chunks))
+
 		ragDocuments = append(ragDocuments, RAGDocumentJSON{
 			DocID:  docID,
 			Chunks: chunks,

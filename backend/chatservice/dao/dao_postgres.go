@@ -22,7 +22,7 @@ type PostgresDAO struct {
 
 // NewPostgresDAO creates a new PostgreSQL DAO instance
 func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
-	slog.Info("dao_postgres:NewPostgresDAO", "config", config)
+	slog.Info("dao_postgres:NewPostgresDAO")
 	dsn := config.GetPostgresDSN()
 
 	db, err := sqlx.Open("postgres", dsn)
@@ -995,7 +995,7 @@ func (p *PostgresSettingsDAO) SetSettingValue(settingName string, settingValue s
 
 	_, err := p.db.Exec(query, settingName, settingValue)
 	if err != nil {
-		slog.Error("dao_postgres:SetSettingValue", "error", "failed to upsert settings", "error", err, "settingName", settingName, "settingValue", settingValue)
+		slog.Error("dao_postgres:SetSettingValue", "error", "failed to upsert settings", "error", err, "settingName", settingName)
 		return fmt.Errorf("failed to upsert settings")
 	}
 	return nil

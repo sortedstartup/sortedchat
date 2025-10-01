@@ -36,7 +36,7 @@ func (s *SettingService) Init() {
 	// since right now the Setting is in chatservice so chatservice handles migrations
 	isFirstBoot, err := s.IsFirstBoot()
 	if err != nil {
-		slog.Error("settings_service:Init", "error", "failed to check if this is first boot", "error", err)
+		slog.Error("settings_service:Init", "step", "failed to check if this is first boot", "error", err)
 		return
 	}
 
@@ -59,7 +59,7 @@ func (s *SettingService) GetSetting(ctx context.Context) (*pb.Settings, error) {
 	slog.Info("settings_service:GetSetting", "settingService", s)
 	settingsString, err := s.dao.GetSettingValue("settings")
 	if err != nil {
-		slog.Error("settings_service:GetSetting", "error", "failed to get settings", "error", err)
+		slog.Error("settings_service:GetSetting", "step", "failed to get settings", "error", err)
 		return nil, fmt.Errorf("failed to get settings")
 	}
 
@@ -67,7 +67,7 @@ func (s *SettingService) GetSetting(ctx context.Context) (*pb.Settings, error) {
 	var settingsObj settings.Settings
 	err = json.Unmarshal([]byte(settingsString), &settingsObj)
 	if err != nil {
-		slog.Error("settings_service:GetSetting", "error", "failed to unmarshal settings", "error", err)
+		slog.Error("settings_service:GetSetting", "step", "failed to unmarshal settings", "error", err)
 		return nil, fmt.Errorf("failed to get settings")
 	}
 
@@ -78,13 +78,13 @@ func (s *SettingService) SetSetting(ctx context.Context, settingsProto *pb.Setti
 	slog.Info("settings_service:SetSetting", "settingService", s)
 	settingsJSON, err := json.Marshal(settings.FromProto(settingsProto))
 	if err != nil {
-		slog.Error("settings_service:SetSetting", "error", "failed to set settings", "error", err)
+		slog.Error("settings_service:SetSetting", "step", "failed to set settings", "error", err)
 		return fmt.Errorf("failed to set settings")
 	}
 
 	err = s.dao.SetSettingValue("settings", string(settingsJSON))
 	if err != nil {
-		slog.Error("settings_service:SetSetting", "error", "failed to set settings", "error", err)
+		slog.Error("settings_service:SetSetting", "step", "failed to set settings", "error", err)
 		return fmt.Errorf("failed to set settings")
 	}
 

@@ -52,7 +52,7 @@ func (q *InMemoryQueue) Publish(ctx context.Context, subject string, data []byte
 	defer q.mu.Unlock()
 
 	if q.closed {
-		slog.Debug("queue:Publish", "error", "queue is closed", "subject", subject)
+		slog.Debug("queue:Publish", "reason", "queue is closed", "subject", subject)
 		return ErrQueueClosed
 	}
 
@@ -65,7 +65,7 @@ func (q *InMemoryQueue) Publish(ctx context.Context, subject string, data []byte
 
 	subscribers, exists := q.subscribers[subject]
 	if !exists {
-		slog.Debug("queue:Publish", "error", "no subscribers", "subject", subject)
+		slog.Debug("queue:Publish", "reason", "no subscribers", "subject", subject)
 		return nil // No subscribers, message is dropped
 	}
 

@@ -694,12 +694,14 @@ func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error
 
 func (s *ChatService) SearchChat(ctx context.Context, userID string, query string) ([]*pb.SearchResult, error) {
 	if query == "" {
+		slog.Error("service:SearchChat", "error", "query is required", "userID", userID)
 		return nil, fmt.Errorf("query is required")
 	}
 
 	results, err := s.dao.SearchChatMessages(userID, query)
 	if err != nil {
-		return nil, fmt.Errorf("search failed: %w", err)
+		slog.Error("service:SearchChat", "error", "search failed", "error", err, "userID", userID, "query", query)
+		return nil, fmt.Errorf("error while processing request, please try again")
 	}
 
 	var pbResults []*pb.SearchResult
@@ -715,55 +717,67 @@ func (s *ChatService) SearchChat(ctx context.Context, userID string, query strin
 }
 
 func (s *ChatService) CreateProject(ctx context.Context, userID string, name string, description string, additionalData string) (string, error) {
+	slog.Info("service:CreateProject", "userID", userID, "name", name)
 	id := uuid.New().String()
 
 	if name == "" {
+		slog.Error("service:CreateProject", "error", "name is required", "userID", userID, "name", name)
 		return "", fmt.Errorf("name is required")
 	}
 
 	projectID, err := s.dao.CreateProject(userID, id, name, description, additionalData)
 	if err != nil {
-		return "", fmt.Errorf("failed to create project: %w", err)
+		slog.Error("service:CreateProject", "error", "failed to create project", "error", err, "userID", userID, "name", name)
+		return "", fmt.Errorf("error while processing request, please try again")
 	}
 
 	return projectID, nil
 }
 
 func (s *ChatService) GetProjects(ctx context.Context, userID string) ([]dao.ProjectRow, error) {
+	slog.Info("service:GetProjects", "userID", userID)
 	projects, err := s.dao.GetProjects(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch project list: %w", err)
+		slog.Error("service:GetProjects", "error", "failed to fetch project list", "error", err, "userID", userID)
+		return nil, fmt.Errorf("error while processing request, please try again")
 	}
 
 	return projects, nil
 }
 
 func (s *ChatService) ListDocuments(ctx context.Context, userID string, projectID string) ([]dao.DocumentListRow, error) {
+	slog.Info("service:ListDocuments", "userID", userID, "projectID", projectID)
 	docs, err := s.dao.FilesList(userID, projectID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch documents: %v", err)
+		slog.Error("service:ListDocuments", "error", "failed to fetch documents", "error", err, "userID", userID, "projectID", projectID)
+		return nil, fmt.Errorf("error while processing request, please try again")
 	}
 
 	return docs, nil
 }
 
 func (s *ChatService) UploadFile(ctx context.Context, userID string, projectID string, file multipart.File, header *multipart.FileHeader, maxFileSize int64, maxProjectSize int64) (string, error) {
+	slog.Info("service:UploadFile", "userID", userID, "projectID", projectID)
 	if projectID == "" {
+		slog.Error("service:UploadFile", "error", "project_id is required", "userID", userID, "projectID", projectID)
 		return "", fmt.Errorf("project_id is required")
 	}
 
 	fileSize := header.Size
 	if fileSize > maxFileSize {
+		slog.Error("service:UploadFile", "error", "file exceeds limit", "userID", userID, "projectID", projectID, "fileSize", fileSize, "maxFileSize", maxFileSize)
 		return "", fmt.Errorf("file exceeds %d MB limit", maxFileSize/(1024*1024))
 	}
 
 	// Check total project size
 	totalUsed, err := s.dao.TotalUsedSize(userID, projectID)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch usage: %v", err)
+		slog.Error("service:UploadFile", "error", "failed to fetch usage", "error", err, "userID", userID, "projectID", projectID)
+		return "", fmt.Errorf("error while processing request, please try again")
 	}
 
 	if totalUsed+fileSize > maxProjectSize {
+		slog.Error("service:UploadFile", "error", "project storage exceeds limit", "userID", userID, "projectID", projectID, "totalUsed", totalUsed, "fileSize", fileSize, "maxProjectSize", maxProjectSize)
 		return "", fmt.Errorf("project storage exceeds %d MB", maxProjectSize/(1024*1024))
 	}
 
@@ -771,12 +785,14 @@ func (s *ChatService) UploadFile(ctx context.Context, userID string, projectID s
 	objectID := uuid.New().String()
 
 	if err := s.store.StoreObject(ctx, objectID, file); err != nil {
-		return "", fmt.Errorf("failed to store file: %v", err)
+		slog.Error("service:UploadFile", "error", "failed to store file", "error", err, "userID", userID, "projectID", projectID, "objectID", objectID)
+		return "", fmt.Errorf("failed to store file,please try again")
 	}
 
 	// Save file metadata to database
 	if err := s.dao.FileSave(userID, projectID, objectID, header.Filename, fileSize); err != nil {
-		return "", fmt.Errorf("failed to save metadata: %v", err)
+		slog.Error("service:UploadFile", "error", "failed to save metadata", "error", err, "userID", userID, "projectID", projectID, "objectID", objectID)
+		return "", fmt.Errorf("error while processing request, please try again")
 	}
 
 	// Publish embedding generation event
@@ -785,7 +801,7 @@ func (s *ChatService) UploadFile(ctx context.Context, userID string, projectID s
 	err = s.queue.Publish(ctx, events.GENERATE_EMBEDDINGS, msgBytes)
 	if err != nil {
 		// Log error but don't fail the upload
-		log.Printf("Failed to publish embedding generation event: %v", err)
+		slog.Error("service:UploadFile", "error", "failed to publish embedding generation event", "error", err, "userID", userID, "projectID", projectID, "objectID", objectID)
 	}
 
 	return objectID, nil
@@ -793,6 +809,7 @@ func (s *ChatService) UploadFile(ctx context.Context, userID string, projectID s
 
 func (s *ChatService) retrieveSimilarChunks(ctx context.Context, userID string, projectID string, query string) (*rag.Response, error) {
 	if projectID == "" || query == "" {
+		slog.Error("service:retrieveSimilarChunks", "error", "project_id and query are required", "userID", userID, "projectID", projectID, "query", query)
 		return nil, fmt.Errorf("project_id and query are required")
 	}
 
@@ -809,35 +826,41 @@ func (s *ChatService) retrieveSimilarChunks(ctx context.Context, userID string, 
 	})
 
 	if err != nil {
-		return nil, err
+		slog.Error("service:retrieveSimilarChunks", "error", "failed to embed query", "error", err, "userID", userID, "projectID", projectID, "query", query)
+		return nil, fmt.Errorf("error while processing request, please try again")
 	}
 	if len(embedding) == 0 {
-		return nil, fmt.Errorf("embedding could not be created")
+		slog.Error("service:retrieveSimilarChunks", "error", "embedding could not be created", "userID", userID, "projectID", projectID, "query", query)
+		return nil, fmt.Errorf("embedding could not be created, please try again")
 	}
 
 	params := rag.SearchParams{TopK: 2, ProjectID: projectID}
 	retriever := func(ctx context.Context, embedding []float64, params rag.SearchParams) ([]rag.Result, error) {
 		embBytes, err := json.Marshal(embedding)
 		if err != nil {
-			return nil, err
+			slog.Error("service:retrieveSimilarChunks", "error", "failed to marshal embedding", "error", err, "userID", userID, "projectID", projectID, "query", query)
+			return nil, fmt.Errorf("error while processing request, please try again")
 		}
 		vecRows, err := s.dao.GetTopSimilarRAGChunks(userID, string(embBytes), projectID)
 		if err != nil {
-			return nil, err
+			slog.Error("service:retrieveSimilarChunks", "error", "failed to get top similar chunks", "error", err, "userID", userID, "projectID", projectID, "query", query)
+			return nil, fmt.Errorf("error while processing request, please try again")
 		}
 		var results []rag.Result
 		for _, v := range vecRows {
 			_, reader, err := s.store.GetObject(ctx, v.DocsID)
 			if err != nil {
-
-				return nil, fmt.Errorf("failed to get object for docsID %s: %w", v.DocsID, err)
+				slog.Error("service:retrieveSimilarChunks", "error", "failed to get object for docsID", "error", err, "userID", userID, "projectID", projectID, "query", query, "docsID", v.DocsID)
+				return nil, fmt.Errorf("failed to get document, please try again")
 			}
 			data, err := io.ReadAll(reader)
 			if err != nil {
-				return nil, fmt.Errorf("failed to read object for docsID %s: %w", v.DocsID, err)
+				slog.Error("service:retrieveSimilarChunks", "error", "failed to read object for docsID", "error", err, "userID", userID, "projectID", projectID, "query", query, "docsID", v.DocsID)
+				return nil, fmt.Errorf("failed to read document, please try again")
 			}
 			if v.StartByte < 0 || v.EndByte > len(data) || v.StartByte > v.EndByte {
-				return nil, fmt.Errorf("invalid chunk byte range for docsID %s: %d-%d (file size %d)", v.DocsID, v.StartByte, v.EndByte, len(data))
+				slog.Error("service:retrieveSimilarChunks", "error", "invalid chunk byte range for docsID", "userID", userID, "projectID", projectID, "query", query, "docsID", v.DocsID, "startByte", v.StartByte, "endByte", v.EndByte, "fileSize", len(data))
+				return nil, fmt.Errorf("invalid chunk byte range for document, please try again")
 			}
 			chunkText := string(data[v.StartByte:v.EndByte])
 			results = append(results, rag.Result{
@@ -856,7 +879,8 @@ func (s *ChatService) retrieveSimilarChunks(ctx context.Context, userID string, 
 	}
 	response, err := rag.BasicRetrievePipeline(ctx, retriever, rag.BasicPromptBuilder, embedding[0].Vector, query, params)
 	if err != nil {
-		return nil, err
+		slog.Error("service:retrieveSimilarChunks", "error", "failed to retrieve pipeline", "error", err, "userID", userID, "projectID", projectID, "query", query)
+		return nil, fmt.Errorf("error while processing request, please try again")
 	}
 
 	return response, nil
@@ -864,12 +888,14 @@ func (s *ChatService) retrieveSimilarChunks(ctx context.Context, userID string, 
 
 func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, userID string, projectID string) error {
 	if projectID == "" {
+		slog.Error("service:SubmitGenerateEmbeddingsJob", "error", "project_id is required", "userID", userID, "projectID", projectID)
 		return fmt.Errorf("project_id is required")
 	}
 
 	docs, error := s.dao.FetchErrorDocs(userID, projectID)
 	if error != nil {
-		return fmt.Errorf("failed to check embedding status: %v", error)
+		slog.Error("service:SubmitGenerateEmbeddingsJob", "error", "failed to fetch error docs", "error", error, "userID", userID, "projectID", projectID)
+		return fmt.Errorf("failed to check embedding status, please try again")
 	}
 
 	for _, docsID := range docs {
@@ -877,11 +903,13 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, userID st
 		msgBytes, _ := json.Marshal(msg)
 		err := s.queue.Publish(ctx, "generate.embedding", msgBytes)
 		if err != nil {
-			return fmt.Errorf("failed to publish job: %v", err)
+			slog.Error("service:SubmitGenerateEmbeddingsJob", "error", "failed to publish job", "error", err, "userID", userID, "projectID", projectID, "docsID", docsID)
+			return fmt.Errorf("failed to publish job, please try again")
 		}
 
 		if updateErr := s.dao.UpdateEmbeddingStatus(docsID, int32(pb.Embedding_Status_STATUS_QUEUED)); updateErr != nil {
-			fmt.Printf("Failed to update embedding status to error: %v\n", updateErr)
+			slog.Error("service:SubmitGenerateEmbeddingsJob", "error", "failed to update embedding status", "error", updateErr, "userID", userID, "projectID", projectID, "docsID", docsID)
+			return fmt.Errorf("failed to update embedding status, please try again")
 		}
 	}
 
@@ -890,41 +918,49 @@ func (s *ChatService) SubmitGenerateEmbeddingsJob(ctx context.Context, userID st
 
 func (s *ChatService) BranchAChat(ctx context.Context, userID string, sourceChatId string, branchFromMessageId string, branchName string) (string, error) {
 	if sourceChatId == "" {
+		slog.Error("service:BranchAChat", "error", "parent id is required", "userID", userID, "sourceChatId", sourceChatId)
 		return "", fmt.Errorf("parent id is required")
 	}
 
 	if branchFromMessageId == "" {
+		slog.Error("service:BranchAChat", "error", "message id is required", "userID", userID, "sourceChatId", sourceChatId, "branchFromMessageId", branchFromMessageId)
 		return "", fmt.Errorf("message id is required")
 	}
 
 	isMain, err := s.dao.IsMainBranch(userID, sourceChatId)
 	if err != nil || !isMain {
-		return "", fmt.Errorf("can only branch from main branch chats")
+		slog.Error("service:BranchAChat", "error", "can only branch from main branch chats", "userID", userID, "sourceChatId", sourceChatId)
+		return "", fmt.Errorf("its not a main branch, try branching from a main branch")
 	}
 
 	newChatId := uuid.New().String()
 
 	err = s.dao.BranchChat(userID, sourceChatId, branchFromMessageId, newChatId, branchName)
 	if err != nil {
-		return "", fmt.Errorf("failed to create branch: %v", err)
+		slog.Error("service:BranchAChat", "error", "failed to create branch", "error", err, "userID", userID, "sourceChatId", sourceChatId, "branchFromMessageId", branchFromMessageId, "branchName", branchName)
+		return "", fmt.Errorf("failed to create branch, please try again")
 	}
 
 	return newChatId, nil
 }
 
 func (s *ChatService) ListChatBranch(ctx context.Context, userID string, chatId string) ([]dao.ChatInfoRow, error) {
+	slog.Info("service:ListChatBranch", "userID", userID, "chatId", chatId)
 	if chatId == "" {
+		slog.Error("service:ListChatBranch", "error", "chat id is required", "userID", userID, "chatId", chatId)
 		return nil, fmt.Errorf("Chat Id is required")
 	}
 
 	isMain, err := s.dao.IsMainBranch(userID, chatId)
 	if err != nil {
-		return nil, fmt.Errorf("cannot identify chat id: %w", err)
+		slog.Error("service:ListChatBranch", "error", "failed to get main branch status", "error", err, "userID", userID, "chatId", chatId)
+		return nil, fmt.Errorf("failed to get main branch status, please try again")
 	}
 
 	innerChats, err := s.dao.GetChatBranches(userID, chatId, isMain)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get inner chat list: %w", err)
+		slog.Error("service:ListChatBranch", "error", "failed to get inner chat list", "error", err, "userID", userID, "chatId", chatId)
+		return nil, fmt.Errorf("failed to get inner chat list, please try again")
 	}
 
 	return innerChats, nil
@@ -1035,16 +1071,18 @@ func (s *ChatService) createRAGDocumentJSONFromChunks(ragChunks []rag.Result) []
 
 // GetRAGDocumentReference retrieves RAG document references for a specific message
 func (s *ChatService) GetRAGDocumentReference(ctx context.Context, userID string, req *pb.RAGDocumentReferenceRequest) (*pb.RAGDocumentReferenceResponse, error) {
-
+	slog.Info("service:GetRAGDocumentReference", "userID", userID, "req", req)
 	// Validate request
 	if req.MessageId == "" {
+		slog.Error("service:GetRAGDocumentReference", "error", "message_id is required", "userID", userID, "req", req)
 		return nil, fmt.Errorf("message_id is required")
 	}
 
 	// Get the chat message by ID
 	message, err := s.dao.GetChatMessageByID(userID, req.MessageId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get message: %v", err)
+		slog.Error("service:GetRAGDocumentReference", "error", "failed to get message", "error", err, "userID", userID, "req", req)
+		return nil, fmt.Errorf("failed to get message, please try again")
 	}
 
 	// Parse the document references JSON
@@ -1056,7 +1094,8 @@ func (s *ChatService) GetRAGDocumentReference(ctx context.Context, userID string
 
 	var ragDocuments []RAGDocumentJSON
 	if err := json.Unmarshal([]byte(message.DocumentReferences), &ragDocuments); err != nil {
-		return nil, fmt.Errorf("failed to parse document references: %v", err)
+		slog.Error("service:GetRAGDocumentReference", "error", "failed to parse document references", "error", err, "userID", userID, "req", req)
+		return nil, fmt.Errorf("failed to parse document references, please try again")
 	}
 
 	// If docId is specified, filter for that specific document
@@ -1066,7 +1105,8 @@ func (s *ChatService) GetRAGDocumentReference(ctx context.Context, userID string
 				// Get document metadata
 				docMeta, err := s.dao.GetFileMetadata(doc.DocID)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get document metadata: %v", err)
+					slog.Error("service:GetRAGDocumentReference", "error", "failed to get document metadata", "error", err, "userID", userID, "req", req, "docID", doc.DocID)
+					return nil, fmt.Errorf("failed to get document metadata, please try again")
 				}
 
 				// Convert chunks to proto format
@@ -1102,7 +1142,8 @@ func (s *ChatService) GetRAGDocumentReference(ctx context.Context, userID string
 		// Get document metadata
 		docMeta, err := s.dao.GetFileMetadata(doc.DocID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get document metadata: %v", err)
+			slog.Error("service:GetRAGDocumentReference", "error", "failed to get document metadata", "error", err, "userID", userID, "req", req, "docID", doc.DocID)
+			return nil, fmt.Errorf("failed to get document metadata, please try again")
 		}
 
 		// Convert chunks to proto format
@@ -1131,39 +1172,48 @@ func (s *ChatService) GetRAGDocumentReference(ctx context.Context, userID string
 }
 
 func (s *ChatService) DeleteDocument(ctx context.Context, userID string, projectID string, docID string) error {
+	slog.Info("service:DeleteDocument", "userID", userID, "projectID", projectID, "docID", docID)
 	if projectID == "" || docID == "" {
+		slog.Error("service:DeleteDocument", "error", "project_id and doc_id are required", "userID", userID, "projectID", projectID, "docID", docID)
 		return fmt.Errorf("project_id and doc_id are required")
 	}
 
 	err := s.dao.DeleteDocument(userID, projectID, docID)
 	if err != nil {
-		return fmt.Errorf("failed to delete document: %v", err)
+		slog.Error("service:DeleteDocument", "error", "failed to delete document", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		return fmt.Errorf("failed to delete document, please try again")
 	}
 
 	//TODO: What if this operation fails?
 	err = s.store.DeleteObject(ctx, docID)
 	if err != nil {
-		return fmt.Errorf("failed to delete object: %v", err)
+		slog.Error("service:DeleteDocument", "error", "failed to delete object", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		return fmt.Errorf("failed to delete object, please try again")
 	}
 
 	return nil
 }
 
 func (s *ChatService) DeleteChat(ctx context.Context, userID string, chatId string, operation pb.DeleteChatRequest_Operation) error {
+	slog.Info("service:DeleteChat", "userID", userID, "chatId", chatId, "operation", operation)
 	if chatId == "" {
+		slog.Error("service:DeleteChat", "error", "chat ID is required", "userID", userID, "chatId", chatId, "operation", operation)
 		return fmt.Errorf("chat ID is required")
 	}
 
 	switch operation {
 	case pb.DeleteChatRequest_DELETE:
 		if err := s.dao.DeleteChat(userID, chatId); err != nil {
-			return fmt.Errorf("failed to delete chat: %v", err)
+			slog.Error("service:DeleteChat", "error", "failed to delete chat", "error", err, "userID", userID, "chatId", chatId, "operation", operation)
+			return fmt.Errorf("failed to delete chat, please try again")
 		}
 	case pb.DeleteChatRequest_SOFT_DELETE:
 		if err := s.dao.SoftDeleteChat(userID, chatId); err != nil {
-			return fmt.Errorf("failed to delete chat: %v", err)
+			slog.Error("service:DeleteChat", "error", "failed to soft delete chat", "error", err, "userID", userID, "chatId", chatId, "operation", operation)
+			return fmt.Errorf("failed to soft delete chat, please try again")
 		}
 	default:
+		slog.Error("service:DeleteChat", "error", "unsupported delete operation", "userID", userID, "chatId", chatId, "operation", operation)
 		return fmt.Errorf("unsupported delete operation: %v", operation)
 	}
 
@@ -1172,12 +1222,14 @@ func (s *ChatService) DeleteChat(ctx context.Context, userID string, chatId stri
 
 func (s *ChatService) RestoreChat(ctx context.Context, userID string, chatId string) error {
 	if chatId == "" {
+		slog.Error("service:RestoreChat", "error", "chat ID is required", "userID", userID, "chatId", chatId)
 		return fmt.Errorf("chat ID is required")
 	}
 
 	err := s.dao.RestoreChat(userID, chatId)
 	if err != nil {
-		return fmt.Errorf("failed to restore chat: %v", err)
+		slog.Error("service:RestoreChat", "error", "failed to restore chat", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("failed to restore chat, please try again")
 	}
 
 	return nil
@@ -1185,22 +1237,26 @@ func (s *ChatService) RestoreChat(ctx context.Context, userID string, chatId str
 
 func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId string, name string) error {
 	if chatId == "" {
+		slog.Error("service:RenameChat", "error", "chat ID is required", "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("chat ID is required")
 	}
 
 	trimmedName := strings.TrimSpace(name)
 
 	if len(trimmedName) < MIN_CHAT_NAME_LENGTH {
+		slog.Error("service:RenameChat", "error", "name must be at least %d characters", "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH)
 	}
 
 	if len(trimmedName) > MAX_CHAT_NAME_LENGTH {
+		slog.Error("service:RenameChat", "error", "name must be less than %d characters", "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH)
 	}
 
 	err := s.dao.RenameChat(userID, chatId, trimmedName)
 	if err != nil {
-		return fmt.Errorf("failed to rename chat: %v", err)
+		slog.Error("service:RenameChat", "error", "failed to rename chat", "error", err, "userID", userID, "chatId", chatId, "name", name)
+		return fmt.Errorf("failed to rename chat, please try again")
 	}
 	return nil
 }

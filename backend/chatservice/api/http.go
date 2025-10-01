@@ -23,6 +23,7 @@ func (s *ChatServiceAPI) registerRoutes(mux *http.ServeMux) {
 }
 
 func (s *ChatServiceAPI) handleUpload(w http.ResponseWriter, r *http.Request) {
+	slog.Info("api:handleUpload", "request", r)
 	if r.Method != http.MethodPost {
 		slog.Error("Method not allowed", "method", r.Method)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -65,6 +66,7 @@ func (s *ChatServiceAPI) handleUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *ChatServiceAPI) handleDownload(w http.ResponseWriter, r *http.Request) {
+	slog.Info("api:handleDownload", "request", r)
 	docsId := strings.TrimPrefix(r.URL.Path, "/documents/")
 	if docsId == "" {
 		slog.Error("Missing document ID")

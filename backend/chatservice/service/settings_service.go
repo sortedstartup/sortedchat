@@ -32,10 +32,11 @@ func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingSer
 }
 
 func (s *SettingService) Init() {
+	slog.Info("settings_service:Init", "settingService", s)
 	// since right now the Setting is in chatservice so chatservice handles migrations
 	isFirstBoot, err := s.IsFirstBoot()
 	if err != nil {
-		log.Printf("Failed to check if this is first boot: %v", err)
+		slog.Error("settings_service:Init", "error", "failed to check if this is first boot", "error", err)
 		return
 	}
 
@@ -47,9 +48,10 @@ func (s *SettingService) Init() {
 }
 
 func (s *SettingService) FirstBootComplete() {
+	slog.Info("settings_service:FirstBootComplete", "settingService", s)
 	err := s.dao.SetSettingValue("is_first_boot", "1")
 	if err != nil {
-		log.Printf("Failed to set is_first_boot setting: %v", err)
+		slog.Error("settings_service:FirstBootComplete", "error", "failed to set is_first_boot setting", "error", err)
 	}
 }
 

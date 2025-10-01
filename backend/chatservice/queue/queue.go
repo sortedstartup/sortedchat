@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 )
 
@@ -46,10 +47,12 @@ func NewInMemoryQueue() *InMemoryQueue {
 
 // Publish sends a message to all subscribers of the subject
 func (q *InMemoryQueue) Publish(ctx context.Context, subject string, data []byte) error {
+	slog.Info("queue:Publish", "subject", subject)
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	if q.closed {
+		slog.Debug("queue:Publish", "error", "queue is closed", "subject", subject)
 		return ErrQueueClosed
 	}
 
@@ -62,6 +65,7 @@ func (q *InMemoryQueue) Publish(ctx context.Context, subject string, data []byte
 
 	subscribers, exists := q.subscribers[subject]
 	if !exists {
+		slog.Debug("queue:Publish", "error", "no subscribers", "subject", subject)
 		return nil // No subscribers, message is dropped
 	}
 

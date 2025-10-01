@@ -121,16 +121,17 @@ func (cm *SettingsManager) GetSettings() *Settings {
 }
 
 func (s *SettingsManager) StartSettingsChangedSubscriber() {
+	slog.Info("settings:StartSettingsChangedSubscriber", "settingsManager", s)
 	go func() {
 		sub, err := s.queue.Subscribe(context.Background(), events.SETTINGS_CHANGED_EVENT)
 		if err != nil {
-			fmt.Printf("Failed %v\n", err)
+			slog.Error("settings:StartSettingsChangedSubscriber", "error", "failed to subscribe to settings changed event", "error", err)
 			return
 		}
 		for msg := range sub {
-			log.Printf("Received message [%s], data:[%s]\n", events.SETTINGS_CHANGED_EVENT, string(msg.Data))
+			slog.Info("settings:StartSettingsChangedSubscriber", "message", events.SETTINGS_CHANGED_EVENT, "data", string(msg.Data))
 			// reload settings from the database
-			log.Println("Reloading settings from the database")
+			slog.Info("settings:StartSettingsChangedSubscriber", "message", "Reloading settings from the database")
 			s.LoadSettingsFromDB()
 
 		}

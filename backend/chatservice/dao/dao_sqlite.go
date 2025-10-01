@@ -37,28 +37,41 @@ func NewSQLiteInMemoryDAO(dbConn *sql.DB) (*SQLiteDAO, error) {
 
 // CreateChat creates a new chat with the given ID and name
 func (s *SQLiteDAO) CreateChat(userID string, chatId string, name string, projectID string) error {
+	slog.Info("dao_sqlite:CreateChat", "projectID", projectID, "userID", userID)
 	if projectID == "" || projectID == "null" {
 		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name, user_id) VALUES (?, ?, ?)", chatId, name, userID)
-		return err
+		if err != nil {
+			slog.Error("dao_sqlite:CreateChat", "error", "failed to create chat", "error", err, "projectID", projectID, "userID", userID)
+			return fmt.Errorf("failed to create chat")
+		}
+		return nil
 	} else {
 		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name, project_id, user_id) VALUES (?, ?, ?, ?)", chatId, name, projectID, userID)
-		return err
+		if err != nil {
+			slog.Error("dao_sqlite:CreateChat", "error", "failed to create chat", "error", err, "projectID", projectID, "userID", userID)
+			return fmt.Errorf("failed to create chat")
+		}
+		return nil
 	}
 }
 
 func (s *SQLiteDAO) GetChatName(userID string, chatId string) (string, error) {
+	slog.Info("dao_sqlite:GetChatName", "chatId", chatId, "userID", userID)
 	var name string
 	err := s.db.Get(&name, "SELECT name FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	if err != nil {
-		return "", fmt.Errorf("failed to get chat name: %w", err)
+		slog.Error("dao_sqlite:GetChatName", "error", "failed to get chat name", "error", err, "chatId", chatId, "userID", userID)
+		return "", fmt.Errorf("failed to get chat name")
 	}
 	return name, nil
 }
 
 func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) error {
+	slog.Info("dao_sqlite:SaveChatName", "chatId", chatId, "userID", userID)
 	_, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ? AND user_id = ?", name, chatId, userID)
 	if err != nil {
-		return fmt.Errorf("failed to get chat name: %w", err)
+		slog.Error("dao_sqlite:SaveChatName", "error", "failed to save chat name", "error", err, "chatId", chatId, "userID", userID)
+		return fmt.Errorf("failed to save chat name")
 	}
 	return nil
 }
@@ -74,7 +87,8 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 
 	messageId, err := result.LastInsertId()
 	if err != nil {
-		return "", err
+		slog.Error("dao_sqlite:AddChatMessage", "error", "failed to get last insert id", "error", err, "chatId", chatId, "userID", userID)
+		return "", fmt.Errorf("failed to get last insert id") //change this error message
 	}
 
 	return fmt.Sprintf("%d", messageId), nil
@@ -93,6 +107,7 @@ func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessage
 
 // GetChatList retrieves all chats for a user
 func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted bool) ([]*proto.ChatInfo, error) {
+	slog.Info("dao_sqlite:GetChatList", "projectID", projectID, "userID", userID)
 	var chats []ChatInfoRow
 
 	query := "SELECT chat_id, name FROM chat_list WHERE soft_deleted = ? AND parent_chat_id IS NULL"
@@ -108,7 +123,8 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted boo
 
 	err := s.db.Select(&chats, query, args...)
 	if err != nil {
-		return nil, err
+		slog.Error("dao_sqlite:GetChatList", "error", "failed to get chat list", "error", err, "projectID", projectID, "userID", userID)
+		return nil, fmt.Errorf("failed to get chat list")
 	}
 
 	var result []*proto.ChatInfo
@@ -144,12 +160,14 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 		inputTokens, outputTokens, cachedTokens,
 		userID, references, ragEnabled)
 	if err != nil {
-		return MessageSummary{}, err
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to add chat message with tokens", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to add chat message with tokens")
 	}
 
 	messageId, err := result.LastInsertId()
 	if err != nil {
-		return MessageSummary{}, err
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to get last insert id", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to get last insert id")
 	}
 
 	// Get the model metadata for cost calculation
@@ -159,7 +177,8 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
         FROM model_metadata
         WHERE id = ?`, model).Scan(&inputCost, &outputCost, &cachedCost)
 	if err != nil {
-		return MessageSummary{}, fmt.Errorf("failed to get model metadata: %w", err)
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to get model metadata", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to get model metadata")
 	}
 
 	// Calculate the cost
@@ -171,7 +190,8 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
         SET cost = ? 
         WHERE id = ?`, cost, messageId)
 	if err != nil {
-		return MessageSummary{}, fmt.Errorf("failed to update message cost: %w", err)
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to update message cost", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to update message cost")
 	}
 
 	// Update the chat_list with cumulative totals
@@ -185,7 +205,8 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
         WHERE chat_id = ? AND user_id = ?`,
 		cost, inputTokens, outputTokens, cachedTokens, chatId, userID)
 	if err != nil {
-		return MessageSummary{}, fmt.Errorf("failed to update chat_list: %w", err)
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to update chat_list", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to update chat list")
 	}
 
 	// Return the message summary
@@ -203,11 +224,13 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 
 // GetModels retrieves all available models
 func (s *SQLiteDAO) GetModels() ([]*proto.ModelListInfo, error) {
+	slog.Info("dao_sqlite:GetModels")
 	var models []Models
 
 	err := s.db.Select(&models, "SELECT id, name, provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}') AS capabilities FROM model_metadata")
 	if err != nil {
-		return nil, err
+		slog.Error("dao_sqlite:GetModels", "error", "failed to get models", "error", err)
+		return nil, fmt.Errorf("failed to get models")
 	}
 
 	var result []*proto.ModelListInfo
@@ -215,7 +238,8 @@ func (s *SQLiteDAO) GetModels() ([]*proto.ModelListInfo, error) {
 		// Parse capabilities JSON
 		capabilities, err := parseCapabilities(m.Capabilities)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse capabilities for model %s: %w", m.ID, err)
+			slog.Error("dao_sqlite:GetModels", "error", "failed to parse capabilities for model", "error", err, "modelID", m.ID)
+			return nil, fmt.Errorf("failed to parse capabilities for model")
 		}
 
 		result = append(result, &proto.ModelListInfo{
@@ -580,10 +604,12 @@ func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
 }
 
 func (s *SQLiteDAO) GetChatMetadata(userID string, chatId string) (ChatInfoRow, error) {
+	slog.Info("dao_sqlite:GetChatMetadata", "chatId", chatId, "userID", userID)
 	var chat ChatInfoRow
 	err := s.db.Get(&chat, "SELECT chat_id, name, COALESCE(cost, 0) AS cost, COALESCE(input_token_count, 0) AS input_token_count, COALESCE(output_token_count, 0) AS output_token_count, COALESCE(cached_token_count, 0) AS cached_token_count FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	if err != nil {
-		return ChatInfoRow{}, err
+		slog.Error("dao_sqlite:GetChatMetadata", "error", "failed to get chat metadata", "error", err, "chatId", chatId, "userID", userID)
+		return ChatInfoRow{}, fmt.Errorf("failed to get chat metadata")
 	}
 	return chat, nil
 }

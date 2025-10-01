@@ -345,6 +345,8 @@ function ChatInputBox({
   projectId?: string;
   onSendMessage: (message: string) => void;
 }) {
+  const MIN_TEXTAREA_HEIGHT = 48;
+  const MAX_TEXTAREA_HEIGHT = 200;
   const [inputValue, setInputValue] = useState("");
   const [showDetailedTokens, setShowDetailedTokens] = useState(() => {
     const saved = localStorage.getItem('showDetailedTokens');
@@ -372,7 +374,7 @@ function ChatInputBox({
       textarea.style.height = 'auto';
       
       // Calculate new height (min 48px, max 200px)
-      const newHeight = Math.min(Math.max(textarea.scrollHeight, 48), 200);
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT), MAX_TEXTAREA_HEIGHT);
       textarea.style.height = `${newHeight}px`;
     }
   }, [inputValue]);
@@ -443,6 +445,7 @@ function ChatInputBox({
               onKeyDown={handleKeyDown}
               disabled={isStreaming}
               rows={1}
+              aria-label="Chat message input"
             />
             <div className="flex items-center justify-between p-3 pt-0">
               <div className="flex items-center space-x-2">

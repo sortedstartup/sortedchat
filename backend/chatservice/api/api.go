@@ -139,6 +139,7 @@ func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListReq
 	if err != nil {
 		slog.Error("api:GetChatList", "error", "failed to get user ID from context", "error", err)
 		return nil, fmt.Errorf("failed to get user ID")
+		//error while processing request, please try again
 	}
 	chats, err := s.service.GetChatList(ctx, userID, req.GetProjectId(), req.GetSoftDeleted())
 	if err != nil {
@@ -292,7 +293,7 @@ func (s *ChatServiceAPI) SubmitGenerateEmbeddingsJob(ctx context.Context, req *p
 func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatRequest) (*pb.BranchAChatResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("api:SubmitGenerateEmbeddingsJob", "error", "failed to get user ID from context", "error", err)
+		slog.Error("api:BranchAChat", "error", "failed to get user ID from context", "error", err)
 		return nil, fmt.Errorf("failed to get user ID")
 	}
 
@@ -348,12 +349,12 @@ func (s *ChatServiceAPI) GetRAGDocumentReference(ctx context.Context, req *pb.RA
 func (s *ChatServiceAPI) DeleteDocument(ctx context.Context, req *pb.DeleteDocumentRequest) (*pb.DeleteDocumentResponse, error) {
 	userId, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("api:GetRAGDocumentReference", "error", "failed to get user ID from context", "error", err)
+		slog.Error("api:DeleteDocument", "error", "failed to get user ID from context", "error", err)
 		return nil, fmt.Errorf("failed to get user ID")
 	}
 	err = s.service.DeleteDocument(ctx, userId, req.GetProjectId(), req.GetDocId())
 	if err != nil {
-		slog.Error("api:GetRAGDocumentReference", "error", "failed to get user ID from context", "error", err)
+		slog.Error("api:DeleteDocument", "error", "failed to get user ID from context", "error", err)
 		return nil, fmt.Errorf("failed to delete document")
 	}
 	return &pb.DeleteDocumentResponse{Message: "Document deleted successfully"}, nil

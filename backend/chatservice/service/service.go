@@ -284,8 +284,8 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	// UI can show request sent, useful because sometimes there is a delay from the API server
 
 	if resp.StatusCode != http.StatusOK {
-		_, _ = io.ReadAll(resp.Body)
-		slog.Error("service:Chat", "error", "OpenAI API error", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		slog.Error("service:Chat", "error", "OpenAI API error", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID, "bodyBytes", string(bodyBytes))
 		return fmt.Errorf("OpenAI API error, please try again")
 	}
 

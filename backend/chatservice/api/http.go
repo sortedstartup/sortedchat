@@ -23,7 +23,7 @@ func (s *ChatServiceAPI) registerRoutes(mux *http.ServeMux) {
 }
 
 func (s *ChatServiceAPI) handleUpload(w http.ResponseWriter, r *http.Request) {
-	slog.Info("api:handleUpload", "request", r)
+	slog.Info("handling upload request", "method", r.Method, "path", r.URL.Path)
 	if r.Method != http.MethodPost {
 		slog.Error("Method not allowed", "method", r.Method)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

@@ -725,7 +725,6 @@ func (p *PostgresDAO) DeleteDocument(userID string, projectID string, docID stri
 			if rbErr := tx.Rollback(); rbErr != nil {
 				slog.Error("dao_postgres:DeleteDocument", "error", "transaction rollback failed", "original_error", err, "rollback_error", rbErr)
 			}
-			slog.Error("dao_postgres:DeleteDocument", "error", "transaction rollback failed", "original_error", err)
 		}
 	}()
 

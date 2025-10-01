@@ -398,7 +398,7 @@ func (s *SQLiteDAO) FilesList(userID string, project_id string) ([]DocumentListR
 func (s *SQLiteDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
 	slog.Info("dao_sqlite:GetFileMetadata", "docsId", docsId)
 	var doc DocumentListRow
-	err := s.db.Get(&doc, `SELECT * FROM project_docs WHERE docs_id = ?`, docsId) //yaha user id aani chahiye ?
+	err := s.db.Get(&doc, `SELECT * FROM project_docs WHERE docs_id = ?`, docsId)
 	if err != nil {
 		slog.Error("dao_sqlite:GetFileMetadata", "error", "failed to get file metadata", "error", err, "docsId", docsId)
 		return nil, fmt.Errorf("failed to get document metadata")
@@ -752,10 +752,10 @@ func (s *SQLiteSettingsDAO) GetSettingValue(settingName string) (string, error) 
 		// Preserve sql.ErrNoRows so callers can distinguish between no rows and actual database errors
 		if err == sql.ErrNoRows {
 			slog.Error("dao_sqlite:GetSettingValue", "error", "no rows found", "error", err)
-			return "", fmt.Errorf("no rows found")
+			return "", err
 		}
 		slog.Error("dao_sqlite:GetSettingValue", "error", "failed to get setting", "error", err)
-		return "", fmt.Errorf("failed to get setting from database")
+		return "", err
 	}
 
 	return dbSetting.Settings, nil

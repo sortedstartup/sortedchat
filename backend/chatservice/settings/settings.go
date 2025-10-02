@@ -126,7 +126,7 @@ func (s *SettingsManager) StartSettingsChangedSubscriber() {
 	go func() {
 		sub, err := s.queue.Subscribe(context.Background(), events.SETTINGS_CHANGED_EVENT)
 		if err != nil {
-			slog.Error("settings:StartSettingsChangedSubscriber", "error", "failed to subscribe to settings changed event", "error", err)
+			slog.Error("settings:StartSettingsChangedSubscriber", "step", "failed to subscribe to settings changed event", "error", err)
 			return
 		}
 		for msg := range sub {

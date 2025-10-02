@@ -14,6 +14,8 @@ import (
 	"sortedstartup/common/auth"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type SettingServiceAPI struct {
@@ -25,7 +27,7 @@ func NewSettingService(queue queue.Queue, daoFactory db.DAOFactory) *SettingServ
 	slog.Info("api:NewSettingService", "queue", queue, "daoFactory", daoFactory)
 	settingService := service.NewSettingService(queue, daoFactory)
 	if settingService == nil {
-		slog.Error("api:NewSettingService", "error", "failed to create setting service") //what to use Info or Error?
+		slog.Error("api:NewSettingService", "error", "failed to create setting service")
 		return nil
 	}
 	return &SettingServiceAPI{service: settingService}
@@ -90,7 +92,10 @@ func (s *ChatServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingSe
 	userID, err := auth.GetUserIDFromContext_WithError(stream.Context())
 	if err != nil {
 		slog.Error("api:Chat", "error", "failed to get user ID from context", "error", err)
-		return fmt.Errorf("failed to get user ID")
+		if st, ok := status.FromError(err); ok {
+			return status.Errorf(st.Code(), "failed to get user ID")
+		}
+		return status.Errorf(codes.Unauthenticated, "failed to get user ID")
 	}
 	return s.service.Chat(stream.Context(), userID, req, func(response *pb.ChatResponse) error {
 		return stream.Send(response)
@@ -349,12 +354,15 @@ func (s *ChatServiceAPI) GetRAGDocumentReference(ctx context.Context, req *pb.RA
 func (s *ChatServiceAPI) DeleteDocument(ctx context.Context, req *pb.DeleteDocumentRequest) (*pb.DeleteDocumentResponse, error) {
 	userId, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("api:DeleteDocument", "error", "failed to get user ID from context", "error", err)
-		return nil, fmt.Errorf("failed to get user ID")
+		slog.Error("api:DeleteDocument", "error", "failed to get user ID from context to delete document", "error", err)
+		if st, ok := status.FromError(err); ok {
+			return nil, status.Errorf(st.Code(), "failed to get user ID")
+		}
+		return nil, status.Errorf(codes.Unauthenticated, "failed to get user ID")
 	}
 	err = s.service.DeleteDocument(ctx, userId, req.GetProjectId(), req.GetDocId())
 	if err != nil {
-		slog.Error("api:DeleteDocument", "error", "failed to get user ID from context", "error", err)
+		slog.Error("api:DeleteDocument", "error", "failed to delete document", "error", err)
 		return nil, fmt.Errorf("failed to delete document")
 	}
 	return &pb.DeleteDocumentResponse{Message: "Document deleted successfully"}, nil

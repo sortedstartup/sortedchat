@@ -84,7 +84,7 @@ func LoadConfig() (*Config, error) {
 
 	// Load defaults first
 	if err := k.Load(structs.Provider(defaultConfig, "koanf"), nil); err != nil {
-		slog.Error("config:LoadConfig", "error", "failed to load default config", "error", err)
+		slog.Error("config:LoadConfig", "step", "failed to load default config", "error", err)
 		return nil, fmt.Errorf("failed to load default config: %w", err)
 	}
 
@@ -95,13 +95,13 @@ func LoadConfig() (*Config, error) {
 
 	var config Config
 	if err := k.Unmarshal("", &config); err != nil {
-		slog.Error("config:LoadConfig", "error", "failed to unmarshal config", "error", err)
+		slog.Error("config:LoadConfig", "step", "failed to unmarshal config", "error", err)
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
 	// Validate configuration
 	if err := validateConfig(&config); err != nil {
-		slog.Error("config:LoadConfig", "error", "failed to validate config", "error", err)
+		slog.Error("config:LoadConfig", "step", "failed to validate config", "error", err)
 		return nil, fmt.Errorf("configuration validation failed: %w", err)
 	}
 
@@ -166,33 +166,33 @@ func validateConfig(config *Config) error {
 	switch config.Database.Type {
 	case DatabaseTypeSQLite:
 		if config.Database.SQLite.URL == "" {
-			slog.Error("config:validateConfig", "error", "sqlite URL is required when database type is sqlite")
+			slog.Error("config:validateConfig", "reason", "sqlite URL is required when database type is sqlite")
 			return fmt.Errorf("sqlite URL is required when database type is sqlite")
 		}
 	case DatabaseTypePostgres:
 		pg := config.Database.Postgres
 		if pg.Host == "" {
-			slog.Error("config:validateConfig", "error", "postgres host is required when database type is postgres")
+			slog.Error("config:validateConfig", "reason", "postgres host is required when database type is postgres")
 			return fmt.Errorf("postgres host is required when database type is postgres")
 		}
 		if pg.Database == "" {
-			slog.Error("config:validateConfig", "error", "postgres database name is required when database type is postgres")
+			slog.Error("config:validateConfig", "reason", "postgres database name is required when database type is postgres")
 			return fmt.Errorf("postgres database name is required when database type is postgres")
 		}
 		if pg.Username == "" {
-			slog.Error("config:validateConfig", "error", "postgres username is required when database type is postgres")
+			slog.Error("config:validateConfig", "reason", "postgres username is required when database type is postgres")
 			return fmt.Errorf("postgres username is required when database type is postgres")
 		}
 		if pg.Port <= 0 || pg.Port > 65535 {
-			slog.Error("config:validateConfig", "error", "postgres port must be between 1 and 65535")
+			slog.Error("config:validateConfig", "reason", "postgres port must be between 1 and 65535")
 			return fmt.Errorf("postgres port must be between 1 and 65535")
 		}
 		if !isValidSSLMode(pg.SSLMode) {
-			slog.Error("config:validateConfig", "error", "invalid postgres ssl_mode", "ssl_mode", pg.SSLMode)
+			slog.Error("config:validateConfig", "reason", "invalid postgres ssl_mode", "ssl_mode", pg.SSLMode)
 			return fmt.Errorf("invalid postgres ssl_mode: %s", pg.SSLMode)
 		}
 	default:
-		slog.Error("config:validateConfig", "error", "unsupported database type", "database_type", config.Database.Type)
+		slog.Error("config:validateConfig", "reason", "unsupported database type", "database_type", config.Database.Type)
 		return fmt.Errorf("unsupported database type: %s", config.Database.Type)
 	}
 

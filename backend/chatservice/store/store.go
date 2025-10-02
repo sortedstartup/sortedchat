@@ -41,7 +41,7 @@ func (d *DiskObjectStore) StoreObject(ctx context.Context, objectID string, obje
 	slog.Info("store:StoreObject", "objectID", objectID)
 	// Validate objectID
 	if objectID == "" {
-		slog.Error("store:StoreObject", "error", "objectID cannot be empty", "objectID", objectID)
+		slog.Error("store:StoreObject", "reason", "objectID cannot be empty", "objectID", objectID)
 		return fmt.Errorf("objectID cannot be empty")
 	}
 
@@ -51,7 +51,7 @@ func (d *DiskObjectStore) StoreObject(ctx context.Context, objectID string, obje
 	// Create and write the object
 	outFile, err := os.Create(objectPath)
 	if err != nil {
-		slog.Error("store:StoreObject", "error", "failed to create object file", "error", err, "objectID", objectID)
+		slog.Error("store:StoreObject", "step", "failed to create object file", "error", err, "objectID", objectID)
 		return fmt.Errorf("error while processing request, please try again")
 	}
 	defer outFile.Close()
@@ -60,7 +60,7 @@ func (d *DiskObjectStore) StoreObject(ctx context.Context, objectID string, obje
 	if _, err := io.Copy(outFile, object); err != nil {
 		// Clean up the file if copy failed
 		os.Remove(objectPath)
-		slog.Error("store:StoreObject", "error", "failed to write object content", "error", err, "objectID", objectID)
+		slog.Error("store:StoreObject", "step", "failed to write object content", "error", err, "objectID", objectID)
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
@@ -72,7 +72,7 @@ func (d *DiskObjectStore) GetObject(ctx context.Context, objectID string) (strin
 	slog.Info("store:GetObject", "objectID", objectID)
 	// Validate objectID
 	if objectID == "" {
-		slog.Error("store:GetObject", "error", "objectID cannot be empty", "objectID", objectID)
+		slog.Error("store:GetObject", "reason", "objectID cannot be empty", "objectID", objectID)
 		return "", nil, fmt.Errorf("objectID cannot be empty")
 	}
 
@@ -81,10 +81,10 @@ func (d *DiskObjectStore) GetObject(ctx context.Context, objectID string) (strin
 	file, err := os.Open(objectPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			slog.Error("store:GetObject", "error", "object not found", "objectID", objectID)
+			slog.Error("store:GetObject", "reason", "object not found", "objectID", objectID)
 			return "", nil, fmt.Errorf("object not found")
 		}
-		slog.Error("store:GetObject", "error", "failed to open object file", "error", err, "objectID", objectID)
+		slog.Error("store:GetObject", "step", "failed to open object file", "error", err, "objectID", objectID)
 		return "", nil, fmt.Errorf("failed to open object file, please try again")
 	}
 

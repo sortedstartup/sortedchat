@@ -16,7 +16,6 @@ func BasicRetrieve(ctx context.Context, embedding []float64, params SearchParams
 func BasicPromptBuilder(ctx context.Context, query string, results []Result) (string, error) {
 	slog.Info("rag_retrieval_impl:BasicPromptBuilder", "query", query, "results", results)
 	if len(results) == 0 {
-		slog.Info("rag_retrieval_impl:BasicPromptBuilder", "query", query, "results", results)
 		return fmt.Sprintf("Answer the following question: %s", query), nil
 	}
 
@@ -38,16 +37,16 @@ Answer:`, strings.Join(contextParts, "\n"), query)
 }
 
 func BasicRetrievePipeline(ctx context.Context, retriever Retrieve, promptBuilder BuildPrompt, embedding []float64, query string, params SearchParams) (*Response, error) {
-	slog.Info("rag_retrieval_impl:BasicRetrievePipeline", "embedding", embedding, "query", query, "params", params)
+	slog.Info("rag_retrieval_impl:BasicRetrievePipeline", "embedding_dim", len(embedding), "query", query, "params", params)
 	results, err := retriever(ctx, embedding, params)
 	if err != nil {
-		slog.Error("rag_retrieval_impl:BasicRetrievePipeline", "step", "failed to retrieve", "error", err, "embedding", embedding, "query", query, "params", params)
+		slog.Error("rag_retrieval_impl:BasicRetrievePipeline", "step", "failed to retrieve", "error", err, "embedding_dim", len(embedding), "query", query, "params", params)
 		return nil, err
 	}
 
 	prompt, err := promptBuilder(ctx, query, results)
 	if err != nil {
-		slog.Error("rag_retrieval_impl:BasicRetrievePipeline", "step", "failed to build prompt", "error", err, "embedding", embedding, "query", query, "params", params)
+		slog.Error("rag_retrieval_impl:BasicRetrievePipeline", "step", "failed to build prompt", "error", err, "embedding_dim", len(embedding), "query", query, "params", params)
 		return nil, err
 	}
 

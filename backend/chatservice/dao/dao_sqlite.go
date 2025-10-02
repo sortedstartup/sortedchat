@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	proto "sortedstartup/chatservice/proto"
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
@@ -36,55 +37,77 @@ func NewSQLiteInMemoryDAO(dbConn *sql.DB) (*SQLiteDAO, error) {
 
 // CreateChat creates a new chat with the given ID and name
 func (s *SQLiteDAO) CreateChat(userID string, chatId string, name string, projectID string) error {
+	slog.Info("dao_sqlite:CreateChat", "projectID", projectID, "userID", userID)
 	if projectID == "" || projectID == "null" {
 		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name, user_id) VALUES (?, ?, ?)", chatId, name, userID)
-		return err
+		if err != nil {
+			slog.Error("dao_sqlite:CreateChat", "error", "failed to create chat", "error", err, "projectID", projectID, "userID", userID)
+			return fmt.Errorf("failed to create chat")
+		}
+		return nil
 	} else {
 		_, err := s.db.Exec("INSERT INTO chat_list (chat_id, name, project_id, user_id) VALUES (?, ?, ?, ?)", chatId, name, projectID, userID)
-		return err
+		if err != nil {
+			slog.Error("dao_sqlite:CreateChat", "error", "failed to create chat", "error", err, "projectID", projectID, "userID", userID)
+			return fmt.Errorf("failed to create chat")
+		}
+		return nil
 	}
 }
 
 func (s *SQLiteDAO) GetChatName(userID string, chatId string) (string, error) {
+	slog.Info("dao_sqlite:GetChatName", "chatId", chatId, "userID", userID)
 	var name string
 	err := s.db.Get(&name, "SELECT name FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	if err != nil {
-		return "", fmt.Errorf("failed to get chat name: %w", err)
+		slog.Error("dao_sqlite:GetChatName", "error", "failed to get chat name", "error", err, "chatId", chatId, "userID", userID)
+		return "", fmt.Errorf("failed to get chat name")
 	}
 	return name, nil
 }
 
 func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) error {
+	slog.Info("dao_sqlite:SaveChatName", "chatId", chatId, "userID", userID)
 	_, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ? AND user_id = ?", name, chatId, userID)
 	if err != nil {
-		return fmt.Errorf("failed to get chat name: %w", err)
+		slog.Error("dao_sqlite:SaveChatName", "error", "failed to save chat name", "error", err, "chatId", chatId, "userID", userID)
+		return fmt.Errorf("failed to save chat name")
 	}
 	return nil
 }
 
 // AddChatMessage adds a message to a chat
 func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
+	slog.Info("dao_sqlite:AddChatMessage", "chatId", chatId, "userID", userID)
 	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
 	if err != nil {
+		slog.Error("dao_sqlite:AddChatMessage", "error", "failed to add chat message", "error", err, "chatId", chatId, "userID", userID)
 		return "", err
 	}
 
 	messageId, err := result.LastInsertId()
 	if err != nil {
-		return "", err
+		slog.Error("dao_sqlite:AddChatMessage", "error", "failed to get last insert id", "error", err, "chatId", chatId, "userID", userID)
+		return "", fmt.Errorf("failed to get last insert id") //change this error message
 	}
 
 	return fmt.Sprintf("%d", messageId), nil
 }
 
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
+	slog.Info("dao_sqlite:GetChatMessages", "chatId", chatId, "userID", userID)
 	var messages []ChatMessageRow
 	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
-	return messages, err
+	if err != nil {
+		slog.Error("dao_sqlite:GetChatMessages", "error", "failed to get chat messages", "error", err, "chatId", chatId, "userID", userID)
+		return nil, fmt.Errorf("failed to get chat messages")
+	}
+	return messages, nil
 }
 
 // GetChatList retrieves all chats for a user
 func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted bool) ([]*proto.ChatInfo, error) {
+	slog.Info("dao_sqlite:GetChatList", "projectID", projectID, "userID", userID)
 	var chats []ChatInfoRow
 
 	query := "SELECT chat_id, name FROM chat_list WHERE soft_deleted = ? AND parent_chat_id IS NULL"
@@ -98,9 +121,12 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted boo
 		args = append(args, projectID, userID)
 	}
 
+	query += " ORDER BY id DESC"
+
 	err := s.db.Select(&chats, query, args...)
 	if err != nil {
-		return nil, err
+		slog.Error("dao_sqlite:GetChatList", "error", "failed to get chat list", "error", err, "projectID", projectID, "userID", userID)
+		return nil, fmt.Errorf("failed to get chat list")
 	}
 
 	var result []*proto.ChatInfo
@@ -136,12 +162,14 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 		inputTokens, outputTokens, cachedTokens,
 		userID, references, ragEnabled)
 	if err != nil {
-		return MessageSummary{}, err
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to add chat message with tokens", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to add chat message with tokens")
 	}
 
 	messageId, err := result.LastInsertId()
 	if err != nil {
-		return MessageSummary{}, err
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to get last insert id", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to get last insert id")
 	}
 
 	// Get the model metadata for cost calculation
@@ -151,7 +179,8 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
         FROM model_metadata
         WHERE id = ?`, model).Scan(&inputCost, &outputCost, &cachedCost)
 	if err != nil {
-		return MessageSummary{}, fmt.Errorf("failed to get model metadata: %w", err)
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to get model metadata", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to get model metadata")
 	}
 
 	// Calculate the cost
@@ -163,7 +192,8 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
         SET cost = ? 
         WHERE id = ?`, cost, messageId)
 	if err != nil {
-		return MessageSummary{}, fmt.Errorf("failed to update message cost: %w", err)
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to update message cost", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to update message cost")
 	}
 
 	// Update the chat_list with cumulative totals
@@ -177,7 +207,8 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
         WHERE chat_id = ? AND user_id = ?`,
 		cost, inputTokens, outputTokens, cachedTokens, chatId, userID)
 	if err != nil {
-		return MessageSummary{}, fmt.Errorf("failed to update chat_list: %w", err)
+		slog.Error("dao_sqlite:AddChatMessageWithTokens", "error", "failed to update chat_list", "error", err, "chatId", chatId, "userID", userID)
+		return MessageSummary{}, fmt.Errorf("failed to update chat list")
 	}
 
 	// Return the message summary
@@ -195,11 +226,13 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 
 // GetModels retrieves all available models
 func (s *SQLiteDAO) GetModels() ([]*proto.ModelListInfo, error) {
+	slog.Info("dao_sqlite:GetModels")
 	var models []Models
 
 	err := s.db.Select(&models, "SELECT id, name, provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}') AS capabilities FROM model_metadata")
 	if err != nil {
-		return nil, err
+		slog.Error("dao_sqlite:GetModels", "error", "failed to get models", "error", err)
+		return nil, fmt.Errorf("failed to get models")
 	}
 
 	var result []*proto.ModelListInfo
@@ -207,7 +240,8 @@ func (s *SQLiteDAO) GetModels() ([]*proto.ModelListInfo, error) {
 		// Parse capabilities JSON
 		capabilities, err := parseCapabilities(m.Capabilities)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse capabilities for model %s: %w", m.ID, err)
+			slog.Error("dao_sqlite:GetModels", "error", "failed to parse capabilities for model", "error", err, "modelID", m.ID)
+			return nil, fmt.Errorf("failed to parse capabilities for model")
 		}
 
 		result = append(result, &proto.ModelListInfo{
@@ -225,6 +259,7 @@ func (s *SQLiteDAO) GetModels() ([]*proto.ModelListInfo, error) {
 
 // SearchChatMessages searches chat messages using FTS
 func (s *SQLiteDAO) SearchChatMessages(userID string, query string) ([]proto.SearchResult, error) {
+	slog.Info("dao_sqlite:SearchChatMessages", "query", query, "userID", userID)
 	const searchSQL = `
         SELECT
             cm.chat_id as chat_id,
@@ -258,7 +293,8 @@ func (s *SQLiteDAO) SearchChatMessages(userID string, query string) ([]proto.Sea
 
 	err := s.db.Select(&rows, searchSQL, query, userID, userID)
 	if err != nil {
-		return nil, err
+		slog.Error("dao_sqlite:SearchChatMessages", "error", "failed to search chat messages", "error", err, "query", query, "userID", userID)
+		return nil, fmt.Errorf("failed to search chat messages")
 	}
 
 	var results []proto.SearchResult
@@ -275,70 +311,99 @@ func (s *SQLiteDAO) SearchChatMessages(userID string, query string) ([]proto.Sea
 
 // Project CRUD
 func (s *SQLiteDAO) CreateProject(userID string, id string, name string, description string, additionalData string) (string, error) {
+	slog.Info("dao_sqlite:CreateProject", "userID", userID, "name", name)
 	_, err := s.db.Exec(`
 		INSERT INTO project (id, name, description, additional_data, user_id, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`, id, name, description, additionalData, userID)
 	if err != nil {
-		return "", err
+		slog.Error("dao_sqlite:CreateProject", "error", "failed to create project", "error", err, "userID", userID, "name", name)
+		return "", fmt.Errorf("failed to create project")
 	}
 	return id, nil
 }
 
 // GetProjectList retrieves all projects for a user
 func (s *SQLiteDAO) GetProjects(userID string) ([]ProjectRow, error) {
+	slog.Info("dao_sqlite:GetProjects", "userID", userID)
 	var projects []ProjectRow
 	err := s.db.Select(&projects, `SELECT id, name, description, additional_data, created_at, updated_at FROM project WHERE user_id = ?`, userID)
-	return projects, err
+	if err != nil {
+		slog.Error("dao_sqlite:GetProjects", "error", "failed to get projects", "error", err, "userID", userID)
+		return nil, fmt.Errorf("failed to get projects")
+	}
+	return projects, nil
 }
 
 func (s *SQLiteDAO) FileSave(userID string, project_id string, docs_id string, file_name string, file_size int64) error {
+	slog.Info("dao_sqlite:FileSave", "userID", userID, "project_id", project_id, "docs_id", docs_id, "file_size", file_size)
 	size_kb := file_size / 1024
 	_, err := s.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name,file_size,embedding_status, user_id) VALUES (?, ?, ?, ?, ?, ?)", project_id, docs_id, file_name, size_kb, int32(proto.Embedding_Status_STATUS_QUEUED), userID)
-	return err
+	if err != nil {
+		slog.Error("dao_sqlite:FileSave", "error", "failed to save file", "error", err, "userID", userID, "project_id", project_id, "docs_id", docs_id, "file_size", file_size)
+		return fmt.Errorf("failed to save file, please try again")
+	}
+	return nil
 }
 
 func (s *SQLiteDAO) UpdateEmbeddingStatus(docs_id string, status int32) error {
+	slog.Info("dao_sqlite:UpdateEmbeddingStatus", "docs_id", docs_id, "status", status)
 	_, err := s.db.Exec("UPDATE project_docs SET embedding_status = ? WHERE docs_id = ?", status, docs_id)
-	return err
+	if err != nil {
+		slog.Error("dao_sqlite:UpdateEmbeddingStatus", "error", "failed to update embedding status", "error", err, "docs_id", docs_id, "status", status)
+		return fmt.Errorf("failed to update embedding status, please try again")
+	}
+	return nil
 }
 
 func (s *SQLiteDAO) FetchErrorDocs(userID string, project_id string) ([]string, error) {
+	slog.Info("dao_sqlite:FetchErrorDocs", "userID", userID, "project_id", project_id)
 	var docs_list []string
 	err := s.db.Select(&docs_list, "SELECT docs_id FROM project_docs WHERE project_id = ? AND embedding_status = ? AND user_id = ?", project_id, int32(proto.Embedding_Status_STATUS_ERROR), userID)
 	if err != nil {
-		fmt.Print("fetchErrorDocs dao", err)
-		return nil, fmt.Errorf("failed to check embedding status: %w", err)
+		slog.Error("dao_sqlite:FetchErrorDocs", "error", "failed to fetch error docs", "error", err, "userID", userID, "project_id", project_id)
+		return nil, fmt.Errorf("failed to check embedding status, please try again")
 	}
-	fmt.Println("fetchErrorDocs dao", docs_list)
 	return docs_list, nil
 }
 
 func (s *SQLiteDAO) TotalUsedSize(userID string, projectID string) (int64, error) {
+	slog.Info("dao_sqlite:TotalUsedSize", "userID", userID, "projectID", projectID)
 	var total int64
 	err := s.db.Get(&total, `
 		SELECT COALESCE(SUM(file_size), 0)
 		FROM project_docs
 		WHERE project_id = ? AND user_id = ?
 	`, projectID, userID)
-	return total, err
+	if err != nil {
+		slog.Error("dao_sqlite:TotalUsedSize", "error", "failed to get total used size", "error", err, "userID", userID, "projectID", projectID)
+		return 0, fmt.Errorf("failed to get total used size")
+	}
+	return total, nil
 }
 
 func (s *SQLiteDAO) FilesList(userID string, project_id string) ([]DocumentListRow, error) {
+	slog.Info("dao_sqlite:FilesList", "userID", userID, "project_id", project_id)
 	var files []DocumentListRow
 	err := s.db.Select(&files, `
 		SELECT id, project_id, docs_id, file_name, created_at, updated_at,embedding_status
 		FROM project_docs
 		WHERE project_id = ? AND user_id = ?
 	`, project_id, userID)
-	return files, err
+	if err != nil {
+		slog.Error("dao_sqlite:FilesList", "error", "failed to get files list", "error", err, "userID", userID, "project_id", project_id)
+		return nil, fmt.Errorf("failed to get files list")
+	}
+	return files, nil
 }
 
 func (s *SQLiteDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
+	slog.Info("dao_sqlite:GetFileMetadata", "docsId", docsId)
 	var doc DocumentListRow
 	err := s.db.Get(&doc, `SELECT * FROM project_docs WHERE docs_id = ?`, docsId)
 	if err != nil {
-		return nil, err
+		slog.Error("dao_sqlite:GetFileMetadata", "error", "failed to get file metadata", "error", err, "docsId", docsId)
+		return nil, fmt.Errorf("failed to get document metadata")
 	}
 	return &doc, nil
 }
@@ -363,6 +428,7 @@ func (s *SQLiteDAO) SaveRAGChunkEmbedding(chunkID string, vector []float64) erro
 }
 
 func (s *SQLiteDAO) GetTopSimilarRAGChunks(userID string, embedding string, projectID string) ([]RAGChunkRow, error) {
+	slog.Info("dao_sqlite:GetTopSimilarRAGChunks", "userID", userID, "embedding", embedding, "projectID", projectID)
 	var chunks []RAGChunkRow
 	err := s.db.Select(&chunks, `
 			SELECT 
@@ -378,16 +444,26 @@ func (s *SQLiteDAO) GetTopSimilarRAGChunks(userID string, embedding string, proj
 			ORDER BY similarity
 			LIMIT 2
     `, embedding, projectID, userID)
-	return chunks, err
+	if err != nil {
+		slog.Error("dao_sqlite:GetTopSimilarRAGChunks", "error", "failed to get top similar chunks", "error", err, "userID", userID, "embedding", embedding, "projectID", projectID)
+		return nil, fmt.Errorf("failed to get top similar chunks")
+	}
+	return chunks, nil
 }
 
 func (s *SQLiteDAO) IsMainBranch(userID string, source_chat_id string) (bool, error) {
+	slog.Info("dao_sqlite:IsMainBranch", "userID", userID, "source_chat_id", source_chat_id)
 	var isMainBranch bool
 	err := s.db.Get(&isMainBranch, `SELECT is_main_branch FROM chat_list WHERE chat_id = ? AND user_id = ?`, source_chat_id, userID)
-	return isMainBranch, err
+	if err != nil {
+		slog.Error("dao_sqlite:IsMainBranch", "error", "failed to get main branch status", "error", err, "userID", userID, "source_chat_id", source_chat_id)
+		return false, fmt.Errorf("failed to get main branch status")
+	}
+	return isMainBranch, nil
 }
 
 func (s *SQLiteDAO) BranchChat(userID string, source_chat_id string, parent_message_id string, new_chat_id string, branch_name string) error {
+	slog.Info("dao_sqlite:BranchChat", "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
 	// Use CTE to find project_id from source chat and insert the new branch chat
 	_, err := s.db.Exec(`WITH source_chat AS (
 							SELECT project_id 
@@ -398,7 +474,8 @@ func (s *SQLiteDAO) BranchChat(userID string, source_chat_id string, parent_mess
 						SELECT ?, ?, COALESCE(source_chat.project_id, NULL), ?, ?, FALSE, ?
 						FROM source_chat`, source_chat_id, userID, new_chat_id, branch_name, source_chat_id, parent_message_id, userID)
 	if err != nil {
-		return err
+		slog.Error("dao_sqlite:BranchChat", "error", "failed to branch chat", "error", err, "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
+		return fmt.Errorf("failed to branch chat, please try again")
 	}
 
 	//copy messages up to branch point
@@ -407,15 +484,24 @@ func (s *SQLiteDAO) BranchChat(userID string, source_chat_id string, parent_mess
 						FROM chat_messages 
 						WHERE chat_id = ? AND id <= ? AND user_id = ?
 						ORDER BY id;`, new_chat_id, userID, source_chat_id, parent_message_id, userID)
-	return err
+	if err != nil {
+		slog.Error("dao_sqlite:BranchChat", "error", "failed to copy messages", "error", err, "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
+		return fmt.Errorf("failed to copy messages, please try again")
+	}
+	return nil
 }
 
 func (s *SQLiteDAO) GetChatBranches(userID string, chatId string, isMain bool) ([]ChatInfoRow, error) {
+	slog.Info("dao_sqlite:GetChatBranches", "userID", userID, "chatId", chatId, "isMain", isMain)
 	var chats []ChatInfoRow
 	var err error
 
 	if isMain {
 		err = s.db.Select(&chats, `SELECT chat_id, name FROM chat_list WHERE parent_chat_id = ?`, chatId)
+		if err != nil {
+			slog.Error("dao_sqlite:GetChatBranches", "error", "failed to get main branches", "error", err, "userID", userID, "chatId", chatId, "isMain", isMain)
+			return nil, fmt.Errorf("failed to get main branches, please try again")
+		}
 	} else {
 		err = s.db.Select(&chats, `
 			SELECT c1.chat_id, c1.name 
@@ -423,56 +509,69 @@ func (s *SQLiteDAO) GetChatBranches(userID string, chatId string, isMain bool) (
 			JOIN chat_list c2 ON c1.chat_id = c2.parent_chat_id
 			WHERE c2.chat_id = ?
 		`, chatId)
+		if err != nil {
+			slog.Error("dao_sqlite:GetChatBranches", "error", "failed to get branches", "error", err, "userID", userID, "chatId", chatId, "isMain", isMain)
+			return nil, fmt.Errorf("failed to get branches, please try again")
+		}
 	}
 
 	if err != nil {
-		return nil, err
+		slog.Error("dao_sqlite:GetChatBranches", "error", "failed to get branches", "error", err, "userID", userID, "chatId", chatId, "isMain", isMain)
+		return nil, fmt.Errorf("failed to get branches, please try again")
 	}
 
 	return chats, nil
 }
 
 func (s *SQLiteDAO) DeleteDocument(userID string, projectID string, docID string) error {
+	slog.Info("dao_sqlite:DeleteDocument", "userID", userID, "projectID", projectID, "docID", docID)
 	// Start a transaction to ensure all operations succeed or fail together
 	tx, err := s.db.Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		slog.Error("dao_sqlite:DeleteDocument", "error", "failed to begin transaction", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		return fmt.Errorf("failed to begin transaction, please try again")
 	}
 	defer func() {
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				log.Printf("transaction rollback failed: %v (original error: %v)", rbErr, err)
+				slog.Error("dao_sqlite:DeleteDocument", "error", "transaction rollback failed", "error", rbErr, "userID", userID, "projectID", projectID, "docID", docID)
 			}
+			slog.Error("dao_sqlite:DeleteDocument", "error", "transaction rollback failed", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
 		}
 	}()
 	// Delete from rag_chunks_vec first (embeddings)
 	_, err = tx.Exec("DELETE FROM rag_chunks_vec WHERE id IN (SELECT id FROM rag_chunks WHERE project_id = ? AND docs_id = ? AND user_id = ?)", projectID, docID, userID)
 	if err != nil {
-		return fmt.Errorf("failed to delete from rag_chunks_vec: %w", err)
+		slog.Error("dao_sqlite:DeleteDocument", "error", "failed to delete from rag_chunks_vec", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		return fmt.Errorf("failed to delete from rag_chunks_vec, please try again")
 	}
 
 	// Delete from rag_chunks (document chunks)
 	_, err = tx.Exec("DELETE FROM rag_chunks WHERE project_id = ? AND docs_id = ? AND user_id = ?", projectID, docID, userID)
 	if err != nil {
-		return fmt.Errorf("failed to delete from rag_chunks: %w", err)
+		slog.Error("dao_sqlite:DeleteDocument", "error", "failed to delete from rag_chunks", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		return fmt.Errorf("failed to delete from rag_chunks, please try again")
 	}
 
 	// Delete from project_docs (document metadata)
 	_, err = tx.Exec("DELETE FROM project_docs WHERE project_id = ? AND docs_id = ? AND user_id = ?", projectID, docID, userID)
 	if err != nil {
-		return fmt.Errorf("failed to delete from project_docs: %w", err)
+		slog.Error("dao_sqlite:DeleteDocument", "error", "failed to delete from project_docs", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		return fmt.Errorf("failed to delete from project_docs, please try again")
 	}
 
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		slog.Error("dao_sqlite:DeleteDocument", "error", "failed to commit transaction", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		return fmt.Errorf("failed to commit transaction, please try again")
 	}
 
 	return nil
 }
 
 func (s *SQLiteDAO) SoftDeleteChat(userID string, chatId string) error {
+	slog.Info("dao_sqlite:SoftDeleteChat", "userID", userID, "chatId", chatId)
 	_, err := s.db.Exec(`
         WITH RECURSIVE chat_hierarchy AS (
             SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
@@ -486,35 +585,43 @@ func (s *SQLiteDAO) SoftDeleteChat(userID string, chatId string) error {
         WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
         AND user_id = ?;
     `, chatId, userID, userID, userID)
-	return err
+	if err != nil {
+		slog.Error("dao_sqlite:SoftDeleteChat", "error", "failed to soft delete chat", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("failed to soft delete chat, please try again")
+	}
+	return nil
 }
-
 func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
+	slog.Info("dao_sqlite:DeleteChat", "userID", userID, "chatId", chatId)
 	tx, err := s.db.Begin()
 	if err != nil {
-		return err
+		slog.Error("dao_sqlite:DeleteChat", "error", "failed to begin transaction", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("failed to begin transaction, please try again")
 	}
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				slog.Error("dao_sqlite:DeleteChat", "error", "transaction rollback failed", "error", rbErr, "userID", userID, "chatId", chatId)
+			}
+			slog.Error("dao_sqlite:DeleteChat", "error", "transaction rollback failed", "error", err, "userID", userID, "chatId", chatId)
 		}
 	}()
 
-	// Delete messages under the hierarchy first
-	// Create a temporary table to hold the chat IDs of the hierarchy
+	// Create temporary table to hold chat IDs
 	_, err = tx.Exec(`
         CREATE TEMP TABLE chat_ids_to_delete AS
-        WITH RECURSIVE chat_hierarchy AS (
-            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
-            UNION ALL
-            SELECT c.chat_id FROM chat_list c
-            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
-            WHERE c.user_id = ?
-        )
+            WITH RECURSIVE chat_hierarchy AS (
+                SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+                UNION ALL
+                SELECT c.chat_id FROM chat_list c
+                JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+                WHERE c.user_id = ?
+            )
         SELECT chat_id FROM chat_hierarchy;
     `, chatId, userID, userID)
 	if err != nil {
-		return err
+		slog.Error("dao_sqlite:DeleteChat", "error", "failed to create temporary table", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("error while processing request, please try again")
 	}
 
 	// Delete messages using the temporary table
@@ -524,24 +631,37 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
           AND chat_id IN (SELECT chat_id FROM chat_ids_to_delete);
     `, userID)
 	if err != nil {
-		return err
+		slog.Error("dao_sqlite:DeleteChat", "error", "failed to delete messages", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("failed to delete messages, please try again")
 	}
 
 	// Delete chats using the temporary table
 	_, err = tx.Exec(`
-        DELETE FROM chat_list
-        WHERE user_id = ?
+        DELETE FROM chat_list 
+        WHERE user_id = ? 
           AND chat_id IN (SELECT chat_id FROM chat_ids_to_delete);
     `, userID)
 	if err != nil {
-		return err
+		slog.Error("dao_sqlite:DeleteChat", "error", "failed to delete chats", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("failed to delete chat, please try again")
 	}
 
-	err = tx.Commit()
-	return err
+	// Drop temp table if it exists
+	_, err = tx.Exec(`DROP TABLE IF EXISTS chat_ids_to_delete;`)
+	if err != nil {
+		slog.Error("dao_sqlite:DeleteChat", "error", "failed to drop temp table", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("failed to delete chat, please try again")
+	}
+
+	if commitErr := tx.Commit(); commitErr != nil {
+		slog.Error("dao_sqlite:DeleteChat", "error", "failed to commit transaction", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("failed to delete chat, please try again")
+	}
+	return nil
 }
 
 func (s *SQLiteDAO) RestoreChat(userID string, chatId string) error {
+	slog.Info("dao_sqlite:RestoreChat", "userID", userID, "chatId", chatId)
 	_, err := s.db.Exec(`
         WITH RECURSIVE chat_hierarchy AS (
             SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
@@ -555,37 +675,49 @@ func (s *SQLiteDAO) RestoreChat(userID string, chatId string) error {
         WHERE chat_id IN (SELECT chat_id FROM chat_hierarchy)
         AND user_id = ?;
     `, chatId, userID, userID, userID)
-	return err
+	if err != nil {
+		slog.Error("dao_sqlite:RestoreChat", "error", "failed to restore chat", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("failed to restore chat, please try again")
+	}
+	return nil
 }
 
 func (s *SQLiteDAO) IsChatDeleted(chatId string, userID string) (bool, error) {
+	slog.Info("dao_sqlite:IsChatDeleted", "chatId", chatId, "userID", userID)
 	var isDeleted bool
 	err := s.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	if err != nil {
-		return false, err
+		slog.Error("dao_sqlite:IsChatDeleted", "error", "failed to get chat deleted status", "error", err)
+		return false, fmt.Errorf("failed to get chat status")
 	}
 	return isDeleted, err
 }
 
 func (s *SQLiteDAO) GetChatMetadata(userID string, chatId string) (ChatInfoRow, error) {
+	slog.Info("dao_sqlite:GetChatMetadata", "chatId", chatId, "userID", userID)
 	var chat ChatInfoRow
 	err := s.db.Get(&chat, "SELECT chat_id, name, COALESCE(cost, 0) AS cost, COALESCE(input_token_count, 0) AS input_token_count, COALESCE(output_token_count, 0) AS output_token_count, COALESCE(cached_token_count, 0) AS cached_token_count FROM chat_list WHERE chat_id = ? AND user_id = ?", chatId, userID)
 	if err != nil {
-		return ChatInfoRow{}, err
+		slog.Error("dao_sqlite:GetChatMetadata", "error", "failed to get chat metadata", "error", err, "chatId", chatId, "userID", userID)
+		return ChatInfoRow{}, fmt.Errorf("failed to get chat metadata")
 	}
 	return chat, nil
 }
 
 func (s *SQLiteDAO) RenameChat(userID string, chatId string, name string) error {
+	slog.Info("dao_sqlite:RenameChat", "userID", userID, "chatId", chatId, "name", name)
 	result, err := s.db.Exec("UPDATE chat_list SET name = ? WHERE chat_id = ? AND user_id = ?", name, chatId, userID)
 	if err != nil {
-		return err
+		slog.Error("dao_sqlite:RenameChat", "error", "failed to rename chat", "error", err, "userID", userID, "chatId", chatId, "name", name)
+		return fmt.Errorf("failed to rename chat, please try again")
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return err
+		slog.Error("dao_sqlite:RenameChat", "error", "failed to get rows affected", "error", err, "userID", userID, "chatId", chatId, "name", name)
+		return fmt.Errorf("failed to get rows affected, please try again")
 	}
 	if rowsAffected == 0 {
+		slog.Error("dao_sqlite:RenameChat", "error", "chat not found or permission denied", "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("chat not found or permission denied")
 	}
 	return nil
@@ -619,14 +751,17 @@ func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
 }
 
 func (s *SQLiteSettingsDAO) GetSettingValue(settingName string) (string, error) {
+	slog.Info("dao_sqlite:GetSettingValue", "settingName", settingName)
 	var dbSetting dbSettings
 	err := s.db.Get(&dbSetting, "SELECT name, settings FROM settings WHERE name = ?", settingName)
 	if err != nil {
 		// Preserve sql.ErrNoRows so callers can distinguish between no rows and actual database errors
 		if err == sql.ErrNoRows {
+			slog.Error("dao_sqlite:GetSettingValue", "error", "no rows found", "error", err)
 			return "", err
 		}
-		return "", fmt.Errorf("failed to get setting '%s' from database: %w", settingName, err)
+		slog.Error("dao_sqlite:GetSettingValue", "error", "failed to get setting", "error", err)
+		return "", err
 	}
 
 	return dbSetting.Settings, nil
@@ -647,13 +782,15 @@ func (s *SQLiteSettingsDAO) SetSettingValue(settingName string, settingValue str
 
 // GetChatMessageByID retrieves a specific chat message by its ID
 func (s *SQLiteDAO) GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error) {
+	slog.Info("dao_sqlite:GetChatMessageByID", "userID", userID, "messageID", messageID)
 	var message ChatMessageRow
 	err := s.db.Get(&message, `
 		SELECT role, content, id, COALESCE(document_references, '') as document_references 
 		FROM chat_messages 
 		WHERE id = ? AND user_id = ?`, messageID, userID)
 	if err != nil {
-		return nil, err
+		slog.Error("dao_sqlite:GetChatMessageByID", "error", "failed to get chat message by id", "error", err, "userID", userID, "messageID", messageID)
+		return nil, fmt.Errorf("failed to get chat message by id, please try again")
 	}
 	return &message, nil
 }

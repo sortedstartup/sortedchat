@@ -26,6 +26,7 @@ var globalFakeOAuthProvider *FakeOAuthProvider
 
 // getDefaults returns default values for dev builds (same as service package)
 func getDefaults() map[string]string {
+	slog.Info("authservice:fake_oauth_dev:getDefaults")
 	return map[string]string{
 		"OAUTH_ISSUER_URL":                "http://localhost:8080/fakeoauth",
 		"OAUTH_PROVIDER_URL_FOR_FRONTEND": "http://localhost:5173/hack/fakeoauth/oauth2/v2/auth",
@@ -39,6 +40,7 @@ func getDefaults() map[string]string {
 
 // getEnvOrDefault returns the environment variable value or the default value (same as service package)
 func getEnvOrDefault(key, defaultValue string) string {
+	slog.Info("authservice:fake_oauth_dev:getEnvOrDefault", "key", key, "defaultValue", defaultValue)
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
@@ -47,13 +49,14 @@ func getEnvOrDefault(key, defaultValue string) string {
 
 // Init initializes the auth service API with fake OAuth provider for development
 func (a *AuthServiceAPI) Init() {
+	slog.Info("authservice:fake_oauth_dev:Init")
 	// Initialize core functionality
 	a.initCore()
 
 	// Use singleton pattern to ensure the same provider instance is used throughout
 	if globalFakeOAuthProvider == nil {
 		globalFakeOAuthProvider = NewFakeOAuthProvider()
-		slog.Info("Created singleton fake OAuth provider", "keySize", globalFakeOAuthProvider.privateKey.Size())
+		slog.Info("authservice:fake_oauth_dev:Init", "step", "Created singleton fake OAuth provider", "keySize", globalFakeOAuthProvider.privateKey.Size())
 	}
 
 	// Register fake OAuth provider under /fakeoauth
@@ -77,6 +80,7 @@ func init() {
 	var err error
 	devPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
+		slog.Error("authservice:fake_oauth_dev:init", "step", "Failed to generate RSA key", "error", err)
 		panic("Failed to generate RSA key: " + err.Error())
 	}
 	devPublicKey = &devPrivateKey.PublicKey
@@ -87,6 +91,7 @@ func init() {
 }
 
 func NewFakeOAuthProvider() *FakeOAuthProvider {
+	slog.Info("authservice:fake_oauth_dev:NewFakeOAuthProvider")
 	return &FakeOAuthProvider{
 		privateKey: devPrivateKey,
 		publicKey:  devPublicKey,
@@ -94,7 +99,7 @@ func NewFakeOAuthProvider() *FakeOAuthProvider {
 }
 
 func (f *FakeOAuthProvider) RegisterRoutes(mux *http.ServeMux, basePath string) {
-	slog.Info("RegisterRoutes", "basePath", basePath)
+	slog.Info("authservice:fake_oauth_dev:RegisterRoutes", "basePath", basePath)
 	mux.HandleFunc(basePath+"/.well-known/openid-configuration", f.oidcDiscoveryHandler)
 	mux.HandleFunc(basePath+"/oauth2/v2/auth", f.authHandler)
 	mux.HandleFunc(basePath+"/token", f.tokenHandler)
@@ -104,18 +109,18 @@ func (f *FakeOAuthProvider) RegisterRoutes(mux *http.ServeMux, basePath string) 
 }
 
 func (f *FakeOAuthProvider) catchAllHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Info("catchAllHandler", "path", r.URL.Path)
+	slog.Info("authservice:fake_oauth_dev:catchAllHandler", "path", r.URL.Path)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte("<html></html>"))
 }
 
 func (f *FakeOAuthProvider) indexHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Info("indexHandler")
+	slog.Info("authservice:fake_oauth_dev:indexHandler")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte("<html></html>"))
 }
 func (f *FakeOAuthProvider) authHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Info("authHandler")
+	slog.Info("authservice:fake_oauth_dev:authHandler")
 	// Simple fake OAuth provider that immediately redirects to callback with a fake code
 
 	// Generate a fake authorization code
@@ -134,10 +139,11 @@ func (f *FakeOAuthProvider) authHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (f *FakeOAuthProvider) tokenHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Info("tokenHandler")
+	slog.Info("authservice:fake_oauth_dev:tokenHandler")
 	// Simple fake token endpoint that returns a fake ID token
 
 	if r.Method != http.MethodPost {
+		slog.Error("authservice:fake_oauth_dev:tokenHandler", "step", "Method not allowed", "method", r.Method)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -145,6 +151,7 @@ func (f *FakeOAuthProvider) tokenHandler(w http.ResponseWriter, r *http.Request)
 	// Parse form data
 	err := r.ParseForm()
 	if err != nil {
+		slog.Error("authservice:fake_oauth_dev:tokenHandler", "step", "Invalid form data", "error", err)
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
 		return
 	}
@@ -155,6 +162,7 @@ func (f *FakeOAuthProvider) tokenHandler(w http.ResponseWriter, r *http.Request)
 	// Check for the fake code
 	code := r.FormValue("code")
 	if code != "fake_auth_code_12345" {
+		slog.Error("authservice:fake_oauth_dev:tokenHandler", "step", "Invalid authorization code", "code", code)
 		http.Error(w, "Invalid authorization code", http.StatusBadRequest)
 		return
 	}
@@ -180,7 +188,7 @@ func (f *FakeOAuthProvider) tokenHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (f *FakeOAuthProvider) oidcDiscoveryHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Info("oidcDiscoveryHandler")
+	slog.Info("authservice:fake_oauth_dev:oidcDiscoveryHandler")
 	// OIDC Discovery document that points to our fake endpoints
 	defaults := getDefaults()
 	baseURL := getEnvOrDefault("OAUTH_ISSUER_URL", defaults["OAUTH_ISSUER_URL"])
@@ -204,6 +212,7 @@ func (f *FakeOAuthProvider) oidcDiscoveryHandler(w http.ResponseWriter, r *http.
 }
 
 func (f *FakeOAuthProvider) jwksHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Info("authservice:fake_oauth_dev:jwksHandler")
 
 	// Convert RSA public key to JWK format with proper base64url encoding
 	// Ensure N is correctly encoded (should be big-endian)
@@ -214,7 +223,7 @@ func (f *FakeOAuthProvider) jwksHandler(w http.ResponseWriter, r *http.Request) 
 	eBytes := big.NewInt(int64(f.publicKey.E)).Bytes()
 	e := base64.RawURLEncoding.EncodeToString(eBytes)
 
-	slog.Info("JWKS key details", "n_length", len(nBytes), "e_value", f.publicKey.E, "e_bytes", eBytes, "n_hex", fmt.Sprintf("%x", nBytes[:32]), "e_hex", fmt.Sprintf("%x", eBytes))
+	slog.Info("authservice:fake_oauth_dev:jwksHandler", "step", "JWKS key details", "n_length", len(nBytes), "e_value", f.publicKey.E, "e_bytes", eBytes, "n_hex", fmt.Sprintf("%x", nBytes[:32]), "e_hex", fmt.Sprintf("%x", eBytes))
 
 	jwks := map[string]interface{}{
 		"keys": []map[string]interface{}{
@@ -235,6 +244,7 @@ func (f *FakeOAuthProvider) jwksHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (f *FakeOAuthProvider) createFakeJWT() string {
+	slog.Info("authservice:fake_oauth_dev:createFakeJWT")
 	// Create JWT payload with current timestamps
 	now := time.Now().Unix()
 	defaults := getDefaults()
@@ -242,7 +252,7 @@ func (f *FakeOAuthProvider) createFakeJWT() string {
 	// Get client ID from environment or use default
 	clientID := getEnvOrDefault("GOOGLE_CLIENT_ID", defaults["GOOGLE_CLIENT_ID"])
 
-	slog.Info("Creating fake JWT", "issuer", issuer, "clientID", clientID, "now", now, "exp", now+3600)
+	slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "Creating fake JWT", "issuer", issuer, "clientID", clientID, "now", now, "exp", now+3600)
 
 	payload := map[string]interface{}{
 		"iss":            issuer,
@@ -256,7 +266,7 @@ func (f *FakeOAuthProvider) createFakeJWT() string {
 		"exp":            now + 3600, // 1 hour from now
 	}
 
-	slog.Info("JWT payload", "payload", payload)
+	slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "JWT payload", "payload", payload)
 
 	// Create JWT using golang-jwt library with RS256 for proper OIDC compliance
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims(payload))
@@ -264,14 +274,14 @@ func (f *FakeOAuthProvider) createFakeJWT() string {
 	// Set the key ID in the header to match JWKS
 	token.Header["kid"] = "fake-key-id"
 
-	slog.Info("JWT header before signing", "header", token.Header)
+	slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "JWT header before signing", "header", token.Header)
 
 	tokenString, err := token.SignedString(f.privateKey)
 	if err != nil {
-		slog.Error("Failed to sign JWT with RS256", "error", err)
+		slog.Error("authservice:fake_oauth_dev:createFakeJWT", "step", "Failed to sign JWT with RS256", "error", err)
 
 		// Debug: Try to understand the key
-		slog.Error("Private key details", "keySize", f.privateKey.Size(), "keyType", fmt.Sprintf("%T", f.privateKey))
+		slog.Error("authservice:fake_oauth_dev:createFakeJWT", "step", "Private key details", "keySize", f.privateKey.Size(), "keyType", fmt.Sprintf("%T", f.privateKey))
 
 		// Fallback to manually created signature for development
 		header := map[string]interface{}{
@@ -286,7 +296,7 @@ func (f *FakeOAuthProvider) createFakeJWT() string {
 		headerB64 := base64.RawURLEncoding.EncodeToString(headerBytes)
 		payloadB64 := base64.RawURLEncoding.EncodeToString(payloadBytes)
 
-		slog.Info("Manual JWT creation", "header_b64", headerB64, "payload_b64", payloadB64)
+		slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "Manual JWT creation", "header_b64", headerB64, "payload_b64", payloadB64)
 
 		// Create signature using RSA private key
 		signingString := headerB64 + "." + payloadB64
@@ -301,26 +311,27 @@ func (f *FakeOAuthProvider) createFakeJWT() string {
 		signatureB64 := base64.RawURLEncoding.EncodeToString(signature)
 		tokenString = strings.Join([]string{headerB64, payloadB64, signatureB64}, ".")
 
-		slog.Info("Manual JWT created", "signature_b64_length", len(signatureB64))
+		slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "Manual JWT created", "signature_b64_length", len(signatureB64))
 	}
 
-	slog.Info("Final JWT token created", "tokenLength", len(tokenString), "tokenPrefix", tokenString[:min(100, len(tokenString))])
+	slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "Final JWT token created", "tokenLength", len(tokenString), "tokenPrefix", tokenString[:min(100, len(tokenString))])
 
 	// Debug: Parse the token back to verify it was created correctly
 	parsedToken, parseErr := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Verify the signing method
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			slog.Error("authservice:fake_oauth_dev:createFakeJWT", "step", "Unexpected signing method", "method", token.Header["alg"])
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return &f.privateKey.PublicKey, nil
 	})
 
 	if parseErr != nil {
-		slog.Error("Failed to parse created JWT for verification", "error", parseErr)
+		slog.Error("authservice:fake_oauth_dev:createFakeJWT", "step", "Failed to parse created JWT for verification", "error", parseErr)
 	} else if parsedToken.Valid {
-		slog.Info("Successfully created and verified JWT token")
+		slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "Successfully created and verified JWT token")
 	} else {
-		slog.Error("Created JWT token is not valid")
+		slog.Error("authservice:fake_oauth_dev:createFakeJWT", "step", "Created JWT token is not valid")
 	}
 
 	return tokenString

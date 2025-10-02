@@ -26,7 +26,9 @@ type PostgresDAOFactory struct {
 
 // NewDAOFactory creates the appropriate DAO factory based on configuration
 func NewDAOFactory(config *Config) (DAOFactory, error) {
+	slog.Info("inferenceservice:dao:NewDAOFactory")
 	if config == nil {
+		slog.Error("inferenceservice:dao:NewDAOFactory", "error", "config cannot be nil")
 		return nil, fmt.Errorf("config cannot be nil")
 	}
 
@@ -44,6 +46,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 		dsn := config.Database.Postgres.GetPostgresDSN()
 		db, err := sqlx.Open("postgres", dsn)
 		if err != nil {
+			slog.Error("inferenceservice:dao:NewDAOFactory", "error", "failed to open PostgreSQL connection", "error", err)
 			return nil, fmt.Errorf("failed to open PostgreSQL connection: %w", err)
 		}
 
@@ -55,6 +58,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 		// Test the connection
 		if err := db.Ping(); err != nil {
 			db.Close()
+			slog.Error("inferenceservice:dao:NewDAOFactory", "error", "failed to ping PostgreSQL database", "error", err)
 			return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 		}
 
@@ -69,6 +73,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 			db:     db,
 		}, nil
 	default:
+		slog.Error("inferenceservice:dao:NewDAOFactory", "error", "unsupported database type", "database_type", config.Database.Type)
 		return nil, fmt.Errorf("unsupported database type: %s", config.Database.Type)
 	}
 }
@@ -76,6 +81,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 // SQLiteDAOFactory implementation
 
 func (f *SQLiteDAOFactory) CreateDAO() (DAO, error) {
+	slog.Info("inferenceservice:dao:SQLiteDAOFactory:CreateDAO")
 	return NewSQLiteDAO(f.config.Database.SQLite.URL)
 }
 
@@ -86,6 +92,7 @@ func (f *SQLiteDAOFactory) Close() error {
 
 // PostgresDAOFactory implementation
 func (f *PostgresDAOFactory) CreateDAO() (DAO, error) {
+	slog.Info("inferenceservice:dao:PostgresDAOFactory:CreateDAO")
 	return NewPostgresDAOWithDB(f.db)
 }
 

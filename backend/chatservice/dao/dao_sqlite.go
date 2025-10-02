@@ -121,6 +121,8 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted boo
 		args = append(args, projectID, userID)
 	}
 
+	query += " ORDER BY id DESC"
+
 	err := s.db.Select(&chats, query, args...)
 	if err != nil {
 		slog.Error("dao_sqlite:GetChatList", "error", "failed to get chat list", "error", err, "projectID", projectID, "userID", userID)
@@ -589,7 +591,6 @@ func (s *SQLiteDAO) SoftDeleteChat(userID string, chatId string) error {
 	}
 	return nil
 }
-
 func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
 	slog.Info("dao_sqlite:DeleteChat", "userID", userID, "chatId", chatId)
 	tx, err := s.db.Begin()
@@ -606,17 +607,16 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
 		}
 	}()
 
-	// Delete messages under the hierarchy first
-	// Create a temporary table to hold the chat IDs of the hierarchy
+	// Create temporary table to hold chat IDs
 	_, err = tx.Exec(`
         CREATE TEMP TABLE chat_ids_to_delete AS
-        WITH RECURSIVE chat_hierarchy AS (
-            SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
-            UNION ALL
-            SELECT c.chat_id FROM chat_list c
-            JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
-            WHERE c.user_id = ?
-        )
+            WITH RECURSIVE chat_hierarchy AS (
+                SELECT chat_id FROM chat_list WHERE chat_id = ? AND user_id = ?
+                UNION ALL
+                SELECT c.chat_id FROM chat_list c
+                JOIN chat_hierarchy h ON c.parent_chat_id = h.chat_id
+                WHERE c.user_id = ?
+            )
         SELECT chat_id FROM chat_hierarchy;
     `, chatId, userID, userID)
 	if err != nil {
@@ -637,19 +637,25 @@ func (s *SQLiteDAO) DeleteChat(userID string, chatId string) error {
 
 	// Delete chats using the temporary table
 	_, err = tx.Exec(`
-        DELETE FROM chat_list
-        WHERE user_id = ?
+        DELETE FROM chat_list 
+        WHERE user_id = ? 
           AND chat_id IN (SELECT chat_id FROM chat_ids_to_delete);
     `, userID)
 	if err != nil {
 		slog.Error("dao_sqlite:DeleteChat", "error", "failed to delete chats", "error", err, "userID", userID, "chatId", chatId)
-		return fmt.Errorf("failed to delete chats, please try again")
+		return fmt.Errorf("failed to delete chat, please try again")
 	}
 
-	err = tx.Commit()
+	// Drop temp table if it exists
+	_, err = tx.Exec(`DROP TABLE IF EXISTS chat_ids_to_delete;`)
 	if err != nil {
+		slog.Error("dao_sqlite:DeleteChat", "error", "failed to drop temp table", "error", err, "userID", userID, "chatId", chatId)
+		return fmt.Errorf("failed to delete chat, please try again")
+	}
+
+	if commitErr := tx.Commit(); commitErr != nil {
 		slog.Error("dao_sqlite:DeleteChat", "error", "failed to commit transaction", "error", err, "userID", userID, "chatId", chatId)
-		return fmt.Errorf("failed to commit transaction, please try again")
+		return fmt.Errorf("failed to delete chat, please try again")
 	}
 	return nil
 }

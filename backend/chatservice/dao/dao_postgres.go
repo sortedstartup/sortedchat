@@ -166,6 +166,8 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string, softDeleted b
 		args = append(args, projectID, userID)
 	}
 
+	query += " ORDER BY id DESC"
+
 	query = p.db.Rebind(query)
 	err := p.db.Select(&chats, query, args...)
 	if err != nil {

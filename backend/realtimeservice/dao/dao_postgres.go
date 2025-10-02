@@ -16,10 +16,12 @@ type PostgresDAO struct {
 
 // NewPostgresDAO creates a new PostgreSQL DAO instance
 func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
+	slog.Info("RealtimeService:dao_postgres:NewPostgresDAO")
 	dsn := config.GetPostgresDSN()
 
 	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
+		slog.Error("RealtimeService:dao_postgres:NewPostgresDAO", "error", "failed to open PostgreSQL connection", "error", err)
 		return nil, fmt.Errorf("failed to open PostgreSQL connection: %w", err)
 	}
 
@@ -31,6 +33,7 @@ func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
 	// Test the connection
 	if err := db.Ping(); err != nil {
 		db.Close()
+		slog.Error("RealtimeService:dao_postgres:NewPostgresDAO", "error", "failed to ping PostgreSQL database", "error", err)
 		return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 	}
 
@@ -45,6 +48,7 @@ func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
 
 // NewPostgresDAOWithDB creates a new PostgreSQL DAO instance using a shared database connection
 func NewPostgresDAOWithDB(db *sqlx.DB) (*PostgresDAO, error) {
+	slog.Info("RealtimeService:dao_postgres:NewPostgresDAOWithDB")
 	return &PostgresDAO{db: db}, nil
 }
 
@@ -53,21 +57,23 @@ func (d *PostgresDAO) Infer(dummy string) error {
 }
 
 func (d *PostgresDAO) CreateAudioChat(userID string, modelName string, startTime string, endTime string) (string, error) {
+	slog.Info("RealtimeService:dao_postgres:CreateAudioChat")
 	id := uuid.New().String()
 	_, err := d.db.Exec("INSERT INTO realtimeservice_audio_chat (id, model_name, user_id, start_time, end_time) VALUES ($1, $2, $3, $4, $5)", id, modelName, userID, startTime, endTime)
 
 	if err != nil {
-		slog.Error("Failed to create audio chat postgres", "error", err)
-		return "", err
+		slog.Error("RealtimeService:dao_postgres:CreateAudioChat", "error", "failed to create audio chat", "error", err)
+		return "", fmt.Errorf("failed to create audio chat")
 	}
 	return id, nil
 }
 
 func (d *PostgresDAO) UpdateAudioChat(userID string, id string, endTime string) error {
+	slog.Info("RealtimeService:dao_postgres:UpdateAudioChat")
 	_, err := d.db.Exec("UPDATE realtimeservice_audio_chat SET end_time = $1 WHERE id = $2 AND user_id = $3", endTime, id, userID)
 	if err != nil {
-		slog.Error("Failed to update audio chat postgres", "error", err)
-		return err
+		slog.Error("RealtimeService:dao_postgres:UpdateAudioChat", "error", "failed to update audio chat", "error", err)
+		return fmt.Errorf("failed to update audio chat")
 	}
 	return nil
 }

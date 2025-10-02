@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"sortedstartup/common/auth"
@@ -18,6 +19,7 @@ type RealtimeServiceAPI struct {
 var SQLITE_DB_URL = "db.sqlite"
 
 func NewRealtimeServiceAPI(daoFactory dao.DAOFactory) *RealtimeServiceAPI {
+	slog.Info("RealtimeService:NewRealtimeServiceAPI")
 
 	r := &RealtimeServiceAPI{
 		service: service.NewRealtimeService(daoFactory),
@@ -50,14 +52,17 @@ func (s *RealtimeServiceAPI) Init(config *dao.Config) {
 }
 
 func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*pb.OfferResponse, error) {
+	slog.Info("RealtimeService:api:Offer")
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		return nil, err
+		slog.Error("RealtimeService:api:Offer", "error", "failed to get user ID from context", "error", err)
+		return nil, fmt.Errorf("failed to get user ID from context")
 	}
 
 	offer, err := s.service.Offer(req.Offer, req.Model, userID)
 	if err != nil {
-		return nil, err
+		slog.Error("RealtimeService:api:Offer", "error", "failed to offer", "error", err)
+		return nil, fmt.Errorf("failed to offer")
 	}
 	return &pb.OfferResponse{
 		Offer: offer,
@@ -67,12 +72,13 @@ func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*
 func (s *RealtimeServiceAPI) IceCandidate(ctx context.Context, req *pb.IceCandidateRequest) (*pb.IceCandidateResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		return nil, err
+		slog.Error("RealtimeService:api:IceCandidate", "error", "failed to get user ID from context", "error", err)
+		return nil, fmt.Errorf("failed to get user ID from context")
 	}
 	message, err := s.service.IceCandidate(req.Candidate, userID)
 	if err != nil {
-		slog.Error("Error adding ICE candidate", "error", err)
-		return nil, err
+		slog.Error("RealtimeService:api:IceCandidate", "error", "failed to add ICE candidate", "error", err)
+		return nil, fmt.Errorf("failed to add ICE candidate")
 	}
 	return &pb.IceCandidateResponse{
 		Message: message,

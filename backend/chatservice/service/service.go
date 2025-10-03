@@ -285,7 +285,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		slog.Error("service:Chat", "message", "OpenAI API error", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID, "bodyBytes", string(bodyBytes))
+		slog.Error("service:Chat", "message", "OpenAI API error", "status", resp.StatusCode, "body", string(bodyBytes), "chatId", chatId, "userID", userID, "projectID", projectID, "bodyBytes", string(bodyBytes))
 		return fmt.Errorf("OpenAI API error, please try again")
 	}
 
@@ -539,8 +539,8 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		_, _ = io.ReadAll(resp.Body)
-		slog.Error("service:GenerateChatName", "message", "OpenAI API error", "error", err, "chatId", chatId, "userID", userID)
+		body, _ := io.ReadAll(resp.Body)
+		slog.Error("service:GenerateChatName", "message", "OpenAI API error", "status", resp.StatusCode, "body", string(body), "chatId", chatId, "userID", userID)
 		return "", fmt.Errorf("OpenAI API error, please try again")
 	}
 
@@ -662,7 +662,7 @@ func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID 
 	slog.Info("service:GetChatList", "projectID", projectID, "userID", userID)
 	chats, err := s.dao.GetChatList(userID, projectID, soft_deleted)
 	if err != nil {
-		slog.Error("service:GetHistory", "message", "failed to get chat metadata", "error", err, "userID", userID, "projectID", projectID)
+		slog.Error("service:GetChatList", "message", "failed to get chat metadata", "error", err, "userID", userID, "projectID", projectID)
 		return nil, fmt.Errorf("error while processing request, please try again")
 	}
 	return chats, nil
@@ -854,6 +854,9 @@ func (s *ChatService) retrieveSimilarChunks(ctx context.Context, userID string, 
 				return nil, fmt.Errorf("failed to get document, please try again")
 			}
 			data, err := io.ReadAll(reader)
+			if rc, ok := reader.(io.ReadCloser); ok {
+				_ = rc.Close()
+			}
 			if err != nil {
 				slog.Error("service:retrieveSimilarChunks", "message", "failed to read object for docsID", "error", err, "userID", userID, "projectID", projectID, "query", query, "docsID", v.DocsID)
 				return nil, fmt.Errorf("failed to read document, please try again")
@@ -1006,6 +1009,9 @@ func (s *ChatService) EmbeddingSubscriber() {
 
 				result, err := s.pipeline.RunWithChunks(context.Background(), f, "text/plain", metadata) //WILL LOGGIFY THIS LATER
 				if err != nil {
+					if cerr := f.Close(); cerr != nil {
+						slog.Error("service:EmbeddingSubscriber", "message", "failed to close file after pipeline error", "error", cerr, "docsID", payload.DocsID)
+					}
 					slog.Error("service:EmbeddingSubscriber", "message", "failed to run pipeline", "error", err, "metadata", metadata)
 					if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_ERROR)); updateErr != nil {
 						slog.Error("service:EmbeddingSubscriber", "message", "failed to update embedding status to error", "error", updateErr, "docsID", payload.DocsID)
@@ -1031,6 +1037,9 @@ func (s *ChatService) EmbeddingSubscriber() {
 				}
 				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_SUCCESS)); updateErr != nil {
 					slog.Error("service:EmbeddingSubscriber", "message", "failed to update embedding status to success", "error", updateErr, "docsID", payload.DocsID)
+				}
+				if cerr := f.Close(); cerr != nil {
+					slog.Error("service:EmbeddingSubscriber", "message", "failed to close file", "error", cerr, "docsID", payload.DocsID)
 				}
 			} else {
 				slog.Error("service:EmbeddingSubscriber", "message", "failed to unmarshal message", "error", err, "msgID", msg.ID, "msgSubject", msg.Subject)
@@ -1245,12 +1254,12 @@ func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId stri
 	trimmedName := strings.TrimSpace(name)
 
 	if len(trimmedName) < MIN_CHAT_NAME_LENGTH {
-		slog.Error("service:RenameChat", "message", "name must be at least %d characters", "userID", userID, "chatId", chatId, "name", name)
+		slog.Error("service:RenameChat", "message", fmt.Sprintf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH), "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH)
 	}
 
 	if len(trimmedName) > MAX_CHAT_NAME_LENGTH {
-		slog.Error("service:RenameChat", "message", "name must be less than %d characters", "userID", userID, "chatId", chatId, "name", name)
+		slog.Error("service:RenameChat", "message", fmt.Sprintf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH), "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH)
 	}
 

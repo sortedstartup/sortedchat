@@ -85,9 +85,8 @@ func init() {
 	}
 	devPublicKey = &devPrivateKey.PublicKey
 
-	// Debug: Log key generation
-	nBytes := devPublicKey.N.Bytes()
-	slog.Info("authservice:fake_oauth_dev:init", "step", "Generated RSA key pair in init()", "keySize", devPrivateKey.Size(), "n_hex", fmt.Sprintf("%x", nBytes[:32]))
+	slog.Info("authservice:fake_oauth_dev:init", "step", "Generated RSA key pair in init()", "keySize", devPrivateKey.Size())
+
 }
 
 func NewFakeOAuthProvider() *FakeOAuthProvider {
@@ -223,7 +222,7 @@ func (f *FakeOAuthProvider) jwksHandler(w http.ResponseWriter, r *http.Request) 
 	eBytes := big.NewInt(int64(f.publicKey.E)).Bytes()
 	e := base64.RawURLEncoding.EncodeToString(eBytes)
 
-	slog.Info("authservice:fake_oauth_dev:jwksHandler", "step", "JWKS key details", "n_length", len(nBytes), "e_value", f.publicKey.E, "e_bytes", eBytes, "n_hex", fmt.Sprintf("%x", nBytes[:32]), "e_hex", fmt.Sprintf("%x", eBytes))
+	slog.Info("authservice:fake_oauth_dev:jwksHandler", "step", "JWKS key details", "n_length", len(nBytes), "e_value", f.publicKey.E)
 
 	jwks := map[string]interface{}{
 		"keys": []map[string]interface{}{
@@ -314,7 +313,7 @@ func (f *FakeOAuthProvider) createFakeJWT() string {
 		slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "Manual JWT created", "signature_b64_length", len(signatureB64))
 	}
 
-	slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "Final JWT token created", "tokenLength", len(tokenString), "tokenPrefix", tokenString[:min(100, len(tokenString))])
+	slog.Info("authservice:fake_oauth_dev:createFakeJWT", "step", "Final JWT token created", "tokenLength", len(tokenString))
 
 	// Debug: Parse the token back to verify it was created correctly
 	parsedToken, parseErr := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {

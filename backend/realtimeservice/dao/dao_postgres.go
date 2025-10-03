@@ -21,7 +21,7 @@ func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
 
 	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
-		slog.Error("RealtimeService:dao_postgres:NewPostgresDAO", "error", "failed to open PostgreSQL connection", "error", err)
+		slog.Error("RealtimeService:dao_postgres:NewPostgresDAO", "message", "failed to open PostgreSQL connection", "error", err)
 		return nil, fmt.Errorf("failed to open PostgreSQL connection: %w", err)
 	}
 
@@ -33,7 +33,7 @@ func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
 	// Test the connection
 	if err := db.Ping(); err != nil {
 		db.Close()
-		slog.Error("RealtimeService:dao_postgres:NewPostgresDAO", "error", "failed to ping PostgreSQL database", "error", err)
+		slog.Error("RealtimeService:dao_postgres:NewPostgresDAO", "message", "failed to ping PostgreSQL database", "error", err)
 		return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 	}
 
@@ -62,7 +62,7 @@ func (d *PostgresDAO) CreateAudioChat(userID string, modelName string, startTime
 	_, err := d.db.Exec("INSERT INTO realtimeservice_audio_chat (id, model_name, user_id, start_time, end_time) VALUES ($1, $2, $3, $4, $5)", id, modelName, userID, startTime, endTime)
 
 	if err != nil {
-		slog.Error("RealtimeService:dao_postgres:CreateAudioChat", "error", "failed to create audio chat", "error", err)
+		slog.Error("RealtimeService:dao_postgres:CreateAudioChat", "message", "failed to create audio chat", "error", err)
 		return "", fmt.Errorf("failed to create audio chat")
 	}
 	return id, nil
@@ -72,7 +72,7 @@ func (d *PostgresDAO) UpdateAudioChat(userID string, id string, endTime string) 
 	slog.Info("RealtimeService:dao_postgres:UpdateAudioChat")
 	_, err := d.db.Exec("UPDATE realtimeservice_audio_chat SET end_time = $1 WHERE id = $2 AND user_id = $3", endTime, id, userID)
 	if err != nil {
-		slog.Error("RealtimeService:dao_postgres:UpdateAudioChat", "error", "failed to update audio chat", "error", err)
+		slog.Error("RealtimeService:dao_postgres:UpdateAudioChat", "message", "failed to update audio chat", "error", err)
 		return fmt.Errorf("failed to update audio chat")
 	}
 	return nil

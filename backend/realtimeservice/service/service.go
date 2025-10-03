@@ -19,7 +19,7 @@ func NewRealtimeService(daoFactory dao.DAOFactory) *RealtimeService {
 	slog.Info("RealtimeService: NewRealtimeService")
 	daoInstance, err := daoFactory.CreateDAO()
 	if err != nil {
-		slog.Error("RealtimeService: NewRealtimeService", "error", "Failed to create DAO", "error", err)
+		slog.Error("RealtimeService: NewRealtimeService", "message", "Failed to create DAO", "error", err)
 		return nil
 	}
 	return &RealtimeService{dao: daoInstance}
@@ -51,7 +51,7 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 
 	browserToBackendPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
-		slog.Error("RealtimeService: Offer", "error", "error creating browser to backend PC", "userID", userID, "error", err)
+		slog.Error("RealtimeService: Offer", "message", "error creating browser to backend PC", "userID", userID, "error", err)
 		return "", err
 	}
 
@@ -61,11 +61,11 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 		"ai-backend-track", "pion-ai",
 	)
 	if err != nil {
-		slog.Error("RealtimeService: Offer", "error", "error creating AI to backend track", "userID", userID, "error", err)
+		slog.Error("RealtimeService: Offer", "message", "error creating AI to backend track", "userID", userID, "error", err)
 		return "", err
 	}
 	if _, err := browserToBackendPC.AddTrack(aiBackendTrack); err != nil {
-		slog.Error("RealtimeService: Offer", "error", "error adding AI to backend track", "userID", userID, "error", err)
+		slog.Error("RealtimeService: Offer", "message", "error adding AI to backend track", "userID", userID, "error", err)
 		return "", err
 	}
 

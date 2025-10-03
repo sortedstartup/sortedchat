@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -26,8 +27,7 @@ func NewInferenceService(daoFactory dao.DAOFactory) *InferenceService {
 	slog.Info("inferenceservice:service:NewInferenceService")
 	dao, err := daoFactory.CreateDAO()
 	if err != nil {
-		slog.Error("inferenceservice:service:NewInferenceService", "error", "failed to create DAO", "error", err)
-		return nil
+		log.Fatalf("Failed to create DAO: %v", err)
 	}
 	return &InferenceService{
 		dao:                dao,
@@ -41,7 +41,7 @@ func (s *InferenceService) Initialize() error {
 	slog.Info("inferenceservice:service:Initialize")
 	models, err := s.dao.GetAllModels()
 	if err != nil {
-		slog.Error("inferenceservice:service:Initialize", "error", "failed to get all models", "error", err)
+		slog.Error("inferenceservice:service:Initialize", "message", "failed to get all models", "error", err)
 		return fmt.Errorf("failed to get all models: %w", err)
 	}
 	for _, model := range models {
@@ -74,17 +74,17 @@ func (s *InferenceService) DownloadModel(ctx context.Context, userID string, mod
 	}
 
 	if !model.IsDownloadable {
-		slog.Error("inferenceservice:service:DownloadModel", "error", "model is not downloadable", "modelName", modelName)
+		slog.Error("inferenceservice:service:DownloadModel", "message", "model is not downloadable", "modelName", modelName)
 		return fmt.Errorf("model %s is not downloadable", modelName)
 	}
 
 	if model.Status == dao.StatusDownloading {
-		slog.Error("inferenceservice:service:DownloadModel", "error", "model is already downloading", "modelName", modelName)
+		slog.Error("inferenceservice:service:DownloadModel", "message", "model is already downloading", "modelName", modelName)
 		return fmt.Errorf("model %s is already downloading", modelName)
 	}
 
 	if model.Status == dao.StatusCompleted {
-		slog.Error("inferenceservice:service:DownloadModel", "error", "model is already downloaded", "modelName", modelName)
+		slog.Error("inferenceservice:service:DownloadModel", "message", "model is already downloaded", "modelName", modelName)
 		return fmt.Errorf("model %s is already downloaded", modelName)
 	}
 
@@ -103,9 +103,9 @@ func (s *InferenceService) DownloadModel(ctx context.Context, userID string, mod
 
 		if err := s.downloadModelFromURL(ctx, model.ID, model.Name, model.URL); err != nil {
 			if errors.Is(err, context.Canceled) {
-				slog.Error("inferenceservice:service:DownloadModel", "error", "context canceled", "modelName", modelName)
+				slog.Error("inferenceservice:service:DownloadModel", "message", "context canceled", "modelName", modelName)
 				if resetErr := s.dao.ResetModelToInitialState(model.ID); resetErr != nil {
-					slog.Error("inferenceservice:service:DownloadModel", "error", "failed to reset model to initial state", "modelName", modelName, "error", resetErr)
+					slog.Error("inferenceservice:service:DownloadModel", "message", "failed to reset model to initial state", "modelName", modelName, "error", resetErr)
 				} else {
 					slog.Info("inferenceservice:service:DownloadModel", "message", "successfully reset model to initial state", "modelName", modelName)
 				}
@@ -118,11 +118,11 @@ func (s *InferenceService) DownloadModel(ctx context.Context, userID string, mod
 					Speed:    0,
 				}
 				if updateErr := s.dao.UpdateModelProgress(model.ID, failedProgress); updateErr != nil {
-					slog.Error("inferenceservice:service:DownloadModel", "error", "failed to update failed status", "modelName", modelName, "error", updateErr)
+					slog.Error("inferenceservice:service:DownloadModel", "message", "failed to update failed status", "modelName", modelName, "error", updateErr)
 				}
 				err := s.deleteFilestoreObject(*model.FileStoreID)
 				if err != nil {
-					slog.Error("inferenceservice:service:DownloadModel", "error", "failed to delete filestore object", "modelName", modelName, "error", err)
+					slog.Error("inferenceservice:service:DownloadModel", "message", "failed to delete filestore object", "modelName", modelName, "error", err)
 				}
 			}
 		}
@@ -148,13 +148,13 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 	// Make HTTP request
 	resp, err := client.Get(url)
 	if err != nil {
-		slog.Error("inferenceservice:service:downloadModelFromURL", "error", "failed to make HTTP request", "modelName", modelName, "error", err)
+		slog.Error("inferenceservice:service:downloadModelFromURL", "message", "failed to make HTTP request", "modelName", modelName, "error", err)
 		return fmt.Errorf("failed to make HTTP request")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		slog.Error("inferenceservice:service:downloadModelFromURL", "error", "HTTP request failed with status", "modelName", modelName, "statusCode", resp.StatusCode)
+		slog.Error("inferenceservice:service:downloadModelFromURL", "message", "HTTP request failed with status", "modelName", modelName, "statusCode", resp.StatusCode)
 		return fmt.Errorf("HTTP request failed with status: %d", resp.StatusCode)
 	}
 
@@ -166,7 +166,7 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 
 	modelDir := filepath.Join("filestore", "models")
 	if err := os.MkdirAll(modelDir, 0755); err != nil {
-		slog.Error("inferenceservice:service:downloadModelFromURL", "error", "failed to create model directory", "modelName", modelName, "error", err)
+		slog.Error("inferenceservice:service:downloadModelFromURL", "message", "failed to create model directory", "modelName", modelName, "error", err)
 		return fmt.Errorf("failed to create model directory")
 	}
 
@@ -175,14 +175,14 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 
 	file, err := os.Create(filePath)
 	if err != nil {
-		slog.Error("inferenceservice:service:downloadModelFromURL", "error", "failed to create file", "modelName", modelName, "error", err)
+		slog.Error("inferenceservice:service:downloadModelFromURL", "message", "failed to create file", "modelName", modelName, "error", err)
 		return fmt.Errorf("failed to create file")
 	}
 	defer file.Close()
 
 	// Update the filestore_id in the database to point to the downloaded file
 	if err := s.dao.UpdateModelFileStoreID(modelID, filePath); err != nil {
-		slog.Error("inferenceservice:service:downloadModelFromURL", "error", "failed to update filestore_id", "modelName", modelName, "error", err)
+		slog.Error("inferenceservice:service:downloadModelFromURL", "message", "failed to update filestore_id", "modelName", modelName, "error", err)
 	}
 
 	// Create progress tracking writer
@@ -209,7 +209,7 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 			s.deleteFilestoreObject(filePath)
 			return ctx.Err()
 		}
-		slog.Error("inferenceservice:service:downloadModelFromURL", "error", "failed to copy file", "modelName", modelName, "error", err)
+		slog.Error("inferenceservice:service:downloadModelFromURL", "message", "failed to copy file", "modelName", modelName, "error", err)
 		return fmt.Errorf("failed to save file: %w", err)
 	}
 
@@ -240,7 +240,7 @@ func (pw *ProgressWriter) Write(p []byte) (int, error) {
 	slog.Info("inferenceservice:service:ProgressWriter:Write")
 	n, err := pw.writer.Write(p)
 	if err != nil {
-		slog.Error("inferenceservice:service:ProgressWriter:Write", "error", "failed to write file", "modelName", pw.modelID, "error", err)
+		slog.Error("inferenceservice:service:ProgressWriter:Write", "message", "failed to write file", "modelName", pw.modelID, "error", err)
 		return n, err
 	}
 
@@ -305,13 +305,13 @@ func (s *InferenceService) GetLLMModels(ctx context.Context, sendModels func([]*
 	// Get all models initially
 	models, err := s.dao.GetAllModels()
 	if err != nil {
-		slog.Error("inferenceservice:service:GetLLMModels", "error", "failed to get models", "error", err)
+		slog.Error("inferenceservice:service:GetLLMModels", "message", "failed to get models", "error", err)
 		return fmt.Errorf("failed to get models")
 	}
 
 	// Send initial list
 	if err := sendModels(models); err != nil {
-		slog.Error("inferenceservice:service:GetLLMModels", "error", "failed to send models", "error", err)
+		slog.Error("inferenceservice:service:GetLLMModels", "message", "failed to send models", "error", err)
 		return err
 	}
 
@@ -342,7 +342,7 @@ func (s *InferenceService) GetLLMModels(ctx context.Context, sendModels func([]*
 			// Get updated models
 			updatedModels, err := s.dao.GetAllModels()
 			if err != nil {
-				slog.Error("inferenceservice:service:GetLLMModels", "error", "failed to get updated models", "error", err)
+				slog.Error("inferenceservice:service:GetLLMModels", "message", "failed to get updated models", "error", err)
 				continue
 			}
 
@@ -357,7 +357,7 @@ func (s *InferenceService) GetLLMModels(ctx context.Context, sendModels func([]*
 
 			// Send updated models
 			if err := sendModels(updatedModels); err != nil {
-				slog.Error("inferenceservice:service:GetLLMModels", "error", "failed to send updated models", "error", err)
+				slog.Error("inferenceservice:service:GetLLMModels", "message", "failed to send updated models", "error", err)
 				return err
 			}
 
@@ -375,12 +375,12 @@ func (s *InferenceService) CancelDownload(ctx context.Context, userID string, mo
 	// Get model metadata from database
 	model, err := s.dao.GetModelByName(modelName)
 	if err != nil {
-		slog.Error("inferenceservice:service:CancelDownload", "error", "failed to get model", "error", err)
+		slog.Error("inferenceservice:service:CancelDownload", "message", "failed to get model", "error", err)
 		return fmt.Errorf("model not found")
 	}
 
 	if model.Status != dao.StatusDownloading {
-		slog.Error("inferenceservice:service:CancelDownload", "error", "model is not downloading", "modelName", modelName)
+		slog.Error("inferenceservice:service:CancelDownload", "message", "model is not downloading", "modelName", modelName)
 		return fmt.Errorf("model %s is not downloading", modelName)
 	}
 
@@ -412,18 +412,18 @@ func (s *InferenceService) DeleteModel(ctx context.Context, userID string, model
 	// Get model metadata from database
 	model, err := s.dao.GetModelByName(modelName)
 	if err != nil {
-		slog.Error("inferenceservice:service:DeleteModel", "error", "failed to get model", "error", err)
+		slog.Error("inferenceservice:service:DeleteModel", "message", "failed to get model", "error", err)
 		return fmt.Errorf("model not found")
 	}
 
 	if !model.IsDownloadable {
-		slog.Error("inferenceservice:service:DeleteModel", "error", "model is not downloadable", "modelName", modelName)
+		slog.Error("inferenceservice:service:DeleteModel", "message", "model is not downloadable", "modelName", modelName)
 		return fmt.Errorf("model %s is not downloadable", modelName)
 	}
 
 	// Check if model is currently downloading and cancel if needed
 	if model.Status != dao.StatusCompleted {
-		slog.Error("inferenceservice:service:DeleteModel", "error", "model is not downloaded", "modelName", modelName)
+		slog.Error("inferenceservice:service:DeleteModel", "message", "model is not downloaded", "modelName", modelName)
 		return fmt.Errorf("model %s is not downloaded", modelName)
 	}
 
@@ -431,14 +431,14 @@ func (s *InferenceService) DeleteModel(ctx context.Context, userID string, model
 	if model.FileStoreID != nil {
 		err := s.deleteFilestoreObject(*model.FileStoreID)
 		if err != nil {
-			slog.Error("inferenceservice:service:DeleteModel", "error", "failed to delete filestore object", "modelName", modelName, "error", err)
+			slog.Error("inferenceservice:service:DeleteModel", "message", "failed to delete filestore object", "modelName", modelName, "error", err)
 			return fmt.Errorf("failed to delete filestore object")
 		}
 		// Don't return error here - we still want to delete from database
 	}
 
 	if err := s.dao.ResetModelToInitialState(model.ID); err != nil {
-		slog.Error("inferenceservice:service:DeleteModel", "error", "failed to reset model to initial state", "modelName", modelName, "error", err)
+		slog.Error("inferenceservice:service:DeleteModel", "message", "failed to reset model to initial state", "modelName", modelName, "error", err)
 		return fmt.Errorf("failed to reset model to initial state")
 	}
 
@@ -454,7 +454,7 @@ func (s *InferenceService) deleteFilestoreObject(filePath string) error {
 	}
 
 	if err := os.Remove(filePath); err != nil {
-		slog.Error("inferenceservice:service:deleteFilestoreObject", "error", "failed to delete filestore object", "filePath", filePath, "error", err)
+		slog.Error("inferenceservice:service:deleteFilestoreObject", "message", "failed to delete filestore object", "filePath", filePath, "error", err)
 		return fmt.Errorf("failed to delete filestore object")
 	}
 

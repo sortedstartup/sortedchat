@@ -31,7 +31,12 @@ func (a *AuthServiceAPI) oAuthConfigHandler(w http.ResponseWriter, r *http.Reque
 	slog.Info("authservice:api:oAuthConfigHandler", "path", r.URL.Path, "method", r.Method)
 	// Get the OAuth configuration from the service
 	config := a.service.GetOAuthConfigForFrontend()
-	json.NewEncoder(w).Encode(config)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(config); err != nil {
+		slog.Error("authservice:api:oAuthConfigHandler encode failed", "err", err)
+		http.Error(w, "failed to encode config", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (a *AuthServiceAPI) loginHandler(w http.ResponseWriter, r *http.Request) {

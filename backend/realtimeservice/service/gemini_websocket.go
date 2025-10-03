@@ -62,20 +62,20 @@ func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 	slog.Info("RealtimeService:gemini_websocket:NewGeminiRealtime")
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "error", "GEMINI_API_KEY environment variable is required")
+		slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "message", "GEMINI_API_KEY environment variable is required")
 		return nil, fmt.Errorf("GEMINI_API_KEY environment variable is required")
 	}
 
 	// Initialize Opus encoder/decoder
 	opusEncoder, err := opus.NewEncoder(48000, 1, opus.AppVoIP)
 	if err != nil {
-		slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "error", "failed to create Opus encoder", "error", err)
+		slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "message", "failed to create Opus encoder", "error", err)
 		return nil, fmt.Errorf("failed to create Opus encoder: %v", err)
 	}
 
 	opusDecoder, err := opus.NewDecoder(48000, 1)
 	if err != nil {
-		slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "error", "failed to create Opus decoder", "error", err)
+		slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "message", "failed to create Opus decoder", "error", err)
 		return nil, fmt.Errorf("failed to create Opus decoder: %v", err)
 	}
 
@@ -122,11 +122,11 @@ func (g *GeminiRealtime) Connect() error {
 	var err error
 	g.ws, _, err = websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
-		slog.Error("RealtimeService:gemini_websocket:Connect", "error", "failed to connect to Gemini", "userID", g.userID, "error", err)
+		slog.Error("RealtimeService:gemini_websocket:Connect", "message", "failed to connect to Gemini", "userID", g.userID, "error", err)
 		return err
 	}
 
-	slog.Info("RealtimeService:gemini_websocket:Connect", "Connected to Gemini WebSocket", "userID", g.userID)
+	slog.Info("RealtimeService:gemini_websocket:Connect", "message", "Connected to Gemini WebSocket", "userID", g.userID)
 
 	// Send setup message
 	setupMsg := GeminiMessage{
@@ -138,14 +138,14 @@ func (g *GeminiRealtime) Connect() error {
 		},
 	}
 	if err := g.ws.WriteJSON(setupMsg); err != nil {
-		slog.Error("RealtimeService:gemini_websocket:Connect", "error", "failed to send setup", "userID", g.userID, "error", err)
+		slog.Error("RealtimeService:gemini_websocket:Connect", "message", "failed to send setup", "userID", g.userID, "error", err)
 		return err
 	}
 
 	// Wait for setup acknowledgment
 	var setupResponse map[string]interface{}
 	if err := g.ws.ReadJSON(&setupResponse); err != nil {
-		slog.Error("RealtimeService:gemini_websocket:Connect", "error", "failed to read setup response", "userID", g.userID, "error", err)
+		slog.Error("RealtimeService:gemini_websocket:Connect", "message", "failed to read setup response", "userID", g.userID, "error", err)
 		return err
 	}
 
@@ -153,7 +153,7 @@ func (g *GeminiRealtime) Connect() error {
 	g.connected = true
 	g.mu.Unlock()
 
-	slog.Info("RealtimeService:gemini_websocket:Connect", "Gemini setup complete", "userID", g.userID)
+	slog.Info("RealtimeService:gemini_websocket:Connect", "message", "Gemini setup complete", "userID", g.userID)
 
 	// Start handling responses
 	go g.handleResponses()
@@ -163,7 +163,7 @@ func (g *GeminiRealtime) Connect() error {
 
 // HandleAudioTrack processes incoming audio from WebRTC track
 func (g *GeminiRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
-	slog.Info("RealtimeService:gemini_websocket:HandleAudioTrack", "Starting audio track handling for Gemini", "userID", g.userID)
+	slog.Info("RealtimeService:gemini_websocket:HandleAudioTrack", "message", "Starting audio track handling for Gemini", "userID", g.userID)
 
 	g.sendDataChannelMessage("Client_audio", "gemini", nil) //custom event
 
@@ -180,7 +180,7 @@ func (g *GeminiRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		// Extract Opus payload
 		opusData, err := opusPacket.Unmarshal(rtpPacket.Payload)
 		if err != nil {
-			slog.Error("RealtimeService:gemini_websocket:HandleAudioTrack", "error", "failed to unmarshal Opus data", "userID", g.userID, "error", err)
+			slog.Error("RealtimeService:gemini_websocket:HandleAudioTrack", "message", "failed to unmarshal Opus data", "userID", g.userID, "error", err)
 			continue
 		}
 
@@ -188,7 +188,7 @@ func (g *GeminiRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		pcmData := make([]int16, 960) // 20ms at 48kHz
 		n, err := g.opusDecoder.Decode(opusData, pcmData)
 		if err != nil {
-			slog.Error("RealtimeService:gemini_websocket:HandleAudioTrack", "error", "failed to decode Opus data", "userID", g.userID, "error", err)
+			slog.Error("RealtimeService:gemini_websocket:HandleAudioTrack", "message", "failed to decode Opus data", "userID", g.userID, "error", err)
 			continue
 		}
 
@@ -236,7 +236,7 @@ func (g *GeminiRealtime) SendAudio(audioData []byte) {
 	g.sendDataChannelMessage("sent_audio", "gemini", nil) //custom event
 
 	if err := g.ws.WriteJSON(msg); err != nil {
-		slog.Error("RealtimeService:gemini_websocket:SendAudio", "error", "failed to send to Gemini", "userID", g.userID, "error", err)
+		slog.Error("RealtimeService:gemini_websocket:SendAudio", "message", "failed to send to Gemini", "userID", g.userID, "error", err)
 	}
 }
 

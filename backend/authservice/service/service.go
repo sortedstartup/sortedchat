@@ -64,7 +64,7 @@ func (s *AuthService) initialize() {
 	redirectURL := getEnvOrDefault("GOOGLE_REDIRECT_URL", defaults["GOOGLE_REDIRECT_URL"])
 
 	//using these env variables to start
-	slog.Info("AuthService:service:initialize", "step", "initializing", "issuer", issuer, "clientID", clientID, "clientSecret", "[HIDDENs]", "redirectURL", redirectURL)
+	slog.Info("AuthService:service:initialize", "step", "initializing", "issuer", issuer, "clientID", clientID, "clientSecret", "[HIDDEN]", "redirectURL", redirectURL)
 	var err error
 	provider, err := oidc.NewProvider(ctx, issuer)
 	if err != nil {
@@ -253,7 +253,7 @@ func (s *AuthService) OAuthCallbackHandler(w http.ResponseWriter, r *http.Reques
 
 	// Check if email is in the allowlist
 	if !isEmailAllowed(email) {
-		slog.Warn("authservice:service:OAuthCallbackHandler", "step", "Login attempt from unauthorized email", "email", email)
+		slog.Debug("authservice:service:OAuthCallbackHandler", "step", "Login attempt from unauthorized email", "email", email)
 		http.Error(w, "Access denied: Your email is not authorized to access this application", http.StatusForbidden)
 		return
 	}

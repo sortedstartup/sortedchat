@@ -46,7 +46,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 		dsn := config.Database.Postgres.GetPostgresDSN()
 		db, err := sqlx.Open("postgres", dsn)
 		if err != nil {
-			slog.Error("RealtimeService:dao:NewDAOFactory", "error", "failed to open PostgreSQL connection", "error", err)
+			slog.Error("RealtimeService:dao:NewDAOFactory", "reason", "failed to open PostgreSQL connection", "error", err)
 			return nil, fmt.Errorf("failed to open PostgreSQL connection: %w", err)
 		}
 
@@ -58,7 +58,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 		// Test the connection
 		if err := db.Ping(); err != nil {
 			db.Close()
-			slog.Error("RealtimeService:dao:NewDAOFactory", "error", "failed to ping PostgreSQL database", "error", err)
+			slog.Error("RealtimeService:dao:NewDAOFactory", "reason", "failed to ping PostgreSQL database", "error", err)
 			return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 		}
 
@@ -73,7 +73,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 			db:     db,
 		}, nil
 	default:
-		slog.Error("RealtimeService:dao:NewDAOFactory", "error", "unsupported database type", "database_type", config.Database.Type)
+		slog.Error("RealtimeService:dao:NewDAOFactory", "message", "unsupported database type", "database_type", config.Database.Type)
 		return nil, fmt.Errorf("unsupported database type: %s", config.Database.Type)
 	}
 }

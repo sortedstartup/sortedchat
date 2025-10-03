@@ -51,7 +51,7 @@ func (s *SettingService) FirstBootComplete() {
 	slog.Info("settings_service:FirstBootComplete", "settingService", s)
 	err := s.dao.SetSettingValue("is_first_boot", "1")
 	if err != nil {
-		slog.Error("settings_service:FirstBootComplete", "error", "failed to set is_first_boot setting", "error", err)
+		slog.Error("settings_service:FirstBootComplete", "message", "failed to set is_first_boot setting", "error", err)
 	}
 }
 

@@ -27,7 +27,7 @@ func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
 
 	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
-		slog.Error("dao_postgres:NewPostgresDAO", "error", "failed to open PostgreSQL connection", "error", err)
+		slog.Error("dao_postgres:NewPostgresDAO", "message", "failed to open PostgreSQL connection", "error", err)
 		return nil, fmt.Errorf("failed to open PostgreSQL connection: %w", err)
 	}
 
@@ -39,7 +39,7 @@ func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
 	// Test the connection
 	if err := db.Ping(); err != nil {
 		db.Close()
-		slog.Error("dao_postgres:NewPostgresDAO", "error", "failed to ping PostgreSQL database", "error", err)
+		slog.Error("dao_postgres:NewPostgresDAO", "message", "failed to ping PostgreSQL database", "error", err)
 		return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 	}
 
@@ -71,13 +71,13 @@ func (p *PostgresDAO) CreateChat(userID string, chatId string, name string, proj
 	if projectID == "" || projectID == "null" {
 		_, err := p.db.Exec("INSERT INTO chat_list (chat_id, name, user_id) VALUES ($1, $2, $3)", chatId, name, userID)
 		if err != nil {
-			slog.Error("dao_postgres:CreateChat", "error", "failed to create chat", "error", err, "userID", userID, "chatId", chatId, "projectID", projectID)
+			slog.Error("dao_postgres:CreateChat", "message", "failed to create chat", "error", err, "userID", userID, "chatId", chatId, "projectID", projectID)
 			return fmt.Errorf("failed to create chat")
 		}
 	} else {
 		_, err := p.db.Exec("INSERT INTO chat_list (chat_id, name, project_id, user_id) VALUES ($1, $2, $3, $4)", chatId, name, projectID, userID)
 		if err != nil {
-			slog.Error("dao_postgres:CreateChat", "error", "failed to create chat", "error", err, "userID", userID, "chatId", chatId, "projectID", projectID)
+			slog.Error("dao_postgres:CreateChat", "message", "failed to create chat", "error", err, "userID", userID, "chatId", chatId, "projectID", projectID)
 			return fmt.Errorf("failed to create chat")
 		}
 	}
@@ -89,7 +89,7 @@ func (p *PostgresDAO) GetChatName(userID string, chatId string) (string, error) 
 	var name string
 	err := p.db.Get(&name, "SELECT name FROM chat_list WHERE chat_id = $1 AND user_id = $2", chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:GetChatName", "error", "failed to get chat name", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:GetChatName", "message", "failed to get chat name", "error", err, "userID", userID, "chatId", chatId)
 		return "", fmt.Errorf("failed to get chat name")
 	}
 	return name, nil
@@ -99,7 +99,7 @@ func (p *PostgresDAO) SaveChatName(userID string, chatId string, name string) er
 	slog.Info("dao_postgres:SaveChatName", "userID", userID, "chatId", chatId, "name", name)
 	_, err := p.db.Exec("UPDATE chat_list SET name = $1 WHERE chat_id = $2 AND user_id = $3", name, chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:SaveChatName", "error", "failed to save chat name", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:SaveChatName", "message", "failed to save chat name", "error", err, "userID", userID, "chatId", chatId)
 		return fmt.Errorf("failed to save chat name")
 	}
 	return nil
@@ -119,7 +119,7 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 	// Validate references JSON
 	var temp interface{}
 	if err := json.Unmarshal([]byte(trimmedRef), &temp); err != nil {
-		slog.Error("dao_postgres:AddChatMessage", "error", "invalid JSON format for references field", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
+		slog.Error("dao_postgres:AddChatMessage", "message", "invalid JSON format for references field", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
 		return "", fmt.Errorf("invalid JSON format for references field")
 	}
 
@@ -131,7 +131,7 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
         RETURNING id`,
 		chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, trimmedRef)
 	if err != nil {
-		slog.Error("dao_postgres:AddChatMessage", "error", "failed to add chat message", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
+		slog.Error("dao_postgres:AddChatMessage", "message", "failed to add chat message", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
 		return "", fmt.Errorf("failed to add chat message")
 	}
 
@@ -144,7 +144,7 @@ func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessa
 	var messages []ChatMessageRow
 	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cost, 0) as cost, COALESCE(cached_token_count, 0) as cached_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:GetChatMessages", "error", "failed to get chat messages", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:GetChatMessages", "message", "failed to get chat messages", "error", err, "userID", userID, "chatId", chatId)
 		return nil, fmt.Errorf("failed to get chat messages")
 	}
 	return messages, nil
@@ -171,7 +171,7 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string, softDeleted b
 	query = p.db.Rebind(query)
 	err := p.db.Select(&chats, query, args...)
 	if err != nil {
-		slog.Error("dao_postgres:GetChatList", "error", "failed to get chat list", "error", err, "userID", userID, "projectID", projectID, "softDeleted", softDeleted)
+		slog.Error("dao_postgres:GetChatList", "message", "failed to get chat list", "error", err, "userID", userID, "projectID", projectID, "softDeleted", softDeleted)
 		return nil, fmt.Errorf("failed to get chat list")
 	}
 
@@ -256,10 +256,10 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Error("dao_postgres:AddChatMessageWithTokens", "error", "no message inserted or updated, no result returned", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
+			slog.Error("dao_postgres:AddChatMessageWithTokens", "message", "no message inserted or updated, no result returned", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
 			return MessageSummary{}, fmt.Errorf("no message inserted or updated, no result returned")
 		}
-		slog.Error("dao_postgres:AddChatMessageWithTokens", "error", "failed to add chat message with tokens", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
+		slog.Error("dao_postgres:AddChatMessageWithTokens", "message", "failed to add chat message with tokens", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
 		return MessageSummary{}, fmt.Errorf("failed to add chat message with tokens")
 	}
 
@@ -279,7 +279,7 @@ func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
 	var models []Models
 	err := p.db.Select(&models, "SELECT id, name,provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}'::jsonb)::text AS capabilities FROM model_metadata")
 	if err != nil {
-		slog.Error("dao_postgres:GetModels", "error", "failed to get models", "error", err)
+		slog.Error("dao_postgres:GetModels", "message", "failed to get models", "error", err)
 		return nil, fmt.Errorf("failed to get models")
 	}
 
@@ -288,7 +288,7 @@ func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
 		// Parse capabilities JSON
 		capabilities, err := parseCapabilities(m.Capabilities)
 		if err != nil {
-			slog.Error("dao_postgres:GetModels", "error", "failed to parse capabilities for model", "error", err, "modelID", m.ID)
+			slog.Error("dao_postgres:GetModels", "message", "failed to parse capabilities for model", "error", err, "modelID", m.ID)
 			return nil, fmt.Errorf("failed to parse capabilities for model")
 		}
 
@@ -310,14 +310,14 @@ func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.S
 	slog.Info("dao_postgres:SearchChatMessages", "userID", userID, "query", query)
 	// Input validation and sanitization
 	if userID == "" || query == "" {
-		slog.Error("dao_postgres:SearchChatMessages", "error", "userID and query are required", "userID", userID, "query", query)
+		slog.Error("dao_postgres:SearchChatMessages", "message", "userID and query are required", "userID", userID, "query", query)
 		return nil, errors.New("userID and query are required")
 	}
 
 	// Sanitize query to prevent injection
 	sanitizedQuery := sanitizeFTSQuery(query)
 	if sanitizedQuery == "" {
-		slog.Error("dao_postgres:SearchChatMessages", "error", "query contains no searchable terms", "userID", userID, "query", query)
+		slog.Error("dao_postgres:SearchChatMessages", "message", "query contains no searchable terms", "userID", userID, "query", query)
 		return nil, fmt.Errorf("query contains no searchable terms")
 	}
 
@@ -345,7 +345,7 @@ func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.S
 
 	rows, err := p.db.Query(sqlQuery, sanitizedQuery, userID)
 	if err != nil {
-		slog.Error("dao_postgres:SearchChatMessages", "error", "failed to execute FTS query", "error", err, "userID", userID, "query", query)
+		slog.Error("dao_postgres:SearchChatMessages", "message", "failed to execute FTS query", "error", err, "userID", userID, "query", query)
 		return nil, fmt.Errorf("failed to execute FTS query")
 	}
 	defer rows.Close()
@@ -357,7 +357,7 @@ func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.S
 
 		err := rows.Scan(&chatId, &chatName, &matchedText)
 		if err != nil {
-			slog.Error("dao_postgres:SearchChatMessages", "error", "failed to scan search result", "error", err, "userID", userID, "query", query)
+			slog.Error("dao_postgres:SearchChatMessages", "message", "failed to scan search result", "error", err, "userID", userID, "query", query)
 			return nil, fmt.Errorf("failed to scan search result")
 		}
 
@@ -379,7 +379,7 @@ func (p *PostgresDAO) CreateProject(userID string, id string, name string, descr
 		VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`, id, name, description, additionalData, userID)
 	if err != nil {
-		slog.Error("dao_postgres:CreateProject", "error", "failed to create project", "error", err, "userID", userID, "id", id)
+		slog.Error("dao_postgres:CreateProject", "message", "failed to create project", "error", err, "userID", userID, "id", id)
 		return "", fmt.Errorf("failed to create project")
 	}
 	return id, nil
@@ -391,7 +391,7 @@ func (p *PostgresDAO) GetProjects(userID string) ([]ProjectRow, error) {
 	var projects []ProjectRow
 	err := p.db.Select(&projects, `SELECT id, name, description, additional_data, created_at, updated_at FROM project WHERE user_id = $1`, userID)
 	if err != nil {
-		slog.Error("dao_postgres:GetProjects", "error", "failed to get projects", "error", err, "userID", userID)
+		slog.Error("dao_postgres:GetProjects", "message", "failed to get projects", "error", err, "userID", userID)
 		return nil, fmt.Errorf("failed to get projects")
 	}
 	return projects, nil
@@ -403,7 +403,7 @@ func (p *PostgresDAO) FileSave(userID string, project_id string, docs_id string,
 	_, err := p.db.Exec("INSERT INTO project_docs (project_id, docs_id, file_name, file_size, embedding_status, user_id) VALUES ($1, $2, $3, $4, $5, $6)",
 		project_id, docs_id, file_name, size_kb, int32(proto.Embedding_Status_STATUS_QUEUED), userID)
 	if err != nil {
-		slog.Error("dao_postgres:FileSave", "error", "failed to save file", "error", err, "userID", userID, "project_id", project_id, "docs_id", docs_id, "file_name", file_name, "file_size", file_size)
+		slog.Error("dao_postgres:FileSave", "message", "failed to save file", "error", err, "userID", userID, "project_id", project_id, "docs_id", docs_id, "file_name", file_name, "file_size", file_size)
 		return fmt.Errorf("failed to save file")
 	}
 	return nil
@@ -413,7 +413,7 @@ func (p *PostgresDAO) UpdateEmbeddingStatus(docs_id string, status int32) error 
 	slog.Info("dao_postgres:UpdateEmbeddingStatus", "docs_id", docs_id, "status", status)
 	_, err := p.db.Exec("UPDATE project_docs SET embedding_status = $1 WHERE docs_id = $2", status, docs_id)
 	if err != nil {
-		slog.Error("dao_postgres:UpdateEmbeddingStatus", "error", "failed to update embedding status", "error", err, "docs_id", docs_id, "status", status)
+		slog.Error("dao_postgres:UpdateEmbeddingStatus", "message", "failed to update embedding status", "error", err, "docs_id", docs_id, "status", status)
 		return fmt.Errorf("failed to update embedding status")
 	}
 	return nil
@@ -425,7 +425,7 @@ func (p *PostgresDAO) FetchErrorDocs(userID string, project_id string) ([]string
 	err := p.db.Select(&docs_list, "SELECT docs_id FROM project_docs WHERE project_id = $1 AND embedding_status = $2 AND user_id = $3",
 		project_id, int32(proto.Embedding_Status_STATUS_ERROR), userID)
 	if err != nil {
-		slog.Error("dao_postgres:FetchErrorDocs", "error", "failed to fetch error docs", "error", err, "userID", userID, "project_id", project_id)
+		slog.Error("dao_postgres:FetchErrorDocs", "message", "failed to fetch error docs", "error", err, "userID", userID, "project_id", project_id)
 		return nil, fmt.Errorf("failed to fetch error docs")
 	}
 	return docs_list, nil
@@ -440,7 +440,7 @@ func (p *PostgresDAO) TotalUsedSize(userID string, projectID string) (int64, err
 		WHERE project_id = $1 AND user_id = $2
 	`, projectID, userID)
 	if err != nil {
-		slog.Error("dao_postgres:TotalUsedSize", "error", "failed to get total used size", "error", err, "userID", userID, "projectID", projectID)
+		slog.Error("dao_postgres:TotalUsedSize", "message", "failed to get total used size", "error", err, "userID", userID, "projectID", projectID)
 		return 0, fmt.Errorf("failed to get total used size")
 	}
 	return total, err
@@ -455,7 +455,7 @@ func (p *PostgresDAO) FilesList(userID string, project_id string) ([]DocumentLis
 		WHERE project_id = $1 AND user_id = $2
 	`, project_id, userID)
 	if err != nil {
-		slog.Error("dao_postgres:FilesList", "error", "failed to get files list", "error", err, "userID", userID, "project_id", project_id)
+		slog.Error("dao_postgres:FilesList", "message", "failed to get files list", "error", err, "userID", userID, "project_id", project_id)
 		return nil, fmt.Errorf("failed to get files list")
 	}
 	return files, nil
@@ -466,7 +466,7 @@ func (p *PostgresDAO) GetFileMetadata(docsId string) (*DocumentListRow, error) {
 	var doc DocumentListRow
 	err := p.db.Get(&doc, `SELECT * FROM project_docs WHERE docs_id = $1`, docsId)
 	if err != nil {
-		slog.Error("dao_postgres:GetFileMetadata", "error", "failed to get file metadata", "error", err, "docsId", docsId)
+		slog.Error("dao_postgres:GetFileMetadata", "message", "failed to get file metadata", "error", err, "docsId", docsId)
 		return nil, fmt.Errorf("failed to get file metadata")
 	}
 	return &doc, nil
@@ -480,7 +480,7 @@ func (p *PostgresDAO) SaveRAGChunk(userID string, chunkID, projectID, docsID str
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`, chunkID, projectID, docsID, startByte, endByte, userID)
 	if err != nil {
-		slog.Error("dao_postgres:SaveRAGChunk", "error", "failed to save rag chunk", "error", err, "userID", userID, "chunkID", chunkID, "projectID", projectID, "docsID", docsID, "startByte", startByte, "endByte", endByte)
+		slog.Error("dao_postgres:SaveRAGChunk", "message", "failed to save rag chunk", "error", err, "userID", userID, "chunkID", chunkID, "projectID", projectID, "docsID", docsID, "startByte", startByte, "endByte", endByte)
 		return fmt.Errorf("failed to save rag chunk")
 	}
 	return nil
@@ -491,15 +491,15 @@ func (p *PostgresDAO) SaveRAGChunkEmbedding(chunkID string, embedding []float64)
 	slog.Info("dao_postgres:SaveRAGChunkEmbedding", "chunkID", chunkID)
 	// Input validation
 	if chunkID == "" {
-		slog.Error("dao_postgres:SaveRAGChunkEmbedding", "error", "chunkID cannot be empty", "chunkID", chunkID)
+		slog.Error("dao_postgres:SaveRAGChunkEmbedding", "message", "chunkID cannot be empty", "chunkID", chunkID)
 		return fmt.Errorf("chunkID cannot be empty")
 	}
 	if len(embedding) == 0 {
-		slog.Error("dao_postgres:SaveRAGChunkEmbedding", "error", "embedding cannot be empty", "chunkID", chunkID)
+		slog.Error("dao_postgres:SaveRAGChunkEmbedding", "message", "embedding cannot be empty", "chunkID", chunkID)
 		return fmt.Errorf("embedding cannot be empty")
 	}
 	if len(embedding) != 768 { // Validate expected dimension (768 as per CHOICE 2)
-		slog.Error("dao_postgres:SaveRAGChunkEmbedding", "error", "embedding dimension mismatch", "chunkID", chunkID, "embedding", embedding)
+		slog.Error("dao_postgres:SaveRAGChunkEmbedding", "message", "embedding dimension mismatch", "chunkID", chunkID, "embedding", embedding)
 		return fmt.Errorf("embedding dimension mismatch: expected 768, got %d", len(embedding))
 	}
 
@@ -515,7 +515,7 @@ func (p *PostgresDAO) SaveRAGChunkEmbedding(chunkID string, embedding []float64)
 
 	_, err := p.db.Exec(query, embeddingStr, chunkID)
 	if err != nil {
-		slog.Error("dao_postgres:SaveRAGChunkEmbedding", "error", "failed to save embedding for chunk", "error", err, "chunkID", chunkID)
+		slog.Error("dao_postgres:SaveRAGChunkEmbedding", "message", "failed to save embedding for chunk", "error", err, "chunkID", chunkID)
 		return fmt.Errorf("failed to save embedding for chunk")
 	}
 
@@ -527,13 +527,13 @@ func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, queryEmbedding strin
 	slog.Info("dao_postgres:GetTopSimilarRAGChunks", "userID", userID, "queryEmbedding", queryEmbedding, "projectID", projectID)
 	// Input validation
 	if userID == "" || queryEmbedding == "" || projectID == "" {
-		slog.Error("dao_postgres:GetTopSimilarRAGChunks", "error", "userID, queryEmbedding, and projectID are required", "userID", userID, "queryEmbedding", queryEmbedding, "projectID", projectID)
+		slog.Error("dao_postgres:GetTopSimilarRAGChunks", "message", "userID, queryEmbedding, and projectID are required", "userID", userID, "queryEmbedding", queryEmbedding, "projectID", projectID)
 		return nil, fmt.Errorf("userID, queryEmbedding, and projectID are required")
 	}
 
 	// Validate embedding format
 	if !isValidEmbeddingFormat(queryEmbedding) {
-		slog.Error("dao_postgres:GetTopSimilarRAGChunks", "error", "invalid embedding format", "userID", userID, "queryEmbedding", queryEmbedding, "projectID", projectID)
+		slog.Error("dao_postgres:GetTopSimilarRAGChunks", "message", "invalid embedding format", "userID", userID, "queryEmbedding", queryEmbedding, "projectID", projectID)
 		return nil, fmt.Errorf("invalid embedding format")
 	}
 
@@ -549,7 +549,7 @@ func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, queryEmbedding strin
 	var chunks []RAGChunkRow
 	rows, err := p.db.Query(query, queryEmbedding, userID, projectID)
 	if err != nil {
-		slog.Error("dao_postgres:GetTopSimilarRAGChunks", "error", "failed to query similar chunks", "error", err, "userID", userID, "queryEmbedding", queryEmbedding, "projectID", projectID)
+		slog.Error("dao_postgres:GetTopSimilarRAGChunks", "message", "failed to query similar chunks", "error", err, "userID", userID, "queryEmbedding", queryEmbedding, "projectID", projectID)
 		return nil, fmt.Errorf("failed to query similar chunks")
 	}
 	defer rows.Close()
@@ -560,7 +560,7 @@ func (p *PostgresDAO) GetTopSimilarRAGChunks(userID string, queryEmbedding strin
 		err := rows.Scan(&chunk.ID, &chunk.ProjectID, &chunk.DocsID,
 			&chunk.StartByte, &chunk.EndByte, &chunk.Similarity)
 		if err != nil {
-			slog.Error("dao_postgres:GetTopSimilarRAGChunks", "error", "failed to scan chunk row", "error", err, "userID", userID, "queryEmbedding", queryEmbedding, "projectID", projectID)
+			slog.Error("dao_postgres:GetTopSimilarRAGChunks", "message", "failed to scan chunk row", "error", err, "userID", userID, "queryEmbedding", queryEmbedding, "projectID", projectID)
 			return nil, fmt.Errorf("failed to scan chunk row")
 		}
 		chunks = append(chunks, chunk)
@@ -574,7 +574,7 @@ func (p *PostgresDAO) IsMainBranch(userID string, source_chat_id string) (bool, 
 	var isMainBranch bool
 	err := p.db.Get(&isMainBranch, `SELECT is_main_branch FROM chat_list WHERE chat_id = $1 AND user_id = $2`, source_chat_id, userID)
 	if err != nil {
-		slog.Error("dao_postgres:IsMainBranch", "error", "failed to get is main branch", "error", err, "userID", userID, "source_chat_id", source_chat_id)
+		slog.Error("dao_postgres:IsMainBranch", "message", "failed to get is main branch", "error", err, "userID", userID, "source_chat_id", source_chat_id)
 		return false, fmt.Errorf("failed to get is main branch")
 	}
 	return isMainBranch, err
@@ -584,7 +584,7 @@ func (p *PostgresDAO) BranchChat(userID string, source_chat_id string, parent_me
 	slog.Info("dao_postgres:BranchChat", "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
 	tx, err := p.db.Beginx()
 	if err != nil {
-		slog.Error("dao_postgres:BranchChat", "error", "failed to begin transaction", "error", err, "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
+		slog.Error("dao_postgres:BranchChat", "message", "failed to begin transaction", "error", err, "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
 		return fmt.Errorf("failed to begin transaction")
 	}
 	defer tx.Rollback()
@@ -599,7 +599,7 @@ func (p *PostgresDAO) BranchChat(userID string, source_chat_id string, parent_me
 					SELECT $3, $4, COALESCE(source_chat.project_id, NULL), $1, $5, FALSE, $2
 					FROM source_chat`, source_chat_id, userID, new_chat_id, branch_name, parent_message_id)
 	if err != nil {
-		slog.Error("dao_postgres:BranchChat", "error", "failed to insert branch chat", "error", err, "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
+		slog.Error("dao_postgres:BranchChat", "message", "failed to insert branch chat", "error", err, "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
 		return fmt.Errorf("failed to insert branch chat")
 	}
 
@@ -610,7 +610,7 @@ func (p *PostgresDAO) BranchChat(userID string, source_chat_id string, parent_me
 					  WHERE chat_id = $3 AND id <= $4 AND user_id = $5
 					  ORDER BY id`, new_chat_id, userID, source_chat_id, parent_message_id, userID)
 	if err != nil {
-		slog.Error("dao_postgres:BranchChat", "error", "failed to insert messages", "error", err, "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
+		slog.Error("dao_postgres:BranchChat", "message", "failed to insert messages", "error", err, "userID", userID, "source_chat_id", source_chat_id, "parent_message_id", parent_message_id, "new_chat_id", new_chat_id, "branch_name", branch_name)
 		return fmt.Errorf("failed to insert messages")
 	}
 
@@ -634,7 +634,7 @@ func (p *PostgresDAO) GetChatBranches(userID string, chatId string, isMain bool)
 	}
 
 	if err != nil {
-		slog.Error("dao_postgres:GetChatBranches", "error", "failed to get chat branches", "error", err, "userID", userID, "chatId", chatId, "isMain", isMain)
+		slog.Error("dao_postgres:GetChatBranches", "message", "failed to get chat branches", "error", err, "userID", userID, "chatId", chatId, "isMain", isMain)
 		return nil, fmt.Errorf("failed to get chat branches")
 	}
 
@@ -719,13 +719,13 @@ func (p *PostgresDAO) DeleteDocument(userID string, projectID string, docID stri
 	// Start a transaction to ensure all operations succeed or fail together
 	tx, err := p.db.Beginx()
 	if err != nil {
-		slog.Error("dao_postgres:DeleteDocument", "error", "failed to begin transaction", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		slog.Error("dao_postgres:DeleteDocument", "message", "failed to begin transaction", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
 		return fmt.Errorf("failed to begin transaction")
 	}
 	defer func() {
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				slog.Error("dao_postgres:DeleteDocument", "error", "transaction rollback failed", "original_error", err, "rollback_error", rbErr)
+				slog.Error("dao_postgres:DeleteDocument", "message", "transaction rollback failed", "original_error", err, "rollback_error", rbErr)
 			}
 		}
 	}()
@@ -733,21 +733,21 @@ func (p *PostgresDAO) DeleteDocument(userID string, projectID string, docID stri
 	// Delete from rag_chunks first (document chunks)
 	_, err = tx.Exec("DELETE FROM rag_chunks WHERE project_id = $1 AND docs_id = $2 AND user_id = $3", projectID, docID, userID)
 	if err != nil {
-		slog.Error("dao_postgres:DeleteDocument", "error", "failed to delete from rag_chunks", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		slog.Error("dao_postgres:DeleteDocument", "message", "failed to delete from rag_chunks", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
 		return fmt.Errorf("failed to delete from rag_chunks")
 	}
 
 	// Delete from project_docs (document metadata)
 	_, err = tx.Exec("DELETE FROM project_docs WHERE project_id = $1 AND docs_id = $2 AND user_id = $3", projectID, docID, userID)
 	if err != nil {
-		slog.Error("dao_postgres:DeleteDocument", "error", "failed to delete from project_docs", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		slog.Error("dao_postgres:DeleteDocument", "message", "failed to delete from project_docs", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
 		return fmt.Errorf("failed to delete from project_docs")
 	}
 
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		slog.Error("dao_postgres:DeleteDocument", "error", "failed to commit transaction", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
+		slog.Error("dao_postgres:DeleteDocument", "message", "failed to commit transaction", "error", err, "userID", userID, "projectID", projectID, "docID", docID)
 		return fmt.Errorf("failed to commit transaction")
 	}
 
@@ -773,7 +773,7 @@ func (p *PostgresDAO) SoftDeleteChat(userID string, chatId string) error {
         AND user_id = $2;
     `, chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:SoftDeleteChat", "error", "failed to soft delete chat", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:SoftDeleteChat", "message", "failed to soft delete chat", "error", err, "userID", userID, "chatId", chatId)
 		return fmt.Errorf("failed to soft delete chat")
 	}
 	return err
@@ -783,15 +783,15 @@ func (p *PostgresDAO) DeleteChat(userID string, chatId string) (err error) {
 	slog.Info("dao_postgres:DeleteChat", "userID", userID, "chatId", chatId)
 	tx, err := p.db.Beginx()
 	if err != nil {
-		slog.Error("dao_postgres:DeleteChat", "error", "failed to begin transaction", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:DeleteChat", "message", "failed to begin transaction", "error", err, "userID", userID, "chatId", chatId)
 		return fmt.Errorf("failed to begin transaction")
 	}
 	defer func() {
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				slog.Error("dao_postgres:DeleteChat", "error", "transaction rollback failed", "original_error", err, "rollback_error", rbErr)
+				slog.Error("dao_postgres:DeleteChat", "message", "transaction rollback failed", "original_error", err, "rollback_error", rbErr)
 			}
-			slog.Error("dao_postgres:DeleteChat", "error", "transaction rollback failed", "original_error", err)
+			slog.Error("dao_postgres:DeleteChat", "message", "transaction rollback failed", "original_error", err)
 		}
 	}()
 
@@ -812,7 +812,7 @@ func (p *PostgresDAO) DeleteChat(userID string, chatId string) (err error) {
           AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
     `, chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:DeleteChat", "error", "failed to delete chat messages", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:DeleteChat", "message", "failed to delete chat messages", "error", err, "userID", userID, "chatId", chatId)
 		return fmt.Errorf("failed to delete chat messages")
 	}
 
@@ -833,13 +833,13 @@ func (p *PostgresDAO) DeleteChat(userID string, chatId string) (err error) {
           AND chat_id IN (SELECT chat_id FROM chat_hierarchy);
     `, chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:DeleteChat", "error", "failed to delete chat list", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:DeleteChat", "message", "failed to delete chat list", "error", err, "userID", userID, "chatId", chatId)
 		return fmt.Errorf("failed to delete chat list")
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		slog.Error("dao_postgres:DeleteChat", "error", "failed to commit transaction", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:DeleteChat", "message", "failed to commit transaction", "error", err, "userID", userID, "chatId", chatId)
 		return fmt.Errorf("failed to commit transaction")
 	}
 	return nil
@@ -864,7 +864,7 @@ func (p *PostgresDAO) RestoreChat(userID string, chatId string) error {
         AND user_id = $2;
     `, chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:RestoreChat", "error", "failed to restore chat", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:RestoreChat", "message", "failed to restore chat", "error", err, "userID", userID, "chatId", chatId)
 		return fmt.Errorf("failed to restore chat")
 	}
 	return err
@@ -875,7 +875,7 @@ func (p *PostgresDAO) IsChatDeleted(chatId string, userID string) (bool, error) 
 	var isDeleted bool
 	err := p.db.Get(&isDeleted, "SELECT soft_deleted FROM chat_list WHERE chat_id = $1 AND user_id = $2", chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:IsChatDeleted", "error", "failed to get chat deleted", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:IsChatDeleted", "message", "failed to get chat deleted", "error", err, "userID", userID, "chatId", chatId)
 		return false, fmt.Errorf("failed to get chat deleted")
 	}
 	return isDeleted, nil
@@ -886,7 +886,7 @@ func (p *PostgresDAO) GetChatMetadata(userID string, chatId string) (ChatInfoRow
 	var chat ChatInfoRow
 	err := p.db.Get(&chat, "SELECT chat_id, name, COALESCE(cost,0) AS cost, COALESCE(input_token_count,0) AS input_token_count, COALESCE(output_token_count,0) AS output_token_count, COALESCE(cached_token_count,0) AS cached_token_count FROM chat_list WHERE chat_id = $1 AND user_id = $2", chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:GetChatMetadata", "error", "failed to get chat metadata", "error", err, "userID", userID, "chatId", chatId)
+		slog.Error("dao_postgres:GetChatMetadata", "message", "failed to get chat metadata", "error", err, "userID", userID, "chatId", chatId)
 		return ChatInfoRow{}, fmt.Errorf("failed to get chat metadata")
 	}
 	return chat, nil
@@ -896,16 +896,16 @@ func (p *PostgresDAO) RenameChat(userID string, chatId string, name string) erro
 	slog.Info("dao_postgres:RenameChat", "userID", userID, "chatId", chatId, "name", name)
 	result, err := p.db.Exec("UPDATE chat_list SET name = $1 WHERE chat_id = $2 AND user_id = $3", name, chatId, userID)
 	if err != nil {
-		slog.Error("dao_postgres:RenameChat", "error", "failed to rename chat", "error", err, "userID", userID, "chatId", chatId, "name", name)
+		slog.Error("dao_postgres:RenameChat", "message", "failed to rename chat", "error", err, "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("failed to rename chat")
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		slog.Error("dao_postgres:RenameChat", "error", "failed to get rows affected", "error", err, "userID", userID, "chatId", chatId, "name", name)
+		slog.Error("dao_postgres:RenameChat", "message", "failed to get rows affected", "error", err, "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("failed to get rows affected")
 	}
 	if rowsAffected == 0 {
-		slog.Error("dao_postgres:RenameChat", "error", "chat not found or permission denied", "userID", userID, "chatId", chatId, "name", name)
+		slog.Error("dao_postgres:RenameChat", "message", "chat not found or permission denied", "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("chat not found or permission denied")
 	}
 	return nil
@@ -925,7 +925,7 @@ func (p *PostgresDAO) UpsertModel(modelID string, name string, url string, provi
 			cached_token_cost = EXCLUDED.cached_token_cost
 	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost)
 	if err != nil {
-		slog.Error("dao_postgres:UpsertModel", "error", "failed to upsert model", "error", err, "modelID", modelID, "name", name, "url", url, "provider", provider, "inputTokenCost", inputTokenCost, "outputTokenCost", outputTokenCost, "cachedTokenCost", cachedTokenCost)
+		slog.Error("dao_postgres:UpsertModel", "message", "failed to upsert model", "error", err, "modelID", modelID, "name", name, "url", url, "provider", provider, "inputTokenCost", inputTokenCost, "outputTokenCost", outputTokenCost, "cachedTokenCost", cachedTokenCost)
 		return fmt.Errorf("failed to upsert model")
 	}
 	return nil
@@ -942,7 +942,7 @@ func NewPostgresSettingsDAO(config *PostgresConfig) (*PostgresSettingsDAO, error
 
 	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
-		slog.Error("dao_postgres:NewPostgresSettingsDAO", "error", "failed to open PostgreSQL connection for settings", "error", err, "config", config)
+		slog.Error("dao_postgres:NewPostgresSettingsDAO", "message", "failed to open PostgreSQL connection for settings", "error", err, "config", config)
 		return nil, fmt.Errorf("failed to open PostgreSQL connection for settings ")
 	}
 
@@ -954,7 +954,7 @@ func NewPostgresSettingsDAO(config *PostgresConfig) (*PostgresSettingsDAO, error
 	// Test the connection
 	if err := db.Ping(); err != nil {
 		db.Close()
-		slog.Error("dao_postgres:NewPostgresSettingsDAO", "error", "failed to ping PostgreSQL database for settings", "error", err, "config", config)
+		slog.Error("dao_postgres:NewPostgresSettingsDAO", "message", "failed to ping PostgreSQL database for settings", "error", err, "config", config)
 		return nil, fmt.Errorf("failed to ping PostgreSQL database for settings")
 	}
 
@@ -978,10 +978,10 @@ func (p *PostgresSettingsDAO) GetSettingValue(settingName string) (string, error
 	if err != nil {
 		// Preserve sql.ErrNoRows so callers can distinguish between no rows and actual database errors
 		if err == sql.ErrNoRows {
-			slog.Error("dao_postgres:GetSettingValue", "error", "setting not found", "error", err, "settingName", settingName)
+			slog.Error("dao_postgres:GetSettingValue", "message", "setting not found", "error", err, "settingName", settingName)
 			return "", err
 		}
-		slog.Error("dao_postgres:GetSettingValue", "error", "failed to get setting value", "error", err, "settingName", settingName)
+		slog.Error("dao_postgres:GetSettingValue", "message", "failed to get setting value", "error", err, "settingName", settingName)
 		return "", fmt.Errorf("failed to get setting '%s' from database: %w", settingName, err)
 	}
 
@@ -997,7 +997,7 @@ func (p *PostgresSettingsDAO) SetSettingValue(settingName string, settingValue s
 
 	_, err := p.db.Exec(query, settingName, settingValue)
 	if err != nil {
-		slog.Error("dao_postgres:SetSettingValue", "error", "failed to upsert settings", "error", err, "settingName", settingName)
+		slog.Error("dao_postgres:SetSettingValue", "message", "failed to upsert settings", "error", err, "settingName", settingName)
 		return fmt.Errorf("failed to upsert settings")
 	}
 	return nil
@@ -1012,7 +1012,7 @@ func (p *PostgresDAO) GetChatMessageByID(userID string, messageID string) (*Chat
 		FROM chat_messages 
 		WHERE id = $1 AND user_id = $2`, messageID, userID)
 	if err != nil {
-		slog.Error("dao_postgres:GetChatMessageByID", "error", "failed to get chat message", "error", err, "userID", userID, "messageID", messageID)
+		slog.Error("dao_postgres:GetChatMessageByID", "message", "failed to get chat message", "error", err, "userID", userID, "messageID", messageID)
 		return nil, fmt.Errorf("failed to get chat message")
 	}
 	return &message, nil
@@ -1026,7 +1026,7 @@ func (p *PostgresDAO) UpdateChatMessageDocumentReferences(userID string, message
 		SET document_references = $1 
 		WHERE id = $2 AND user_id = $3`, documentReferences, messageID, userID)
 	if err != nil {
-		slog.Error("dao_postgres:UpdateChatMessageDocumentReferences", "error", "failed to update chat message document references", "error", err, "userID", userID, "messageID", messageID, "documentReferences", documentReferences)
+		slog.Error("dao_postgres:UpdateChatMessageDocumentReferences", "message", "failed to update chat message document references", "error", err, "userID", userID, "messageID", messageID, "documentReferences", documentReferences)
 		return fmt.Errorf("failed to update chat message document references")
 	}
 	return nil

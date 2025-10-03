@@ -9,9 +9,6 @@ import (
 	"sortedstartup/realtimeservice/dao"
 	pb "sortedstartup/realtimeservice/proto"
 	"sortedstartup/realtimeservice/service"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type RealtimeServiceAPI struct {
@@ -58,16 +55,13 @@ func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*
 	slog.Info("RealtimeService:api:Offer")
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("RealtimeService:api:Offer", "error", "failed to get user ID from context", "error", err)
-		if st, ok := status.FromError(err); ok {
-			return nil, status.Errorf(st.Code(), "failed to get user ID from context")
-		}
-		return nil, status.Errorf(codes.Unauthenticated, "failed to get user ID from context")
+		slog.Error("RealtimeService:api:Offer", "message", "failed to get user ID from context", "error", err)
+		return nil, err
 	}
 
 	offer, err := s.service.Offer(req.Offer, req.Model, userID)
 	if err != nil {
-		slog.Error("RealtimeService:api:Offer", "error", "failed to offer", "error", err)
+		slog.Error("RealtimeService:api:Offer", "message", "failed to offer", "error", err)
 		return nil, fmt.Errorf("failed to offer")
 	}
 	return &pb.OfferResponse{
@@ -78,15 +72,12 @@ func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*
 func (s *RealtimeServiceAPI) IceCandidate(ctx context.Context, req *pb.IceCandidateRequest) (*pb.IceCandidateResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("RealtimeService:api:IceCandidate", "error", "failed to get user ID from context", "error", err)
-		if st, ok := status.FromError(err); ok {
-			return nil, status.Errorf(st.Code(), "failed to get user ID from context")
-		}
-		return nil, status.Errorf(codes.Unauthenticated, "failed to get user ID from context")
+		slog.Error("RealtimeService:api:IceCandidate", "message", "failed to get user ID from context", "error", err)
+		return nil, err
 	}
 	message, err := s.service.IceCandidate(req.Candidate, userID)
 	if err != nil {
-		slog.Error("RealtimeService:api:IceCandidate", "error", "failed to add ICE candidate", "error", err)
+		slog.Error("RealtimeService:api:IceCandidate", "message", "failed to add ICE candidate", "error", err)
 		return nil, fmt.Errorf("failed to add ICE candidate")
 	}
 	return &pb.IceCandidateResponse{

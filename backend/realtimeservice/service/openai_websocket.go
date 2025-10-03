@@ -116,20 +116,20 @@ func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "error", "OPENAI_API_KEY environment variable is required")
+		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "OPENAI_API_KEY environment variable is required")
 		return nil, fmt.Errorf("OPENAI_API_KEY environment variable is required")
 	}
 
 	// Initialize Opus encoder/decoder for 24kHz (OpenAI requirement)
 	opusEncoder, err := opus.NewEncoder(48000, 1, opus.AppVoIP)
 	if err != nil {
-		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "error", "failed to create Opus encoder", "error", err)
+		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "failed to create Opus encoder", "error", err)
 		return nil, fmt.Errorf("failed to create Opus encoder: %v", err)
 	}
 
 	opusDecoder, err := opus.NewDecoder(48000, 1)
 	if err != nil {
-		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "error", "failed to create Opus decoder", "error", err)
+		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "failed to create Opus decoder", "error", err)
 		return nil, fmt.Errorf("failed to create Opus decoder: %v", err)
 	}
 
@@ -245,7 +245,7 @@ func (o *OpenAIRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		// Extract Opus payload
 		opusData, err := opusPacket.Unmarshal(rtpPacket.Payload)
 		if err != nil {
-			slog.Error("RealtimeService:openai_websocket:HandleAudioTrack", "error", "failed to unmarshal Opus data", "userID", o.userID, "error", err)
+			slog.Error("RealtimeService:openai_websocket:HandleAudioTrack", "message", "failed to unmarshal Opus data", "userID", o.userID, "error", err)
 			continue
 		}
 
@@ -253,7 +253,7 @@ func (o *OpenAIRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		pcmData := make([]int16, 960) // 20ms at 48kHz
 		n, err := o.opusDecoder.Decode(opusData, pcmData)
 		if err != nil {
-			slog.Error("RealtimeService:openai_websocket:HandleAudioTrack", "error", "failed to decode Opus data", "userID", o.userID, "error", err)
+			slog.Error("RealtimeService:openai_websocket:HandleAudioTrack", "message", "failed to decode Opus data", "userID", o.userID, "error", err)
 			continue
 		}
 
@@ -309,7 +309,7 @@ func (o *OpenAIRealtime) handleResponses() {
 		o.mu.RUnlock()
 
 		if !connected {
-			slog.Error("RealtimeService:openai_websocket:handleResponses", "error", "OpenAI connection closed", "userID", o.userID)
+			slog.Error("RealtimeService:openai_websocket:handleResponses", "message", "OpenAI connection closed", "userID", o.userID)
 			break
 		}
 

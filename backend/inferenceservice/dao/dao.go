@@ -11,7 +11,7 @@ func (dp *DownloadProgress) ToJSON() (string, error) {
 	slog.Info("inferenceservice:dao:ToJSON")
 	data, err := json.Marshal(dp)
 	if err != nil {
-		slog.Error("inferenceservice:dao:ToJSON", "error", "failed to marshal download progress", "error", err)
+		slog.Error("inferenceservice:dao:ToJSON", "message", "failed to marshal download progress", "error", err)
 		return "", fmt.Errorf("failed to marshal download progress")
 	}
 	return string(data), nil
@@ -23,7 +23,7 @@ func FromJSON(jsonStr string) (*DownloadProgress, error) {
 	var dp DownloadProgress
 	err := json.Unmarshal([]byte(jsonStr), &dp)
 	if err != nil {
-		slog.Error("inferenceservice:dao:FromJSON", "error", "failed to unmarshal download progress", "error", err)
+		slog.Error("inferenceservice:dao:FromJSON", "message", "failed to unmarshal download progress", "error", err)
 		return nil, fmt.Errorf("failed to unmarshal download progress")
 	}
 	return &dp, nil

@@ -9,9 +9,6 @@ import (
 	"sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
 	"sortedstartup/inferenceservice/service"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type InferenceServiceAPI struct {
@@ -36,7 +33,7 @@ func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.Downloa
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("inferenceservice:api:DownloadModel", "error", err)
-		return nil, fmt.Errorf("failed to get user ID")
+		return nil, err
 	}
 	err = s.service.DownloadModel(ctx, userID, req.GetModelName())
 	if err != nil {
@@ -67,7 +64,7 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 						Speed:    progress.Speed,
 					}
 				} else {
-					slog.Error("inferenceservice:api:GetLLMModels", "error", "failed to convert progress to JSON", "error", err)
+					slog.Error("inferenceservice:api:GetLLMModels", "message", "failed to convert progress to JSON", "error", err)
 				}
 			}
 			if progressProto == nil {
@@ -79,7 +76,7 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 					Speed:    0,
 				}
 			} else {
-				slog.Error("inferenceservice:api:GetLLMModels", "error", "progressProto is nil", "model", model)
+				slog.Error("inferenceservice:api:GetLLMModels", "message", "progressProto is nil", "model", model)
 			}
 
 			// Convert filestore_id pointer to string
@@ -115,15 +112,12 @@ func (s *InferenceServiceAPI) CancelDownload(ctx context.Context, req *pb.Cancel
 	slog.Info("inferenceservice:api:CancelDownload")
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("inferenceservice:api:CancelDownload", "error", "failed to get user ID", "error", err)
-		if st, ok := status.FromError(err); ok {
-			return nil, status.Errorf(st.Code(), "failed to get user ID")
-		}
-		return nil, status.Errorf(codes.Unauthenticated, "failed to get user ID")
+		slog.Error("inferenceservice:api:CancelDownload", "message", "failed to get user ID", "error", err)
+		return nil, err
 	}
 	err = s.service.CancelDownload(ctx, userID, req.GetModelName())
 	if err != nil {
-		slog.Error("inferenceservice:api:CancelDownload", "error", "failed to cancel download", "error", err)
+		slog.Error("inferenceservice:api:CancelDownload", "message", "failed to cancel download", "error", err)
 		return nil, fmt.Errorf("failed to cancel download")
 	}
 
@@ -136,15 +130,12 @@ func (s *InferenceServiceAPI) DeleteModel(ctx context.Context, req *pb.DeleteMod
 	slog.Info("inferenceservice:api:DeleteModel")
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("inferenceservice:api:DeleteModel", "error", "failed to get user ID", "error", err)
-		if st, ok := status.FromError(err); ok {
-			return nil, status.Errorf(st.Code(), "failed to get user ID")
-		}
-		return nil, status.Errorf(codes.Unauthenticated, "failed to get user ID")
+		slog.Error("inferenceservice:api:DeleteModel", "message", "failed to get user ID", "error", err)
+		return nil, err
 	}
 	err = s.service.DeleteModel(ctx, userID, req.GetModelName())
 	if err != nil {
-		slog.Error("inferenceservice:api:DeleteModel", "error", "failed to delete model", "error", err)
+		slog.Error("inferenceservice:api:DeleteModel", "message", "failed to delete model", "error", err)
 		return nil, fmt.Errorf("failed to delete model")
 	}
 

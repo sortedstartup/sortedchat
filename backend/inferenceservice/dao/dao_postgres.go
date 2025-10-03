@@ -20,7 +20,7 @@ func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
 
 	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
-		slog.Error("inferenceservice:dao_postgres:NewPostgresDAO", "error", "failed to open PostgreSQL connection", "error", err)
+		slog.Error("inferenceservice:dao_postgres:NewPostgresDAO", "message", "failed to open PostgreSQL connection", "error", err)
 		return nil, fmt.Errorf("failed to open PostgreSQL connection: %w", err)
 	}
 
@@ -32,7 +32,7 @@ func NewPostgresDAO(config *PostgresConfig) (*PostgresDAO, error) {
 	// Test the connection
 	if err := db.Ping(); err != nil {
 		db.Close()
-		slog.Error("inferenceservice:dao_postgres:NewPostgresDAO", "error", "failed to ping PostgreSQL database", "error", err)
+		slog.Error("inferenceservice:dao_postgres:NewPostgresDAO", "message", "failed to ping PostgreSQL database", "error", err)
 		return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 	}
 
@@ -62,7 +62,7 @@ func (d *PostgresDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
 	var model ModelMetadata
 	err := d.db.Get(&model, query, modelName)
 	if err != nil {
-		slog.Error("inferenceservice:dao_postgres:GetModelByName", "error", "failed to get model by name", "error", err)
+		slog.Error("inferenceservice:dao_postgres:GetModelByName", "message", "failed to get model by name", "error", err)
 		return nil, fmt.Errorf("failed to get model by name")
 	}
 
@@ -76,7 +76,7 @@ func (d *PostgresDAO) GetAllModels() ([]*ModelMetadata, error) {
 	var models []*ModelMetadata
 	err := d.db.Select(&models, query)
 	if err != nil {
-		slog.Error("inferenceservice:dao_postgres:GetAllModels", "error", "failed to get all models", "error", err)
+		slog.Error("inferenceservice:dao_postgres:GetAllModels", "message", "failed to get all models", "error", err)
 		return nil, fmt.Errorf("failed to get all models")
 	}
 
@@ -90,13 +90,13 @@ func (d *PostgresDAO) UpdateModelProgress(id string, progress *DownloadProgress)
 
 	progressJSON, err := progress.ToJSON()
 	if err != nil {
-		slog.Error("inferenceservice:dao_postgres:UpdateModelProgress", "error", "failed to convert progress to JSON", "error", err)
+		slog.Error("inferenceservice:dao_postgres:UpdateModelProgress", "message", "failed to convert progress to JSON", "error", err)
 		return fmt.Errorf("failed to convert progress to JSON")
 	}
 
 	_, err = d.db.Exec(query, progressJSON, isDownloaded, progress.Status, id)
 	if err != nil {
-		slog.Error("inferenceservice:dao_postgres:UpdateModelProgress", "error", "failed to update model progress", "error", err)
+		slog.Error("inferenceservice:dao_postgres:UpdateModelProgress", "message", "failed to update model progress", "error", err)
 		return fmt.Errorf("failed to update model progress")
 	}
 	return nil
@@ -107,7 +107,7 @@ func (d *PostgresDAO) UpdateModelFileStoreID(id string, filestoreID string) erro
 	query := `UPDATE inferenceservice_models_metadata SET filestore_id = $1 WHERE id = $2`
 	_, err := d.db.Exec(query, filestoreID, id)
 	if err != nil {
-		slog.Error("inferenceservice:dao_postgres:UpdateModelFileStoreID", "error", "failed to update model file store ID", "error", err)
+		slog.Error("inferenceservice:dao_postgres:UpdateModelFileStoreID", "message", "failed to update model file store ID", "error", err)
 		return fmt.Errorf("failed to update model file store ID")
 	}
 	return nil
@@ -118,7 +118,7 @@ func (d *PostgresDAO) ResetModelToInitialState(id string) error {
 	query := `UPDATE inferenceservice_models_metadata SET progress = '', status = 0, is_downloaded = false, filestore_id = NULL WHERE id = $1`
 	_, err := d.db.Exec(query, id)
 	if err != nil {
-		slog.Error("inferenceservice:dao_postgres:ResetModelToInitialState", "error", "failed to reset model to initial state", "error", err)
+		slog.Error("inferenceservice:dao_postgres:ResetModelToInitialState", "message", "failed to reset model to initial state", "error", err)
 		return fmt.Errorf("failed to reset model to initial state")
 	}
 	return nil

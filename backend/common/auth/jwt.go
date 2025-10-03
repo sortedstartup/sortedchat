@@ -50,7 +50,7 @@ func (v *JWTValidator) ValidateToken(tokenString string) (*UserClaims, error) {
 
 	// Parse and validate the token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		slog.Info("common:auth:jwt:ValidateToken", "token", token)
+		slog.Info("common:auth:jwt:ValidateToken")
 		// Validate the signing method
 		if token.Method.Alg() != v.algorithm {
 			slog.Error("common:auth:jwt:ValidateToken", "error", "unexpected signing method", "method", token.Method.Alg())
@@ -60,7 +60,7 @@ func (v *JWTValidator) ValidateToken(tokenString string) (*UserClaims, error) {
 	})
 
 	if err != nil {
-		slog.Error("common:auth:jwt:ValidateToken", "error", "failed to parse token", "error", err)
+		slog.Error("common:auth:jwt:ValidateToken", "message", "failed to parse token", "error", err)
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 

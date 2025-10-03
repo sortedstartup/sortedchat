@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"flag"
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -22,6 +24,13 @@ import (
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/joho/godotenv"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/log/global"
+	otellog "go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -50,6 +59,8 @@ const (
 var staticUIFS embed.FS
 
 func main() {
+	ctx := context.Background()
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	slog.SetDefault(logger)
 
@@ -73,6 +84,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen on %s: %v", grpcAddr, err)
 	}
+
+	res, err := newResource()
+	if err != nil {
+		log.Fatalf("Failed to create OTel resource: %v", err)
+	}
+
+	loggerProvider, err := newLoggerProvider(ctx, res)
+	if err != nil {
+		log.Fatalf("Failed to create OTel logger provider: %v", err)
+	}
+	defer func() {
+		if err := loggerProvider.Shutdown(ctx); err != nil {
+			fmt.Println("OTel logger shutdown error:", err)
+		}
+	}()
+	global.SetLoggerProvider(loggerProvider)
+
+	otelLogger := otelslog.NewLogger("my-app")
+	slog.SetDefault(otelLogger)
 
 	// Adding Interceptors
 	// Create JWT validator
@@ -336,4 +366,25 @@ func main() {
 	}
 
 	WaitForServerError(serverErr)
+}
+
+func newResource() (*resource.Resource, error) {
+	return resource.Merge(resource.Default(),
+		resource.NewWithAttributes(semconv.SchemaURL,
+			semconv.ServiceName("my-service"),
+		),
+	)
+}
+
+func newLoggerProvider(ctx context.Context, res *resource.Resource) (*otellog.LoggerProvider, error) {
+	exporter, err := otlploghttp.New(ctx) //exporter
+	if err != nil {
+		return nil, err
+	}
+	processor := otellog.NewBatchProcessor(exporter)
+	provider := otellog.NewLoggerProvider(
+		otellog.WithResource(res),
+		otellog.WithProcessor(processor),
+	)
+	return provider, nil
 }

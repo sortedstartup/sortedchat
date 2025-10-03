@@ -967,7 +967,7 @@ func (s *ChatService) ListChatBranch(ctx context.Context, userID string, chatId 
 }
 
 func (s *ChatService) EmbeddingSubscriber() {
-	slog.Info("service:EmbeddingSubscriber", "chatService", s)
+	slog.Info("service:EmbeddingSubscriber")
 	go func() {
 		sub, err := s.queue.Subscribe(context.Background(), events.GENERATE_EMBEDDINGS)
 		if err != nil {

@@ -9,6 +9,9 @@ import (
 	"sortedstartup/realtimeservice/dao"
 	pb "sortedstartup/realtimeservice/proto"
 	"sortedstartup/realtimeservice/service"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type RealtimeServiceAPI struct {
@@ -56,7 +59,10 @@ func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("RealtimeService:api:Offer", "error", "failed to get user ID from context", "error", err)
-		return nil, fmt.Errorf("failed to get user ID from context")
+		if st, ok := status.FromError(err); ok {
+			return nil, status.Errorf(st.Code(), "failed to get user ID from context")
+		}
+		return nil, status.Errorf(codes.Unauthenticated, "failed to get user ID from context")
 	}
 
 	offer, err := s.service.Offer(req.Offer, req.Model, userID)
@@ -73,7 +79,10 @@ func (s *RealtimeServiceAPI) IceCandidate(ctx context.Context, req *pb.IceCandid
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("RealtimeService:api:IceCandidate", "error", "failed to get user ID from context", "error", err)
-		return nil, fmt.Errorf("failed to get user ID from context")
+		if st, ok := status.FromError(err); ok {
+			return nil, status.Errorf(st.Code(), "failed to get user ID from context")
+		}
+		return nil, status.Errorf(codes.Unauthenticated, "failed to get user ID from context")
 	}
 	message, err := s.service.IceCandidate(req.Candidate, userID)
 	if err != nil {

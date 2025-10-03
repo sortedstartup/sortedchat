@@ -26,7 +26,7 @@ func NewRealtimeService(daoFactory dao.DAOFactory) *RealtimeService {
 }
 
 func (s *RealtimeService) Init(config *dao.Config) {
-	slog.Info("RealtimeService: Init", "config", config)
+	slog.Info("RealtimeService: Init")
 }
 
 var OPENAI_API_KEY = os.Getenv("OPENAI_API_KEY")

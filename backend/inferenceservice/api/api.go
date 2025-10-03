@@ -9,6 +9,9 @@ import (
 	"sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
 	"sortedstartup/inferenceservice/service"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type InferenceServiceAPI struct {
@@ -113,7 +116,10 @@ func (s *InferenceServiceAPI) CancelDownload(ctx context.Context, req *pb.Cancel
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("inferenceservice:api:CancelDownload", "error", "failed to get user ID", "error", err)
-		return nil, fmt.Errorf("failed to get user ID")
+		if st, ok := status.FromError(err); ok {
+			return nil, status.Errorf(st.Code(), "failed to get user ID")
+		}
+		return nil, status.Errorf(codes.Unauthenticated, "failed to get user ID")
 	}
 	err = s.service.CancelDownload(ctx, userID, req.GetModelName())
 	if err != nil {
@@ -131,7 +137,10 @@ func (s *InferenceServiceAPI) DeleteModel(ctx context.Context, req *pb.DeleteMod
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("inferenceservice:api:DeleteModel", "error", "failed to get user ID", "error", err)
-		return nil, fmt.Errorf("failed to get user ID")
+		if st, ok := status.FromError(err); ok {
+			return nil, status.Errorf(st.Code(), "failed to get user ID")
+		}
+		return nil, status.Errorf(codes.Unauthenticated, "failed to get user ID")
 	}
 	err = s.service.DeleteModel(ctx, userID, req.GetModelName())
 	if err != nil {

@@ -122,7 +122,7 @@ func (cm *SettingsManager) GetSettings() *Settings {
 }
 
 func (s *SettingsManager) StartSettingsChangedSubscriber() {
-	slog.Info("settings:StartSettingsChangedSubscriber", "settingsManager", s)
+	slog.Info("settings:StartSettingsChangedSubscriber", "settingsManager")
 	go func() {
 		sub, err := s.queue.Subscribe(context.Background(), events.SETTINGS_CHANGED_EVENT)
 		if err != nil {
@@ -140,7 +140,7 @@ func (s *SettingsManager) StartSettingsChangedSubscriber() {
 }
 
 func (s *SettingsManager) LoadSettingsFromDB() error {
-	slog.Info("settings:LoadSettingsFromDB", "settingsManager", s)
+	slog.Info("settings:LoadSettingsFromDB")
 	settingsString, err := s.dao.GetSettingValue("settings")
 	if err != nil {
 		slog.Error("settings:LoadSettingsFromDB", "error", "failed to get settings value", "error", err)

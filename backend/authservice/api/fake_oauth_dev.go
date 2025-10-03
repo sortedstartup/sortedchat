@@ -87,7 +87,7 @@ func init() {
 
 	// Debug: Log key generation
 	nBytes := devPublicKey.N.Bytes()
-	slog.Info("Generated RSA key pair in init()", "keySize", devPrivateKey.Size(), "n_hex", fmt.Sprintf("%x", nBytes[:32]))
+	slog.Info("authservice:fake_oauth_dev:init", "step", "Generated RSA key pair in init()", "keySize", devPrivateKey.Size(), "n_hex", fmt.Sprintf("%x", nBytes[:32]))
 }
 
 func NewFakeOAuthProvider() *FakeOAuthProvider {

@@ -85,24 +85,27 @@ func main() {
 		log.Fatalf("Failed to listen on %s: %v", grpcAddr, err)
 	}
 
-	res, err := newResource()
-	if err != nil {
-		log.Fatalf("Failed to create OTel resource: %v", err)
-	}
+	if os.Getenv("OTEL_EXPORTER_OTLP_HEADERS") != "" && os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
 
-	loggerProvider, err := newLoggerProvider(ctx, res)
-	if err != nil {
-		log.Fatalf("Failed to create OTel logger provider: %v", err)
-	}
-	defer func() {
-		if err := loggerProvider.Shutdown(ctx); err != nil {
-			fmt.Println("OTel logger shutdown error:", err)
+		res, err := newResource()
+		if err != nil {
+			log.Fatalf("Failed to create OTel resource: %v", err)
 		}
-	}()
-	global.SetLoggerProvider(loggerProvider)
 
-	otelLogger := otelslog.NewLogger("my-app")
-	slog.SetDefault(otelLogger)
+		loggerProvider, err := newLoggerProvider(ctx, res)
+		if err != nil {
+			log.Fatalf("Failed to create OTel logger provider: %v", err)
+		}
+		defer func() {
+			if err := loggerProvider.Shutdown(ctx); err != nil {
+				fmt.Println("OTel logger shutdown error:", err)
+			}
+		}()
+		global.SetLoggerProvider(loggerProvider)
+
+		otelLogger := otelslog.NewLogger("my-app")
+		slog.SetDefault(otelLogger)
+	}
 
 	// Adding Interceptors
 	// Create JWT validator
@@ -371,7 +374,7 @@ func main() {
 func newResource() (*resource.Resource, error) {
 	return resource.Merge(resource.Default(),
 		resource.NewWithAttributes(semconv.SchemaURL,
-			semconv.ServiceName("my-service"),
+			semconv.ServiceName("SortedChat"),
 		),
 	)
 }

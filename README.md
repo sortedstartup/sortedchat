@@ -325,6 +325,31 @@ export VITE_API_UPLOAD_URL=http://localhost:8080/upload
 2. **API URLs**: Custom endpoints (default: official APIs)
 3. **Ollama URL**: Default `http://localhost:11434` (configure if running elsewhere)
 
+## Observability & Monitoring (Grafana Cloud)
+
+SortedChat supports OpenTelemetry for logging, metrics, and distributed tracing. Configure these environment variables to send telemetry data to Grafana Cloud:
+
+### Grafana Cloud Setup
+
+**1. Get Grafana Cloud credentials:**
+- Sign up at [Grafana Cloud](https://grafana.com/products/cloud/)
+- Go to **"My Account"** → **"Security"** → **"Access Policies"**
+- Create a new access policy with **"Metrics"** and **"Logs"** permissions
+- Copy the **OTLP Endpoint** and **API Key**
+
+**2. Configure environment variables:**
+
+```bash
+# OpenTelemetry Configuration for Grafana Cloud
+export OTEL_RESOURCE_ATTRIBUTES=""
+
+# Grafana Cloud OTLP Endpoint (replace with your actual endpoint)
+export OTEL_EXPORTER_OTLP_ENDPOINT=""
+
+# Grafana Cloud API Key (replace with your actual API key)
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic <base64-encoded-api-key>"
+```
+
 ## Google OAuth Setup
 
 To enable Google SSO login, you need to create OAuth credentials:

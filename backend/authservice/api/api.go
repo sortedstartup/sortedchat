@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"sortedstartup/authservice/service"
 )
@@ -12,6 +13,7 @@ type AuthServiceAPI struct {
 }
 
 func NewAuthServiceAPI(mux *http.ServeMux, service *service.AuthService) *AuthServiceAPI {
+	slog.Info("authservice:api:NewAuthServiceAPI")
 	return &AuthServiceAPI{
 		mux:     mux,
 		service: service,
@@ -19,18 +21,26 @@ func NewAuthServiceAPI(mux *http.ServeMux, service *service.AuthService) *AuthSe
 }
 
 func (a *AuthServiceAPI) initCore() {
+	slog.Info("authservice:api:initCore")
 	a.mux.HandleFunc("/callback", a.service.OAuthCallbackHandler)
 	a.mux.HandleFunc("/login", a.loginHandler)
 	a.mux.HandleFunc("/oauth-config", a.oAuthConfigHandler)
 }
 
 func (a *AuthServiceAPI) oAuthConfigHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Info("authservice:api:oAuthConfigHandler", "path", r.URL.Path, "method", r.Method)
 	// Get the OAuth configuration from the service
 	config := a.service.GetOAuthConfigForFrontend()
-	json.NewEncoder(w).Encode(config)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(config); err != nil {
+		slog.Error("authservice:api:oAuthConfigHandler encode failed", "err", err)
+		http.Error(w, "failed to encode config", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (a *AuthServiceAPI) loginHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Info("authservice:api:loginHandler", "path", r.URL.Path, "method", r.Method)
 	// Get the OAuth URL from the service
 	authURL := a.service.GetAuthURL()
 

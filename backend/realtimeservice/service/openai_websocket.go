@@ -116,17 +116,20 @@ func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
+		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "OPENAI_API_KEY environment variable is required")
 		return nil, fmt.Errorf("OPENAI_API_KEY environment variable is required")
 	}
 
 	// Initialize Opus encoder/decoder for 24kHz (OpenAI requirement)
 	opusEncoder, err := opus.NewEncoder(48000, 1, opus.AppVoIP)
 	if err != nil {
+		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "failed to create Opus encoder", "error", err)
 		return nil, fmt.Errorf("failed to create Opus encoder: %v", err)
 	}
 
 	opusDecoder, err := opus.NewDecoder(48000, 1)
 	if err != nil {
+		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "failed to create Opus decoder", "error", err)
 		return nil, fmt.Errorf("failed to create Opus decoder: %v", err)
 	}
 
@@ -144,6 +147,7 @@ func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 
 // SetDataChannelManager sets the data channel manager (used when it becomes available later)
 func (o *OpenAIRealtime) SetDataChannelManager(dcm *DataChannelManager) {
+	slog.Info("RealtimeService:openai_websocket:SetDataChannelManager")
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	o.dataChannelManager = dcm
@@ -151,6 +155,7 @@ func (o *OpenAIRealtime) SetDataChannelManager(dcm *DataChannelManager) {
 
 // sendDataChannelMessage safely sends a message via data channel if available
 func (o *OpenAIRealtime) sendDataChannelMessage(messageType string, model string, data interface{}) {
+	slog.Info("RealtimeService:openai_websocket:sendDataChannelMessage")
 	o.mu.RLock()
 	dcm := o.dataChannelManager
 	o.mu.RUnlock()
@@ -240,6 +245,7 @@ func (o *OpenAIRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		// Extract Opus payload
 		opusData, err := opusPacket.Unmarshal(rtpPacket.Payload)
 		if err != nil {
+			slog.Error("RealtimeService:openai_websocket:HandleAudioTrack", "message", "failed to unmarshal Opus data", "userID", o.userID, "error", err)
 			continue
 		}
 
@@ -247,6 +253,7 @@ func (o *OpenAIRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		pcmData := make([]int16, 960) // 20ms at 48kHz
 		n, err := o.opusDecoder.Decode(opusData, pcmData)
 		if err != nil {
+			slog.Error("RealtimeService:openai_websocket:HandleAudioTrack", "message", "failed to decode Opus data", "userID", o.userID, "error", err)
 			continue
 		}
 
@@ -302,6 +309,7 @@ func (o *OpenAIRealtime) handleResponses() {
 		o.mu.RUnlock()
 
 		if !connected {
+			slog.Error("RealtimeService:openai_websocket:handleResponses", "message", "OpenAI connection closed", "userID", o.userID)
 			break
 		}
 
@@ -523,6 +531,7 @@ func (o *OpenAIRealtime) Close() error {
 
 // IsConnected returns the connection status
 func (o *OpenAIRealtime) IsConnected() bool {
+	slog.Info("RealtimeService:openai_websocket:IsConnected")
 	o.mu.RLock()
 	defer o.mu.RUnlock()
 	return o.connected

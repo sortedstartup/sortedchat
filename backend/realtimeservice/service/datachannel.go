@@ -25,6 +25,7 @@ type DataChannelMessage struct {
 
 // NewDataChannelManager creates a new data channel manager
 func NewDataChannelManager(userID string, dataChannel *webrtc.DataChannel, service *RealtimeService) *DataChannelManager {
+	slog.Info("RealtimeService:datachannel:NewDataChannelManager")
 	dcm := &DataChannelManager{
 		userID:      userID,
 		dataChannel: dataChannel,
@@ -37,6 +38,7 @@ func NewDataChannelManager(userID string, dataChannel *webrtc.DataChannel, servi
 
 // setupDataChannel configures the data channel event handlers
 func (dcm *DataChannelManager) setupDataChannel() {
+	slog.Info("RealtimeService:datachannel:setupDataChannel")
 	dcm.dataChannel.OnOpen(func() {
 		slog.Info("Data channel opened", "userID", dcm.userID)
 	})

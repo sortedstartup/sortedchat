@@ -75,8 +75,6 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 					Progress: 0,
 					Speed:    0,
 				}
-			} else {
-				slog.Error("inferenceservice:api:GetLLMModels", "message", "progressProto is nil", "model", model)
 			}
 
 			// Convert filestore_id pointer to string

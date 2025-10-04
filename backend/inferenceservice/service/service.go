@@ -237,7 +237,6 @@ type ProgressWriter struct {
 }
 
 func (pw *ProgressWriter) Write(p []byte) (int, error) {
-	slog.Info("inferenceservice:service:ProgressWriter:Write")
 	n, err := pw.writer.Write(p)
 	if err != nil {
 		slog.Error("inferenceservice:service:ProgressWriter:Write", "message", "failed to write file", "modelName", pw.modelID, "error", err)
@@ -290,7 +289,6 @@ type ctxReader struct {
 }
 
 func (cr *ctxReader) Read(p []byte) (int, error) {
-	slog.Info("inferenceservice:service:Read")
 	select {
 	case <-cr.ctx.Done():
 		return 0, cr.ctx.Err()

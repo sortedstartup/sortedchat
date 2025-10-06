@@ -5,11 +5,17 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log"
 	"log/slog"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptrace"
@@ -61,6 +67,19 @@ type GenerateEmbeddingMessage struct {
 const MAX_CHAT_NAME_LENGTH = 50
 const MIN_CHAT_NAME_LENGTH = 1
 
+// Image processing constants
+const (
+	MaxImageSizeBytes   = 10 * 1024 * 1024 // 10MB per image
+	MaxImagesPerMessage = 10               // Limit images per message
+	MaxGrpcMessageSize  = 50 * 1024 * 1024 // 50MB total gRPC message
+)
+
+// ImageDimensions represents image width and height
+type ImageDimensions struct {
+	Width  int
+	Height int
+}
+
 func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory dao.DAOFactory) (*ChatService, error) {
 	daoInstance, err := daoFactory.CreateDAO()
 	if err != nil {
@@ -105,6 +124,41 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	projectID := req.GetProjectContext().GetProjectId()
 	ragEnabled := req.GetProjectContext().GetRagEnabled()
 
+	// STEP 1: Validate model capabilities
+	modelID := req.Model
+	modelInfo, err := s.dao.GetModelByID(modelID)
+	if err != nil {
+		slog.Error("service:Chat", "error", "failed to get model info", "error", err, "modelID", modelID)
+		return fmt.Errorf("failed to get model info")
+	}
+
+	capabilities, err := dao.ParseCapabilities(modelInfo.Capabilities)
+	if err != nil {
+		slog.Error("service:Chat", "error", "failed to parse model capabilities", "error", err, "modelID", modelID)
+		return fmt.Errorf("failed to parse model capabilities")
+	}
+
+	// STEP 2: Check if message contains images
+	hasImages := false
+	for _, content := range req.GetContents() {
+		if content.GetImage() != nil {
+			hasImages = true
+			break
+		}
+	}
+
+	// STEP 3: Validate image input against model capability
+	if hasImages {
+		if capabilities.Image == nil || !capabilities.Image.Input {
+			return fmt.Errorf("selected model does not support image input")
+		}
+
+		// Validate image content
+		if err := s.validateImageContent(req.GetContents()); err != nil {
+			return err
+		}
+	}
+
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
 		slog.Error("service:Chat", "error", "OpenAI API key not set")
@@ -134,23 +188,36 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("model is required")
 	}
 
-	// Get chat history using DAO
+	// STEP 4: Build message history with multi-modal support
 	history, err := s.dao.GetChatMessages(userID, chatId)
 	if err != nil {
 		slog.Error("service:Chat", "message", "failed to fetch message history", "error", err, "chatId", chatId, "userID", userID)
 		return fmt.Errorf("failed to fetch chat message")
 	}
 
-	userMessage := req.Text
+	// STEP 5: Construct user message for OpenAI API
+	var userMessage string
 	var ragChunks []rag.Result
 
+	// Handle backward compatibility - if contents is empty but text is provided, use text
+	if len(req.GetContents()) == 0 && req.Text != "" {
+		userMessage = req.Text
+	} else if len(req.GetContents()) > 0 {
+		// Extract text from contents for RAG processing
+		for _, content := range req.GetContents() {
+			if text := content.GetText(); text != nil {
+				userMessage += text.Text + " "
+			}
+		}
+		userMessage = strings.TrimSpace(userMessage)
+	}
+
 	// First, check if this chat is in context of a project and retrieve similar chunks
-	if projectID != "" && projectID != "null" && ragEnabled { // if this chat is in context of a project
-		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, req.Text)
+	if projectID != "" && projectID != "null" && ragEnabled && userMessage != "" {
+		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, userMessage)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to retrieve similar chunks", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else if len(chunks.Results) > 0 {
-			userMessage = chunks.Prompt
 			ragChunks = chunks.Results
 
 			// Group chunks by document ID to create summary
@@ -195,7 +262,17 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 	}
 
-	// Save user message with RAG document references if available
+	// STEP 6: Calculate estimated image tokens
+	estimatedImageTokens := 0
+	if hasImages {
+		estimatedImageTokens, err = s.calculateImageTokens(req.GetContents(), modelID)
+		if err != nil {
+			slog.Warn("failed to calculate image tokens", "error", err)
+			// Continue without estimation
+		}
+	}
+
+	// STEP 7: Save user message with multi-modal content
 	var requestMessageId string
 	var referencesJSON string
 	if len(ragChunks) > 0 {
@@ -207,11 +284,38 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			referencesJSON = string(referencesBytes)
 		}
 	}
-	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, model, 0, 0, 0, referencesJSON, ragEnabled)
+
+	// Save with multi-modal content if available, otherwise use legacy text
+	if len(req.GetContents()) > 0 {
+		contentJSON, err := json.Marshal(req.GetContents())
+		if err != nil {
+			return fmt.Errorf("failed to marshal message content")
+		}
+
+		// Extract text content for fallback display
+		var textContent string
+		for _, content := range req.GetContents() {
+			if text := content.GetText(); text != nil {
+				textContent += text.Text + " "
+			} else if content.GetImage() != nil {
+				textContent += "[Image] "
+			}
+		}
+		textContent = strings.TrimSpace(textContent)
+		if textContent == "" {
+			textContent = "[Multi-modal content]" // Fallback if no text
+		}
+
+		requestMessageId, err = s.dao.AddChatMessageWithContent(userID, chatId, "user", textContent, string(contentJSON), model, estimatedImageTokens, 0, 0, referencesJSON, ragEnabled)
+	} else {
+		requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, model, 0, 0, 0, referencesJSON, ragEnabled)
+	}
+
 	if err != nil {
 		slog.Error("service:Chat", "error", "failed to insert user message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to insert user message")
 	}
+
 	if err := stream(&pb.ChatResponse{
 		Response: &pb.ChatResponse_RequestMessageId{
 			RequestMessageId: requestMessageId,
@@ -221,11 +325,39 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
-	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
+	// Build OpenAI messages array
+	var openAIMessages []interface{}
+	for _, msg := range history {
+		if msg.ContentJSON != "" {
+			// Multi-modal message
+			var contents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.ContentJSON), &contents); err == nil {
+				openAIMessage := s.buildOpenAIMessage(contents, msg.Role)
+				openAIMessages = append(openAIMessages, openAIMessage)
+			}
+		} else {
+			// Legacy text-only message
+			openAIMessages = append(openAIMessages, map[string]interface{}{
+				"role":    msg.Role,
+				"content": msg.Content,
+			})
+		}
+	}
+
+	// Add current user message
+	if len(req.GetContents()) > 0 {
+		userOpenAIMessage := s.buildOpenAIMessage(req.GetContents(), "user")
+		openAIMessages = append(openAIMessages, userOpenAIMessage)
+	} else {
+		openAIMessages = append(openAIMessages, map[string]interface{}{
+			"role":    "user",
+			"content": userMessage,
+		})
+	}
 
 	requestBody := map[string]interface{}{
 		"model":    model,
-		"messages": history,
+		"messages": openAIMessages,
 		"stream":   true,
 		"stream_options": map[string]interface{}{
 			"include_usage": true,
@@ -280,8 +412,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("OpenAI request failed, please try again")
 	}
 	defer resp.Body.Close()
-
-	// UI can show request sent, useful because sometimes there is a delay from the API server
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -594,7 +724,7 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 	for _, m := range messages {
 		pbMessage := &pb.ChatMessage{
 			Role:         m.Role,
-			Content:      m.Content,
+			Content:      m.Content, // Plain text fallback
 			MessageId:    m.Id,
 			RagEnabled:   m.RagEnabled,
 			Model:        m.Model,
@@ -602,6 +732,56 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			OutputTokens: int32(m.OutputTokenCount),
 			CachedTokens: int32(m.CachedTokenCount),
 			Cost:         float32(m.Cost),
+		}
+
+		// Parse multi-modal content if available
+		if m.ContentJSON != "" {
+			// First try to unmarshal as the expected proto structure
+			var contents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(m.ContentJSON), &contents); err == nil {
+				pbMessage.Contents = contents
+				slog.Info("service:GetHistory", "message", "Successfully parsed multi-modal content", "messageId", m.Id, "contentsCount", len(contents))
+			} else {
+				// If that fails, try to parse the raw JSON structure and convert it
+				var rawContents []map[string]interface{}
+				if err2 := json.Unmarshal([]byte(m.ContentJSON), &rawContents); err2 == nil {
+					var convertedContents []*pb.MessageContent
+					for _, rawContent := range rawContents {
+						if contentData, ok := rawContent["Content"].(map[string]interface{}); ok {
+							messageContent := &pb.MessageContent{}
+
+							// Handle text content
+							if textData, hasText := contentData["Text"].(map[string]interface{}); hasText {
+								if textValue, hasTextValue := textData["text"].(string); hasTextValue {
+									messageContent.Content = &pb.MessageContent_Text{
+										Text: &pb.TextContent{Text: textValue},
+									}
+								}
+							}
+
+							// Handle image content
+							if imageData, hasImage := contentData["Image"].(map[string]interface{}); hasImage {
+								imageContent := &pb.ImageContent{}
+								if imageUrl, hasUrl := imageData["image_url_or_base64"].(string); hasUrl {
+									imageContent.ImageUrlOrBase64 = imageUrl
+								}
+								if detail, hasDetail := imageData["detail"].(string); hasDetail {
+									imageContent.Detail = detail
+								}
+								messageContent.Content = &pb.MessageContent_Image{Image: imageContent}
+							}
+
+							if messageContent.Content != nil {
+								convertedContents = append(convertedContents, messageContent)
+							}
+						}
+					}
+					pbMessage.Contents = convertedContents
+					slog.Info("service:GetHistory", "message", "Successfully converted multi-modal content", "messageId", m.Id, "contentsCount", len(convertedContents))
+				} else {
+					slog.Error("service:GetHistory", "message", "Failed to parse multi-modal content", "error", err, "error2", err2, "messageId", m.Id, "contentJSON", m.ContentJSON[:min(100, len(m.ContentJSON))])
+				}
+			}
 		}
 
 		if m.DocumentReferences != "" {
@@ -1269,6 +1449,230 @@ func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId stri
 		return fmt.Errorf("failed to rename chat, please try again")
 	}
 	return nil
+}
+
+// validateImageContent validates image content in the request
+func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error {
+	imageCount := 0
+	for _, content := range contents {
+		if img := content.GetImage(); img != nil {
+			imageCount++
+
+			// Check base64 format
+			if !strings.HasPrefix(img.ImageUrlOrBase64, "data:image/") {
+				return fmt.Errorf("invalid image format, must be base64 data URI")
+			}
+
+			// Estimate size (base64 is ~1.37x original)
+			estimatedSize := len(img.ImageUrlOrBase64) * 3 / 4
+			if estimatedSize > MaxImageSizeBytes {
+				return fmt.Errorf("image exceeds %d MB limit", MaxImageSizeBytes/(1024*1024))
+			}
+		}
+	}
+
+	if imageCount > MaxImagesPerMessage {
+		return fmt.Errorf("too many images, max %d per message", MaxImagesPerMessage)
+	}
+
+	return nil
+}
+
+// buildOpenAIMessage converts proto MessageContent to OpenAI Vision API format
+func (s *ChatService) buildOpenAIMessage(contents []*pb.MessageContent, role string) map[string]interface{} {
+	var contentArray []map[string]interface{}
+
+	for _, content := range contents {
+		if text := content.GetText(); text != nil {
+			contentArray = append(contentArray, map[string]interface{}{
+				"type": "text",
+				"text": text.Text,
+			})
+		} else if img := content.GetImage(); img != nil {
+			imageContent := map[string]interface{}{
+				"type": "image_url",
+				"image_url": map[string]interface{}{
+					"url": img.ImageUrlOrBase64,
+				},
+			}
+			if img.Detail != "" {
+				imageContent["image_url"].(map[string]interface{})["detail"] = img.Detail
+			}
+			contentArray = append(contentArray, imageContent)
+		}
+	}
+
+	return map[string]interface{}{
+		"role":    role,
+		"content": contentArray,
+	}
+}
+
+// calculateImageTokens estimates token usage for images
+func (s *ChatService) calculateImageTokens(contents []*pb.MessageContent, model string) (int, error) {
+	totalTokens := 0
+
+	for _, content := range contents {
+		if img := content.GetImage(); img != nil {
+			// Decode base64 to get image dimensions
+			dimensions, err := getImageDimensions(img.ImageUrlOrBase64)
+			if err != nil {
+				return 0, fmt.Errorf("failed to get image dimensions: %w", err)
+			}
+
+			detail := img.Detail
+			if detail == "" {
+				detail = "auto" // Default to auto
+			}
+
+			// Auto detail: use high for images > 512x512, low otherwise
+			if detail == "auto" {
+				if dimensions.Width > 512 || dimensions.Height > 512 {
+					detail = "high"
+				} else {
+					detail = "low"
+				}
+			}
+
+			var tokens int
+			if isPatchBasedModel(model) {
+				tokens = calculatePatchBasedTokens(dimensions.Width, dimensions.Height, model)
+			} else {
+				tokens = calculateTileBasedTokens(dimensions.Width, dimensions.Height, model, detail)
+			}
+
+			totalTokens += tokens
+		}
+	}
+
+	return totalTokens, nil
+}
+
+// getImageDimensions extracts dimensions from base64 image data
+func getImageDimensions(base64Data string) (*ImageDimensions, error) {
+	// Remove data URL prefix
+	parts := strings.Split(base64Data, ",")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid base64 data URI format")
+	}
+	data := parts[1]
+
+	// Decode base64
+	imageData, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get image config (dimensions without full decode)
+	config, _, err := image.DecodeConfig(bytes.NewReader(imageData))
+	if err != nil {
+		return nil, err
+	}
+
+	return &ImageDimensions{
+		Width:  config.Width,
+		Height: config.Height,
+	}, nil
+}
+
+// isPatchBasedModel checks if model uses patch-based token calculation
+func isPatchBasedModel(model string) bool {
+	patchBasedModels := []string{
+		"gpt-4.1-mini",
+		"gpt-4.1-nano",
+		"o4-mini",
+	}
+
+	for _, m := range patchBasedModels {
+		if strings.Contains(model, m) {
+			return true
+		}
+	}
+	return false
+}
+
+// calculatePatchBasedTokens calculates tokens for patch-based models
+func calculatePatchBasedTokens(width, height int, model string) int {
+	// Calculate patches (32x32 pixels each)
+	widthPatches := (width + 31) / 32 // Ceiling division
+	heightPatches := (height + 31) / 32
+	totalPatches := widthPatches * heightPatches
+
+	// Cap at 1,536 patches (scale image if needed)
+	if totalPatches > 1536 {
+		totalPatches = 1536
+	}
+
+	// Apply model-specific multiplier
+	var multiplier float64
+	switch model {
+	case "gpt-4.1-mini":
+		multiplier = 1.62
+	case "gpt-4.1-nano":
+		multiplier = 2.46
+	case "o4-mini":
+		multiplier = 1.72
+	default:
+		multiplier = 1.0
+	}
+
+	return int(float64(totalPatches) * multiplier)
+}
+
+// calculateTileBasedTokens calculates tokens for tile-based models
+func calculateTileBasedTokens(width, height int, model, detail string) int {
+	if detail == "low" {
+		// Fixed token cost regardless of size
+		switch model {
+		case "gpt-4o", "gpt-4-turbo-2024-04-09":
+			return 85
+		case "gpt-4o-mini":
+			return 2833
+		default:
+			return 85
+		}
+	}
+
+	// High detail mode
+	// Step 1: Resize to fit 2048x2048 while maintaining aspect ratio
+	maxDim := 2048
+	scale := 1.0
+	if width > maxDim || height > maxDim {
+		scale = float64(maxDim) / math.Max(float64(width), float64(height))
+	}
+
+	resizedWidth := int(float64(width) * scale)
+	resizedHeight := int(float64(height) * scale)
+
+	// Step 2: Ensure shortest side is at least 768px
+	minDim := 768
+	shortestSide := math.Min(float64(resizedWidth), float64(resizedHeight))
+	if shortestSide < float64(minDim) {
+		scale2 := float64(minDim) / shortestSide
+		resizedWidth = int(float64(resizedWidth) * scale2)
+		resizedHeight = int(float64(resizedHeight) * scale2)
+	}
+
+	// Step 3: Calculate tiles (512x512 each)
+	tilesWidth := (resizedWidth + 511) / 512 // Ceiling division
+	tilesHeight := (resizedHeight + 511) / 512
+	totalTiles := tilesWidth * tilesHeight
+
+	// Step 4: Calculate tokens
+	var baseTokens, tokensPerTile int
+	switch model {
+	case "gpt-4o", "gpt-4-turbo-2024-04-09":
+		baseTokens = 85
+		tokensPerTile = 170
+	case "gpt-4o-mini":
+		baseTokens = 2833
+		tokensPerTile = 5667
+	default:
+		baseTokens = 85
+		tokensPerTile = 170
+	}
+
+	return baseTokens + (totalTiles * tokensPerTile)
 }
 
 func (s *ChatService) Init(config *dao.Config) *sql.DB {

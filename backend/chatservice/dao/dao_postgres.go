@@ -139,10 +139,54 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 }
 
 // GetChatMessages retrieves all messages for a given chat - need to add cost
+func (p *PostgresDAO) AddChatMessageWithContent(userID string, chatId string, role string, content string, contentJSON string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
+	slog.Info("dao_postgres:AddChatMessageWithContent", "userID", userID, "chatId", chatId, "role", role, "model", model)
+	var messageId string
+
+	// Handle empty or whitespace references by setting it to empty JSON object
+	trimmedRef := strings.TrimSpace(references)
+	if trimmedRef == "" {
+		trimmedRef = "[]"
+	}
+
+	// Validate references JSON
+	var temp interface{}
+	if err := json.Unmarshal([]byte(trimmedRef), &temp); err != nil {
+		slog.Error("dao_postgres:AddChatMessageWithContent", "message", "invalid JSON format for references field", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
+		return "", fmt.Errorf("invalid JSON format for references field")
+	}
+
+	// Insert into DB
+	err := p.db.Get(&messageId,
+		`INSERT INTO chat_messages
+        (chat_id, role, content, content_json, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+        RETURNING id`,
+		chatId, role, content, contentJSON, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, trimmedRef)
+
+	if err != nil {
+		slog.Error("dao_postgres:AddChatMessageWithContent", "message", "failed to add chat message with content", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
+		return "", fmt.Errorf("failed to add chat message with content")
+	}
+
+	return messageId, nil
+}
+
+func (p *PostgresDAO) GetModelByID(modelID string) (*Models, error) {
+	var model Models
+	err := p.db.Get(&model,
+		"SELECT id, name, provider, url, input_token_cost, output_token_cost, COALESCE(capabilities, '{}') AS capabilities FROM model_metadata WHERE id = $1",
+		modelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get model: %w", err)
+	}
+	return &model, nil
+}
+
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	slog.Info("dao_postgres:GetChatMessages", "userID", userID, "chatId", chatId)
 	var messages []ChatMessageRow
-	err := p.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cost, 0) as cost, COALESCE(cached_token_count, 0) as cached_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
+	err := p.db.Select(&messages, "SELECT role, content, COALESCE(content_json, '') as content_json, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cost, 0) as cost, COALESCE(cached_token_count, 0) as cached_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	if err != nil {
 		slog.Error("dao_postgres:GetChatMessages", "message", "failed to get chat messages", "error", err, "userID", userID, "chatId", chatId)
 		return nil, fmt.Errorf("failed to get chat messages")
@@ -286,7 +330,7 @@ func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
 	var result []*proto.ModelListInfo
 	for _, m := range models {
 		// Parse capabilities JSON
-		capabilities, err := parseCapabilities(m.Capabilities)
+		capabilities, err := ParseCapabilities(m.Capabilities)
 		if err != nil {
 			slog.Error("dao_postgres:GetModels", "message", "failed to parse capabilities for model", "error", err, "modelID", m.ID)
 			return nil, fmt.Errorf("failed to parse capabilities for model")

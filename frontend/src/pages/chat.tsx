@@ -15,10 +15,13 @@ import {
   ChevronRight,
   Loader2,
   Square,
+  ImageIcon,
+  X,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   $currentChatId,
   $selectedModel,
@@ -219,7 +222,36 @@ function Message({
               <span>{chatProgress?.message || getProgressText(chatProgress?.state || 0)}</span>
             </div>
           ) : (
-            <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
+            <div className="space-y-2">
+              {/* Render multi-modal content if available */}
+              {message.contents && message.contents.length > 0 ? (
+                message.contents.map((content, idx) => {
+                  console.log('Rendering content:', content); // Debug log
+                  if (content.text) {
+                    return <EnhancedMarkdown key={idx}>{content.text.text}</EnhancedMarkdown>;
+                  } else if (content.image) {
+                    return (
+                      <div key={idx} className="my-2">
+                        <img
+                          src={content.image.image_url_or_base64}
+                          alt="Message image"
+                          className="max-w-md rounded-lg shadow-md border border-gray-200"
+                          loading="lazy"
+                          style={{ maxHeight: '400px', objectFit: 'contain' }}
+                        />
+                      </div>
+                    );
+                  }
+                  return null;
+                })
+              ) : (
+                /* Fallback to old text-only format */
+                <>
+                  {console.log('Using fallback content for message:', message)} {/* Debug log */}
+                  <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
+                </>
+              )}
+            </div>
           )}
 
           {!isUser && !isProgress && projectId && message.rag_enabled == false && (
@@ -342,16 +374,19 @@ function ChatInputBox({
   onSendMessage,
 }: {
   projectId?: string;
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, images?: File[], imageDetail?: string) => void;
 }) {
   const MIN_TEXTAREA_HEIGHT = 48;
   const MAX_TEXTAREA_HEIGHT = 200;
   const [inputValue, setInputValue] = useState("");
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imageDetail, setImageDetail] = useState<string>("auto");
   const [showDetailedTokens, setShowDetailedTokens] = useState(() => {
     const saved = localStorage.getItem('showDetailedTokens');
     return saved ? JSON.parse(saved) : false;
   });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleDetailedTokens = () => {
     const newValue = !showDetailedTokens;
@@ -364,6 +399,10 @@ function ChatInputBox({
   const ragEnabled = useStore($ragEnabled);
   const chatMetadata = useStore($chatMetadata);
   const isStreaming = useStore($isStreaming);
+
+  // Get current model capabilities
+  const modelInfo = availableModels.find(m => m.id === selectedModel);
+  const supportsImageInput = modelInfo?.capabilities?.image?.input ?? false;
 
   // Auto-resize textarea based on content
   useEffect(() => {
@@ -378,10 +417,32 @@ function ChatInputBox({
     }
   }, [inputValue]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    // Validate file types
+    const validFiles = files.filter(f => f.type.startsWith('image/'));
+    
+    // Validate file sizes (10MB limit)
+    const validSizes = validFiles.filter(f => f.size <= 10 * 1024 * 1024);
+    
+    if (validSizes.length !== files.length) {
+      toast.error("Some files were skipped (invalid type or too large)");
+    }
+    
+    setSelectedImages(prev => [...prev, ...validSizes].slice(0, 10)); // Max 10 images
+  };
+  
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSend = () => {
-    if (inputValue.trim() && !isStreaming) {
-      onSendMessage(inputValue);
+    if ((inputValue.trim() || selectedImages.length > 0) && !isStreaming) {
+      onSendMessage(inputValue, selectedImages, imageDetail);
       setInputValue("");
+      setSelectedImages([]);
+      setImageDetail("auto"); // Reset to default
     }
   };
 
@@ -418,6 +479,26 @@ function ChatInputBox({
     <>
       <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
         <div className="w-full max-w-none px-4">
+          {/* Image Preview Area */}
+          {selectedImages.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {selectedImages.map((img, idx) => (
+                <div key={idx} className="relative group">
+                  <img
+                    src={URL.createObjectURL(img)}
+                    alt={`Preview ${idx}`}
+                    className="h-20 w-20 object-cover rounded border"
+                  />
+                  <button
+                    onClick={() => removeImage(idx)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           {/* RAG Toggle for Project Chats */}
           {projectId && (
             <div className="flex items-center mb-3">
@@ -448,6 +529,29 @@ function ChatInputBox({
             />
             <div className="flex items-center justify-between p-3 pt-0">
               <div className="flex items-center space-x-2">
+                {/* Image Upload Button - Only show if model supports it */}
+                {supportsImageInput && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleImageSelect}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isStreaming}
+                      title="Add images"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -464,7 +568,14 @@ function ChatInputBox({
                         key={model.id || model.label}
                         onClick={() => handleModelSelect(model.id)}
                       >
-                        {model.label}
+                        <div className="flex items-center justify-between w-full">
+                          <span>{model.label}</span>
+                          {model.capabilities?.image?.input && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1 rounded">
+                              Vision
+                            </span>
+                          )}
+                        </div>
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
@@ -486,13 +597,41 @@ function ChatInputBox({
                   size="sm"
                   className="bg-black hover:bg-gray-800 text-white px-4"
                   onClick={handleSend}
-                  disabled={!inputValue.trim()}
+                  disabled={!inputValue.trim() && selectedImages.length === 0}
                 >
                   <CornerDownLeft className="size-3.5" />
                 </Button>
               )}
             </div>
           </div>
+          
+          {/* Show warning if images selected but model doesn't support */}
+          {!supportsImageInput && selectedImages.length > 0 && (
+            <div className="mt-2 text-xs text-red-600">
+              Selected model doesn't support images. Choose a vision-capable model.
+            </div>
+          )}
+          
+          {/* Optional: Detail level selector for advanced users */}
+          {selectedImages.length > 0 && supportsImageInput && (
+            <div className="mt-2 flex items-center space-x-2 text-xs text-gray-600">
+              <span>Image detail:</span>
+              <select 
+                className="text-xs border rounded px-1"
+                value={imageDetail}
+                onChange={(e) => setImageDetail(e.target.value)}
+              >
+                <option value="auto">Auto (recommended)</option>
+                <option value="low">Low (faster, cheaper)</option>
+                <option value="high">High (slower, more detailed)</option>
+              </select>
+              <span className="text-gray-500">
+                {imageDetail === "auto" && "High for large images, low for small"}
+                {imageDetail === "low" && "Fixed cost regardless of size"}
+                {imageDetail === "high" && "Cost based on image size"}
+              </span>
+            </div>
+          )}
         </div>
         <div className="text-sm text-gray-500 mt-2 flex flex-row gap-2 px-6">
           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
@@ -609,9 +748,9 @@ export function Chat() {
 
 
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = (message: string, images?: File[], imageDetail?: string) => {
     setIsUserScrolledUp(false);
-    doChat(message, projectId);
+    doChat(message, projectId, images, imageDetail);
   };
 
   const handleCopyMessage = async (content: string, messageId: string) => {

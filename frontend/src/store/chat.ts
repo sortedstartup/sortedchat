@@ -32,6 +32,9 @@ import {
   RestoreChatRequest,
   RenameChatRequest,
   ChatProgress,
+  MessageContent,
+  TextContent,
+  ImageContent,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -196,7 +199,21 @@ export const $chatProgress = atom<ChatProgress | null>(null);
 
 export let stream: ClientReadableStream<ChatResponse> | null = null;
 export let $isStreaming = atom<boolean>(false);
-export const doChat = (msg: string,projectId: string | undefined) => {
+
+// Helper function to convert File to base64
+async function imageToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      resolve(base64);  // Already in format: data:image/jpeg;base64,/9j/4AAQ...
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+export const doChat = async (msg: string, projectId: string | undefined, images?: File[], imageDetail: string = "auto") => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
   $currentUserMessageId.set("");
@@ -225,10 +242,53 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     $showDocumentReferences.set(false);
   }
 
+  // Build multi-modal content
+  const contents: MessageContent[] = [];
+  
+  // Add text content if provided
+  if (msg.trim()) {
+    contents.push(
+      MessageContent.fromObject({
+        text: TextContent.fromObject({ text: msg })
+      })
+    );
+  }
+  
+  // Add image contents if provided
+  if (images && images.length > 0) {
+    // Check model capabilities before processing images
+    const selectedModel = $selectedModel.get();
+    const modelInfo = $availableModels.get().find(m => m.id === selectedModel);
+    
+    if (!modelInfo?.capabilities?.image?.input) {
+      toast.error("Selected model does not support image input. Please choose a vision-capable model.");
+      return;
+    }
+    
+    for (const image of images) {
+      try {
+        const base64 = await imageToBase64(image);
+        contents.push(
+          MessageContent.fromObject({
+            image: ImageContent.fromObject({
+              image_url_or_base64: base64,
+              detail: imageDetail
+            })
+          })
+        );
+      } catch (error) {
+        console.error("Failed to encode image:", error);
+        toast.error("Failed to process image. Please try again.");
+        return;
+      }
+    }
+  }
+
   // grpc call
    stream = chat.Chat(
     ChatRequest.fromObject({
-      text: msg,
+      text: msg, // Keep for backward compatibility
+      contents: contents, // New multi-modal content
       chatId: $currentChatId.get(),
       model: $selectedModel.get(),
       project_context: ProjectContext.fromObject({
@@ -288,6 +348,7 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     const userMessage = ChatMessage.fromObject({
       role: "user",
       content: msg,
+      contents: contents.length > 0 ? contents : undefined, // Add multi-modal content
       rag_enabled: ragEnabled, // Set the rag_enabled field based on the current state
     });
     

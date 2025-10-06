@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"strconv"
 
 	"sortedstartup/chatservice/dao"
@@ -21,18 +22,21 @@ type SettingService struct {
 }
 
 func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingService {
+	slog.Info("settings_service:NewSettingService")
 	settingsDAO, err := daoFactory.CreateSettingsDAO()
 	if err != nil {
-		log.Fatalf("Failed to create settings DAO: %v", err)
+		slog.Error("settings_service:NewSettingService, failed to create settings DAO", "error", err)
+		return nil
 	}
 	return &SettingService{dao: settingsDAO, queue: queue}
 }
 
 func (s *SettingService) Init() {
+	slog.Info("settings_service:Init", "settingService", s)
 	// since right now the Setting is in chatservice so chatservice handles migrations
 	isFirstBoot, err := s.IsFirstBoot()
 	if err != nil {
-		log.Printf("Failed to check if this is first boot: %v", err)
+		slog.Error("settings_service:Init", "step", "failed to check if this is first boot", "error", err)
 		return
 	}
 
@@ -44,40 +48,47 @@ func (s *SettingService) Init() {
 }
 
 func (s *SettingService) FirstBootComplete() {
+	slog.Info("settings_service:FirstBootComplete", "settingService", s)
 	err := s.dao.SetSettingValue("is_first_boot", "1")
 	if err != nil {
-		log.Printf("Failed to set is_first_boot setting: %v", err)
+		slog.Error("settings_service:FirstBootComplete", "message", "failed to set is_first_boot setting", "error", err)
 	}
 }
 
 func (s *SettingService) GetSetting(ctx context.Context) (*pb.Settings, error) {
+	slog.Info("settings_service:GetSetting", "settingService", s)
 	settingsString, err := s.dao.GetSettingValue("settings")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get settings: %w", err)
+		slog.Error("settings_service:GetSetting", "step", "failed to get settings", "error", err)
+		return nil, fmt.Errorf("failed to get settings")
 	}
 
 	//json decode the settings
 	var settingsObj settings.Settings
 	err = json.Unmarshal([]byte(settingsString), &settingsObj)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal settings: %w", err)
+		slog.Error("settings_service:GetSetting", "step", "failed to unmarshal settings", "error", err)
+		return nil, fmt.Errorf("failed to get settings")
 	}
 
 	return settingsObj.ToProto(), nil
 }
 
 func (s *SettingService) SetSetting(ctx context.Context, settingsProto *pb.Settings) error {
+	slog.Info("settings_service:SetSetting", "settingService", s)
 	settingsJSON, err := json.Marshal(settings.FromProto(settingsProto))
 	if err != nil {
-		return fmt.Errorf("failed to set settings: %w", err)
+		slog.Error("settings_service:SetSetting", "step", "failed to set settings", "error", err)
+		return fmt.Errorf("failed to set settings")
 	}
 
 	err = s.dao.SetSettingValue("settings", string(settingsJSON))
 	if err != nil {
-		return fmt.Errorf("failed to set settings: %w", err)
+		slog.Error("settings_service:SetSetting", "step", "failed to set settings", "error", err)
+		return fmt.Errorf("failed to set settings")
 	}
 
-	log.Printf("Publishing event [%s], data:[%s] to reload settings", events.SETTINGS_CHANGED_EVENT, "")
+	slog.Info("publishing settings change event", "event", events.SETTINGS_CHANGED_EVENT)
 	// publish an event, any subscriber now need to reload settings from the database
 	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
 

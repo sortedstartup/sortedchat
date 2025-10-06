@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { ChatInput } from "@/components/ui/chat/chat-input";
 import {
   CornerDownLeft,
   FileText,
@@ -58,8 +57,8 @@ import {
 } from "@/components/ui/dialog";
 import type {
   ChatMessage,
-  RAGDocumentReference, 
-  RAGDocumentReferenceChunk, 
+  RAGDocumentReference,
+  RAGDocumentReferenceChunk,
   ResponseSummary,
   ChatProgress,
 } from "proto/chatservice";
@@ -200,13 +199,12 @@ function Message({
   return (
     <div
       className={`w-full ${isUser
-          ? "bg-gray-50 border-b border-gray-200"
-          : "bg-white border-b border-gray-200"
+        ? "bg-gray-50 border-b border-gray-200"
+        : "bg-white border-b border-gray-200"
         } py-6 px-4`}
     >
       <div
-        className={`w-full max-w-none px-4 flex items-start space-x-4 justify-${isUser ? "end" : "start"
-          }`}
+        className={`w-full max-w-none px-4 flex items-start space-x-4 ${isUser ? "justify-end" : "justify-start"}`}
       >
         {!isUser && (
           <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium">
@@ -214,7 +212,7 @@ function Message({
           </div>
         )}
 
-        <div className={`flex-1 min-w-0 text-${isUser ? "right" : "left"}`}>
+        <div className={`flex-1 min-w-0 ${isUser ? "text-right" : "text-left"}`}>
           {isProgress ? (
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -346,23 +344,39 @@ function ChatInputBox({
   projectId?: string;
   onSendMessage: (message: string) => void;
 }) {
+  const MIN_TEXTAREA_HEIGHT = 48;
+  const MAX_TEXTAREA_HEIGHT = 200;
   const [inputValue, setInputValue] = useState("");
   const [showDetailedTokens, setShowDetailedTokens] = useState(() => {
     const saved = localStorage.getItem('showDetailedTokens');
     return saved ? JSON.parse(saved) : false;
   });
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const toggleDetailedTokens = () => {
     const newValue = !showDetailedTokens;
     setShowDetailedTokens(newValue);
     localStorage.setItem('showDetailedTokens', JSON.stringify(newValue));
   };
-  
+
   const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
   const ragEnabled = useStore($ragEnabled);
   const chatMetadata = useStore($chatMetadata);
   const isStreaming = useStore($isStreaming);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      
+      // Calculate new height (min 48px, max 200px)
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT), MAX_TEXTAREA_HEIGHT);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [inputValue]);
 
   const handleSend = () => {
     if (inputValue.trim() && !isStreaming) {
@@ -413,7 +427,7 @@ function ChatInputBox({
                   checked={ragEnabled}
                   onChange={toggleRagEnabled}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  disabled={isStreaming} // Disable during streaming
+                  disabled={isStreaming}
                 />
                 <span>Enable RAG (Retrieval-Augmented Generation)</span>
               </label>
@@ -421,21 +435,24 @@ function ChatInputBox({
           )}
 
           <div className="relative rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-            <ChatInput
+            <textarea
+              ref={textareaRef}
               placeholder={isStreaming ? "Response is being generated..." : "Ask anything"}
-              className="min-h-12 resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0"
+              className="w-full min-h-[48px] max-h-[200px] resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0 focus:outline-none overflow-y-auto"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isStreaming} // Disable input during streaming
+              disabled={isStreaming}
+              rows={1}
+              aria-label="Chat message input"
             />
             <div className="flex items-center justify-between p-3 pt-0">
               <div className="flex items-center space-x-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="text-xs"
                     >
                       {selectedModel || "Select Model"}
@@ -453,7 +470,7 @@ function ChatInputBox({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              
+
               {isStreaming ? (
                 <Button
                   size="sm"
@@ -479,10 +496,14 @@ function ChatInputBox({
         </div>
         <div className="text-sm text-gray-500 mt-2 flex flex-row gap-2 px-6">
           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+            <ArrowUp className="size-3" />
+            <span>{chatMetadata?.input_token_count}</span>
+          </div>
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
             <ArrowDown className="size-3" />
             <span>{chatMetadata?.output_token_count}</span>
           </div>
-          <button 
+          <button
             onClick={toggleDetailedTokens}
             className="flex items-center gap-1 text-gray-400 hover:text-gray-600 transition-colors px-1"
             aria-label={showDetailedTokens ? "Hide detailed token usage" : "Show detailed token usage"}
@@ -491,12 +512,12 @@ function ChatInputBox({
           </button>
           {showDetailedTokens && (
             <>
-              
+
               {cachedTokensDisplay && <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
                 <span>{cachedTokensDisplay} cached tokens</span>
               </div>}
               <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
-                <DollarSign className="size-3"/>
+                <DollarSign className="size-3" />
                 <span>{costDisplay}</span>
               </div>
             </>
@@ -530,6 +551,9 @@ export function Chat() {
   const chatProgress = useStore($chatProgress);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
+  const shouldAutoScroll = !isUserScrolledUp;
 
   // Show progress as assistant message when there's progress but no streaming content yet
   const showProgressAsMessage = chatProgress && !streamingMessage?.trim();
@@ -555,11 +579,38 @@ export function Chat() {
     }
   }, [projectId]);
 
+  // Scroll handler to detect when user scrolls up
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [data, streamingMessage, currentChatMessage]);
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const {
+        scrollTop: scrollFromTop, //how far you’ve scrolled from the very top.
+        scrollHeight: totalContentHeight, //total content height (like the full length of a long chat).
+        clientHeight: viewportHeight, //visible window height (the viewport).
+      } = container;
+      const isAtBottom = totalContentHeight - scrollFromTop - viewportHeight < 100;
+      //if user is at bottom of the chat, it will autoscroll, else it will not.
+
+      setIsUserScrolledUp(!isAtBottom);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-scroll only when user is at bottom and content changes
+  useEffect(() => {
+    if (shouldAutoScroll && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [data, streamingMessage, currentChatMessage, shouldAutoScroll]);
+
+
 
   const handleSendMessage = (message: string) => {
+    setIsUserScrolledUp(false);
     doChat(message, projectId);
   };
 
@@ -591,74 +642,76 @@ export function Chat() {
   const combinedMessages = [
     ...(data || []),
     ...(currentChatMessage?.trim() ? [{ message_id: currentUserMessageId, role: "user", content: currentChatMessage }] : []),
-    ...(showProgressAsMessage ? [{ 
-      message_id: Math.random().toString(36).substring(2, 15), //this should be unique
-      role: "assistant", 
+    ...(showProgressAsMessage ? [{
+      message_id: "progress-indicator", //this should be unique
+
+      role: "assistant",
       content: "",
-      isProgress: true 
+      isProgress: true
     }] : []),
     ...(streamingMessage?.trim() ? [{ message_id: currentAssistantMessageId, role: "assistant", content: streamingMessage }] : []),
   ];
 
   return (
-    <div
-      className={`flex flex-col h-full mx-auto w-full transition-all ${isExpanded ? "max-w-7xl" : "max-w-4xl"
-        }`}
-    >
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {loading ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            Loading messages...
-          </div>
-        ) : combinedMessages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            No messages yet
-          </div>
-        ) : (
-          combinedMessages.map((message,index) => {
-            const summaryForThis = responseSummaries[message.message_id || ""];
+    <div className="flex flex-col h-full w-full">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto min-h-0">
+        <div className={`mx-auto w-full transition-all ${isExpanded ? "max-w-7xl" : "max-w-4xl"}`}>
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Loading messages...
+            </div>
+          ) : combinedMessages.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              No messages yet
+            </div>
+          ) : (
+            combinedMessages.map((message, index) => {
+              const summaryForThis = responseSummaries[message.message_id || ""];
 
-            return (
-              <Message
-                key={index}
-                message={message as ChatMessage & { isProgress?: boolean }}
-                onCopyMessage={handleCopyMessage}
-                onViewRAGDetails={handleViewRAGDetails}
-                onBranchChat={BranchChat}
-                isCopied={copiedMessageId === message?.message_id}
-                projectId={projectId}
-                isExpanded={isExpanded}
-                onToggleExpand={handleToggleExpand}
-                messageSummary={summaryForThis || undefined}
-                chatProgress={chatProgress || undefined}
-              />
-            );
-          })
-        )}
-        
-        <div ref={messagesEndRef} />
-        {listChatBranch.length > 0 && (
-          <div className="bg-gray-50 border-t py-4 px-4">
-            <div className="w-full max-w-none px-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Related Chats:</h3>
-              <div className="flex flex-wrap gap-2">
-                {listChatBranch.map((chat) => (
-                  <Button
-                    key={chat.chatId}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => goToChatBranch(chat.chatId)}
-                    className="text-xs"
-                  >
-                    {chat.name || "New Branch"}
-                  </Button>
-                ))}
+              return (
+                <Message
+                  key={index}
+                  message={message as ChatMessage & { isProgress?: boolean }}
+                  onCopyMessage={handleCopyMessage}
+                  onViewRAGDetails={handleViewRAGDetails}
+                  onBranchChat={BranchChat}
+                  isCopied={copiedMessageId === message?.message_id}
+                  projectId={projectId}
+                  isExpanded={isExpanded}
+                  onToggleExpand={handleToggleExpand}
+                  messageSummary={summaryForThis || undefined}
+                  chatProgress={chatProgress || undefined}
+                />
+              );
+            })
+          )}
+
+          <div ref={messagesEndRef} />
+          {listChatBranch.length > 0 && (
+            <div className="bg-gray-50 border-t py-4 px-4">
+              <div className="w-full max-w-none px-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Related Chats:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {listChatBranch.map((chat) => (
+                    <Button
+                      key={chat.chatId}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToChatBranch(chat.chatId)}
+                      className="text-xs"
+                    >
+                      {chat.name || "New Branch"}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-      <ChatInputBox projectId={projectId} onSendMessage={handleSendMessage} />
+      <div className="mx-auto w-full max-w-4xl">
+        <ChatInputBox projectId={projectId} onSendMessage={handleSendMessage} />
+      </div>
       <Dialog
         open={!!selectedDocumentForDetails}
         onOpenChange={() => setSelectedDocumentForDetails(null)}

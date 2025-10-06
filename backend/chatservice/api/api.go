@@ -2,7 +2,8 @@ package api
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 
 	db "sortedstartup/chatservice/dao"
@@ -13,8 +14,6 @@ import (
 	"sortedstartup/common/auth"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type SettingServiceAPI struct {
@@ -23,17 +22,25 @@ type SettingServiceAPI struct {
 }
 
 func NewSettingService(queue queue.Queue, daoFactory db.DAOFactory) *SettingServiceAPI {
+	slog.Info("api:NewSettingService")
 	settingService := service.NewSettingService(queue, daoFactory)
+	if settingService == nil {
+		slog.Error("api:NewSettingService", "error", "failed to create setting service")
+		return nil
+	}
 	return &SettingServiceAPI{service: settingService}
 }
 
 func (s *SettingServiceAPI) Init() {
+	slog.Info("api:Init", "settingService", s.service)
 	s.service.Init()
 }
 
 func (s *SettingServiceAPI) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
+	slog.Info("api:GetSetting", "settingService", s.service)
 	settings, err := s.service.GetSetting(ctx)
 	if err != nil {
+		slog.Error("api:GetSetting", "failed to get settings", "error", err)
 		return nil, err
 	}
 
@@ -45,6 +52,7 @@ func (s *SettingServiceAPI) GetSetting(ctx context.Context, req *pb.GetSettingRe
 func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRequest) (*pb.SetSettingResponse, error) {
 	err := s.service.SetSetting(ctx, req.Settings)
 	if err != nil {
+		slog.Error("api:SetSetting", "message", "failed to set settings", "error", err)
 		return nil, err
 	}
 
@@ -59,11 +67,13 @@ type ChatServiceAPI struct {
 }
 
 func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory db.DAOFactory) *ChatServiceAPI {
+	slog.Info("api:NewChatService")
 	settingsManager.LoadSettingsFromDB()
 
 	chatService, err := service.NewChatService(queue, settingsManager, daoFactory)
 	if err != nil {
-		log.Fatalf("Failed to initialize ChatService: %v", err)
+		slog.Error("api:NewChatService", "message", "failed to initialize ChatService", "error", err)
+		return nil
 	}
 
 	s := &ChatServiceAPI{
@@ -79,6 +89,7 @@ func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *sett
 func (s *ChatServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingServer[pb.ChatResponse]) error {
 	userID, err := auth.GetUserIDFromContext_WithError(stream.Context())
 	if err != nil {
+		slog.Error("api:Chat", "message", "failed to get user ID from context", "error", err)
 		return err
 	}
 	return s.service.Chat(stream.Context(), userID, req, func(response *pb.ChatResponse) error {
@@ -87,13 +98,16 @@ func (s *ChatServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingSe
 }
 
 func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateChatNameRequest) (*pb.GenerateChatNameResponse, error) {
+	slog.Info("api:GenerateChatName", "request", req)
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:GenerateChatName", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	chatName, err := s.service.GenerateChatName(ctx, userID, req.GetChatId(), req.GetMessage(), req.GetModel())
 	if err != nil {
-		return nil, err
+		slog.Error("api:GenerateChatName", "message", "failed to generate chat name", "error", err)
+		return nil, fmt.Errorf("failed to generate chat name")
 	}
 
 	return &pb.GenerateChatNameResponse{
@@ -102,13 +116,16 @@ func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateC
 }
 
 func (s *ChatServiceAPI) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
+	slog.Info("api:GetHistory", "request", req)
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:GetHistory", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	history, chatmetadata, err := s.service.GetHistory(ctx, userID, req.ChatId)
 	if err != nil {
-		return nil, err
+		slog.Error("api:GetHistory", "message", "failed to get history", "error", err)
+		return nil, fmt.Errorf("failed to get chat message history")
 	}
 
 	return &pb.GetHistoryResponse{
@@ -120,11 +137,13 @@ func (s *ChatServiceAPI) GetHistory(ctx context.Context, req *pb.GetHistoryReque
 func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListRequest) (*pb.GetChatListResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:GetChatList", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	chats, err := s.service.GetChatList(ctx, userID, req.GetProjectId(), req.GetSoftDeleted())
 	if err != nil {
-		return nil, err
+		slog.Error("api:GetHistory", "message", "failed to get chat list", "error", err)
+		return nil, fmt.Errorf("failed to get chat list")
 	}
 	return &pb.GetChatListResponse{Chats: chats}, nil
 }
@@ -132,11 +151,13 @@ func (s *ChatServiceAPI) GetChatList(ctx context.Context, req *pb.GetChatListReq
 func (s *ChatServiceAPI) CreateChat(ctx context.Context, req *pb.CreateChatRequest) (*pb.CreateChatResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:CreateChat", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	chatId, err := s.service.CreateChat(ctx, userID, req.Name, req.GetProjectId())
 	if err != nil {
-		return nil, err
+		slog.Error("api:CreateChat", "message", "failed to create chat", "error", err)
+		return nil, fmt.Errorf("failed to create chat")
 	}
 
 	return &pb.CreateChatResponse{
@@ -148,7 +169,8 @@ func (s *ChatServiceAPI) CreateChat(ctx context.Context, req *pb.CreateChatReque
 func (s *ChatServiceAPI) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
 	models, err := s.service.ListModel(ctx)
 	if err != nil {
-		return nil, err
+		slog.Error("api:ListModel", "message", "failed to list models", "error", err)
+		return nil, fmt.Errorf("failed to list models")
 	}
 
 	return &pb.ListModelsResponse{Models: models}, nil
@@ -157,11 +179,13 @@ func (s *ChatServiceAPI) ListModel(ctx context.Context, req *pb.ListModelsReques
 func (s *ChatServiceAPI) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:SearchChat", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	results, err := s.service.SearchChat(ctx, userID, req.Query)
 	if err != nil {
-		return nil, err
+		slog.Error("api:SearchChat", "message", "failed to search chat", "error", err)
+		return nil, fmt.Errorf("failed to search chat")
 	}
 
 	return &pb.ChatSearchResponse{
@@ -173,12 +197,14 @@ func (s *ChatServiceAPI) SearchChat(ctx context.Context, req *pb.ChatSearchReque
 func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:CreateProject", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 
 	projectID, err := s.service.CreateProject(ctx, userID, req.Name, req.Description, req.AdditionalData)
 	if err != nil {
-		return nil, err
+		slog.Error("api:CreateProject", "message", "failed to create project", "error", err)
+		return nil, fmt.Errorf("failed to create project")
 	}
 
 	return &pb.CreateProjectResponse{
@@ -190,12 +216,14 @@ func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjec
 func (s *ChatServiceAPI) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:GetProjects", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 
 	projects, err := s.service.GetProjects(ctx, userID)
 	if err != nil {
-		return nil, err
+		slog.Error("api:GetProjects", "message", "failed to get projects", "error", err)
+		return nil, fmt.Errorf("failed to get projects")
 	}
 
 	var pbProjects []*pb.Project
@@ -216,11 +244,13 @@ func (s *ChatServiceAPI) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 func (s *ChatServiceAPI) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:ListDocuments", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	docs, err := s.service.ListDocuments(ctx, userID, req.GetProjectId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to fetch documents: %v", err)
+		slog.Error("api:ListDocuments", "message", "failed to fetch documents", "error", err)
+		return nil, fmt.Errorf("failed to fetch documents")
 	}
 
 	var result []*pb.Document
@@ -244,12 +274,14 @@ func (s *ChatServiceAPI) ListDocuments(ctx context.Context, req *pb.ListDocument
 func (s *ChatServiceAPI) SubmitGenerateEmbeddingsJob(ctx context.Context, req *pb.GenerateEmbeddingRequest) (*pb.GenerateEmbeddingResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:SubmitGenerateEmbeddingsJob", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 
 	err = s.service.SubmitGenerateEmbeddingsJob(ctx, userID, req.GetProjectId())
 	if err != nil {
-		return nil, err
+		slog.Error("api:SubmitGenerateEmbeddingsJob", "message", "failed to submit generate embeddings job", "error", err)
+		return nil, fmt.Errorf("failed to submit generate embeddings job")
 	}
 
 	return &pb.GenerateEmbeddingResponse{
@@ -260,13 +292,15 @@ func (s *ChatServiceAPI) SubmitGenerateEmbeddingsJob(ctx context.Context, req *p
 func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatRequest) (*pb.BranchAChatResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:BranchAChat", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 
 	newChatId, err := s.service.BranchAChat(ctx, userID, req.SourceChatId, req.BranchFromMessageId, req.BranchName)
 	if err != nil {
+		slog.Error("api:BranchAChat", "message", "failed to branch a chat", "error", err)
 		return &pb.BranchAChatResponse{
-			Message: err.Error(),
+			Message: "failed to branch a chat",
 		}, nil
 	}
 
@@ -279,12 +313,14 @@ func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatReq
 func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBranchRequest) (*pb.ListChatBranchResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:ListChatBranch", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 
 	branches, err := s.service.ListChatBranch(ctx, userID, req.GetChatId())
 	if err != nil {
-		return nil, err
+		slog.Error("api:ListChatBranch", "message", "failed to list chat branch", "error", err)
+		return nil, fmt.Errorf("failed to list chat branch")
 	}
 
 	var pbChats []*pb.ChatInfo
@@ -303,6 +339,7 @@ func (s *ChatServiceAPI) ListChatBranch(ctx context.Context, req *pb.ListChatBra
 func (s *ChatServiceAPI) GetRAGDocumentReference(ctx context.Context, req *pb.RAGDocumentReferenceRequest) (*pb.RAGDocumentReferenceResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:GetRAGDocumentReference", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	return s.service.GetRAGDocumentReference(ctx, userID, req)
@@ -311,11 +348,13 @@ func (s *ChatServiceAPI) GetRAGDocumentReference(ctx context.Context, req *pb.RA
 func (s *ChatServiceAPI) DeleteDocument(ctx context.Context, req *pb.DeleteDocumentRequest) (*pb.DeleteDocumentResponse, error) {
 	userId, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:DeleteDocument", "message", "failed to get user ID from context to delete document", "error", err)
 		return nil, err
 	}
 	err = s.service.DeleteDocument(ctx, userId, req.GetProjectId(), req.GetDocId())
 	if err != nil {
-		return nil, err
+		slog.Error("api:DeleteDocument", "message", "failed to delete document", "error", err)
+		return nil, fmt.Errorf("failed to delete document")
 	}
 	return &pb.DeleteDocumentResponse{Message: "Document deleted successfully"}, nil
 }
@@ -323,11 +362,13 @@ func (s *ChatServiceAPI) DeleteDocument(ctx context.Context, req *pb.DeleteDocum
 func (s *ChatServiceAPI) DeleteChat(ctx context.Context, req *pb.DeleteChatRequest) (*pb.DeleteChatResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:DeleteChat", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	err = s.service.DeleteChat(ctx, userID, req.GetChatId(), req.GetOperation())
 	if err != nil {
-		return nil, err
+		slog.Error("api:DeleteChat", "message", "failed to delete chat", "error", err)
+		return nil, fmt.Errorf("failed to delete chat")
 	}
 	return &pb.DeleteChatResponse{Message: "Chat deleted successfully"}, nil
 }
@@ -335,11 +376,13 @@ func (s *ChatServiceAPI) DeleteChat(ctx context.Context, req *pb.DeleteChatReque
 func (s *ChatServiceAPI) RestoreChat(ctx context.Context, req *pb.RestoreChatRequest) (*pb.RestoreChatResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:RestoreChat", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	err = s.service.RestoreChat(ctx, userID, req.GetChatId())
 	if err != nil {
-		return nil, err
+		slog.Error("api:RestoreChat", "message", "failed to restore chat", "error", err)
+		return nil, fmt.Errorf("failed to restore chat")
 	}
 	return &pb.RestoreChatResponse{Message: "Chat restored successfully"}, nil
 }
@@ -347,11 +390,13 @@ func (s *ChatServiceAPI) RestoreChat(ctx context.Context, req *pb.RestoreChatReq
 func (s *ChatServiceAPI) RenameChat(ctx context.Context, req *pb.RenameChatRequest) (*pb.RenameChatResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
+		slog.Error("api:RenameChat", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
 	err = s.service.RenameChat(ctx, userID, req.GetChatId(), req.GetName())
 	if err != nil {
-		return nil, err
+		slog.Error("api:RenameChat", "message", "failed to rename chat", "error", err)
+		return nil, fmt.Errorf("failed to rename chat")
 	}
 	return &pb.RenameChatResponse{Message: "Chat renamed successfully"}, nil
 }

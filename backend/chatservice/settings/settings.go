@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
 	"sortedstartup/chatservice/proto"
@@ -99,6 +100,8 @@ func (cm *SettingsManager) LoadSettingsFromProto(protoSettings *proto.Settings) 
 
 func (cm *SettingsManager) LoadSettings(settings_ *Settings) error {
 
+	slog.Info("settings:LoadSettings")
+
 	// The lock prevents race conditions when loading settings from the database
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
@@ -119,16 +122,17 @@ func (cm *SettingsManager) GetSettings() *Settings {
 }
 
 func (s *SettingsManager) StartSettingsChangedSubscriber() {
+	slog.Info("settings:StartSettingsChangedSubscriber")
 	go func() {
 		sub, err := s.queue.Subscribe(context.Background(), events.SETTINGS_CHANGED_EVENT)
 		if err != nil {
-			fmt.Printf("Failed %v\n", err)
+			slog.Error("settings:StartSettingsChangedSubscriber", "step", "failed to subscribe to settings changed event", "error", err)
 			return
 		}
 		for msg := range sub {
-			log.Printf("Received message [%s], data:[%s]\n", events.SETTINGS_CHANGED_EVENT, string(msg.Data))
+			slog.Info("settings:StartSettingsChangedSubscriber", "message", events.SETTINGS_CHANGED_EVENT, "payload_bytes", len(msg.Data))
 			// reload settings from the database
-			log.Println("Reloading settings from the database")
+			slog.Info("settings:StartSettingsChangedSubscriber", "action", "Reloading settings from the database")
 			s.LoadSettingsFromDB()
 
 		}
@@ -136,17 +140,19 @@ func (s *SettingsManager) StartSettingsChangedSubscriber() {
 }
 
 func (s *SettingsManager) LoadSettingsFromDB() error {
-
+	slog.Info("settings:LoadSettingsFromDB")
 	settingsString, err := s.dao.GetSettingValue("settings")
 	if err != nil {
-		return err
+		slog.Error("settings:LoadSettingsFromDB", "message", "failed to get settings value", "error", err)
+		return fmt.Errorf("failed to get settings value")
 	}
 
 	//json decode the settings
 	var settings Settings
 	err = json.Unmarshal([]byte(settingsString), &settings)
 	if err != nil {
-		return err
+		slog.Error("settings:LoadSettingsFromDB", "message", "failed to unmarshal settings", "error", err)
+		return fmt.Errorf("failed to unmarshal settings")
 	}
 
 	return s.LoadSettings(&settings)

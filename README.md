@@ -6,8 +6,6 @@ Sorted Chat is a UI to chat with multiple LLM models without being locked into o
 
 ### Option 1: Download Pre-built Binaries (Recommended)
 
-Download the latest binaries from [GitHub Releases](https://github.com/sortedstartup/sortedchat/releases)
-
 **Choose ONE binary based on your preference:**
 - **`sortedchat-app-*`**: Desktop application with native GUI *(Recommended)*
 - **`sortedchat-server-*`**: Web application (access via browser at http://localhost:8080)
@@ -18,6 +16,21 @@ Download the latest binaries from [GitHub Releases](https://github.com/sortedsta
 - **Linux**: `amd64`, `arm64`
 - **macOS**: `amd64` (Intel), `arm64` (Apple Silicon)  
 - **Windows**: `amd64`
+
+**Download binaries:**
+
+```bash
+# Go to GitHub Releases and download the latest version for your platform:
+# https://github.com/sortedstartup/sortedchat/releases
+
+# Example for Linux amd64(Desktop app):
+wget https://github.com/sortedstartup/sortedchat/releases/download/v0.0.6-rc1/sortedchat-app-linux-amd64
+chmod +x sortedchat-app-linux-amd64
+
+# OR for web server(Access via browser at http://localhost:8080):
+wget https://github.com/sortedstartup/sortedchat/releases/download/v0.0.6-rc1/sortedchat-server-linux-amd64
+chmod +x sortedchat-server-linux-amd64
+```
 
 #### Quick Setup for Binaries:
 
@@ -31,24 +44,9 @@ sudo yum install pkgconfig opus-devel opusfile-devel
 # or
 sudo dnf install pkgconfig opus-devel opusfile-devel
 ```
-
-**2. Download and make executable:**
-```bash
-# Example for Linux amd64
-
-# Desktop app (standalone GUI application)
-wget https://github.com/sortedstartup/sortedchat/releases/download/v0.0.6-rc1/sortedchat-app-linux-amd64
-chmod +x sortedchat-app-linux-amd64
-
-# OR Web server (access via browser at http://localhost:8080)
-wget https://github.com/sortedstartup/sortedchat/releases/download/v0.0.6-rc1/sortedchat-server-linux-amd64
-chmod +x sortedchat-server-linux-amd64
-```
-
-**3. Set minimum environment variables:**
+**2. Set minimum environment variables:**
 
 > **Note**: These variables are needed for **BOTH** desktop and web app binaries.
-
 ```bash
 # Backend configuration (needed by both binaries)
 export OPENAI_API_KEY=your-openai-key
@@ -70,6 +68,11 @@ export APP_JWT_SECRET=any-secret-string
 export APP_ISSUER=http://localhost:8080
 export OAUTH_ISSUER_URL=https://accounts.google.com
 ```
+
+**3. Ollama setup (for local embeddings and RAG functionality):**
+   
+   Ollama is required for local embeddings and RAG functionality. See [Ollama Setup section](#ollama-setup-for-rag-features) below for detailed instructions.
+   
 
 **4. Run the application:**
 ```bash
@@ -163,17 +166,8 @@ Follow the [Development Setup](#development-setup) section below.
 ### Optional Dependencies
 
 6. **Ollama** (for local embeddings and RAG functionality)
-   ```bash
-   # Install Ollama from https://ollama.ai/
-   # macOS/Linux
-   curl -fsSL https://ollama.ai/install.sh | sh
    
-   # Start Ollama service
-   ollama serve
-   
-   # Pull the embedding model (required for RAG)
-   ollama pull nomic-embed-text
-   ```
+   > **Note**: See [Ollama Setup section](#ollama-setup-for-rag-features) below for detailed instructions.
 
 7. **Docker** (for PostgreSQL or full Docker deployment)
    ```bash
@@ -381,25 +375,38 @@ export VITE_GOOGLE_CLIENT_ID="fake_client_id"
 
 **Why Ollama?** Ollama provides local embedding models for RAG (document search) functionality. It's optional but recommended for privacy and offline document processing.
 
-### 1. Install Ollama
+> **📚 More info**: [Ollama GitHub Repository](https://github.com/ollama/ollama/tree/main)
+
+
+### 1. Install Ollama (if not installed)
+
 ```bash
 # macOS/Linux
 curl -fsSL https://ollama.ai/install.sh | sh
 
+# Check running processes
+ollama ps
+
+# OR check system service status. If ollama is already running, you can skip step 2.
+sudo systemctl status ollama
+
 # Windows: Download from https://ollama.ai/
 ```
 
-### 2. Start Ollama Service
+### 2. Start Ollama Service (if not running)
+
 ```bash
 ollama serve  # Runs on http://localhost:11434
 ```
 
 ### 3. Install Embedding Model
+
 ```bash
 ollama pull nomic-embed-text  # Required for document embeddings
 ```
 
 ### 4. Configure in App
+
 - **Settings Page** → **Ollama URL**: `http://localhost:11434`
 - **For Desktop App**: Ollama must be running locally
 - **For Docker**: Ollama is included in docker-compose setup

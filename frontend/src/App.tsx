@@ -8,7 +8,7 @@ import Models from "./pages/models";
 import { useStore } from "@nanostores/react";
 import { $auth } from "./auth/store/auth";
 import { LoginPage } from "./auth/pages/login";
-import { OnboardingPage } from "./routes/onboarding";
+import { OnboardingWizard } from "./pages/onboard";
 import { GetIsFirstBootStatus } from "./store/setting";
 import React from "react";
 
@@ -41,7 +41,7 @@ function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
   
   // Show onboarding if it's the first boot
   if (isFirstBoot) {
-    return <OnboardingPage />;
+    return <OnboardingWizard />;
   }
   
   return <>{children}</>;

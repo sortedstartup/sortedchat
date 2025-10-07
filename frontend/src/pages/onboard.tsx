@@ -1,8 +1,8 @@
 import { useStore } from '@nanostores/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { $onboardingStep } from '@/store/setting';
-import { StepApi } from './steps/StepApi';
-import { StepEmbeddings } from './steps/StepEmbeddings';
+import { StepApi } from '@/components/onboarding/steps/StepApi';
+import { StepEmbeddings } from '@/components/onboarding/steps/StepEmbeddings';
 
 const steps = [
   'OpenAI API Setup',

@@ -3,64 +3,33 @@ import { useStore } from '@nanostores/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { onboardingStore, onboardingActions } from '@/stores/onboardingStore';
+import { $onboardingData, onboardingActions } from '@/store/setting';
 
 export function StepEmbeddings() {
-  const state = useStore(onboardingStore);
+  const data = useStore($onboardingData);
   const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState<string>('');
   
   const handleNext = async () => {
     // Simple validation - just check if URL is filled
-    if (!state.OLLAMA_URL.trim()) {
-      onboardingActions.setValidationError('ollamaUrl', 'Ollama URL is required');
+    if (!data.OLLAMA_URL.trim()) {
+      setValidationError('Ollama URL is required');
       return;
     }
     
+    setValidationError('');
     setIsValidating(true);
     
-    // Complete onboarding directly without review step
+    // Complete onboarding using the settings store
     try {
-      // Import the gRPC client here
-      const { SettingServiceClient, SetSettingRequest, Settings, CompleteOnboardingRequest } = await import('../../../../proto/chatservice');
-      const { createAuthenticatedClientOptions } = await import('@/lib/auth');
-      
-      // Create gRPC client with authentication
-      const client = new SettingServiceClient(
-        import.meta.env.VITE_API_URL || window.location.origin,
-        {},
-        createAuthenticatedClientOptions()
-      );
-      
-      // Get existing settings first
-      const { GetSettingRequest } = await import('../../../../proto/chatservice');
-      const getRequest = new GetSettingRequest({});
-      const existingResponse = await client.GetSetting(getRequest, {});
-      const existingSettings = existingResponse.settings;
-      
-      // Prepare settings - preserve existing values and only update what's provided
-      const settingsData: any = {
-        OPENAI_API_KEY: state.OPENAI_API_KEY,
-        OLLAMA_URL: state.OLLAMA_URL,
-        // Preserve existing API URL if user didn't provide a new one
-        OPENAI_API_URL: state.OPENAI_API_URL.trim() || (existingSettings?.OPENAI_API_URL || ''),
-      };
-      
-      const settings = new Settings(settingsData);
-      
-      // Save settings
-      const setSettingRequest = new SetSettingRequest({ settings });
-      await client.SetSetting(setSettingRequest, {});
-      
-      // Complete onboarding
-      const completeRequest = new CompleteOnboardingRequest({});
-      await client.CompleteOnboarding(completeRequest, {});
+      await onboardingActions.completeOnboarding();
       
       // Redirect to main app
       window.location.href = '/';
       
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
-      onboardingActions.setValidationError('ollamaUrl', 'Failed to save settings. Please try again.');
+      setValidationError('Failed to save settings. Please try again.');
     } finally {
       setIsValidating(false);
     }
@@ -79,12 +48,12 @@ export function StepEmbeddings() {
             id="ollama-url"
             type="url"
             placeholder="http://localhost:11434"
-            value={state.OLLAMA_URL}
+            value={data.OLLAMA_URL}
             onChange={(e) => onboardingActions.setOllamaUrl(e.target.value)}
-            className={state.validationErrors.ollamaUrl ? 'border-red-500' : ''}
+            className={validationError ? 'border-red-500' : ''}
           />
-          {state.validationErrors.ollamaUrl && (
-            <p className="text-sm text-red-600 mt-1">{state.validationErrors.ollamaUrl}</p>
+          {validationError && (
+            <p className="text-sm text-red-600 mt-1">{validationError}</p>
           )}
           <p className="text-sm text-gray-500 mt-1">
             URL where your Ollama server is running

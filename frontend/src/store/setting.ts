@@ -6,6 +6,8 @@ import {
   SetSettingRequest,
   SetSettingResponse,
   SettingServiceClient,
+  IsFirstBootRequest,
+  CompleteOnboardingRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -18,6 +20,18 @@ const client = new SettingServiceClient(
 );
 
 export const $settings = atom<Settings>(new Settings({}));
+
+// Onboarding state
+export const $onboardingStep = atom<number>(0);
+export const $onboardingData = atom<{
+  OPENAI_API_KEY: string;
+  OPENAI_API_URL: string;
+  OLLAMA_URL: string;
+}>({
+  OPENAI_API_KEY: '',
+  OPENAI_API_URL: '',
+  OLLAMA_URL: 'http://localhost:11434',
+});
 
 export const saveSettings = async (formData: Record<string, string>): Promise<string> => {
   try {
@@ -35,6 +49,60 @@ export const saveSettings = async (formData: Record<string, string>): Promise<st
   }
 };
 
+// Onboarding actions
+export const onboardingActions = {
+  setApiKey: (key: string) => {
+    const data = $onboardingData.get();
+    $onboardingData.set({ ...data, OPENAI_API_KEY: key });
+  },
+  
+  setApiUrl: (url: string) => {
+    const data = $onboardingData.get();
+    $onboardingData.set({ ...data, OPENAI_API_URL: url });
+  },
+  
+  setOllamaUrl: (url: string) => {
+    const data = $onboardingData.get();
+    $onboardingData.set({ ...data, OLLAMA_URL: url });
+  },
+  
+  nextStep: () => {
+    const current = $onboardingStep.get();
+    if (current < 1) {
+      $onboardingStep.set(current + 1);
+    }
+  },
+  
+  prevStep: () => {
+    const current = $onboardingStep.get();
+    if (current > 0) {
+      $onboardingStep.set(current - 1);
+    }
+  },
+  
+  completeOnboarding: async (): Promise<string> => {
+    try {
+      const data = $onboardingData.get();
+      const settings = new Settings(data);
+      
+      // Save settings
+      const setReq = new SetSettingRequest({ settings });
+      const setRes: SetSettingResponse = await client.SetSetting(setReq, {});
+      
+      $settings.set(settings);
+      
+      // Mark onboarding as complete
+      const completeReq = new CompleteOnboardingRequest({});
+      await client.CompleteOnboarding(completeReq, {});
+      
+      return setRes.message ?? "Onboarding completed successfully";
+    } catch (error) {
+      console.error("Failed to complete onboarding:", error);
+      throw new Error("Failed to complete onboarding");
+    }
+  }
+};
+
 const getSetting = async () => {
   try {
     const req = new GetSettingRequest({});
@@ -44,6 +112,19 @@ const getSetting = async () => {
     }
   } catch (error) {
     console.error("Failed to fetch settings:", error);
+  }
+};
+
+
+export const GetIsFirstBootStatus = async (): Promise<boolean> => {
+  try {
+    const req = new IsFirstBootRequest({});
+    const res = await client.IsFirstBoot(req, {});
+    return res.is_first_boot;
+    
+  } catch (error) {
+    console.error("Failed to check if first boot:", error);
+    return false;
   }
 };
 

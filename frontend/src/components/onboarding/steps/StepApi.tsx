@@ -3,21 +3,22 @@ import { useStore } from '@nanostores/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { onboardingStore, onboardingActions } from '@/stores/onboardingStore';
+import { $onboardingData, onboardingActions } from '@/store/setting';
 
 export function StepApi() {
-  const state = useStore(onboardingStore);
+  const data = useStore($onboardingData);
   const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState<string>('');
   
   const handleNext = async () => {
     // Simple validation - require API key, optional API URL
-    if (!state.OPENAI_API_KEY.trim()) {
-      onboardingActions.setValidationError('apiKey', 'OpenAI API Key is required');
+    if (!data.OPENAI_API_KEY.trim()) {
+      setValidationError('OpenAI API Key is required');
       return;
     }
+    setValidationError('');
     setIsValidating(true);
     setTimeout(() => {
-      onboardingActions.clearValidationErrors();
       onboardingActions.nextStep();
       setIsValidating(false);
     }, 300);
@@ -34,12 +35,12 @@ export function StepApi() {
                 id="api-key"
                 type="password"
                 placeholder="sk-..."
-                value={state.OPENAI_API_KEY}
+                value={data.OPENAI_API_KEY}
                 onChange={(e) => onboardingActions.setApiKey(e.target.value)}
-                className={state.validationErrors.apiKey ? 'border-red-500' : ''}
+                className={validationError ? 'border-red-500' : ''}
               />
-              {state.validationErrors.apiKey && (
-                <p className="text-sm text-red-600 mt-1">{state.validationErrors.apiKey}</p>
+              {validationError && (
+                <p className="text-sm text-red-600 mt-1">{validationError}</p>
               )}
             </div>
             
@@ -49,13 +50,9 @@ export function StepApi() {
                 id="api-url"
                 type="url"
                 placeholder="https://api.openai.com/v1"
-                value={state.OPENAI_API_URL}
+                value={data.OPENAI_API_URL}
                 onChange={(e) => onboardingActions.setApiUrl(e.target.value)}
-                className={state.validationErrors.apiUrl ? 'border-red-500' : ''}
               />
-              {state.validationErrors.apiUrl && (
-                <p className="text-sm text-red-600 mt-1">{state.validationErrors.apiUrl}</p>
-              )}
               <p className="text-sm text-gray-500 mt-1">
                 Leave empty to use the default OpenAI API
               </p>

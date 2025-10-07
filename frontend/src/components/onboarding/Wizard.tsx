@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { currentStep } from '@/stores/onboardingStore';
+import { $onboardingStep } from '@/store/setting';
 import { StepApi } from './steps/StepApi';
 import { StepEmbeddings } from './steps/StepEmbeddings';
 
@@ -10,7 +10,7 @@ const steps = [
 ];
 
 export function OnboardingWizard() {
-  const step = useStore(currentStep);
+  const step = useStore($onboardingStep);
   
   const renderStep = () => {
     switch (step) {

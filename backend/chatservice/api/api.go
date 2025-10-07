@@ -74,15 +74,6 @@ func (s *SettingServiceAPI) IsFirstBoot(ctx context.Context, req *pb.IsFirstBoot
 	}, nil
 }
 
-func (s *SettingServiceAPI) CompleteOnboarding(ctx context.Context, req *pb.CompleteOnboardingRequest) (*pb.CompleteOnboardingResponse, error) {
-	slog.Info("api:CompleteOnboarding")
-	s.service.FirstBootComplete()
-
-	return &pb.CompleteOnboardingResponse{
-		Message: "Onboarding completed successfully",
-	}, nil
-}
-
 type ChatServiceAPI struct {
 	pb.UnimplementedSortedChatServer
 	service *service.ChatService

@@ -24,9 +24,6 @@ export function StepEmbeddings() {
     try {
       await onboardingActions.completeOnboarding();
       
-      // Redirect to main app
-      window.location.href = '/';
-      
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
       setValidationError('Failed to save settings. Please try again.');

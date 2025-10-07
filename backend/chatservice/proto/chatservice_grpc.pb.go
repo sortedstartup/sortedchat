@@ -771,10 +771,9 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	SettingService_GetSetting_FullMethodName         = "/sortedchat.SettingService/GetSetting"
-	SettingService_SetSetting_FullMethodName         = "/sortedchat.SettingService/SetSetting"
-	SettingService_IsFirstBoot_FullMethodName        = "/sortedchat.SettingService/IsFirstBoot"
-	SettingService_CompleteOnboarding_FullMethodName = "/sortedchat.SettingService/CompleteOnboarding"
+	SettingService_GetSetting_FullMethodName  = "/sortedchat.SettingService/GetSetting"
+	SettingService_SetSetting_FullMethodName  = "/sortedchat.SettingService/SetSetting"
+	SettingService_IsFirstBoot_FullMethodName = "/sortedchat.SettingService/IsFirstBoot"
 )
 
 // SettingServiceClient is the client API for SettingService service.
@@ -784,7 +783,6 @@ type SettingServiceClient interface {
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*GetSettingResponse, error)
 	SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*SetSettingResponse, error)
 	IsFirstBoot(ctx context.Context, in *IsFirstBootRequest, opts ...grpc.CallOption) (*IsFirstBootResponse, error)
-	CompleteOnboarding(ctx context.Context, in *CompleteOnboardingRequest, opts ...grpc.CallOption) (*CompleteOnboardingResponse, error)
 }
 
 type settingServiceClient struct {
@@ -825,16 +823,6 @@ func (c *settingServiceClient) IsFirstBoot(ctx context.Context, in *IsFirstBootR
 	return out, nil
 }
 
-func (c *settingServiceClient) CompleteOnboarding(ctx context.Context, in *CompleteOnboardingRequest, opts ...grpc.CallOption) (*CompleteOnboardingResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CompleteOnboardingResponse)
-	err := c.cc.Invoke(ctx, SettingService_CompleteOnboarding_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // SettingServiceServer is the server API for SettingService service.
 // All implementations must embed UnimplementedSettingServiceServer
 // for forward compatibility.
@@ -842,7 +830,6 @@ type SettingServiceServer interface {
 	GetSetting(context.Context, *GetSettingRequest) (*GetSettingResponse, error)
 	SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error)
 	IsFirstBoot(context.Context, *IsFirstBootRequest) (*IsFirstBootResponse, error)
-	CompleteOnboarding(context.Context, *CompleteOnboardingRequest) (*CompleteOnboardingResponse, error)
 	mustEmbedUnimplementedSettingServiceServer()
 }
 
@@ -861,9 +848,6 @@ func (UnimplementedSettingServiceServer) SetSetting(context.Context, *SetSetting
 }
 func (UnimplementedSettingServiceServer) IsFirstBoot(context.Context, *IsFirstBootRequest) (*IsFirstBootResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsFirstBoot not implemented")
-}
-func (UnimplementedSettingServiceServer) CompleteOnboarding(context.Context, *CompleteOnboardingRequest) (*CompleteOnboardingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CompleteOnboarding not implemented")
 }
 func (UnimplementedSettingServiceServer) mustEmbedUnimplementedSettingServiceServer() {}
 func (UnimplementedSettingServiceServer) testEmbeddedByValue()                        {}
@@ -940,24 +924,6 @@ func _SettingService_IsFirstBoot_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SettingService_CompleteOnboarding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CompleteOnboardingRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SettingServiceServer).CompleteOnboarding(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SettingService_CompleteOnboarding_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SettingServiceServer).CompleteOnboarding(ctx, req.(*CompleteOnboardingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // SettingService_ServiceDesc is the grpc.ServiceDesc for SettingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -976,10 +942,6 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsFirstBoot",
 			Handler:    _SettingService_IsFirstBoot_Handler,
-		},
-		{
-			MethodName: "CompleteOnboarding",
-			Handler:    _SettingService_CompleteOnboarding_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

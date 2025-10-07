@@ -7,7 +7,6 @@ import {
   SetSettingResponse,
   SettingServiceClient,
   IsFirstBootRequest,
-  CompleteOnboardingRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -91,9 +90,8 @@ export const onboardingActions = {
       
       $settings.set(settings);
       
-      // Mark onboarding as complete
-      const completeReq = new CompleteOnboardingRequest({});
-      await client.CompleteOnboarding(completeReq, {});
+      // Force a full page reload to ensure isFirstBoot check runs fresh
+      window.location.replace('/');
       
       return setRes.message ?? "Onboarding completed successfully";
     } catch (error) {

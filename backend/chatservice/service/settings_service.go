@@ -41,7 +41,9 @@ func (s *SettingService) Init() {
 	}
 
 	if isFirstBoot {
-		s.SetSetting(context.Background(), settings.DefaultSettings.ToProto())
+		// Save default settings but DON'T mark onboarding as complete
+		// User must complete onboarding wizard to set is_first_boot = 1
+		s.setSettingWithoutCompletingOnboarding(context.Background(), settings.DefaultSettings.ToProto())
 	}
 
 	// Note: FirstBootComplete() is now called only after onboarding wizard completion
@@ -74,19 +76,21 @@ func (s *SettingService) GetSetting(ctx context.Context) (*pb.Settings, error) {
 	return settingsObj.ToProto(), nil
 }
 
-func (s *SettingService) SetSetting(ctx context.Context, settingsProto *pb.Settings) error {
-	slog.Info("settings_service:SetSetting", "settingService", s)
+// saveSettings is the internal implementation for saving settings
+// If completeOnboarding is true, sets is_first_boot = 1
+func (s *SettingService) saveSettings(ctx context.Context, settingsProto *pb.Settings, completeOnboarding bool) error {
+	slog.Info("settings_service:saveSettings", "settingService", s, "completeOnboarding", completeOnboarding)
 	// Load existing settings from DB to support merge behavior
 	existingSettingsStr, err := s.dao.GetSettingValue("settings")
 	if err != nil {
-		slog.Error("settings_service:SetSetting", "step", "failed to load existing settings for merge", "error", err)
+		slog.Error("settings_service:saveSettings", "step", "failed to load existing settings for merge", "error", err)
 		// Continue with empty existing settings on error; we'll still write incoming
 	}
 
 	var existing settings.Settings
 	if existingSettingsStr != "" {
 		if err := json.Unmarshal([]byte(existingSettingsStr), &existing); err != nil {
-			slog.Error("settings_service:SetSetting", "step", "failed to unmarshal existing settings", "error", err)
+			slog.Error("settings_service:saveSettings", "step", "failed to unmarshal existing settings", "error", err)
 		}
 	}
 
@@ -100,14 +104,23 @@ func (s *SettingService) SetSetting(ctx context.Context, settingsProto *pb.Setti
 
 	settingsJSON, err := json.Marshal(incoming)
 	if err != nil {
-		slog.Error("settings_service:SetSetting", "step", "failed to set settings", "error", err)
+		slog.Error("settings_service:saveSettings", "step", "failed to set settings", "error", err)
 		return fmt.Errorf("failed to set settings")
 	}
 
 	err = s.dao.SetSettingValue("settings", string(settingsJSON))
 	if err != nil {
-		slog.Error("settings_service:SetSetting", "step", "failed to set settings", "error", err)
+		slog.Error("settings_service:saveSettings", "step", "failed to set settings", "error", err)
 		return fmt.Errorf("failed to set settings")
+	}
+
+	// Optionally mark onboarding as complete
+	if completeOnboarding {
+		err = s.dao.SetSettingValue("is_first_boot", "1")
+		if err != nil {
+			slog.Error("settings_service:saveSettings", "step", "failed to set is_first_boot", "error", err)
+			// Don't fail the whole operation if this fails, just log it
+		}
 	}
 
 	slog.Info("publishing settings change event", "event", events.SETTINGS_CHANGED_EVENT)
@@ -115,6 +128,16 @@ func (s *SettingService) SetSetting(ctx context.Context, settingsProto *pb.Setti
 	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
 
 	return nil
+}
+
+// setSettingWithoutCompletingOnboarding saves settings without marking onboarding as complete
+func (s *SettingService) setSettingWithoutCompletingOnboarding(ctx context.Context, settingsProto *pb.Settings) error {
+	return s.saveSettings(ctx, settingsProto, false)
+}
+
+// SetSetting saves settings and marks onboarding as complete
+func (s *SettingService) SetSetting(ctx context.Context, settingsProto *pb.Settings) error {
+	return s.saveSettings(ctx, settingsProto, true)
 }
 
 // IsFirstBoot checks if this is the first boot by looking for the 'is_first_boot' setting

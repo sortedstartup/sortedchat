@@ -1272,113 +1272,6 @@ export class IsFirstBootResponse extends pb_1.Message {
         return IsFirstBootResponse.deserialize(bytes);
     }
 }
-export class CompleteOnboardingRequest extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {}) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") { }
-    }
-    static fromObject(data: {}): CompleteOnboardingRequest {
-        const message = new CompleteOnboardingRequest({});
-        return message;
-    }
-    toObject() {
-        const data: {} = {};
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CompleteOnboardingRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CompleteOnboardingRequest();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): CompleteOnboardingRequest {
-        return CompleteOnboardingRequest.deserialize(bytes);
-    }
-}
-export class CompleteOnboardingResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {
-        message?: string;
-    }) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") {
-            if ("message" in data && data.message != undefined) {
-                this.message = data.message;
-            }
-        }
-    }
-    get message() {
-        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
-    }
-    set message(value: string) {
-        pb_1.Message.setField(this, 1, value);
-    }
-    static fromObject(data: {
-        message?: string;
-    }): CompleteOnboardingResponse {
-        const message = new CompleteOnboardingResponse({});
-        if (data.message != null) {
-            message.message = data.message;
-        }
-        return message;
-    }
-    toObject() {
-        const data: {
-            message?: string;
-        } = {};
-        if (this.message != null) {
-            data.message = this.message;
-        }
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (this.message.length)
-            writer.writeString(1, this.message);
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CompleteOnboardingResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CompleteOnboardingResponse();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                case 1:
-                    message.message = reader.readString();
-                    break;
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): CompleteOnboardingResponse {
-        return CompleteOnboardingResponse.deserialize(bytes);
-    }
-}
 export class CreateChatRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -5953,9 +5846,5 @@ export class SettingServiceClient {
     private static IsFirstBoot = new grpc_web_1.MethodDescriptor<IsFirstBootRequest, IsFirstBootResponse>("/sortedchat.SettingService/IsFirstBoot", grpc_web_1.MethodType.UNARY, IsFirstBootRequest, IsFirstBootResponse, (message: IsFirstBootRequest) => message.serialize(), IsFirstBootResponse.deserialize);
     IsFirstBoot(message: IsFirstBootRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<IsFirstBootRequest, IsFirstBootResponse>(this._address + "/sortedchat.SettingService/IsFirstBoot", message, metadata || {}, SettingServiceClient.IsFirstBoot);
-    }
-    private static CompleteOnboarding = new grpc_web_1.MethodDescriptor<CompleteOnboardingRequest, CompleteOnboardingResponse>("/sortedchat.SettingService/CompleteOnboarding", grpc_web_1.MethodType.UNARY, CompleteOnboardingRequest, CompleteOnboardingResponse, (message: CompleteOnboardingRequest) => message.serialize(), CompleteOnboardingResponse.deserialize);
-    CompleteOnboarding(message: CompleteOnboardingRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.thenableCall<CompleteOnboardingRequest, CompleteOnboardingResponse>(this._address + "/sortedchat.SettingService/CompleteOnboarding", message, metadata || {}, SettingServiceClient.CompleteOnboarding);
     }
 }

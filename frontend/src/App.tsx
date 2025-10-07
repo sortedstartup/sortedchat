@@ -29,14 +29,29 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Component that handles first boot check after authentication
 function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
   const [isFirstBoot, setIsFirstBoot] = React.useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   
   React.useEffect(() => {
-    GetIsFirstBootStatus().then(setIsFirstBoot);
+    const checkFirstBoot = async () => {
+      setIsLoading(true);
+      try {
+        const status = await GetIsFirstBootStatus();
+        setIsFirstBoot(status);
+      } catch (error) {
+        console.error('Failed to check first boot status:', error);
+        // On error, assume not first boot to avoid blocking user
+        setIsFirstBoot(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkFirstBoot();
   }, []);
   
   // Show loading state while checking
-  if (isFirstBoot === null) {
-    return <div>Loading...</div>; // Or your loading component
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
   
   // Show onboarding if it's the first boot

@@ -44,7 +44,7 @@ func (s *SettingService) Init() {
 		s.SetSetting(context.Background(), settings.DefaultSettings.ToProto())
 	}
 
-	s.FirstBootComplete()
+	// Note: FirstBootComplete() is now called only after onboarding wizard completion
 }
 
 func (s *SettingService) FirstBootComplete() {

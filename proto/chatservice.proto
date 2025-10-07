@@ -78,6 +78,8 @@ message RAGDocumentReferenceResponse {
 service SettingService {
     rpc GetSetting(GetSettingRequest) returns (GetSettingResponse);
     rpc SetSetting(SetSettingRequest) returns (SetSettingResponse);
+    rpc IsFirstBoot(IsFirstBootRequest) returns (IsFirstBootResponse);
+    rpc CompleteOnboarding(CompleteOnboardingRequest) returns (CompleteOnboardingResponse);
 }
 
 message Settings {
@@ -97,6 +99,18 @@ message SetSettingRequest {
 }
 
 message SetSettingResponse {
+    string message = 1;
+}
+
+message IsFirstBootRequest {}
+
+message IsFirstBootResponse {
+    bool is_first_boot = 1;
+}
+
+message CompleteOnboardingRequest {}
+
+message CompleteOnboardingResponse {
     string message = 1;
 }
 

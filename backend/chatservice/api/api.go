@@ -61,6 +61,28 @@ func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRe
 	}, nil
 }
 
+func (s *SettingServiceAPI) IsFirstBoot(ctx context.Context, req *pb.IsFirstBootRequest) (*pb.IsFirstBootResponse, error) {
+	slog.Info("api:IsFirstBoot")
+	isFirstBoot, err := s.service.IsFirstBoot()
+	if err != nil {
+		slog.Error("api:IsFirstBoot", "message", "failed to check first boot", "error", err)
+		return nil, err
+	}
+
+	return &pb.IsFirstBootResponse{
+		IsFirstBoot: isFirstBoot,
+	}, nil
+}
+
+func (s *SettingServiceAPI) CompleteOnboarding(ctx context.Context, req *pb.CompleteOnboardingRequest) (*pb.CompleteOnboardingResponse, error) {
+	slog.Info("api:CompleteOnboarding")
+	s.service.FirstBootComplete()
+
+	return &pb.CompleteOnboardingResponse{
+		Message: "Onboarding completed successfully",
+	}, nil
+}
+
 type ChatServiceAPI struct {
 	pb.UnimplementedSortedChatServer
 	service *service.ChatService

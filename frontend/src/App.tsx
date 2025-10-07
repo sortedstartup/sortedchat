@@ -8,13 +8,47 @@ import Models from "./pages/models";
 import { useStore } from "@nanostores/react";
 import { $auth } from "./auth/store/auth";
 import { LoginPage } from "./auth/pages/login";
+import { OnboardingPage } from "./routes/onboarding";
+import { useFirstBoot } from "./hooks/useFirstBoot";
+import { Loader2 } from "lucide-react";
 
-// Protected route wrapper component
+// Protected route wrapper component with onboarding check
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const auth = useStore($auth);
+  const { isFirstBoot, isLoading, error } = useFirstBoot();
   
+  // Show loading spinner while checking auth and first boot status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show error if first boot check failed
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Failed to initialize application</p>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Redirect to login if not authenticated
   if (!auth.isLoggedIn) {
     return <LoginPage />;
+  }
+  
+  // Show onboarding if it's the first boot
+  if (isFirstBoot) {
+    return <OnboardingPage />;
   }
   
   return <>{children}</>;
@@ -24,6 +58,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/onboarding",
+    element: <OnboardingPage />,
   },
   {
     path: "/",

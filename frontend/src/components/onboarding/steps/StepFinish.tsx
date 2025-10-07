@@ -84,32 +84,17 @@ export function StepFinish() {
         
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
           <div>
-            <span className="font-medium">LLM Provider:</span>{' '}
-            <span className="capitalize">{state.provider}</span>
+            <span className="font-medium">API Key:</span>{' '}
+            <span className="font-mono text-sm">
+              {state.OPENAI_API_KEY.substring(0, 8)}...
+            </span>
           </div>
-          
-          {state.provider === 'openai' ? (
-            <>
-              <div>
-                <span className="font-medium">API Key:</span>{' '}
-                <span className="font-mono text-sm">
-                  {state.OPENAI_API_KEY.substring(0, 8)}...
-                </span>
-              </div>
-              {state.OPENAI_API_URL && (
-                <div>
-                  <span className="font-medium">Custom API URL:</span>{' '}
-                  <span className="font-mono text-sm">{state.OPENAI_API_URL}</span>
-                </div>
-              )}
-            </>
-          ) : (
+          {state.OPENAI_API_URL && (
             <div>
-              <span className="font-medium">LiteLLM URL:</span>{' '}
+              <span className="font-medium">API URL:</span>{' '}
               <span className="font-mono text-sm">{state.OPENAI_API_URL}</span>
             </div>
           )}
-          
           <div>
             <span className="font-medium">Ollama URL:</span>{' '}
             <span className="font-mono text-sm">{state.OLLAMA_URL}</span>

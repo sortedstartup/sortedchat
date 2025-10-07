@@ -15,9 +15,21 @@ import { Loader2 } from "lucide-react";
 // Protected route wrapper component with onboarding check
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const auth = useStore($auth);
+  
+  // Redirect to login if not authenticated
+  if (!auth.isLoggedIn) {
+    return <LoginPage />;
+  }
+  
+  // Only check first boot after authentication
+  return <AuthenticatedRoute>{children}</AuthenticatedRoute>;
+}
+
+// Component that handles first boot check after authentication
+function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
   const { isFirstBoot, isLoading, error } = useFirstBoot();
   
-  // Show loading spinner while checking auth and first boot status
+  // Show loading spinner while checking first boot status
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -41,11 +53,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // Redirect to login if not authenticated
-  if (!auth.isLoggedIn) {
-    return <LoginPage />;
-  }
-  
   // Show onboarding if it's the first boot
   if (isFirstBoot) {
     return <OnboardingPage />;
@@ -58,10 +65,6 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
-  },
-  {
-    path: "/onboarding",
-    element: <OnboardingPage />,
   },
   {
     path: "/",
@@ -100,6 +103,14 @@ const router = createBrowserRouter([
         element: <Home />,
       },
     ],
+  },
+  {
+    path: "*",
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
   },
 ]);
 

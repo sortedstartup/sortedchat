@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SettingServiceClient, IsFirstBootRequest } from '../../proto/chatservice';
+import { createAuthenticatedClientOptions } from '../lib/auth';
 
 export function useFirstBoot() {
   const [isFirstBoot, setIsFirstBoot] = useState<boolean | null>(null);
@@ -10,7 +11,9 @@ export function useFirstBoot() {
     const checkFirstBoot = async () => {
       try {
         const client = new SettingServiceClient(
-          import.meta.env.VITE_API_URL || window.location.origin
+          import.meta.env.VITE_API_URL || window.location.origin,
+          {},
+          createAuthenticatedClientOptions()
         );
         const request = new IsFirstBootRequest({});
         

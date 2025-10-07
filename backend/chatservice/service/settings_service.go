@@ -76,7 +76,35 @@ func (s *SettingService) GetSetting(ctx context.Context) (*pb.Settings, error) {
 
 func (s *SettingService) SetSetting(ctx context.Context, settingsProto *pb.Settings) error {
 	slog.Info("settings_service:SetSetting", "settingService", s)
-	settingsJSON, err := json.Marshal(settings.FromProto(settingsProto))
+	// Load existing settings from DB to support merge behavior
+	existingSettingsStr, err := s.dao.GetSettingValue("settings")
+	if err != nil {
+		slog.Error("settings_service:SetSetting", "step", "failed to load existing settings for merge", "error", err)
+		// Continue with empty existing settings on error; we'll still write incoming
+	}
+
+	var existing settings.Settings
+	if existingSettingsStr != "" {
+		if err := json.Unmarshal([]byte(existingSettingsStr), &existing); err != nil {
+			slog.Error("settings_service:SetSetting", "step", "failed to unmarshal existing settings", "error", err)
+		}
+	}
+
+	// Build incoming settings from proto
+	incoming := settings.FromProto(settingsProto)
+
+	// Merge: if incoming fields are empty strings, retain existing values
+	if incoming.OpenAIAPIKey == "" {
+		incoming.OpenAIAPIKey = existing.OpenAIAPIKey
+	}
+	if incoming.OpenAIAPIURL == "" {
+		incoming.OpenAIAPIURL = existing.OpenAIAPIURL
+	}
+	if incoming.OllamaURL == "" {
+		incoming.OllamaURL = existing.OllamaURL
+	}
+
+	settingsJSON, err := json.Marshal(incoming)
 	if err != nil {
 		slog.Error("settings_service:SetSetting", "step", "failed to set settings", "error", err)
 		return fmt.Errorf("failed to set settings")

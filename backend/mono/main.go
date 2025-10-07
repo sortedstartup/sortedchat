@@ -130,8 +130,6 @@ func main() {
 	// Skip authentication for certain gRPC methods
 	authInterceptor.SkipMethods([]string{
 		"/grpc.health.v1.Health/Check",
-		"/sortedchat.SettingService/IsFirstBoot",
-		"/sortedchat.SettingService/CompleteOnboarding",
 	})
 
 	grpcServer := grpc.NewServer(

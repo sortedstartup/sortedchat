@@ -911,6 +911,17 @@ func (p *PostgresDAO) RenameChat(userID string, chatId string, name string) erro
 	return nil
 }
 
+func (p *PostgresDAO) IsNameExists(userID string, chatId string, name string) (bool, error) {
+	slog.Info("dao_postgres:IsNameExists", "userID", userID, "chatId", chatId, "name", name)
+	var exists bool
+	err := p.db.Get(&exists, "SELECT EXISTS(SELECT 1 FROM chat_list WHERE name = $1 AND user_id = $2 AND chat_id != $3)", name, userID, chatId)
+	if err != nil {
+		slog.Error("dao_postgres:IsNameExists", "message", "failed to check if name exists", "error", err, "userID", userID, "chatId", chatId, "name", name)
+		return false, fmt.Errorf("failed to check if name exists")
+	}
+	return exists, nil
+}
+
 func (p *PostgresDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
 	slog.Info("dao_postgres:UpsertModel", "modelID", modelID, "name", name, "url", url, "provider", provider, "inputTokenCost", inputTokenCost, "outputTokenCost", outputTokenCost, "cachedTokenCost", cachedTokenCost)
 	_, err := p.db.Exec(`

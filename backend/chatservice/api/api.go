@@ -396,7 +396,7 @@ func (s *ChatServiceAPI) RenameChat(ctx context.Context, req *pb.RenameChatReque
 	err = s.service.RenameChat(ctx, userID, req.GetChatId(), req.GetName())
 	if err != nil {
 		slog.Error("api:RenameChat", "message", "failed to rename chat", "error", err)
-		return nil, fmt.Errorf("failed to rename chat")
+		return nil, err
 	}
 	return &pb.RenameChatResponse{Message: "Chat renamed successfully"}, nil
 }

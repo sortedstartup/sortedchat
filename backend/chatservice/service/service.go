@@ -1263,7 +1263,17 @@ func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId stri
 		return fmt.Errorf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH)
 	}
 
-	err := s.dao.RenameChat(userID, chatId, trimmedName)
+	isNameExists, err := s.dao.IsNameExists(userID, chatId, trimmedName)
+	if err != nil {
+		slog.Error("service:RenameChat", "message", "failed to check if name exists", "error", err, "userID", userID, "chatId", chatId, "name", name)
+		return fmt.Errorf("failed to process request, please try again")
+	}
+	if isNameExists {
+		slog.Error("service:RenameChat", "message", "name already exists", "userID", userID, "chatId", chatId, "name", name)
+		return fmt.Errorf("name already exists, please try again with a different name")
+	}
+
+	err = s.dao.RenameChat(userID, chatId, trimmedName)
 	if err != nil {
 		slog.Error("service:RenameChat", "message", "failed to rename chat", "error", err, "userID", userID, "chatId", chatId, "name", name)
 		return fmt.Errorf("failed to rename chat, please try again")

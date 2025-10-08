@@ -734,6 +734,20 @@ func (s *SQLiteDAO) RenameChat(userID string, chatId string, name string) error 
 	return nil
 }
 
+func (s *SQLiteDAO) IsNameExists(userID string, chatId string, name string) (bool, error) {
+
+	slog.Info("dao_sqlite:IsNameExists", "userID", userID, "chatId", chatId, "name", name)
+	var exists bool
+	//in query we are checking if the name exists and the chat id is not the same as the chat id passed in the function
+	//in query 1 is like optimization to avoid scanning the whole table
+	err := s.db.Get(&exists, "SELECT EXISTS(SELECT 1 FROM chat_list WHERE name = ? AND user_id = ? AND chat_id != ?)", name, userID, chatId)
+	if err != nil {
+		slog.Error("dao_sqlite:IsNameExists", "message", "failed to check if name exists", "error", err, "userID", userID, "chatId", chatId, "name", name)
+		return false, fmt.Errorf("failed to check if name exists")
+	}
+	return exists, nil
+}
+
 func (s *SQLiteDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
 	_, err := s.db.Exec(`
 		INSERT INTO model_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)

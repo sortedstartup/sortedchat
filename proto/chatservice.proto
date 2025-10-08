@@ -79,6 +79,23 @@ service SettingService {
     rpc GetSetting(GetSettingRequest) returns (GetSettingResponse);
     rpc SetSetting(SetSettingRequest) returns (SetSettingResponse);
     rpc IsFirstBoot(IsFirstBootRequest) returns (IsFirstBootResponse);
+    rpc TestConnection(TestConnectionRequest) returns (TestConnectionResponse);  
+
+}
+
+enum ConnectionType {
+    OLLAMA = 0;
+    OPENAI = 1;
+}
+
+message TestConnectionRequest {
+    string url = 1;
+    ConnectionType connection_type = 2;
+}
+
+message TestConnectionResponse {
+    bool success = 1;
+    string message = 2;
 }
 
 message Settings {

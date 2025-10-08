@@ -771,9 +771,10 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	SettingService_GetSetting_FullMethodName  = "/sortedchat.SettingService/GetSetting"
-	SettingService_SetSetting_FullMethodName  = "/sortedchat.SettingService/SetSetting"
-	SettingService_IsFirstBoot_FullMethodName = "/sortedchat.SettingService/IsFirstBoot"
+	SettingService_GetSetting_FullMethodName     = "/sortedchat.SettingService/GetSetting"
+	SettingService_SetSetting_FullMethodName     = "/sortedchat.SettingService/SetSetting"
+	SettingService_IsFirstBoot_FullMethodName    = "/sortedchat.SettingService/IsFirstBoot"
+	SettingService_TestConnection_FullMethodName = "/sortedchat.SettingService/TestConnection"
 )
 
 // SettingServiceClient is the client API for SettingService service.
@@ -783,6 +784,7 @@ type SettingServiceClient interface {
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*GetSettingResponse, error)
 	SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*SetSettingResponse, error)
 	IsFirstBoot(ctx context.Context, in *IsFirstBootRequest, opts ...grpc.CallOption) (*IsFirstBootResponse, error)
+	TestConnection(ctx context.Context, in *TestConnectionRequest, opts ...grpc.CallOption) (*TestConnectionResponse, error)
 }
 
 type settingServiceClient struct {
@@ -823,6 +825,16 @@ func (c *settingServiceClient) IsFirstBoot(ctx context.Context, in *IsFirstBootR
 	return out, nil
 }
 
+func (c *settingServiceClient) TestConnection(ctx context.Context, in *TestConnectionRequest, opts ...grpc.CallOption) (*TestConnectionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TestConnectionResponse)
+	err := c.cc.Invoke(ctx, SettingService_TestConnection_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SettingServiceServer is the server API for SettingService service.
 // All implementations must embed UnimplementedSettingServiceServer
 // for forward compatibility.
@@ -830,6 +842,7 @@ type SettingServiceServer interface {
 	GetSetting(context.Context, *GetSettingRequest) (*GetSettingResponse, error)
 	SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error)
 	IsFirstBoot(context.Context, *IsFirstBootRequest) (*IsFirstBootResponse, error)
+	TestConnection(context.Context, *TestConnectionRequest) (*TestConnectionResponse, error)
 	mustEmbedUnimplementedSettingServiceServer()
 }
 
@@ -848,6 +861,9 @@ func (UnimplementedSettingServiceServer) SetSetting(context.Context, *SetSetting
 }
 func (UnimplementedSettingServiceServer) IsFirstBoot(context.Context, *IsFirstBootRequest) (*IsFirstBootResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsFirstBoot not implemented")
+}
+func (UnimplementedSettingServiceServer) TestConnection(context.Context, *TestConnectionRequest) (*TestConnectionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TestConnection not implemented")
 }
 func (UnimplementedSettingServiceServer) mustEmbedUnimplementedSettingServiceServer() {}
 func (UnimplementedSettingServiceServer) testEmbeddedByValue()                        {}
@@ -924,6 +940,24 @@ func _SettingService_IsFirstBoot_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SettingService_TestConnection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TestConnectionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).TestConnection(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_TestConnection_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).TestConnection(ctx, req.(*TestConnectionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SettingService_ServiceDesc is the grpc.ServiceDesc for SettingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -942,6 +976,10 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsFirstBoot",
 			Handler:    _SettingService_IsFirstBoot_Handler,
+		},
+		{
+			MethodName: "TestConnection",
+			Handler:    _SettingService_TestConnection_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

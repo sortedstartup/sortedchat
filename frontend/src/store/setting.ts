@@ -7,6 +7,9 @@ import {
   SetSettingResponse,
   SettingServiceClient,
   IsFirstBootRequest,
+  TestConnectionRequest,
+  TestConnectionResponse,
+  ConnectionType,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -76,6 +79,24 @@ export const onboardingActions = {
     const current = $onboardingStep.get();
     if (current > 0) {
       $onboardingStep.set(current - 1);
+    }
+  },
+
+  testConnection: async (url: string, type: ConnectionType): Promise<TestConnectionResponse> => {
+    try {
+      const req = new TestConnectionRequest({ url, connection_type: type });
+      const res = await client.TestConnection(req, {});
+      return res;
+    } catch (error) {
+      console.error('Failed to test connection:', error);
+      throw new Error('Failed to test connection');
+    }
+  },
+  
+  skipStep: () => {
+    const current = $onboardingStep.get();
+    if (current < 1) {
+      $onboardingStep.set(current + 1);
     }
   },
   

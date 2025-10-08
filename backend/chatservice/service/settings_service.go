@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"strconv"
+	"time"
 
 	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
@@ -164,4 +166,68 @@ func (s *SettingService) IsFirstBoot() (bool, error) {
 
 	// Return true if value is 0, false otherwise
 	return intValue == 0, nil
+}
+
+func (s *SettingService) TestConnection(ctx context.Context, req *pb.TestConnectionRequest) (*pb.TestConnectionResponse, error) {
+	slog.Info("settings_service:TestConnection", "url", req.Url, "type", req.ConnectionType)
+
+	// Create HTTP client with timeout
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	var resp *http.Response
+	var err error
+	var serviceName string
+
+	switch req.ConnectionType {
+	case pb.ConnectionType_OLLAMA:
+		// Test Ollama API endpoint
+		httpReq, reqErr := http.NewRequest("HEAD", req.Url, nil)
+		if reqErr != nil {
+			slog.Error("settings_service:TestConnection", "step", "failed to create HTTP request", "error", reqErr, "url", req.Url, "serviceName", "ollama")
+			return &pb.TestConnectionResponse{
+				Success: false,
+				Message: fmt.Sprintf("Invalid URL: %v", reqErr),
+			}, nil
+		}
+		resp, err = client.Do(httpReq)
+		serviceName = "Ollama"
+	case pb.ConnectionType_OPENAI:
+		// Use HEAD request to test connectivity without authentication
+		httpReq, reqErr := http.NewRequest("HEAD", req.Url, nil)
+		if reqErr != nil {
+			slog.Error("settings_service:TestConnection", "step", "failed to create HTTP request", "error", reqErr, "url", req.Url, "serviceName", "openai")
+			return &pb.TestConnectionResponse{
+				Success: false,
+				Message: fmt.Sprintf("Invalid URL: %v", reqErr),
+			}, nil
+		}
+		resp, err = client.Do(httpReq)
+		serviceName = "OpenAI API"
+	default:
+		return &pb.TestConnectionResponse{
+			Success: false,
+			Message: "Unsupported connection type",
+		}, nil
+	}
+
+	if err != nil {
+		return &pb.TestConnectionResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to connect to %s: %v", serviceName, err),
+		}, nil
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode == 200 || (req.ConnectionType == pb.ConnectionType_OPENAI && resp.StatusCode < 500) {
+		return &pb.TestConnectionResponse{
+			Success: true,
+			Message: fmt.Sprintf("%s connection successful", serviceName),
+		}, nil
+	}
+
+	return &pb.TestConnectionResponse{
+		Success: false,
+		Message: fmt.Sprintf("%s returned status %d", serviceName, resp.StatusCode),
+	}, nil
 }

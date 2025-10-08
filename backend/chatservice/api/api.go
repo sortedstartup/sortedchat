@@ -204,7 +204,7 @@ func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjec
 	projectID, err := s.service.CreateProject(ctx, userID, req.Name, req.Description, req.AdditionalData)
 	if err != nil {
 		slog.Error("api:CreateProject", "message", "failed to create project", "error", err)
-		return nil, fmt.Errorf("failed to create project")
+		return nil, err
 	}
 
 	return &pb.CreateProjectResponse{
@@ -387,18 +387,29 @@ func (s *ChatServiceAPI) RestoreChat(ctx context.Context, req *pb.RestoreChatReq
 	return &pb.RestoreChatResponse{Message: "Chat restored successfully"}, nil
 }
 
-func (s *ChatServiceAPI) RenameChat(ctx context.Context, req *pb.RenameChatRequest) (*pb.RenameChatResponse, error) {
+func (s *ChatServiceAPI) RenameItem(ctx context.Context, req *pb.RenameItemRequest) (*pb.RenameItemResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("api:RenameChat", "message", "failed to get user ID from context", "error", err)
+		slog.Error("api:RenameItem", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
-	err = s.service.RenameChat(ctx, userID, req.GetChatId(), req.GetName())
+	err = s.service.RenameItem(ctx, userID, req.GetItemId(), req.GetName(), req.GetItemType())
 	if err != nil {
-		slog.Error("api:RenameChat", "message", "failed to rename chat", "error", err)
+		slog.Error("api:RenameItem", "message", "failed to rename item", "error", err)
 		return nil, err
 	}
-	return &pb.RenameChatResponse{Message: "Chat renamed successfully"}, nil
+
+	var successMessage string
+	switch req.GetItemType() {
+	case pb.RenameItemRequest_CHAT:
+		successMessage = "Chat renamed successfully"
+	case pb.RenameItemRequest_PROJECT:
+		successMessage = "Project renamed successfully"
+	default:
+		successMessage = "Item renamed successfully"
+	}
+
+	return &pb.RenameItemResponse{Message: successMessage}, nil
 }
 
 func (s *ChatServiceAPI) Init(config *db.Config) {

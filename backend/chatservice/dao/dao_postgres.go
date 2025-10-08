@@ -942,6 +942,36 @@ func (p *PostgresDAO) UpsertModel(modelID string, name string, url string, provi
 	return nil
 }
 
+func (p *PostgresDAO) RenameProject(userID string, projectId string, name string) error {
+	slog.Info("dao_postgres:RenameProject", "userID", userID, "projectId", projectId, "name", name)
+	result, err := p.db.Exec("UPDATE project SET name = $1 WHERE id = $2 AND user_id = $3", name, projectId, userID)
+	if err != nil {
+		slog.Error("dao_postgres:RenameProject", "message", "failed to rename project", "error", err, "userID", userID, "projectId", projectId, "name", name)
+		return fmt.Errorf("failed to rename project")
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		slog.Error("dao_postgres:RenameProject", "message", "failed to get rows affected", "error", err, "userID", userID, "projectId", projectId, "name", name)
+		return fmt.Errorf("failed to get rows affected")
+	}
+	if rowsAffected == 0 {
+		slog.Error("dao_postgres:RenameProject", "message", "project not found or permission denied", "userID", userID, "projectId", projectId, "name", name)
+		return fmt.Errorf("project not found or permission denied")
+	}
+	return nil
+}
+
+func (p *PostgresDAO) IsProjectNameExists(userID string, projectId string, name string) (bool, error) {
+	slog.Info("dao_postgres:IsProjectNameExists", "userID", userID, "projectId", projectId, "name", name)
+	var exists bool
+	err := p.db.Get(&exists, "SELECT EXISTS(SELECT 1 FROM project WHERE name = $1 AND user_id = $2 AND id != $3)", name, userID, projectId)
+	if err != nil {
+		slog.Error("dao_postgres:IsProjectNameExists", "message", "failed to check if project name exists", "error", err, "userID", userID, "projectId", projectId, "name", name)
+		return false, fmt.Errorf("failed to check if project name exists")
+	}
+	return exists, nil
+}
+
 // PostgresSettingsDAO implements the SettingsDAO interface using PostgreSQL
 type PostgresSettingsDAO struct {
 	db *sqlx.DB

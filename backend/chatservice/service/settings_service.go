@@ -100,8 +100,14 @@ func (s *SettingService) saveSettings(ctx context.Context, settingsProto *pb.Set
 	incoming := settings.FromProto(settingsProto)
 
 	// Merge: if incoming fields are empty strings, retain existing values
+	if incoming.OpenAIAPIKey == "" {
+		incoming.OpenAIAPIKey = existing.OpenAIAPIKey
+	}
 	if incoming.OpenAIAPIURL == "" {
 		incoming.OpenAIAPIURL = existing.OpenAIAPIURL
+	}
+	if incoming.OllamaURL == "" {
+		incoming.OllamaURL = existing.OllamaURL
 	}
 
 	settingsJSON, err := json.Marshal(incoming)

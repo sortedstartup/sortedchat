@@ -93,13 +93,6 @@ export const onboardingActions = {
     }
   },
   
-  skipStep: () => {
-    const current = $onboardingStep.get();
-    if (current < 1) {
-      $onboardingStep.set(current + 1);
-    }
-  },
-  
   completeOnboarding: async (): Promise<string> => {
     try {
       const data = $onboardingData.get();

@@ -58,18 +58,6 @@ export function StepEmbeddings() {
     onboardingActions.prevStep();
   };
   
-  const handleSkip = async () => {
-    // Skip this step and complete onboarding
-    setIsValidating(true);
-    try {
-      await onboardingActions.completeOnboarding();
-    } catch (error) {
-      console.error('Failed to complete onboarding:', error);
-      setValidationError('Failed to save settings. Please try again.');
-    } finally {
-      setIsValidating(false);
-    }
-  };
   
   return (
     <div className="space-y-6">
@@ -118,21 +106,12 @@ export function StepEmbeddings() {
       </div>
       
       <div className="flex justify-between">
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-          >
-            Back
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={handleSkip}
-            disabled={isValidating}
-          >
-            Skip & Finish
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          onClick={handleBack}
+        >
+          Back
+        </Button>
         
         <Button
           onClick={handleNext}

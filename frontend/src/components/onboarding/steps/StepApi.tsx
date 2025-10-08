@@ -50,9 +50,6 @@ export function StepApi() {
     }, 300);
   };
   
-  const handleSkip = () => {
-    onboardingActions.skipStep();
-  };
   
   return (
     <div className="space-y-6">
@@ -79,7 +76,7 @@ export function StepApi() {
               <Input
                 id="api-url"
                 type="url"
-                placeholder="https://api.openai.com/v1"
+                placeholder="https://api.openai.com/v1/chat/completions"
                 value={data.OPENAI_API_URL}
                 onChange={(e) => onboardingActions.setApiUrl(e.target.value)}
               />
@@ -101,20 +98,13 @@ export function StepApi() {
             )}
             
             <p className="text-sm text-gray-500 mt-1">
-              Leave empty to use the default OpenAI API
+              Provide the endpoint for either LiteLLM or OpenAI.
             </p>
           </div>
         </div>
       </div>
       
-      <div className="flex justify-between">
-        <Button
-          variant="ghost"
-          onClick={handleSkip}
-        >
-          Skip
-        </Button>
-        
+      <div className="flex justify-end">
         <Button
           onClick={handleNext}
           disabled={isValidating}

@@ -1255,22 +1255,22 @@ func (s *ChatService) RestoreChat(ctx context.Context, userID string, chatId str
 	return nil
 }
 
-func (s *ChatService) RenameItem(ctx context.Context, userID string, itemId string, name string, itemType pb.RenameItemRequest_ItemType) error {
+func (s *ChatService) RenameItem(ctx context.Context, userID string, itemId string, name string, itemType pb.RenameItemRequest_ItemType) (string, error) {
 	if itemId == "" {
 		slog.Error("service:RenameItem", "message", "item ID is required", "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-		return fmt.Errorf("item ID is required")
+		return "", fmt.Errorf("item ID is required")
 	}
 
 	trimmedName := strings.TrimSpace(name)
 
 	if len(trimmedName) < MIN_CHAT_NAME_LENGTH {
 		slog.Error("service:RenameItem", "message", fmt.Sprintf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH), "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-		return fmt.Errorf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH)
+		return "", fmt.Errorf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH)
 	}
 
 	if len(trimmedName) > MAX_CHAT_NAME_LENGTH {
 		slog.Error("service:RenameItem", "message", fmt.Sprintf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH), "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-		return fmt.Errorf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH)
+		return "", fmt.Errorf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH)
 	}
 
 	// Check if name already exists based on item type
@@ -1282,47 +1282,44 @@ func (s *ChatService) RenameItem(ctx context.Context, userID string, itemId stri
 		isNameExists, err = s.dao.IsNameExists(userID, itemId, trimmedName)
 		if err != nil {
 			slog.Error("service:RenameItem", "message", "failed to check if chat name exists", "error", err, "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-			return fmt.Errorf("failed to process request, please try again")
+			return "", fmt.Errorf("failed to process request, please try again")
 		}
 		if isNameExists {
 			slog.Error("service:RenameItem", "message", "chat name already exists", "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-			return fmt.Errorf("name already exists, please try again with a different name")
+			return "", fmt.Errorf("name already exists, please try again with a different name")
 		}
 
 		err = s.dao.RenameChat(userID, itemId, trimmedName)
 		if err != nil {
 			slog.Error("service:RenameItem", "message", "failed to rename chat", "error", err, "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-			return fmt.Errorf("failed to rename chat, please try again")
+			return "", fmt.Errorf("failed to rename chat, please try again")
 		}
+
+		return "chat renamed successfully", nil
 
 	case pb.RenameItemRequest_PROJECT:
 		isNameExists, err = s.dao.IsProjectNameExists(userID, itemId, trimmedName)
 		if err != nil {
 			slog.Error("service:RenameItem", "message", "failed to check if project name exists", "error", err, "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-			return fmt.Errorf("failed to process request, please try again")
+			return "", fmt.Errorf("failed to process request, please try again")
 		}
 		if isNameExists {
 			slog.Error("service:RenameItem", "message", "project name already exists", "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-			return fmt.Errorf("name already exists, please try again with a different name")
+			return "", fmt.Errorf("name already exists, please try again with a different name")
 		}
 
 		err = s.dao.RenameProject(userID, itemId, trimmedName)
 		if err != nil {
 			slog.Error("service:RenameItem", "message", "failed to rename project", "error", err, "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-			return fmt.Errorf("failed to rename project, please try again")
+			return "", fmt.Errorf("failed to rename project, please try again")
 		}
+
+		return "project renamed successfully", nil
 
 	default:
 		slog.Error("service:RenameItem", "message", "unsupported item type", "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
-		return fmt.Errorf("unsupported item type")
+		return "", fmt.Errorf("unsupported item type")
 	}
-
-	return nil
-}
-
-// Keep the old RenameChat method for backward compatibility
-func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId string, name string) error {
-	return s.RenameItem(ctx, userID, chatId, name, pb.RenameItemRequest_CHAT)
 }
 
 func (s *ChatService) Init(config *dao.Config) *sql.DB {

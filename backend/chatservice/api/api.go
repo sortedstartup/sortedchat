@@ -393,23 +393,13 @@ func (s *ChatServiceAPI) RenameItem(ctx context.Context, req *pb.RenameItemReque
 		slog.Error("api:RenameItem", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
-	err = s.service.RenameItem(ctx, userID, req.GetItemId(), req.GetName(), req.GetItemType())
+	msg, err := s.service.RenameItem(ctx, userID, req.GetItemId(), req.GetName(), req.GetItemType())
 	if err != nil {
 		slog.Error("api:RenameItem", "message", "failed to rename item", "error", err)
 		return nil, err
 	}
 
-	var successMessage string
-	switch req.GetItemType() {
-	case pb.RenameItemRequest_CHAT:
-		successMessage = "Chat renamed successfully"
-	case pb.RenameItemRequest_PROJECT:
-		successMessage = "Project renamed successfully"
-	default:
-		successMessage = "Item renamed successfully"
-	}
-
-	return &pb.RenameItemResponse{Message: successMessage}, nil
+	return &pb.RenameItemResponse{Message: msg}, nil
 }
 
 func (s *ChatServiceAPI) Init(config *db.Config) {

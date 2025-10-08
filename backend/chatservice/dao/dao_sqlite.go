@@ -740,7 +740,7 @@ func (s *SQLiteDAO) IsNameExists(userID string, chatId string, name string) (boo
 	var exists bool
 	//in query we are checking if the name exists and the chat id is not the same as the chat id passed in the function
 	//in query 1 is like optimization to avoid scanning the whole table
-	err := s.db.Get(&exists, "SELECT EXISTS(SELECT 1 FROM chat_list WHERE name = ? AND user_id = ? AND chat_id != ?)", name, userID, chatId)
+	err := s.db.Get(&exists, "SELECT EXISTS(SELECT 1 FROM chat_list WHERE name = ? AND user_id = ? AND chat_id != ?  AND soft_deleted = 0)", name, userID, chatId)
 	if err != nil {
 		slog.Error("dao_sqlite:IsNameExists", "message", "failed to check if name exists", "error", err, "userID", userID, "chatId", chatId, "name", name)
 		return false, fmt.Errorf("failed to check if name exists")

@@ -45,6 +45,7 @@ import {
   RestoreChat,
   $trashChatList,
   RenameChat,
+  RenameProject,
 } from "@/store/chat";
 import { authActions, $auth } from "@/auth/store/auth";
 import remarkGfm from "remark-gfm";
@@ -67,10 +68,11 @@ export function AppSidebar() {
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false); // Add state for audio modal
 
   
-  // Rename chat states
+  // Rename states (for both chats and projects)
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const [renameChatId, setRenameChatId] = useState("");
-  const [newChatName, setNewChatName] = useState("");
+  const [renameItemId, setRenameItemId] = useState("");
+  const [newItemName, setNewItemName] = useState("");
+  const [renameItemType, setRenameItemType] = useState<"chat" | "project">("chat");
 
   const navigate = useNavigate();
 
@@ -185,30 +187,37 @@ export function AppSidebar() {
     navigate("/");
   };
 
-  // Rename chat handlers
-  const handleRenameClick = (chatId: string, currentName: string) => {
-    setRenameChatId(chatId);
-    setNewChatName(currentName || "");
+  // Rename handlers (for both chats and projects)
+  const handleRenameClick = (itemId: string, currentName: string, itemType: "chat" | "project") => {
+    setRenameItemId(itemId);
+    setNewItemName(currentName || "");
+    setRenameItemType(itemType);
     setIsRenameDialogOpen(true);
   };
 
   const handleRenameConfirm = async () => {
-    if (!newChatName.trim() || !renameChatId) return;
+    if (!newItemName.trim() || !renameItemId) return;
     
     try {
-      await RenameChat(renameChatId, newChatName.trim());
+      if (renameItemType === "chat") {
+        await RenameChat(renameItemId, newItemName.trim());
+      } else if (renameItemType === "project") {
+        await RenameProject(renameItemId, newItemName.trim());
+      }
       setIsRenameDialogOpen(false);
-      setRenameChatId("");
-      setNewChatName("");
+      setRenameItemId("");
+      setNewItemName("");
+      setRenameItemType("chat");
     } catch (error) {
-      console.error("Failed to rename chat:", error);
+      console.error(`Failed to rename ${renameItemType}:`, error);
     }
   };
 
   const handleRenameCancel = () => {
     setIsRenameDialogOpen(false);
-    setRenameChatId("");
-    setNewChatName("");
+    setRenameItemId("");
+    setNewItemName("");
+    setRenameItemType("chat");
   };
 
   return (
@@ -353,12 +362,37 @@ export function AppSidebar() {
               <SidebarMenu>
                 {projectsList.map((project) => (
                   <SidebarMenuItem key={project.name}>
-                    <SidebarMenuButton
-                      onClick={() => handleProjectClick(project.id)}
-                    >
-                      <Folder />
-                      <span>{project.name}</span>
-                    </SidebarMenuButton>
+                    <div className="flex items-center justify-between w-full group">
+                      <SidebarMenuButton
+                        onClick={() => handleProjectClick(project.id)}
+                        className="flex-1"
+                      >
+                        <Folder />
+                        <span>{project.name}</span>
+                      </SidebarMenuButton>
+                      
+                      {/* Dropdown menu for projects */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => handleRenameClick(project.id, project.name, "project")}
+                            className="focus:bg-blue-50 focus:text-blue-600"
+                          >
+                            <Edit2 className="h-4 w-4 mr-2" />
+                            Rename
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
@@ -435,7 +469,7 @@ export function AppSidebar() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem 
-                              onClick={() => handleRenameClick(chat.chatId, chat.name)}
+                              onClick={() => handleRenameClick(chat.chatId, chat.name, "chat")}
                               className="focus:bg-blue-50 focus:text-blue-600"
                             >
                               <Edit2 className="h-4 w-4 mr-2" />
@@ -459,18 +493,18 @@ export function AppSidebar() {
           </SidebarGroup>
         </div>
 
-        {/* Rename Chat Dialog */}
+        {/* Rename Item Dialog */}
         <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Rename Chat</DialogTitle>
+              <DialogTitle>Rename {renameItemType === "chat" ? "Chat" : "Project"}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <Input
-                id="chat-name"
-                value={newChatName}
-                onChange={(e) => setNewChatName(e.target.value)}
-                placeholder="Enter new chat name"
+                id="item-name"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                placeholder={`Enter new ${renameItemType} name`}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -490,7 +524,7 @@ export function AppSidebar() {
               <Button
                 type="button"
                 onClick={handleRenameConfirm}
-                disabled={!newChatName.trim()}
+                disabled={!newItemName.trim()}
               >
                 Rename
               </Button>

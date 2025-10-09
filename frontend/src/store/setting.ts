@@ -93,21 +93,20 @@ export const onboardingActions = {
     }
   },
   
-  completeOnboarding: async (): Promise<string> => {
+  completeOnboarding: async (): Promise<void> => {
     try {
       const data = $onboardingData.get();
       const settings = new Settings(data);
       
       // Save settings
       const setReq = new SetSettingRequest({ settings });
-      const setRes: SetSettingResponse = await client.SetSetting(setReq, {});
+      await client.SetSetting(setReq, {});
       
       $settings.set(settings);
       
       // Force a full page reload to ensure isFirstBoot check runs fresh
       window.location.replace('/');
       
-      return setRes.message ?? "Onboarding completed successfully";
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
       throw new Error("Failed to complete onboarding");
@@ -136,7 +135,7 @@ export const GetIsFirstBootStatus = async (): Promise<boolean> => {
     
   } catch (error) {
     console.error("Failed to check if first boot:", error);
-    return false;
+    throw error;
   }
 };
 

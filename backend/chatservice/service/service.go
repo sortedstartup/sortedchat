@@ -309,7 +309,12 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 					partialReferencesJSON = string(partialRefsBytes)
 				}
 			}
-			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens-cachedTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
+			nonCachedInputTokens := inputTokens - cachedTokens
+			if nonCachedInputTokens < 0 {
+				slog.Warn("service:Chat", "message", "cachedTokens > inputTokens, setting non-cached input tokens to 0", "inputTokens", inputTokens, "cachedTokens", cachedTokens, "chatId", chatId, "userID", userID, "projectID", projectID)
+				nonCachedInputTokens = 0
+			}
+			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, nonCachedInputTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
 			if err != nil {
 				slog.Error("service:Chat", "message", "failed to save partial assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 			}
@@ -412,8 +417,13 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				finalReferencesJSON = string(finalRefsBytes)
 			}
 		}
+		nonCachedInputTokens := inputTokens - cachedTokens
+		if nonCachedInputTokens < 0 {
+			slog.Warn("service:Chat", "message", "cachedTokens > inputTokens, setting non-cached input tokens to 0", "inputTokens", inputTokens, "cachedTokens", cachedTokens, "chatId", chatId, "userID", userID, "projectID", projectID)
+			nonCachedInputTokens = 0
+		}
 		// TODO : scope for optimization, can be 1 sql call internally
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens-cachedTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, nonCachedInputTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else {

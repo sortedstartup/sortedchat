@@ -309,7 +309,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 					partialReferencesJSON = string(partialRefsBytes)
 				}
 			}
-			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
+			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens-cachedTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
 			if err != nil {
 				slog.Error("service:Chat", "message", "failed to save partial assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 			}
@@ -413,7 +413,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			}
 		}
 		// TODO : scope for optimization, can be 1 sql call internally
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens-cachedTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else {

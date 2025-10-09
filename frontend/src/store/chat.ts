@@ -30,7 +30,8 @@ import {
   DeleteChatRequest,
   DeleteChatRequestOperation,
   RestoreChatRequest,
-  RenameChatRequest,
+  RenameItemRequest,
+  RenameItemRequestItemType,
   ChatProgress,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
@@ -469,10 +470,12 @@ export const createProject = async (
       {}
     );
     $currentProjectId.set(response.project_id);
+    toast.success(response.message);
     await getProjectList();
     return response.project_id;
   } catch (error) {
     console.error("failed", error);
+    toast.error("Failed to create project: " + (error as Error).message);
     throw error;
   }
 };
@@ -761,22 +764,51 @@ export const RestoreChat = async (chatId: string) => {
   }
 }
 
-export const RenameChat = async (chatId: string, name: string) => {
+export const RenameItem = async (itemId: string, name: string, itemType: RenameItemRequestItemType) => {
   try {
-    const res = await chat.RenameChat(RenameChatRequest.fromObject({ chat_id: chatId, name: name }), {});
+    const res = await chat.RenameItem(RenameItemRequest.fromObject({ 
+      item_id: itemId, 
+      name: name, 
+      item_type: itemType 
+    }), {});
     
     toast.success(res.message);
 
-    const chatList = $chatList.get();
-    chatList.forEach((chat: ChatInfo) => {
-      if (chat.chatId === chatId) {
-        chat.name = name;
+    if (itemType === RenameItemRequestItemType.CHAT) {
+      const chatList = $chatList.get();
+      chatList.forEach((chatItem: ChatInfo) => {
+        if (chatItem.chatId === itemId) {
+          chatItem.name = name;
+        }
+      });
+      $chatList.set(chatList);
+    } else if (itemType === RenameItemRequestItemType.PROJECT) {
+      const projectList = $projectList.get();
+      projectList.forEach((project: Project) => {
+        if (project.id === itemId) {
+          project.name = name;
+        }
+      });
+      $projectList.set(projectList);
+      
+      // Update current project name if it's the one being renamed
+      const currentProjectId = $currentProjectId.get();
+      if (currentProjectId === itemId) {
+        $currentProject.set(name);
       }
-    });
-    $chatList.set(chatList);
+    }
     
   } catch (error) {
-    console.error('Failed to Rename chat:', error);
-    toast.error(`Failed to Rename chat: ${(error as Error).message || 'Unknown error'}`);
+    console.error('Failed to rename item:', error);
+    toast.error(`Failed to rename item: ${(error as Error).message || 'Unknown error'}`);
   }
+}
+
+// Keep the old RenameChat function for backward compatibility
+export const RenameChat = async (chatId: string, name: string) => {
+  return RenameItem(chatId, name, RenameItemRequestItemType.CHAT);
+}
+
+export const RenameProject = async (projectId: string, name: string) => {
+  return RenameItem(projectId, name, RenameItemRequestItemType.PROJECT);
 }

@@ -26,14 +26,20 @@ service SortedChat {
     rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
     rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse);
     rpc RestoreChat(RestoreChatRequest) returns (RestoreChatResponse);
-    rpc RenameChat(RenameChatRequest) returns (RenameChatResponse);
+    rpc RenameItem(RenameItemRequest) returns (RenameItemResponse);
 }
 
-message RenameChatRequest {
-  string chat_id = 1;
+message RenameItemRequest {
+  string item_id = 1;
   string name = 2;
+  ItemType item_type = 3;
+  
+  enum ItemType {
+    CHAT = 0;
+    PROJECT = 1;
+  }
 }
-message RenameChatResponse {
+message RenameItemResponse {
   string message = 1;
 }
 

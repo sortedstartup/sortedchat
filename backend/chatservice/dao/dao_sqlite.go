@@ -734,6 +734,20 @@ func (s *SQLiteDAO) RenameChat(userID string, chatId string, name string) error 
 	return nil
 }
 
+func (s *SQLiteDAO) IsNameExists(userID string, chatId string, name string) (bool, error) {
+
+	slog.Info("dao_sqlite:IsNameExists", "userID", userID, "chatId", chatId, "name", name)
+	var exists bool
+	//in query we are checking if the name exists and the chat id is not the same as the chat id passed in the function
+	//in query 1 is like optimization to avoid scanning the whole table
+	err := s.db.Get(&exists, "SELECT EXISTS(SELECT 1 FROM chat_list WHERE name = ? AND user_id = ? AND chat_id != ?  AND soft_deleted = 0)", name, userID, chatId)
+	if err != nil {
+		slog.Error("dao_sqlite:IsNameExists", "message", "failed to check if name exists", "error", err, "userID", userID, "chatId", chatId, "name", name)
+		return false, fmt.Errorf("failed to check if name exists")
+	}
+	return exists, nil
+}
+
 func (s *SQLiteDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
 	_, err := s.db.Exec(`
 		INSERT INTO model_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
@@ -747,6 +761,36 @@ func (s *SQLiteDAO) UpsertModel(modelID string, name string, url string, provide
 			cached_token_cost = excluded.cached_token_cost
 	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost)
 	return err
+}
+
+func (s *SQLiteDAO) RenameProject(userID string, projectId string, name string) error {
+	slog.Info("dao_sqlite:RenameProject", "userID", userID, "projectId", projectId, "name", name)
+	result, err := s.db.Exec("UPDATE project SET name = ? WHERE id = ? AND user_id = ?", name, projectId, userID)
+	if err != nil {
+		slog.Error("dao_sqlite:RenameProject", "message", "failed to rename project", "error", err, "userID", userID, "projectId", projectId, "name", name)
+		return fmt.Errorf("failed to rename project, please try again")
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		slog.Error("dao_sqlite:RenameProject", "message", "failed to get rows affected", "error", err, "userID", userID, "projectId", projectId, "name", name)
+		return fmt.Errorf("failed to get rows affected, please try again")
+	}
+	if rowsAffected == 0 {
+		slog.Error("dao_sqlite:RenameProject", "message", "project not found or permission denied", "userID", userID, "projectId", projectId, "name", name)
+		return fmt.Errorf("project not found or permission denied")
+	}
+	return nil
+}
+
+func (s *SQLiteDAO) IsProjectNameExists(userID string, projectId string, name string) (bool, error) {
+	slog.Info("dao_sqlite:IsProjectNameExists", "userID", userID, "projectId", projectId, "name", name)
+	var exists bool
+	err := s.db.Get(&exists, "SELECT EXISTS(SELECT 1 FROM project WHERE name = ? AND user_id = ? AND id != ?)", name, userID, projectId)
+	if err != nil {
+		slog.Error("dao_sqlite:IsProjectNameExists", "message", "failed to check if project name exists", "error", err, "userID", userID, "projectId", projectId, "name", name)
+		return false, fmt.Errorf("failed to check if project name exists")
+	}
+	return exists, nil
 }
 
 type SQLiteSettingsDAO struct {

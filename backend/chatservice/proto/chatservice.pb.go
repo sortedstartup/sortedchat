@@ -7,11 +7,12 @@
 package proto
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -116,7 +117,99 @@ func (x Embedding_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Embedding_Status.Descriptor instead.
 func (Embedding_Status) EnumDescriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{1}
+	return file_chatservice_proto_rawDescGZIP(), []int{0}
+}
+
+type RenameItemRequest_ItemType int32
+
+const (
+	RenameItemRequest_CHAT    RenameItemRequest_ItemType = 0
+	RenameItemRequest_PROJECT RenameItemRequest_ItemType = 1
+)
+
+// Enum value maps for RenameItemRequest_ItemType.
+var (
+	RenameItemRequest_ItemType_name = map[int32]string{
+		0: "CHAT",
+		1: "PROJECT",
+	}
+	RenameItemRequest_ItemType_value = map[string]int32{
+		"CHAT":    0,
+		"PROJECT": 1,
+	}
+)
+
+func (x RenameItemRequest_ItemType) Enum() *RenameItemRequest_ItemType {
+	p := new(RenameItemRequest_ItemType)
+	*p = x
+	return p
+}
+
+func (x RenameItemRequest_ItemType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RenameItemRequest_ItemType) Descriptor() protoreflect.EnumDescriptor {
+	return file_chatservice_proto_enumTypes[1].Descriptor()
+}
+
+func (RenameItemRequest_ItemType) Type() protoreflect.EnumType {
+	return &file_chatservice_proto_enumTypes[1]
+}
+
+func (x RenameItemRequest_ItemType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RenameItemRequest_ItemType.Descriptor instead.
+func (RenameItemRequest_ItemType) EnumDescriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{0, 0}
+}
+
+type RenameItemRequest_ItemType int32
+
+const (
+	RenameItemRequest_CHAT    RenameItemRequest_ItemType = 0
+	RenameItemRequest_PROJECT RenameItemRequest_ItemType = 1
+)
+
+// Enum value maps for RenameItemRequest_ItemType.
+var (
+	RenameItemRequest_ItemType_name = map[int32]string{
+		0: "CHAT",
+		1: "PROJECT",
+	}
+	RenameItemRequest_ItemType_value = map[string]int32{
+		"CHAT":    0,
+		"PROJECT": 1,
+	}
+)
+
+func (x RenameItemRequest_ItemType) Enum() *RenameItemRequest_ItemType {
+	p := new(RenameItemRequest_ItemType)
+	*p = x
+	return p
+}
+
+func (x RenameItemRequest_ItemType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RenameItemRequest_ItemType) Descriptor() protoreflect.EnumDescriptor {
+	return file_chatservice_proto_enumTypes[1].Descriptor()
+}
+
+func (RenameItemRequest_ItemType) Type() protoreflect.EnumType {
+	return &file_chatservice_proto_enumTypes[1]
+}
+
+func (x RenameItemRequest_ItemType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RenameItemRequest_ItemType.Descriptor instead.
+func (RenameItemRequest_ItemType) EnumDescriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{0, 0}
 }
 
 type DeleteChatRequest_Operation int32
@@ -150,9 +243,11 @@ func (x DeleteChatRequest_Operation) String() string {
 
 func (DeleteChatRequest_Operation) Descriptor() protoreflect.EnumDescriptor {
 	return file_chatservice_proto_enumTypes[2].Descriptor()
+	return file_chatservice_proto_enumTypes[2].Descriptor()
 }
 
 func (DeleteChatRequest_Operation) Type() protoreflect.EnumType {
+	return &file_chatservice_proto_enumTypes[2]
 	return &file_chatservice_proto_enumTypes[2]
 }
 
@@ -223,28 +318,29 @@ func (ChatProgress_State) EnumDescriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{24, 0}
 }
 
-type RenameChatRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChatId        string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+type RenameItemRequest struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	ItemId        string                     `protobuf:"bytes,1,opt,name=item_id,json=itemId,proto3" json:"item_id,omitempty"`
+	Name          string                     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	ItemType      RenameItemRequest_ItemType `protobuf:"varint,3,opt,name=item_type,json=itemType,proto3,enum=sortedchat.RenameItemRequest_ItemType" json:"item_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RenameChatRequest) Reset() {
-	*x = RenameChatRequest{}
+func (x *RenameItemRequest) Reset() {
+	*x = RenameItemRequest{}
 	mi := &file_chatservice_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RenameChatRequest) String() string {
+func (x *RenameItemRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RenameChatRequest) ProtoMessage() {}
+func (*RenameItemRequest) ProtoMessage() {}
 
-func (x *RenameChatRequest) ProtoReflect() protoreflect.Message {
+func (x *RenameItemRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -256,46 +352,53 @@ func (x *RenameChatRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RenameChatRequest.ProtoReflect.Descriptor instead.
-func (*RenameChatRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use RenameItemRequest.ProtoReflect.Descriptor instead.
+func (*RenameItemRequest) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *RenameChatRequest) GetChatId() string {
+func (x *RenameItemRequest) GetItemId() string {
 	if x != nil {
-		return x.ChatId
+		return x.ItemId
 	}
 	return ""
 }
 
-func (x *RenameChatRequest) GetName() string {
+func (x *RenameItemRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-type RenameChatResponse struct {
+func (x *RenameItemRequest) GetItemType() RenameItemRequest_ItemType {
+	if x != nil {
+		return x.ItemType
+	}
+	return RenameItemRequest_CHAT
+}
+
+type RenameItemResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RenameChatResponse) Reset() {
-	*x = RenameChatResponse{}
+func (x *RenameItemResponse) Reset() {
+	*x = RenameItemResponse{}
 	mi := &file_chatservice_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RenameChatResponse) String() string {
+func (x *RenameItemResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RenameChatResponse) ProtoMessage() {}
+func (*RenameItemResponse) ProtoMessage() {}
 
-func (x *RenameChatResponse) ProtoReflect() protoreflect.Message {
+func (x *RenameItemResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -307,12 +410,12 @@ func (x *RenameChatResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RenameChatResponse.ProtoReflect.Descriptor instead.
-func (*RenameChatResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use RenameItemResponse.ProtoReflect.Descriptor instead.
+func (*RenameItemResponse) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *RenameChatResponse) GetMessage() string {
+func (x *RenameItemResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -3559,11 +3662,15 @@ var File_chatservice_proto protoreflect.FileDescriptor
 const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"\x11chatservice.proto\x12\n" +
-	"sortedchat\"@\n" +
-	"\x11RenameChatRequest\x12\x17\n" +
-	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\".\n" +
-	"\x12RenameChatResponse\x12\x18\n" +
+	"sortedchat\"\xa8\x01\n" +
+	"\x11RenameItemRequest\x12\x17\n" +
+	"\aitem_id\x18\x01 \x01(\tR\x06itemId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12C\n" +
+	"\titem_type\x18\x03 \x01(\x0e2&.sortedchat.RenameItemRequest.ItemTypeR\bitemType\"!\n" +
+	"\bItemType\x12\b\n" +
+	"\x04CHAT\x10\x00\x12\v\n" +
+	"\aPROJECT\x10\x01\".\n" +
+	"\x12RenameItemResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"-\n" +
 	"\x12RestoreChatRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\"/\n" +
@@ -3833,7 +3940,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"DeleteChat\x12\x1d.sortedchat.DeleteChatRequest\x1a\x1e.sortedchat.DeleteChatResponse\x12N\n" +
 	"\vRestoreChat\x12\x1e.sortedchat.RestoreChatRequest\x1a\x1f.sortedchat.RestoreChatResponse\x12K\n" +
 	"\n" +
-	"RenameChat\x12\x1d.sortedchat.RenameChatRequest\x1a\x1e.sortedchat.RenameChatResponse2\xd3\x02\n" +
+	"RenameItem\x12\x1d.sortedchat.RenameItemRequest\x1a\x1e.sortedchat.RenameItemResponse2\xaa\x01\n" +
 	"\x0eSettingService\x12K\n" +
 	"\n" +
 	"GetSetting\x12\x1d.sortedchat.GetSettingRequest\x1a\x1e.sortedchat.GetSettingResponse\x12K\n" +

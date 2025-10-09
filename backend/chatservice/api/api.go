@@ -61,6 +61,31 @@ func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRe
 	}, nil
 }
 
+func (s *SettingServiceAPI) IsFirstBoot(ctx context.Context, req *pb.IsFirstBootRequest) (*pb.IsFirstBootResponse, error) {
+	slog.Info("api:IsFirstBoot")
+	isFirstBoot, err := s.service.IsFirstBoot()
+	if err != nil {
+		slog.Error("api:IsFirstBoot", "message", "failed to check first boot", "error", err)
+		return nil, err
+	}
+
+	return &pb.IsFirstBootResponse{
+		IsFirstBoot: isFirstBoot,
+	}, nil
+}
+
+func (s *SettingServiceAPI) TestConnection(ctx context.Context, req *pb.TestConnectionRequest) (*pb.TestConnectionResponse, error) {
+	slog.Info("api:TestConnection", "url", req.Url, "type", req.ConnectionType)
+
+	response, err := s.service.TestConnection(ctx, req)
+	if err != nil {
+		slog.Error("api:TestConnection", "message", "failed to test connection", "error", err)
+		return nil, err
+	}
+
+	return response, nil
+}
+
 type ChatServiceAPI struct {
 	pb.UnimplementedSortedChatServer
 	service *service.ChatService

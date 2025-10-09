@@ -7,12 +7,11 @@
 package proto
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -117,7 +116,7 @@ func (x Embedding_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Embedding_Status.Descriptor instead.
 func (Embedding_Status) EnumDescriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{0}
+	return file_chatservice_proto_rawDescGZIP(), []int{1}
 }
 
 type RenameItemRequest_ItemType int32
@@ -150,57 +149,11 @@ func (x RenameItemRequest_ItemType) String() string {
 }
 
 func (RenameItemRequest_ItemType) Descriptor() protoreflect.EnumDescriptor {
-	return file_chatservice_proto_enumTypes[1].Descriptor()
+	return file_chatservice_proto_enumTypes[2].Descriptor()
 }
 
 func (RenameItemRequest_ItemType) Type() protoreflect.EnumType {
-	return &file_chatservice_proto_enumTypes[1]
-}
-
-func (x RenameItemRequest_ItemType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use RenameItemRequest_ItemType.Descriptor instead.
-func (RenameItemRequest_ItemType) EnumDescriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{0, 0}
-}
-
-type RenameItemRequest_ItemType int32
-
-const (
-	RenameItemRequest_CHAT    RenameItemRequest_ItemType = 0
-	RenameItemRequest_PROJECT RenameItemRequest_ItemType = 1
-)
-
-// Enum value maps for RenameItemRequest_ItemType.
-var (
-	RenameItemRequest_ItemType_name = map[int32]string{
-		0: "CHAT",
-		1: "PROJECT",
-	}
-	RenameItemRequest_ItemType_value = map[string]int32{
-		"CHAT":    0,
-		"PROJECT": 1,
-	}
-)
-
-func (x RenameItemRequest_ItemType) Enum() *RenameItemRequest_ItemType {
-	p := new(RenameItemRequest_ItemType)
-	*p = x
-	return p
-}
-
-func (x RenameItemRequest_ItemType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (RenameItemRequest_ItemType) Descriptor() protoreflect.EnumDescriptor {
-	return file_chatservice_proto_enumTypes[1].Descriptor()
-}
-
-func (RenameItemRequest_ItemType) Type() protoreflect.EnumType {
-	return &file_chatservice_proto_enumTypes[1]
+	return &file_chatservice_proto_enumTypes[2]
 }
 
 func (x RenameItemRequest_ItemType) Number() protoreflect.EnumNumber {
@@ -242,13 +195,11 @@ func (x DeleteChatRequest_Operation) String() string {
 }
 
 func (DeleteChatRequest_Operation) Descriptor() protoreflect.EnumDescriptor {
-	return file_chatservice_proto_enumTypes[2].Descriptor()
-	return file_chatservice_proto_enumTypes[2].Descriptor()
+	return file_chatservice_proto_enumTypes[3].Descriptor()
 }
 
 func (DeleteChatRequest_Operation) Type() protoreflect.EnumType {
-	return &file_chatservice_proto_enumTypes[2]
-	return &file_chatservice_proto_enumTypes[2]
+	return &file_chatservice_proto_enumTypes[3]
 }
 
 func (x DeleteChatRequest_Operation) Number() protoreflect.EnumNumber {
@@ -302,11 +253,11 @@ func (x ChatProgress_State) String() string {
 }
 
 func (ChatProgress_State) Descriptor() protoreflect.EnumDescriptor {
-	return file_chatservice_proto_enumTypes[3].Descriptor()
+	return file_chatservice_proto_enumTypes[4].Descriptor()
 }
 
 func (ChatProgress_State) Type() protoreflect.EnumType {
-	return &file_chatservice_proto_enumTypes[3]
+	return &file_chatservice_proto_enumTypes[4]
 }
 
 func (x ChatProgress_State) Number() protoreflect.EnumNumber {
@@ -3940,7 +3891,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"DeleteChat\x12\x1d.sortedchat.DeleteChatRequest\x1a\x1e.sortedchat.DeleteChatResponse\x12N\n" +
 	"\vRestoreChat\x12\x1e.sortedchat.RestoreChatRequest\x1a\x1f.sortedchat.RestoreChatResponse\x12K\n" +
 	"\n" +
-	"RenameItem\x12\x1d.sortedchat.RenameItemRequest\x1a\x1e.sortedchat.RenameItemResponse2\xaa\x01\n" +
+	"RenameItem\x12\x1d.sortedchat.RenameItemRequest\x1a\x1e.sortedchat.RenameItemResponse2\xd3\x02\n" +
 	"\x0eSettingService\x12K\n" +
 	"\n" +
 	"GetSetting\x12\x1d.sortedchat.GetSettingRequest\x1a\x1e.sortedchat.GetSettingResponse\x12K\n" +
@@ -3961,152 +3912,154 @@ func file_chatservice_proto_rawDescGZIP() []byte {
 	return file_chatservice_proto_rawDescData
 }
 
-var file_chatservice_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_chatservice_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
 var file_chatservice_proto_goTypes = []any{
 	(ConnectionType)(0),                             // 0: sortedchat.ConnectionType
 	(Embedding_Status)(0),                           // 1: sortedchat.Embedding_Status
-	(DeleteChatRequest_Operation)(0),                // 2: sortedchat.DeleteChatRequest.Operation
-	(ChatProgress_State)(0),                         // 3: sortedchat.ChatProgress.State
-	(*RenameChatRequest)(nil),                       // 4: sortedchat.RenameChatRequest
-	(*RenameChatResponse)(nil),                      // 5: sortedchat.RenameChatResponse
-	(*RestoreChatRequest)(nil),                      // 6: sortedchat.RestoreChatRequest
-	(*RestoreChatResponse)(nil),                     // 7: sortedchat.RestoreChatResponse
-	(*DeleteChatRequest)(nil),                       // 8: sortedchat.DeleteChatRequest
-	(*DeleteChatResponse)(nil),                      // 9: sortedchat.DeleteChatResponse
-	(*DeleteDocumentRequest)(nil),                   // 10: sortedchat.DeleteDocumentRequest
-	(*DeleteDocumentResponse)(nil),                  // 11: sortedchat.DeleteDocumentResponse
-	(*RAGDocumentReferenceRequest)(nil),             // 12: sortedchat.RAGDocumentReferenceRequest
-	(*RAGDocumentReferenceResponse)(nil),            // 13: sortedchat.RAGDocumentReferenceResponse
-	(*TestConnectionRequest)(nil),                   // 14: sortedchat.TestConnectionRequest
-	(*TestConnectionResponse)(nil),                  // 15: sortedchat.TestConnectionResponse
-	(*Settings)(nil),                                // 16: sortedchat.Settings
-	(*GetSettingRequest)(nil),                       // 17: sortedchat.GetSettingRequest
-	(*GetSettingResponse)(nil),                      // 18: sortedchat.GetSettingResponse
-	(*SetSettingRequest)(nil),                       // 19: sortedchat.SetSettingRequest
-	(*SetSettingResponse)(nil),                      // 20: sortedchat.SetSettingResponse
-	(*IsFirstBootRequest)(nil),                      // 21: sortedchat.IsFirstBootRequest
-	(*IsFirstBootResponse)(nil),                     // 22: sortedchat.IsFirstBootResponse
-	(*CreateChatRequest)(nil),                       // 23: sortedchat.CreateChatRequest
-	(*CreateChatResponse)(nil),                      // 24: sortedchat.CreateChatResponse
-	(*ProjectContext)(nil),                          // 25: sortedchat.ProjectContext
-	(*ChatRequest)(nil),                             // 26: sortedchat.ChatRequest
-	(*ChatResponse)(nil),                            // 27: sortedchat.ChatResponse
-	(*ChatProgress)(nil),                            // 28: sortedchat.ChatProgress
-	(*RAGDocumentReferenceSummaryList)(nil),         // 29: sortedchat.RAGDocumentReferenceSummaryList
-	(*RAGDocumentReference)(nil),                    // 30: sortedchat.RAGDocumentReference
-	(*ResponseSummary)(nil),                         // 31: sortedchat.ResponseSummary
-	(*GetHistoryRequest)(nil),                       // 32: sortedchat.GetHistoryRequest
-	(*GetHistoryResponse)(nil),                      // 33: sortedchat.GetHistoryResponse
-	(*ChatMessage)(nil),                             // 34: sortedchat.ChatMessage
-	(*GetChatListRequest)(nil),                      // 35: sortedchat.GetChatListRequest
-	(*GetChatListResponse)(nil),                     // 36: sortedchat.GetChatListResponse
-	(*ChatInfo)(nil),                                // 37: sortedchat.ChatInfo
-	(*ModelListInfo)(nil),                           // 38: sortedchat.ModelListInfo
-	(*ModelCapabilities)(nil),                       // 39: sortedchat.ModelCapabilities
-	(*Capability)(nil),                              // 40: sortedchat.Capability
-	(*ListModelsRequest)(nil),                       // 41: sortedchat.ListModelsRequest
-	(*ListModelsResponse)(nil),                      // 42: sortedchat.ListModelsResponse
-	(*ChatSearchRequest)(nil),                       // 43: sortedchat.ChatSearchRequest
-	(*SearchResult)(nil),                            // 44: sortedchat.SearchResult
-	(*ChatSearchResponse)(nil),                      // 45: sortedchat.ChatSearchResponse
-	(*CreateProjectRequest)(nil),                    // 46: sortedchat.CreateProjectRequest
-	(*CreateProjectResponse)(nil),                   // 47: sortedchat.CreateProjectResponse
-	(*GetProjectsRequest)(nil),                      // 48: sortedchat.GetProjectsRequest
-	(*GetProjectsResponse)(nil),                     // 49: sortedchat.GetProjectsResponse
-	(*Project)(nil),                                 // 50: sortedchat.Project
-	(*ListDocumentsRequest)(nil),                    // 51: sortedchat.ListDocumentsRequest
-	(*ListDocumentsResponse)(nil),                   // 52: sortedchat.ListDocumentsResponse
-	(*Document)(nil),                                // 53: sortedchat.Document
-	(*GenerateEmbeddingRequest)(nil),                // 54: sortedchat.GenerateEmbeddingRequest
-	(*GenerateEmbeddingResponse)(nil),               // 55: sortedchat.GenerateEmbeddingResponse
-	(*GenerateChatNameRequest)(nil),                 // 56: sortedchat.GenerateChatNameRequest
-	(*GenerateChatNameResponse)(nil),                // 57: sortedchat.GenerateChatNameResponse
-	(*BranchAChatRequest)(nil),                      // 58: sortedchat.BranchAChatRequest
-	(*BranchAChatResponse)(nil),                     // 59: sortedchat.BranchAChatResponse
-	(*ListChatBranchRequest)(nil),                   // 60: sortedchat.ListChatBranchRequest
-	(*ListChatBranchResponse)(nil),                  // 61: sortedchat.ListChatBranchResponse
-	(*RAGDocumentReferenceSummaryList_Summary)(nil), // 62: sortedchat.RAGDocumentReferenceSummaryList.Summary
-	(*RAGDocumentReference_Chunk)(nil),              // 63: sortedchat.RAGDocumentReference.Chunk
+	(RenameItemRequest_ItemType)(0),                 // 2: sortedchat.RenameItemRequest.ItemType
+	(DeleteChatRequest_Operation)(0),                // 3: sortedchat.DeleteChatRequest.Operation
+	(ChatProgress_State)(0),                         // 4: sortedchat.ChatProgress.State
+	(*RenameItemRequest)(nil),                       // 5: sortedchat.RenameItemRequest
+	(*RenameItemResponse)(nil),                      // 6: sortedchat.RenameItemResponse
+	(*RestoreChatRequest)(nil),                      // 7: sortedchat.RestoreChatRequest
+	(*RestoreChatResponse)(nil),                     // 8: sortedchat.RestoreChatResponse
+	(*DeleteChatRequest)(nil),                       // 9: sortedchat.DeleteChatRequest
+	(*DeleteChatResponse)(nil),                      // 10: sortedchat.DeleteChatResponse
+	(*DeleteDocumentRequest)(nil),                   // 11: sortedchat.DeleteDocumentRequest
+	(*DeleteDocumentResponse)(nil),                  // 12: sortedchat.DeleteDocumentResponse
+	(*RAGDocumentReferenceRequest)(nil),             // 13: sortedchat.RAGDocumentReferenceRequest
+	(*RAGDocumentReferenceResponse)(nil),            // 14: sortedchat.RAGDocumentReferenceResponse
+	(*TestConnectionRequest)(nil),                   // 15: sortedchat.TestConnectionRequest
+	(*TestConnectionResponse)(nil),                  // 16: sortedchat.TestConnectionResponse
+	(*Settings)(nil),                                // 17: sortedchat.Settings
+	(*GetSettingRequest)(nil),                       // 18: sortedchat.GetSettingRequest
+	(*GetSettingResponse)(nil),                      // 19: sortedchat.GetSettingResponse
+	(*SetSettingRequest)(nil),                       // 20: sortedchat.SetSettingRequest
+	(*SetSettingResponse)(nil),                      // 21: sortedchat.SetSettingResponse
+	(*IsFirstBootRequest)(nil),                      // 22: sortedchat.IsFirstBootRequest
+	(*IsFirstBootResponse)(nil),                     // 23: sortedchat.IsFirstBootResponse
+	(*CreateChatRequest)(nil),                       // 24: sortedchat.CreateChatRequest
+	(*CreateChatResponse)(nil),                      // 25: sortedchat.CreateChatResponse
+	(*ProjectContext)(nil),                          // 26: sortedchat.ProjectContext
+	(*ChatRequest)(nil),                             // 27: sortedchat.ChatRequest
+	(*ChatResponse)(nil),                            // 28: sortedchat.ChatResponse
+	(*ChatProgress)(nil),                            // 29: sortedchat.ChatProgress
+	(*RAGDocumentReferenceSummaryList)(nil),         // 30: sortedchat.RAGDocumentReferenceSummaryList
+	(*RAGDocumentReference)(nil),                    // 31: sortedchat.RAGDocumentReference
+	(*ResponseSummary)(nil),                         // 32: sortedchat.ResponseSummary
+	(*GetHistoryRequest)(nil),                       // 33: sortedchat.GetHistoryRequest
+	(*GetHistoryResponse)(nil),                      // 34: sortedchat.GetHistoryResponse
+	(*ChatMessage)(nil),                             // 35: sortedchat.ChatMessage
+	(*GetChatListRequest)(nil),                      // 36: sortedchat.GetChatListRequest
+	(*GetChatListResponse)(nil),                     // 37: sortedchat.GetChatListResponse
+	(*ChatInfo)(nil),                                // 38: sortedchat.ChatInfo
+	(*ModelListInfo)(nil),                           // 39: sortedchat.ModelListInfo
+	(*ModelCapabilities)(nil),                       // 40: sortedchat.ModelCapabilities
+	(*Capability)(nil),                              // 41: sortedchat.Capability
+	(*ListModelsRequest)(nil),                       // 42: sortedchat.ListModelsRequest
+	(*ListModelsResponse)(nil),                      // 43: sortedchat.ListModelsResponse
+	(*ChatSearchRequest)(nil),                       // 44: sortedchat.ChatSearchRequest
+	(*SearchResult)(nil),                            // 45: sortedchat.SearchResult
+	(*ChatSearchResponse)(nil),                      // 46: sortedchat.ChatSearchResponse
+	(*CreateProjectRequest)(nil),                    // 47: sortedchat.CreateProjectRequest
+	(*CreateProjectResponse)(nil),                   // 48: sortedchat.CreateProjectResponse
+	(*GetProjectsRequest)(nil),                      // 49: sortedchat.GetProjectsRequest
+	(*GetProjectsResponse)(nil),                     // 50: sortedchat.GetProjectsResponse
+	(*Project)(nil),                                 // 51: sortedchat.Project
+	(*ListDocumentsRequest)(nil),                    // 52: sortedchat.ListDocumentsRequest
+	(*ListDocumentsResponse)(nil),                   // 53: sortedchat.ListDocumentsResponse
+	(*Document)(nil),                                // 54: sortedchat.Document
+	(*GenerateEmbeddingRequest)(nil),                // 55: sortedchat.GenerateEmbeddingRequest
+	(*GenerateEmbeddingResponse)(nil),               // 56: sortedchat.GenerateEmbeddingResponse
+	(*GenerateChatNameRequest)(nil),                 // 57: sortedchat.GenerateChatNameRequest
+	(*GenerateChatNameResponse)(nil),                // 58: sortedchat.GenerateChatNameResponse
+	(*BranchAChatRequest)(nil),                      // 59: sortedchat.BranchAChatRequest
+	(*BranchAChatResponse)(nil),                     // 60: sortedchat.BranchAChatResponse
+	(*ListChatBranchRequest)(nil),                   // 61: sortedchat.ListChatBranchRequest
+	(*ListChatBranchResponse)(nil),                  // 62: sortedchat.ListChatBranchResponse
+	(*RAGDocumentReferenceSummaryList_Summary)(nil), // 63: sortedchat.RAGDocumentReferenceSummaryList.Summary
+	(*RAGDocumentReference_Chunk)(nil),              // 64: sortedchat.RAGDocumentReference.Chunk
 }
 var file_chatservice_proto_depIdxs = []int32{
-	2,  // 0: sortedchat.DeleteChatRequest.operation:type_name -> sortedchat.DeleteChatRequest.Operation
-	30, // 1: sortedchat.RAGDocumentReferenceResponse.reference:type_name -> sortedchat.RAGDocumentReference
-	0,  // 2: sortedchat.TestConnectionRequest.connection_type:type_name -> sortedchat.ConnectionType
-	16, // 3: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
-	16, // 4: sortedchat.SetSettingRequest.settings:type_name -> sortedchat.Settings
-	25, // 5: sortedchat.ChatRequest.project_context:type_name -> sortedchat.ProjectContext
-	31, // 6: sortedchat.ChatResponse.summary:type_name -> sortedchat.ResponseSummary
-	29, // 7: sortedchat.ChatResponse.document_reference:type_name -> sortedchat.RAGDocumentReferenceSummaryList
-	37, // 8: sortedchat.ChatResponse.chat_metadata:type_name -> sortedchat.ChatInfo
-	28, // 9: sortedchat.ChatResponse.progress:type_name -> sortedchat.ChatProgress
-	3,  // 10: sortedchat.ChatProgress.state:type_name -> sortedchat.ChatProgress.State
-	62, // 11: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
-	63, // 12: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
-	34, // 13: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
-	37, // 14: sortedchat.GetHistoryResponse.chat_metadata:type_name -> sortedchat.ChatInfo
-	30, // 15: sortedchat.ChatMessage.references:type_name -> sortedchat.RAGDocumentReference
-	37, // 16: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
-	39, // 17: sortedchat.ModelListInfo.capabilities:type_name -> sortedchat.ModelCapabilities
-	40, // 18: sortedchat.ModelCapabilities.text:type_name -> sortedchat.Capability
-	40, // 19: sortedchat.ModelCapabilities.audio:type_name -> sortedchat.Capability
-	40, // 20: sortedchat.ModelCapabilities.video:type_name -> sortedchat.Capability
-	40, // 21: sortedchat.ModelCapabilities.image:type_name -> sortedchat.Capability
-	38, // 22: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
-	44, // 23: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
-	50, // 24: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
-	53, // 25: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
-	1,  // 26: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
-	37, // 27: sortedchat.ListChatBranchResponse.branch_chat_list:type_name -> sortedchat.ChatInfo
-	26, // 28: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	56, // 29: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
-	32, // 30: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
-	35, // 31: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
-	23, // 32: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
-	41, // 33: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
-	43, // 34: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
-	12, // 35: sortedchat.SortedChat.GetRAGDocumentReference:input_type -> sortedchat.RAGDocumentReferenceRequest
-	10, // 36: sortedchat.SortedChat.DeleteDocument:input_type -> sortedchat.DeleteDocumentRequest
-	46, // 37: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
-	48, // 38: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
-	51, // 39: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
-	54, // 40: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
-	58, // 41: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
-	60, // 42: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
-	8,  // 43: sortedchat.SortedChat.DeleteChat:input_type -> sortedchat.DeleteChatRequest
-	6,  // 44: sortedchat.SortedChat.RestoreChat:input_type -> sortedchat.RestoreChatRequest
-	4,  // 45: sortedchat.SortedChat.RenameChat:input_type -> sortedchat.RenameChatRequest
-	17, // 46: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
-	19, // 47: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
-	21, // 48: sortedchat.SettingService.IsFirstBoot:input_type -> sortedchat.IsFirstBootRequest
-	14, // 49: sortedchat.SettingService.TestConnection:input_type -> sortedchat.TestConnectionRequest
-	27, // 50: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	57, // 51: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
-	33, // 52: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
-	36, // 53: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
-	24, // 54: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	42, // 55: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
-	45, // 56: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
-	13, // 57: sortedchat.SortedChat.GetRAGDocumentReference:output_type -> sortedchat.RAGDocumentReferenceResponse
-	11, // 58: sortedchat.SortedChat.DeleteDocument:output_type -> sortedchat.DeleteDocumentResponse
-	47, // 59: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
-	49, // 60: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
-	52, // 61: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
-	55, // 62: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
-	59, // 63: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
-	61, // 64: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
-	9,  // 65: sortedchat.SortedChat.DeleteChat:output_type -> sortedchat.DeleteChatResponse
-	7,  // 66: sortedchat.SortedChat.RestoreChat:output_type -> sortedchat.RestoreChatResponse
-	5,  // 67: sortedchat.SortedChat.RenameChat:output_type -> sortedchat.RenameChatResponse
-	18, // 68: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
-	20, // 69: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
-	22, // 70: sortedchat.SettingService.IsFirstBoot:output_type -> sortedchat.IsFirstBootResponse
-	15, // 71: sortedchat.SettingService.TestConnection:output_type -> sortedchat.TestConnectionResponse
-	50, // [50:72] is the sub-list for method output_type
-	28, // [28:50] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	2,  // 0: sortedchat.RenameItemRequest.item_type:type_name -> sortedchat.RenameItemRequest.ItemType
+	3,  // 1: sortedchat.DeleteChatRequest.operation:type_name -> sortedchat.DeleteChatRequest.Operation
+	31, // 2: sortedchat.RAGDocumentReferenceResponse.reference:type_name -> sortedchat.RAGDocumentReference
+	0,  // 3: sortedchat.TestConnectionRequest.connection_type:type_name -> sortedchat.ConnectionType
+	17, // 4: sortedchat.GetSettingResponse.settings:type_name -> sortedchat.Settings
+	17, // 5: sortedchat.SetSettingRequest.settings:type_name -> sortedchat.Settings
+	26, // 6: sortedchat.ChatRequest.project_context:type_name -> sortedchat.ProjectContext
+	32, // 7: sortedchat.ChatResponse.summary:type_name -> sortedchat.ResponseSummary
+	30, // 8: sortedchat.ChatResponse.document_reference:type_name -> sortedchat.RAGDocumentReferenceSummaryList
+	38, // 9: sortedchat.ChatResponse.chat_metadata:type_name -> sortedchat.ChatInfo
+	29, // 10: sortedchat.ChatResponse.progress:type_name -> sortedchat.ChatProgress
+	4,  // 11: sortedchat.ChatProgress.state:type_name -> sortedchat.ChatProgress.State
+	63, // 12: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
+	64, // 13: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
+	35, // 14: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
+	38, // 15: sortedchat.GetHistoryResponse.chat_metadata:type_name -> sortedchat.ChatInfo
+	31, // 16: sortedchat.ChatMessage.references:type_name -> sortedchat.RAGDocumentReference
+	38, // 17: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
+	40, // 18: sortedchat.ModelListInfo.capabilities:type_name -> sortedchat.ModelCapabilities
+	41, // 19: sortedchat.ModelCapabilities.text:type_name -> sortedchat.Capability
+	41, // 20: sortedchat.ModelCapabilities.audio:type_name -> sortedchat.Capability
+	41, // 21: sortedchat.ModelCapabilities.video:type_name -> sortedchat.Capability
+	41, // 22: sortedchat.ModelCapabilities.image:type_name -> sortedchat.Capability
+	39, // 23: sortedchat.ListModelsResponse.models:type_name -> sortedchat.ModelListInfo
+	45, // 24: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
+	51, // 25: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
+	54, // 26: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
+	1,  // 27: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
+	38, // 28: sortedchat.ListChatBranchResponse.branch_chat_list:type_name -> sortedchat.ChatInfo
+	27, // 29: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
+	57, // 30: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
+	33, // 31: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
+	36, // 32: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
+	24, // 33: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
+	42, // 34: sortedchat.SortedChat.ListModel:input_type -> sortedchat.ListModelsRequest
+	44, // 35: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
+	13, // 36: sortedchat.SortedChat.GetRAGDocumentReference:input_type -> sortedchat.RAGDocumentReferenceRequest
+	11, // 37: sortedchat.SortedChat.DeleteDocument:input_type -> sortedchat.DeleteDocumentRequest
+	47, // 38: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
+	49, // 39: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
+	52, // 40: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
+	55, // 41: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
+	59, // 42: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
+	61, // 43: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
+	9,  // 44: sortedchat.SortedChat.DeleteChat:input_type -> sortedchat.DeleteChatRequest
+	7,  // 45: sortedchat.SortedChat.RestoreChat:input_type -> sortedchat.RestoreChatRequest
+	5,  // 46: sortedchat.SortedChat.RenameItem:input_type -> sortedchat.RenameItemRequest
+	18, // 47: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
+	20, // 48: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
+	22, // 49: sortedchat.SettingService.IsFirstBoot:input_type -> sortedchat.IsFirstBootRequest
+	15, // 50: sortedchat.SettingService.TestConnection:input_type -> sortedchat.TestConnectionRequest
+	28, // 51: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	58, // 52: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
+	34, // 53: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
+	37, // 54: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
+	25, // 55: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
+	43, // 56: sortedchat.SortedChat.ListModel:output_type -> sortedchat.ListModelsResponse
+	46, // 57: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
+	14, // 58: sortedchat.SortedChat.GetRAGDocumentReference:output_type -> sortedchat.RAGDocumentReferenceResponse
+	12, // 59: sortedchat.SortedChat.DeleteDocument:output_type -> sortedchat.DeleteDocumentResponse
+	48, // 60: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
+	50, // 61: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
+	53, // 62: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
+	56, // 63: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
+	60, // 64: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
+	62, // 65: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
+	10, // 66: sortedchat.SortedChat.DeleteChat:output_type -> sortedchat.DeleteChatResponse
+	8,  // 67: sortedchat.SortedChat.RestoreChat:output_type -> sortedchat.RestoreChatResponse
+	6,  // 68: sortedchat.SortedChat.RenameItem:output_type -> sortedchat.RenameItemResponse
+	19, // 69: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
+	21, // 70: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
+	23, // 71: sortedchat.SettingService.IsFirstBoot:output_type -> sortedchat.IsFirstBootResponse
+	16, // 72: sortedchat.SettingService.TestConnection:output_type -> sortedchat.TestConnectionResponse
+	51, // [51:73] is the sub-list for method output_type
+	29, // [29:51] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_chatservice_proto_init() }
@@ -4127,7 +4080,7 @@ func file_chatservice_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chatservice_proto_rawDesc), len(file_chatservice_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   60,
 			NumExtensions: 0,
 			NumServices:   2,

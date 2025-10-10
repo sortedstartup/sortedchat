@@ -61,6 +61,31 @@ func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRe
 	}, nil
 }
 
+func (s *SettingServiceAPI) IsFirstBoot(ctx context.Context, req *pb.IsFirstBootRequest) (*pb.IsFirstBootResponse, error) {
+	slog.Info("api:IsFirstBoot")
+	isFirstBoot, err := s.service.IsFirstBoot()
+	if err != nil {
+		slog.Error("api:IsFirstBoot", "message", "failed to check first boot", "error", err)
+		return nil, err
+	}
+
+	return &pb.IsFirstBootResponse{
+		IsFirstBoot: isFirstBoot,
+	}, nil
+}
+
+func (s *SettingServiceAPI) TestConnection(ctx context.Context, req *pb.TestConnectionRequest) (*pb.TestConnectionResponse, error) {
+	slog.Info("api:TestConnection", "url", req.Url, "type", req.ConnectionType)
+
+	response, err := s.service.TestConnection(ctx, req)
+	if err != nil {
+		slog.Error("api:TestConnection", "message", "failed to test connection", "error", err)
+		return nil, err
+	}
+
+	return response, nil
+}
+
 type ChatServiceAPI struct {
 	pb.UnimplementedSortedChatServer
 	service *service.ChatService
@@ -204,7 +229,7 @@ func (s *ChatServiceAPI) CreateProject(ctx context.Context, req *pb.CreateProjec
 	projectID, err := s.service.CreateProject(ctx, userID, req.Name, req.Description, req.AdditionalData)
 	if err != nil {
 		slog.Error("api:CreateProject", "message", "failed to create project", "error", err)
-		return nil, fmt.Errorf("failed to create project")
+		return nil, err
 	}
 
 	return &pb.CreateProjectResponse{
@@ -387,18 +412,19 @@ func (s *ChatServiceAPI) RestoreChat(ctx context.Context, req *pb.RestoreChatReq
 	return &pb.RestoreChatResponse{Message: "Chat restored successfully"}, nil
 }
 
-func (s *ChatServiceAPI) RenameChat(ctx context.Context, req *pb.RenameChatRequest) (*pb.RenameChatResponse, error) {
+func (s *ChatServiceAPI) RenameItem(ctx context.Context, req *pb.RenameItemRequest) (*pb.RenameItemResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("api:RenameChat", "message", "failed to get user ID from context", "error", err)
+		slog.Error("api:RenameItem", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
-	err = s.service.RenameChat(ctx, userID, req.GetChatId(), req.GetName())
+	msg, err := s.service.RenameItem(ctx, userID, req.GetItemId(), req.GetName(), req.GetItemType())
 	if err != nil {
-		slog.Error("api:RenameChat", "message", "failed to rename chat", "error", err)
-		return nil, fmt.Errorf("failed to rename chat")
+		slog.Error("api:RenameItem", "message", "failed to rename item", "error", err)
+		return nil, err
 	}
-	return &pb.RenameChatResponse{Message: "Chat renamed successfully"}, nil
+
+	return &pb.RenameItemResponse{Message: msg}, nil
 }
 
 func (s *ChatServiceAPI) Init(config *db.Config) {

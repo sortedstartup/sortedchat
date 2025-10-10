@@ -21,6 +21,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ConnectionType int32
+
+const (
+	ConnectionType_OLLAMA ConnectionType = 0
+	ConnectionType_OPENAI ConnectionType = 1
+)
+
+// Enum value maps for ConnectionType.
+var (
+	ConnectionType_name = map[int32]string{
+		0: "OLLAMA",
+		1: "OPENAI",
+	}
+	ConnectionType_value = map[string]int32{
+		"OLLAMA": 0,
+		"OPENAI": 1,
+	}
+)
+
+func (x ConnectionType) Enum() *ConnectionType {
+	p := new(ConnectionType)
+	*p = x
+	return p
+}
+
+func (x ConnectionType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ConnectionType) Descriptor() protoreflect.EnumDescriptor {
+	return file_chatservice_proto_enumTypes[0].Descriptor()
+}
+
+func (ConnectionType) Type() protoreflect.EnumType {
+	return &file_chatservice_proto_enumTypes[0]
+}
+
+func (x ConnectionType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ConnectionType.Descriptor instead.
+func (ConnectionType) EnumDescriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{0}
+}
+
 type Embedding_Status int32
 
 const (
@@ -57,11 +103,11 @@ func (x Embedding_Status) String() string {
 }
 
 func (Embedding_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_chatservice_proto_enumTypes[0].Descriptor()
+	return file_chatservice_proto_enumTypes[1].Descriptor()
 }
 
 func (Embedding_Status) Type() protoreflect.EnumType {
-	return &file_chatservice_proto_enumTypes[0]
+	return &file_chatservice_proto_enumTypes[1]
 }
 
 func (x Embedding_Status) Number() protoreflect.EnumNumber {
@@ -70,7 +116,53 @@ func (x Embedding_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Embedding_Status.Descriptor instead.
 func (Embedding_Status) EnumDescriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{0}
+	return file_chatservice_proto_rawDescGZIP(), []int{1}
+}
+
+type RenameItemRequest_ItemType int32
+
+const (
+	RenameItemRequest_CHAT    RenameItemRequest_ItemType = 0
+	RenameItemRequest_PROJECT RenameItemRequest_ItemType = 1
+)
+
+// Enum value maps for RenameItemRequest_ItemType.
+var (
+	RenameItemRequest_ItemType_name = map[int32]string{
+		0: "CHAT",
+		1: "PROJECT",
+	}
+	RenameItemRequest_ItemType_value = map[string]int32{
+		"CHAT":    0,
+		"PROJECT": 1,
+	}
+)
+
+func (x RenameItemRequest_ItemType) Enum() *RenameItemRequest_ItemType {
+	p := new(RenameItemRequest_ItemType)
+	*p = x
+	return p
+}
+
+func (x RenameItemRequest_ItemType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RenameItemRequest_ItemType) Descriptor() protoreflect.EnumDescriptor {
+	return file_chatservice_proto_enumTypes[2].Descriptor()
+}
+
+func (RenameItemRequest_ItemType) Type() protoreflect.EnumType {
+	return &file_chatservice_proto_enumTypes[2]
+}
+
+func (x RenameItemRequest_ItemType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RenameItemRequest_ItemType.Descriptor instead.
+func (RenameItemRequest_ItemType) EnumDescriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{0, 0}
 }
 
 type DeleteChatRequest_Operation int32
@@ -103,11 +195,11 @@ func (x DeleteChatRequest_Operation) String() string {
 }
 
 func (DeleteChatRequest_Operation) Descriptor() protoreflect.EnumDescriptor {
-	return file_chatservice_proto_enumTypes[1].Descriptor()
+	return file_chatservice_proto_enumTypes[3].Descriptor()
 }
 
 func (DeleteChatRequest_Operation) Type() protoreflect.EnumType {
-	return &file_chatservice_proto_enumTypes[1]
+	return &file_chatservice_proto_enumTypes[3]
 }
 
 func (x DeleteChatRequest_Operation) Number() protoreflect.EnumNumber {
@@ -161,11 +253,11 @@ func (x ChatProgress_State) String() string {
 }
 
 func (ChatProgress_State) Descriptor() protoreflect.EnumDescriptor {
-	return file_chatservice_proto_enumTypes[2].Descriptor()
+	return file_chatservice_proto_enumTypes[4].Descriptor()
 }
 
 func (ChatProgress_State) Type() protoreflect.EnumType {
-	return &file_chatservice_proto_enumTypes[2]
+	return &file_chatservice_proto_enumTypes[4]
 }
 
 func (x ChatProgress_State) Number() protoreflect.EnumNumber {
@@ -177,28 +269,29 @@ func (ChatProgress_State) EnumDescriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{22, 0}
 }
 
-type RenameChatRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChatId        string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+type RenameItemRequest struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	ItemId        string                     `protobuf:"bytes,1,opt,name=item_id,json=itemId,proto3" json:"item_id,omitempty"`
+	Name          string                     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	ItemType      RenameItemRequest_ItemType `protobuf:"varint,3,opt,name=item_type,json=itemType,proto3,enum=sortedchat.RenameItemRequest_ItemType" json:"item_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RenameChatRequest) Reset() {
-	*x = RenameChatRequest{}
+func (x *RenameItemRequest) Reset() {
+	*x = RenameItemRequest{}
 	mi := &file_chatservice_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RenameChatRequest) String() string {
+func (x *RenameItemRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RenameChatRequest) ProtoMessage() {}
+func (*RenameItemRequest) ProtoMessage() {}
 
-func (x *RenameChatRequest) ProtoReflect() protoreflect.Message {
+func (x *RenameItemRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -210,46 +303,53 @@ func (x *RenameChatRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RenameChatRequest.ProtoReflect.Descriptor instead.
-func (*RenameChatRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use RenameItemRequest.ProtoReflect.Descriptor instead.
+func (*RenameItemRequest) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *RenameChatRequest) GetChatId() string {
+func (x *RenameItemRequest) GetItemId() string {
 	if x != nil {
-		return x.ChatId
+		return x.ItemId
 	}
 	return ""
 }
 
-func (x *RenameChatRequest) GetName() string {
+func (x *RenameItemRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-type RenameChatResponse struct {
+func (x *RenameItemRequest) GetItemType() RenameItemRequest_ItemType {
+	if x != nil {
+		return x.ItemType
+	}
+	return RenameItemRequest_CHAT
+}
+
+type RenameItemResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RenameChatResponse) Reset() {
-	*x = RenameChatResponse{}
+func (x *RenameItemResponse) Reset() {
+	*x = RenameItemResponse{}
 	mi := &file_chatservice_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RenameChatResponse) String() string {
+func (x *RenameItemResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RenameChatResponse) ProtoMessage() {}
+func (*RenameItemResponse) ProtoMessage() {}
 
-func (x *RenameChatResponse) ProtoReflect() protoreflect.Message {
+func (x *RenameItemResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -261,12 +361,12 @@ func (x *RenameChatResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RenameChatResponse.ProtoReflect.Descriptor instead.
-func (*RenameChatResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use RenameItemResponse.ProtoReflect.Descriptor instead.
+func (*RenameItemResponse) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *RenameChatResponse) GetMessage() string {
+func (x *RenameItemResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -657,6 +757,110 @@ func (x *RAGDocumentReferenceResponse) GetReference() *RAGDocumentReference {
 	return nil
 }
 
+type TestConnectionRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Url            string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	ConnectionType ConnectionType         `protobuf:"varint,2,opt,name=connection_type,json=connectionType,proto3,enum=sortedchat.ConnectionType" json:"connection_type,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *TestConnectionRequest) Reset() {
+	*x = TestConnectionRequest{}
+	mi := &file_chatservice_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TestConnectionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TestConnectionRequest) ProtoMessage() {}
+
+func (x *TestConnectionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TestConnectionRequest.ProtoReflect.Descriptor instead.
+func (*TestConnectionRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *TestConnectionRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *TestConnectionRequest) GetConnectionType() ConnectionType {
+	if x != nil {
+		return x.ConnectionType
+	}
+	return ConnectionType_OLLAMA
+}
+
+type TestConnectionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TestConnectionResponse) Reset() {
+	*x = TestConnectionResponse{}
+	mi := &file_chatservice_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TestConnectionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TestConnectionResponse) ProtoMessage() {}
+
+func (x *TestConnectionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TestConnectionResponse.ProtoReflect.Descriptor instead.
+func (*TestConnectionResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *TestConnectionResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *TestConnectionResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 type Settings struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	OPENAI_API_KEY string                 `protobuf:"bytes,1,opt,name=OPENAI_API_KEY,json=OPENAIAPIKEY,proto3" json:"OPENAI_API_KEY,omitempty"`
@@ -668,7 +872,7 @@ type Settings struct {
 
 func (x *Settings) Reset() {
 	*x = Settings{}
-	mi := &file_chatservice_proto_msgTypes[10]
+	mi := &file_chatservice_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -680,7 +884,7 @@ func (x *Settings) String() string {
 func (*Settings) ProtoMessage() {}
 
 func (x *Settings) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[10]
+	mi := &file_chatservice_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -693,7 +897,7 @@ func (x *Settings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Settings.ProtoReflect.Descriptor instead.
 func (*Settings) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{10}
+	return file_chatservice_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Settings) GetOPENAI_API_KEY() string {
@@ -725,7 +929,7 @@ type GetSettingRequest struct {
 
 func (x *GetSettingRequest) Reset() {
 	*x = GetSettingRequest{}
-	mi := &file_chatservice_proto_msgTypes[11]
+	mi := &file_chatservice_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -737,7 +941,7 @@ func (x *GetSettingRequest) String() string {
 func (*GetSettingRequest) ProtoMessage() {}
 
 func (x *GetSettingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[11]
+	mi := &file_chatservice_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -750,7 +954,7 @@ func (x *GetSettingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSettingRequest.ProtoReflect.Descriptor instead.
 func (*GetSettingRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{11}
+	return file_chatservice_proto_rawDescGZIP(), []int{13}
 }
 
 type GetSettingResponse struct {
@@ -762,7 +966,7 @@ type GetSettingResponse struct {
 
 func (x *GetSettingResponse) Reset() {
 	*x = GetSettingResponse{}
-	mi := &file_chatservice_proto_msgTypes[12]
+	mi := &file_chatservice_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -774,7 +978,7 @@ func (x *GetSettingResponse) String() string {
 func (*GetSettingResponse) ProtoMessage() {}
 
 func (x *GetSettingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[12]
+	mi := &file_chatservice_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -787,7 +991,7 @@ func (x *GetSettingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSettingResponse.ProtoReflect.Descriptor instead.
 func (*GetSettingResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{12}
+	return file_chatservice_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetSettingResponse) GetSettings() *Settings {
@@ -806,7 +1010,7 @@ type SetSettingRequest struct {
 
 func (x *SetSettingRequest) Reset() {
 	*x = SetSettingRequest{}
-	mi := &file_chatservice_proto_msgTypes[13]
+	mi := &file_chatservice_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -818,7 +1022,7 @@ func (x *SetSettingRequest) String() string {
 func (*SetSettingRequest) ProtoMessage() {}
 
 func (x *SetSettingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[13]
+	mi := &file_chatservice_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -831,7 +1035,7 @@ func (x *SetSettingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetSettingRequest.ProtoReflect.Descriptor instead.
 func (*SetSettingRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{13}
+	return file_chatservice_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SetSettingRequest) GetSettings() *Settings {
@@ -850,7 +1054,7 @@ type SetSettingResponse struct {
 
 func (x *SetSettingResponse) Reset() {
 	*x = SetSettingResponse{}
-	mi := &file_chatservice_proto_msgTypes[14]
+	mi := &file_chatservice_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -862,7 +1066,7 @@ func (x *SetSettingResponse) String() string {
 func (*SetSettingResponse) ProtoMessage() {}
 
 func (x *SetSettingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[14]
+	mi := &file_chatservice_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -875,7 +1079,7 @@ func (x *SetSettingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetSettingResponse.ProtoReflect.Descriptor instead.
 func (*SetSettingResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{14}
+	return file_chatservice_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SetSettingResponse) GetMessage() string {
@@ -883,6 +1087,86 @@ func (x *SetSettingResponse) GetMessage() string {
 		return x.Message
 	}
 	return ""
+}
+
+type IsFirstBootRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IsFirstBootRequest) Reset() {
+	*x = IsFirstBootRequest{}
+	mi := &file_chatservice_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IsFirstBootRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IsFirstBootRequest) ProtoMessage() {}
+
+func (x *IsFirstBootRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IsFirstBootRequest.ProtoReflect.Descriptor instead.
+func (*IsFirstBootRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{17}
+}
+
+type IsFirstBootResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IsFirstBoot   bool                   `protobuf:"varint,1,opt,name=is_first_boot,json=isFirstBoot,proto3" json:"is_first_boot,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IsFirstBootResponse) Reset() {
+	*x = IsFirstBootResponse{}
+	mi := &file_chatservice_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IsFirstBootResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IsFirstBootResponse) ProtoMessage() {}
+
+func (x *IsFirstBootResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IsFirstBootResponse.ProtoReflect.Descriptor instead.
+func (*IsFirstBootResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *IsFirstBootResponse) GetIsFirstBoot() bool {
+	if x != nil {
+		return x.IsFirstBoot
+	}
+	return false
 }
 
 type CreateChatRequest struct {
@@ -895,7 +1179,7 @@ type CreateChatRequest struct {
 
 func (x *CreateChatRequest) Reset() {
 	*x = CreateChatRequest{}
-	mi := &file_chatservice_proto_msgTypes[15]
+	mi := &file_chatservice_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -907,7 +1191,7 @@ func (x *CreateChatRequest) String() string {
 func (*CreateChatRequest) ProtoMessage() {}
 
 func (x *CreateChatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[15]
+	mi := &file_chatservice_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -920,7 +1204,7 @@ func (x *CreateChatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateChatRequest.ProtoReflect.Descriptor instead.
 func (*CreateChatRequest) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{15}
+	return file_chatservice_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CreateChatRequest) GetName() string {
@@ -947,7 +1231,7 @@ type CreateChatResponse struct {
 
 func (x *CreateChatResponse) Reset() {
 	*x = CreateChatResponse{}
-	mi := &file_chatservice_proto_msgTypes[16]
+	mi := &file_chatservice_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -959,7 +1243,7 @@ func (x *CreateChatResponse) String() string {
 func (*CreateChatResponse) ProtoMessage() {}
 
 func (x *CreateChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[16]
+	mi := &file_chatservice_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -972,7 +1256,7 @@ func (x *CreateChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateChatResponse.ProtoReflect.Descriptor instead.
 func (*CreateChatResponse) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{16}
+	return file_chatservice_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *CreateChatResponse) GetMessage() string {
@@ -999,7 +1283,7 @@ type ProjectContext struct {
 
 func (x *ProjectContext) Reset() {
 	*x = ProjectContext{}
-	mi := &file_chatservice_proto_msgTypes[17]
+	mi := &file_chatservice_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1011,7 +1295,7 @@ func (x *ProjectContext) String() string {
 func (*ProjectContext) ProtoMessage() {}
 
 func (x *ProjectContext) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[17]
+	mi := &file_chatservice_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1024,7 +1308,7 @@ func (x *ProjectContext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectContext.ProtoReflect.Descriptor instead.
 func (*ProjectContext) Descriptor() ([]byte, []int) {
-	return file_chatservice_proto_rawDescGZIP(), []int{17}
+	return file_chatservice_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ProjectContext) GetProjectId() string {
@@ -3461,11 +3745,15 @@ var File_chatservice_proto protoreflect.FileDescriptor
 const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"\x11chatservice.proto\x12\n" +
-	"sortedchat\"@\n" +
-	"\x11RenameChatRequest\x12\x17\n" +
-	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\".\n" +
-	"\x12RenameChatResponse\x12\x18\n" +
+	"sortedchat\"\xa8\x01\n" +
+	"\x11RenameItemRequest\x12\x17\n" +
+	"\aitem_id\x18\x01 \x01(\tR\x06itemId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12C\n" +
+	"\titem_type\x18\x03 \x01(\x0e2&.sortedchat.RenameItemRequest.ItemTypeR\bitemType\"!\n" +
+	"\bItemType\x12\b\n" +
+	"\x04CHAT\x10\x00\x12\v\n" +
+	"\aPROJECT\x10\x01\".\n" +
+	"\x12RenameItemResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"-\n" +
 	"\x12RestoreChatRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\"/\n" +
@@ -3493,7 +3781,13 @@ const file_chatservice_proto_rawDesc = "" +
 	"project_id\x18\x02 \x01(\tR\tprojectId\x12\x14\n" +
 	"\x05docId\x18\x03 \x01(\tR\x05docId\"^\n" +
 	"\x1cRAGDocumentReferenceResponse\x12>\n" +
-	"\treference\x18\x01 \x01(\v2 .sortedchat.RAGDocumentReferenceR\treference\"u\n" +
+	"\treference\x18\x01 \x01(\v2 .sortedchat.RAGDocumentReferenceR\treference\"n\n" +
+	"\x15TestConnectionRequest\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12C\n" +
+	"\x0fconnection_type\x18\x02 \x01(\x0e2\x1a.sortedchat.ConnectionTypeR\x0econnectionType\"L\n" +
+	"\x16TestConnectionResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"u\n" +
 	"\bSettings\x12$\n" +
 	"\x0eOPENAI_API_KEY\x18\x01 \x01(\tR\fOPENAIAPIKEY\x12$\n" +
 	"\x0eOPENAI_API_URL\x18\x02 \x01(\tR\fOPENAIAPIURL\x12\x1d\n" +
@@ -3505,7 +3799,10 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x11SetSettingRequest\x120\n" +
 	"\bsettings\x18\x01 \x01(\v2\x14.sortedchat.SettingsR\bsettings\".\n" +
 	"\x12SetSettingResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"F\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"\x14\n" +
+	"\x12IsFirstBootRequest\"9\n" +
+	"\x13IsFirstBootResponse\x12\"\n" +
+	"\ris_first_boot\x18\x01 \x01(\bR\visFirstBoot\"F\n" +
 	"\x11CreateChatRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
@@ -3700,7 +3997,12 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x15ListChatBranchRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\"X\n" +
 	"\x16ListChatBranchResponse\x12>\n" +
-	"\x10branch_chat_list\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x0ebranchChatList*c\n" +
+	"\x10branch_chat_list\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x0ebranchChatList*(\n" +
+	"\x0eConnectionType\x12\n" +
+	"\n" +
+	"\x06OLLAMA\x10\x00\x12\n" +
+	"\n" +
+	"\x06OPENAI\x10\x01*c\n" +
 	"\x10Embedding_Status\x12\x11\n" +
 	"\rSTATUS_QUEUED\x10\x00\x12\x16\n" +
 	"\x12STATUS_IN_PROGRESS\x10\x01\x12\x10\n" +
@@ -3730,12 +4032,14 @@ const file_chatservice_proto_rawDesc = "" +
 	"DeleteChat\x12\x1d.sortedchat.DeleteChatRequest\x1a\x1e.sortedchat.DeleteChatResponse\x12N\n" +
 	"\vRestoreChat\x12\x1e.sortedchat.RestoreChatRequest\x1a\x1f.sortedchat.RestoreChatResponse\x12K\n" +
 	"\n" +
-	"RenameChat\x12\x1d.sortedchat.RenameChatRequest\x1a\x1e.sortedchat.RenameChatResponse2\xaa\x01\n" +
+	"RenameItem\x12\x1d.sortedchat.RenameItemRequest\x1a\x1e.sortedchat.RenameItemResponse2\xd3\x02\n" +
 	"\x0eSettingService\x12K\n" +
 	"\n" +
 	"GetSetting\x12\x1d.sortedchat.GetSettingRequest\x1a\x1e.sortedchat.GetSettingResponse\x12K\n" +
 	"\n" +
-	"SetSetting\x12\x1d.sortedchat.SetSettingRequest\x1a\x1e.sortedchat.SetSettingResponseB!Z\x1fsortedstartup/chatservice/protob\x06proto3"
+	"SetSetting\x12\x1d.sortedchat.SetSettingRequest\x1a\x1e.sortedchat.SetSettingResponse\x12N\n" +
+	"\vIsFirstBoot\x12\x1e.sortedchat.IsFirstBootRequest\x1a\x1f.sortedchat.IsFirstBootResponse\x12W\n" +
+	"\x0eTestConnection\x12!.sortedchat.TestConnectionRequest\x1a\".sortedchat.TestConnectionResponseB!Z\x1fsortedstartup/chatservice/protob\x06proto3"
 
 var (
 	file_chatservice_proto_rawDescOnce sync.Once

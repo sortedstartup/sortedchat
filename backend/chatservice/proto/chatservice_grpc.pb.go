@@ -36,7 +36,7 @@ const (
 	SortedChat_ListChatBranch_FullMethodName              = "/sortedchat.SortedChat/ListChatBranch"
 	SortedChat_DeleteChat_FullMethodName                  = "/sortedchat.SortedChat/DeleteChat"
 	SortedChat_RestoreChat_FullMethodName                 = "/sortedchat.SortedChat/RestoreChat"
-	SortedChat_RenameChat_FullMethodName                  = "/sortedchat.SortedChat/RenameChat"
+	SortedChat_RenameItem_FullMethodName                  = "/sortedchat.SortedChat/RenameItem"
 )
 
 // SortedChatClient is the client API for SortedChat service.
@@ -60,7 +60,7 @@ type SortedChatClient interface {
 	ListChatBranch(ctx context.Context, in *ListChatBranchRequest, opts ...grpc.CallOption) (*ListChatBranchResponse, error)
 	DeleteChat(ctx context.Context, in *DeleteChatRequest, opts ...grpc.CallOption) (*DeleteChatResponse, error)
 	RestoreChat(ctx context.Context, in *RestoreChatRequest, opts ...grpc.CallOption) (*RestoreChatResponse, error)
-	RenameChat(ctx context.Context, in *RenameChatRequest, opts ...grpc.CallOption) (*RenameChatResponse, error)
+	RenameItem(ctx context.Context, in *RenameItemRequest, opts ...grpc.CallOption) (*RenameItemResponse, error)
 }
 
 type sortedChatClient struct {
@@ -250,10 +250,10 @@ func (c *sortedChatClient) RestoreChat(ctx context.Context, in *RestoreChatReque
 	return out, nil
 }
 
-func (c *sortedChatClient) RenameChat(ctx context.Context, in *RenameChatRequest, opts ...grpc.CallOption) (*RenameChatResponse, error) {
+func (c *sortedChatClient) RenameItem(ctx context.Context, in *RenameItemRequest, opts ...grpc.CallOption) (*RenameItemResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RenameChatResponse)
-	err := c.cc.Invoke(ctx, SortedChat_RenameChat_FullMethodName, in, out, cOpts...)
+	out := new(RenameItemResponse)
+	err := c.cc.Invoke(ctx, SortedChat_RenameItem_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ type SortedChatServer interface {
 	ListChatBranch(context.Context, *ListChatBranchRequest) (*ListChatBranchResponse, error)
 	DeleteChat(context.Context, *DeleteChatRequest) (*DeleteChatResponse, error)
 	RestoreChat(context.Context, *RestoreChatRequest) (*RestoreChatResponse, error)
-	RenameChat(context.Context, *RenameChatRequest) (*RenameChatResponse, error)
+	RenameItem(context.Context, *RenameItemRequest) (*RenameItemResponse, error)
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -343,8 +343,8 @@ func (UnimplementedSortedChatServer) DeleteChat(context.Context, *DeleteChatRequ
 func (UnimplementedSortedChatServer) RestoreChat(context.Context, *RestoreChatRequest) (*RestoreChatResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RestoreChat not implemented")
 }
-func (UnimplementedSortedChatServer) RenameChat(context.Context, *RenameChatRequest) (*RenameChatResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RenameChat not implemented")
+func (UnimplementedSortedChatServer) RenameItem(context.Context, *RenameItemRequest) (*RenameItemResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RenameItem not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}
 func (UnimplementedSortedChatServer) testEmbeddedByValue()                    {}
@@ -666,20 +666,20 @@ func _SortedChat_RestoreChat_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SortedChat_RenameChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RenameChatRequest)
+func _SortedChat_RenameItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenameItemRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SortedChatServer).RenameChat(ctx, in)
+		return srv.(SortedChatServer).RenameItem(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SortedChat_RenameChat_FullMethodName,
+		FullMethod: SortedChat_RenameItem_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SortedChatServer).RenameChat(ctx, req.(*RenameChatRequest))
+		return srv.(SortedChatServer).RenameItem(ctx, req.(*RenameItemRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -756,8 +756,8 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SortedChat_RestoreChat_Handler,
 		},
 		{
-			MethodName: "RenameChat",
-			Handler:    _SortedChat_RenameChat_Handler,
+			MethodName: "RenameItem",
+			Handler:    _SortedChat_RenameItem_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -771,8 +771,10 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	SettingService_GetSetting_FullMethodName = "/sortedchat.SettingService/GetSetting"
-	SettingService_SetSetting_FullMethodName = "/sortedchat.SettingService/SetSetting"
+	SettingService_GetSetting_FullMethodName     = "/sortedchat.SettingService/GetSetting"
+	SettingService_SetSetting_FullMethodName     = "/sortedchat.SettingService/SetSetting"
+	SettingService_IsFirstBoot_FullMethodName    = "/sortedchat.SettingService/IsFirstBoot"
+	SettingService_TestConnection_FullMethodName = "/sortedchat.SettingService/TestConnection"
 )
 
 // SettingServiceClient is the client API for SettingService service.
@@ -781,6 +783,8 @@ const (
 type SettingServiceClient interface {
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*GetSettingResponse, error)
 	SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*SetSettingResponse, error)
+	IsFirstBoot(ctx context.Context, in *IsFirstBootRequest, opts ...grpc.CallOption) (*IsFirstBootResponse, error)
+	TestConnection(ctx context.Context, in *TestConnectionRequest, opts ...grpc.CallOption) (*TestConnectionResponse, error)
 }
 
 type settingServiceClient struct {
@@ -811,12 +815,34 @@ func (c *settingServiceClient) SetSetting(ctx context.Context, in *SetSettingReq
 	return out, nil
 }
 
+func (c *settingServiceClient) IsFirstBoot(ctx context.Context, in *IsFirstBootRequest, opts ...grpc.CallOption) (*IsFirstBootResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IsFirstBootResponse)
+	err := c.cc.Invoke(ctx, SettingService_IsFirstBoot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *settingServiceClient) TestConnection(ctx context.Context, in *TestConnectionRequest, opts ...grpc.CallOption) (*TestConnectionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TestConnectionResponse)
+	err := c.cc.Invoke(ctx, SettingService_TestConnection_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SettingServiceServer is the server API for SettingService service.
 // All implementations must embed UnimplementedSettingServiceServer
 // for forward compatibility.
 type SettingServiceServer interface {
 	GetSetting(context.Context, *GetSettingRequest) (*GetSettingResponse, error)
 	SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error)
+	IsFirstBoot(context.Context, *IsFirstBootRequest) (*IsFirstBootResponse, error)
+	TestConnection(context.Context, *TestConnectionRequest) (*TestConnectionResponse, error)
 	mustEmbedUnimplementedSettingServiceServer()
 }
 
@@ -832,6 +858,12 @@ func (UnimplementedSettingServiceServer) GetSetting(context.Context, *GetSetting
 }
 func (UnimplementedSettingServiceServer) SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSetting not implemented")
+}
+func (UnimplementedSettingServiceServer) IsFirstBoot(context.Context, *IsFirstBootRequest) (*IsFirstBootResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsFirstBoot not implemented")
+}
+func (UnimplementedSettingServiceServer) TestConnection(context.Context, *TestConnectionRequest) (*TestConnectionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TestConnection not implemented")
 }
 func (UnimplementedSettingServiceServer) mustEmbedUnimplementedSettingServiceServer() {}
 func (UnimplementedSettingServiceServer) testEmbeddedByValue()                        {}
@@ -890,6 +922,42 @@ func _SettingService_SetSetting_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SettingService_IsFirstBoot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IsFirstBootRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).IsFirstBoot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_IsFirstBoot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).IsFirstBoot(ctx, req.(*IsFirstBootRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SettingService_TestConnection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TestConnectionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).TestConnection(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_TestConnection_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).TestConnection(ctx, req.(*TestConnectionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SettingService_ServiceDesc is the grpc.ServiceDesc for SettingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -904,6 +972,14 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetSetting",
 			Handler:    _SettingService_SetSetting_Handler,
+		},
+		{
+			MethodName: "IsFirstBoot",
+			Handler:    _SettingService_IsFirstBoot_Handler,
+		},
+		{
+			MethodName: "TestConnection",
+			Handler:    _SettingService_TestConnection_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

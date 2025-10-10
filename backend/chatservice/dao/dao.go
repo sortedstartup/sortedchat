@@ -52,6 +52,9 @@ type DAO interface {
 	DeleteChat(userID string, chatId string) error
 	RestoreChat(userID string, chatId string) error
 	RenameChat(userID string, chatId string, name string) error
+	RenameProject(userID string, projectId string, name string) error
+	IsNameExists(userID string, chatId string, name string) (bool, error)
+	IsProjectNameExists(userID string, projectId string, name string) (bool, error)
 	UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error
 }
 

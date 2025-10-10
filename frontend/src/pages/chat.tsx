@@ -618,11 +618,6 @@ function ChatInputBox({
                 <option value="low">Low (faster, cheaper)</option>
                 <option value="high">High (slower, more detailed)</option>
               </select>
-              <span className="text-gray-500">
-                {imageDetail === "auto" && "High for large images, low for small"}
-                {imageDetail === "low" && "Fixed cost regardless of size"}
-                {imageDetail === "high" && "Cost based on image size"}
-              </span>
             </div>
           )}
         </div>

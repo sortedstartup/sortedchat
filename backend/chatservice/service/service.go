@@ -292,21 +292,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			return fmt.Errorf("failed to marshal message content")
 		}
 
-		// Extract text content for fallback display
-		var textContent string
-		for _, content := range req.GetContents() {
-			if text := content.GetText(); text != nil {
-				textContent += text.Text + " "
-			} else if content.GetImage() != nil {
-				textContent += "[Image] "
-			}
-		}
-		textContent = strings.TrimSpace(textContent)
-		if textContent == "" {
-			textContent = "[Multi-modal content]" // Fallback if no text
-		}
-
-		requestMessageId, err = s.dao.AddChatMessageWithContent(userID, chatId, "user", textContent, string(contentJSON), model, estimatedImageTokens, 0, 0, referencesJSON, ragEnabled)
+		requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", string(contentJSON), model, estimatedImageTokens, 0, 0, referencesJSON, ragEnabled)
 	} else {
 		requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, model, 0, 0, 0, referencesJSON, ragEnabled)
 	}
@@ -328,12 +314,18 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	// Build OpenAI messages array
 	var openAIMessages []interface{}
 	for _, msg := range history {
-		if msg.ContentJSON != "" {
-			// Multi-modal message
+		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
+			// Multi-modal message (content is JSON)
 			var contents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(msg.ContentJSON), &contents); err == nil {
+			if err := json.Unmarshal([]byte(msg.Content), &contents); err == nil {
 				openAIMessage := s.buildOpenAIMessage(contents, msg.Role)
 				openAIMessages = append(openAIMessages, openAIMessage)
+			} else {
+				// If JSON parsing fails, treat as regular text message
+				openAIMessages = append(openAIMessages, map[string]interface{}{
+					"role":    msg.Role,
+					"content": msg.Content,
+				})
 			}
 		} else {
 			// Legacy text-only message
@@ -734,17 +726,17 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			Cost:         float32(m.Cost),
 		}
 
-		// Parse multi-modal content if available
-		if m.ContentJSON != "" {
-			// First try to unmarshal as the expected proto structure
+		// Parse multi-modal content if available (check if content is JSON)
+		if strings.HasPrefix(m.Content, "[") && strings.HasSuffix(m.Content, "]") {
+			// Content appears to be JSON array, try to parse as multi-modal content
 			var contents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(m.ContentJSON), &contents); err == nil {
+			if err := json.Unmarshal([]byte(m.Content), &contents); err == nil {
 				pbMessage.Contents = contents
-				slog.Info("service:GetHistory", "message", "Successfully parsed multi-modal content", "messageId", m.Id, "contentsCount", len(contents))
+				slog.Info("service:GetHistory", "message", "Successfully parsed multi-modal content from content column", "messageId", m.Id, "contentsCount", len(contents))
 			} else {
 				// If that fails, try to parse the raw JSON structure and convert it
 				var rawContents []map[string]interface{}
-				if err2 := json.Unmarshal([]byte(m.ContentJSON), &rawContents); err2 == nil {
+				if err2 := json.Unmarshal([]byte(m.Content), &rawContents); err2 == nil {
 					var convertedContents []*pb.MessageContent
 					for _, rawContent := range rawContents {
 						if contentData, ok := rawContent["Content"].(map[string]interface{}); ok {
@@ -777,9 +769,9 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 						}
 					}
 					pbMessage.Contents = convertedContents
-					slog.Info("service:GetHistory", "message", "Successfully converted multi-modal content", "messageId", m.Id, "contentsCount", len(convertedContents))
+					slog.Info("service:GetHistory", "message", "Successfully converted multi-modal content from content column", "messageId", m.Id, "contentsCount", len(convertedContents))
 				} else {
-					slog.Error("service:GetHistory", "message", "Failed to parse multi-modal content", "error", err, "error2", err2, "messageId", m.Id, "contentJSON", m.ContentJSON[:min(100, len(m.ContentJSON))])
+					slog.Error("service:GetHistory", "message", "Failed to parse multi-modal content from content column", "error", err, "error2", err2, "messageId", m.Id, "content", m.Content[:min(100, len(m.Content))])
 				}
 			}
 		}

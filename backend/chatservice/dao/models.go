@@ -10,7 +10,6 @@ import (
 type ChatMessageRow struct {
 	Role               string  `db:"role" json:"role"`
 	Content            string  `db:"content" json:"content"`
-	ContentJSON        string  `db:"content_json" json:"content_json"`
 	Id                 string  `db:"id" json:"id"`
 	DocumentReferences string  `db:"document_references" json:"document_references"`
 	RagEnabled         bool    `db:"rag_enabled" json:"rag_enabled"`

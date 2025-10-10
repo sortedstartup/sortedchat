@@ -94,23 +94,6 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 	return fmt.Sprintf("%d", messageId), nil
 }
 
-func (s *SQLiteDAO) AddChatMessageWithContent(userID string, chatId string, role string, content string, contentJSON string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
-	slog.Info("dao_sqlite:AddChatMessageWithContent", "chatId", chatId, "userID", userID)
-	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, content_json, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", chatId, role, content, contentJSON, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
-	if err != nil {
-		slog.Error("dao_sqlite:AddChatMessageWithContent", "message", "failed to add chat message with content", "error", err, "chatId", chatId, "userID", userID)
-		return "", err
-	}
-
-	messageId, err := result.LastInsertId()
-	if err != nil {
-		slog.Error("dao_sqlite:AddChatMessageWithContent", "message", "failed to get last insert id", "error", err, "chatId", chatId, "userID", userID)
-		return "", fmt.Errorf("failed to get last insert id")
-	}
-
-	return fmt.Sprintf("%d", messageId), nil
-}
-
 func (s *SQLiteDAO) GetModelByID(modelID string) (*Models, error) {
 	var model Models
 	err := s.db.Get(&model,
@@ -125,7 +108,7 @@ func (s *SQLiteDAO) GetModelByID(modelID string) (*Models, error) {
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	slog.Info("dao_sqlite:GetChatMessages", "chatId", chatId, "userID", userID)
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, COALESCE(content_json, '') as content_json, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
+	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
 	if err != nil {
 		slog.Error("dao_sqlite:GetChatMessages", "message", "failed to get chat messages", "error", err, "chatId", chatId, "userID", userID)
 		return nil, fmt.Errorf("failed to get chat messages")

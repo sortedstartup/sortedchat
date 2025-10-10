@@ -424,7 +424,7 @@ function ChatInputBox({
     const validFiles = files.filter(f => f.type.startsWith('image/'));
     
     // Validate file sizes (10MB limit)
-    const validSizes = validFiles.filter(f => f.size <= 10 * 1024 * 1024);
+    const validSizes = validFiles.filter(f => f.size <= 20 * 1024 * 1024);
     
     if (validSizes.length !== files.length) {
       toast.error("Some files were skipped (invalid type or too large)");
@@ -568,14 +568,7 @@ function ChatInputBox({
                         key={model.id || model.label}
                         onClick={() => handleModelSelect(model.id)}
                       >
-                        <div className="flex items-center justify-between w-full">
-                          <span>{model.label}</span>
-                          {model.capabilities?.image?.input && (
-                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1 rounded">
-                              Vision
-                            </span>
-                          )}
-                        </div>
+                        <span>{model.label}</span>
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>

@@ -63,7 +63,7 @@ const MIN_CHAT_NAME_LENGTH = 1
 
 // Image processing constants
 const (
-	MaxImageSizeBytes   = 10 * 1024 * 1024 // 10MB per image
+	MaxImageSizeBytes   = 20 * 1024 * 1024 // 10MB per image
 	MaxImagesPerMessage = 10               // Limit images per message
 	MaxGrpcMessageSize  = 50 * 1024 * 1024 // 50MB total gRPC message
 )

@@ -5,17 +5,11 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 	"io"
 	"log"
 	"log/slog"
-	"math"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptrace"
@@ -73,12 +67,6 @@ const (
 	MaxImagesPerMessage = 10               // Limit images per message
 	MaxGrpcMessageSize  = 50 * 1024 * 1024 // 50MB total gRPC message
 )
-
-// ImageDimensions represents image width and height
-type ImageDimensions struct {
-	Width  int
-	Height int
-}
 
 func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory dao.DAOFactory) (*ChatService, error) {
 	daoInstance, err := daoFactory.CreateDAO()
@@ -262,17 +250,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 	}
 
-	// STEP 6: Calculate estimated image tokens
-	estimatedImageTokens := 0
-	if hasImages {
-		estimatedImageTokens, err = s.calculateImageTokens(req.GetContents(), modelID)
-		if err != nil {
-			slog.Warn("failed to calculate image tokens", "error", err)
-			// Continue without estimation
-		}
-	}
-
-	// STEP 7: Save user message with multi-modal content
+	// STEP 6: Save user message with multi-modal content
 	var requestMessageId string
 	var referencesJSON string
 	if len(ragChunks) > 0 {
@@ -285,17 +263,27 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 	}
 
-	// Save with multi-modal content if available, otherwise use legacy text
+	// Save user message - convert to consistent JSON format
+	var contents []*pb.MessageContent
 	if len(req.GetContents()) > 0 {
-		contentJSON, err := json.Marshal(req.GetContents())
-		if err != nil {
-			return fmt.Errorf("failed to marshal message content")
+		contents = req.GetContents()
+	} else if req.Text != "" {
+		// Convert legacy text to contents format for consistency
+		contents = []*pb.MessageContent{
+			{
+				Content: &pb.MessageContent_Text{
+					Text: &pb.TextContent{Text: req.Text},
+				},
+			},
 		}
-
-		requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", string(contentJSON), model, estimatedImageTokens, 0, 0, referencesJSON, ragEnabled)
-	} else {
-		requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, model, 0, 0, 0, referencesJSON, ragEnabled)
 	}
+
+	contentJSON, err := json.Marshal(contents)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message content")
+	}
+
+	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", string(contentJSON), model, 0, 0, 0, referencesJSON, ragEnabled)
 
 	if err != nil {
 		slog.Error("service:Chat", "error", "failed to insert user message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
@@ -1498,173 +1486,6 @@ func (s *ChatService) buildOpenAIMessage(contents []*pb.MessageContent, role str
 		"role":    role,
 		"content": contentArray,
 	}
-}
-
-// calculateImageTokens estimates token usage for images
-func (s *ChatService) calculateImageTokens(contents []*pb.MessageContent, model string) (int, error) {
-	totalTokens := 0
-
-	for _, content := range contents {
-		if img := content.GetImage(); img != nil {
-			// Decode base64 to get image dimensions
-			dimensions, err := getImageDimensions(img.ImageUrlOrBase64)
-			if err != nil {
-				return 0, fmt.Errorf("failed to get image dimensions: %w", err)
-			}
-
-			detail := img.Detail
-			if detail == "" {
-				detail = "auto" // Default to auto
-			}
-
-			// Auto detail: use high for images > 512x512, low otherwise
-			if detail == "auto" {
-				if dimensions.Width > 512 || dimensions.Height > 512 {
-					detail = "high"
-				} else {
-					detail = "low"
-				}
-			}
-
-			var tokens int
-			if isPatchBasedModel(model) {
-				tokens = calculatePatchBasedTokens(dimensions.Width, dimensions.Height, model)
-			} else {
-				tokens = calculateTileBasedTokens(dimensions.Width, dimensions.Height, model, detail)
-			}
-
-			totalTokens += tokens
-		}
-	}
-
-	return totalTokens, nil
-}
-
-// getImageDimensions extracts dimensions from base64 image data
-func getImageDimensions(base64Data string) (*ImageDimensions, error) {
-	// Remove data URL prefix
-	parts := strings.Split(base64Data, ",")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid base64 data URI format")
-	}
-	data := parts[1]
-
-	// Decode base64
-	imageData, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get image config (dimensions without full decode)
-	config, _, err := image.DecodeConfig(bytes.NewReader(imageData))
-	if err != nil {
-		return nil, err
-	}
-
-	return &ImageDimensions{
-		Width:  config.Width,
-		Height: config.Height,
-	}, nil
-}
-
-// isPatchBasedModel checks if model uses patch-based token calculation
-func isPatchBasedModel(model string) bool {
-	patchBasedModels := []string{
-		"gpt-4.1-mini",
-		"gpt-4.1-nano",
-		"o4-mini",
-	}
-
-	for _, m := range patchBasedModels {
-		if strings.Contains(model, m) {
-			return true
-		}
-	}
-	return false
-}
-
-// calculatePatchBasedTokens calculates tokens for patch-based models
-func calculatePatchBasedTokens(width, height int, model string) int {
-	// Calculate patches (32x32 pixels each)
-	widthPatches := (width + 31) / 32 // Ceiling division
-	heightPatches := (height + 31) / 32
-	totalPatches := widthPatches * heightPatches
-
-	// Cap at 1,536 patches (scale image if needed)
-	if totalPatches > 1536 {
-		totalPatches = 1536
-	}
-
-	// Apply model-specific multiplier
-	var multiplier float64
-	switch model {
-	case "gpt-4.1-mini":
-		multiplier = 1.62
-	case "gpt-4.1-nano":
-		multiplier = 2.46
-	case "o4-mini":
-		multiplier = 1.72
-	default:
-		multiplier = 1.0
-	}
-
-	return int(float64(totalPatches) * multiplier)
-}
-
-// calculateTileBasedTokens calculates tokens for tile-based models
-func calculateTileBasedTokens(width, height int, model, detail string) int {
-	if detail == "low" {
-		// Fixed token cost regardless of size
-		switch model {
-		case "gpt-4o", "gpt-4-turbo-2024-04-09":
-			return 85
-		case "gpt-4o-mini":
-			return 2833
-		default:
-			return 85
-		}
-	}
-
-	// High detail mode
-	// Step 1: Resize to fit 2048x2048 while maintaining aspect ratio
-	maxDim := 2048
-	scale := 1.0
-	if width > maxDim || height > maxDim {
-		scale = float64(maxDim) / math.Max(float64(width), float64(height))
-	}
-
-	resizedWidth := int(float64(width) * scale)
-	resizedHeight := int(float64(height) * scale)
-
-	// Step 2: Ensure shortest side is at least 768px
-	minDim := 768
-	shortestSide := math.Min(float64(resizedWidth), float64(resizedHeight))
-	if shortestSide < float64(minDim) {
-		scale2 := float64(minDim) / shortestSide
-		resizedWidth = int(float64(resizedWidth) * scale2)
-		resizedHeight = int(float64(resizedHeight) * scale2)
-	}
-
-	// Step 3: Calculate tiles (512x512 each)
-	tilesWidth := (resizedWidth + 511) / 512 // Ceiling division
-	tilesHeight := (resizedHeight + 511) / 512
-	totalTiles := tilesWidth * tilesHeight
-
-	// Step 4: Calculate tokens
-	var baseTokens, tokensPerTile int
-	switch model {
-	case "gpt-4o", "gpt-4-turbo-2024-04-09":
-		baseTokens = 85
-		tokensPerTile = 170
-	case "gpt-4o-mini":
-		baseTokens = 2833
-		tokensPerTile = 5667
-	default:
-		baseTokens = 85
-		tokensPerTile = 170
-	}
-
-	return baseTokens + (totalTiles * tokensPerTile)
 }
 
 func (s *ChatService) Init(config *dao.Config) *sql.DB {

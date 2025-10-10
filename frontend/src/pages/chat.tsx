@@ -227,13 +227,13 @@ function Message({
               {message.contents && message.contents.length > 0 ? (
                 message.contents.map((content, idx) => {
                   console.log('Rendering content:', content); // Debug log
-                  if (content.text) {
-                    return <EnhancedMarkdown key={idx}>{content.text.text}</EnhancedMarkdown>;
-                  } else if (content.image) {
+                  if (content.type === "text" && content.text) {
+                    return <EnhancedMarkdown key={idx}>{content.text}</EnhancedMarkdown>;
+                  } else if (content.type === "image_url" && content.image_url) {
                     return (
                       <div key={idx} className="my-2">
                         <img
-                          src={content.image.image_url_or_base64}
+                          src={content.image_url.url}
                           alt="Message image"
                           className="max-w-md rounded-lg shadow-md border border-gray-200"
                           loading="lazy"

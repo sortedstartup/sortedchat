@@ -129,7 +129,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	// STEP 2: Check if message contains images
 	hasImages := false
 	for _, content := range req.GetContents() {
-		if content.GetImage() != nil {
+		if content.Type == "image_url" {
 			hasImages = true
 			break
 		}
@@ -193,8 +193,8 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	} else if len(req.GetContents()) > 0 {
 		// Extract text from contents for RAG processing
 		for _, content := range req.GetContents() {
-			if text := content.GetText(); text != nil {
-				userMessage += text.Text + " "
+			if content.Type == "text" && content.Text != "" {
+				userMessage += content.Text + " "
 			}
 		}
 		userMessage = strings.TrimSpace(userMessage)
@@ -268,12 +268,11 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	if len(req.GetContents()) > 0 {
 		contents = req.GetContents()
 	} else if req.Text != "" {
-		// Convert legacy text to contents format for consistency
+		// Convert legacy text to OpenAI format for consistency
 		contents = []*pb.MessageContent{
 			{
-				Content: &pb.MessageContent_Text{
-					Text: &pb.TextContent{Text: req.Text},
-				},
+				Type: "text",
+				Text: req.Text,
 			},
 		}
 	}
@@ -303,11 +302,14 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	var openAIMessages []interface{}
 	for _, msg := range history {
 		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
-			// Multi-modal message (content is JSON)
+			// Multi-modal message (content is JSON in OpenAI format)
 			var contents []*pb.MessageContent
 			if err := json.Unmarshal([]byte(msg.Content), &contents); err == nil {
-				openAIMessage := s.buildOpenAIMessage(contents, msg.Role)
-				openAIMessages = append(openAIMessages, openAIMessage)
+				// Contents are already in OpenAI format, use directly
+				openAIMessages = append(openAIMessages, map[string]interface{}{
+					"role":    msg.Role,
+					"content": contents,
+				})
 			} else {
 				// If JSON parsing fails, treat as regular text message
 				openAIMessages = append(openAIMessages, map[string]interface{}{
@@ -326,8 +328,11 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 	// Add current user message
 	if len(req.GetContents()) > 0 {
-		userOpenAIMessage := s.buildOpenAIMessage(req.GetContents(), "user")
-		openAIMessages = append(openAIMessages, userOpenAIMessage)
+		// Contents are already in OpenAI format, use directly
+		openAIMessages = append(openAIMessages, map[string]interface{}{
+			"role":    "user",
+			"content": req.GetContents(),
+		})
 	} else {
 		openAIMessages = append(openAIMessages, map[string]interface{}{
 			"role":    "user",
@@ -714,53 +719,15 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			Cost:         float32(m.Cost),
 		}
 
-		// Parse multi-modal content if available (check if content is JSON)
+		// Parse multi-modal content if available (check if content is JSON in OpenAI format)
 		if strings.HasPrefix(m.Content, "[") && strings.HasSuffix(m.Content, "]") {
-			// Content appears to be JSON array, try to parse as multi-modal content
+			// Content is JSON array in OpenAI format, parse directly
 			var contents []*pb.MessageContent
 			if err := json.Unmarshal([]byte(m.Content), &contents); err == nil {
 				pbMessage.Contents = contents
-				slog.Info("service:GetHistory", "message", "Successfully parsed multi-modal content from content column", "messageId", m.Id, "contentsCount", len(contents))
+				slog.Info("service:GetHistory", "message", "Successfully parsed OpenAI format content", "messageId", m.Id, "contentsCount", len(contents))
 			} else {
-				// If that fails, try to parse the raw JSON structure and convert it
-				var rawContents []map[string]interface{}
-				if err2 := json.Unmarshal([]byte(m.Content), &rawContents); err2 == nil {
-					var convertedContents []*pb.MessageContent
-					for _, rawContent := range rawContents {
-						if contentData, ok := rawContent["Content"].(map[string]interface{}); ok {
-							messageContent := &pb.MessageContent{}
-
-							// Handle text content
-							if textData, hasText := contentData["Text"].(map[string]interface{}); hasText {
-								if textValue, hasTextValue := textData["text"].(string); hasTextValue {
-									messageContent.Content = &pb.MessageContent_Text{
-										Text: &pb.TextContent{Text: textValue},
-									}
-								}
-							}
-
-							// Handle image content
-							if imageData, hasImage := contentData["Image"].(map[string]interface{}); hasImage {
-								imageContent := &pb.ImageContent{}
-								if imageUrl, hasUrl := imageData["image_url_or_base64"].(string); hasUrl {
-									imageContent.ImageUrlOrBase64 = imageUrl
-								}
-								if detail, hasDetail := imageData["detail"].(string); hasDetail {
-									imageContent.Detail = detail
-								}
-								messageContent.Content = &pb.MessageContent_Image{Image: imageContent}
-							}
-
-							if messageContent.Content != nil {
-								convertedContents = append(convertedContents, messageContent)
-							}
-						}
-					}
-					pbMessage.Contents = convertedContents
-					slog.Info("service:GetHistory", "message", "Successfully converted multi-modal content from content column", "messageId", m.Id, "contentsCount", len(convertedContents))
-				} else {
-					slog.Error("service:GetHistory", "message", "Failed to parse multi-modal content from content column", "error", err, "error2", err2, "messageId", m.Id, "content", m.Content[:min(100, len(m.Content))])
-				}
+				slog.Error("service:GetHistory", "message", "Failed to parse OpenAI format content", "error", err, "messageId", m.Id, "content", m.Content[:min(100, len(m.Content))])
 			}
 		}
 
@@ -1435,16 +1402,16 @@ func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId stri
 func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error {
 	imageCount := 0
 	for _, content := range contents {
-		if img := content.GetImage(); img != nil {
+		if content.Type == "image_url" && content.ImageUrl != nil {
 			imageCount++
 
 			// Check base64 format
-			if !strings.HasPrefix(img.ImageUrlOrBase64, "data:image/") {
+			if !strings.HasPrefix(content.ImageUrl.Url, "data:image/") {
 				return fmt.Errorf("invalid image format, must be base64 data URI")
 			}
 
 			// Estimate size (base64 is ~1.37x original)
-			estimatedSize := len(img.ImageUrlOrBase64) * 3 / 4
+			estimatedSize := len(content.ImageUrl.Url) * 3 / 4
 			if estimatedSize > MaxImageSizeBytes {
 				return fmt.Errorf("image exceeds %d MB limit", MaxImageSizeBytes/(1024*1024))
 			}
@@ -1456,36 +1423,6 @@ func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error 
 	}
 
 	return nil
-}
-
-// buildOpenAIMessage converts proto MessageContent to OpenAI Vision API format
-func (s *ChatService) buildOpenAIMessage(contents []*pb.MessageContent, role string) map[string]interface{} {
-	var contentArray []map[string]interface{}
-
-	for _, content := range contents {
-		if text := content.GetText(); text != nil {
-			contentArray = append(contentArray, map[string]interface{}{
-				"type": "text",
-				"text": text.Text,
-			})
-		} else if img := content.GetImage(); img != nil {
-			imageContent := map[string]interface{}{
-				"type": "image_url",
-				"image_url": map[string]interface{}{
-					"url": img.ImageUrlOrBase64,
-				},
-			}
-			if img.Detail != "" {
-				imageContent["image_url"].(map[string]interface{})["detail"] = img.Detail
-			}
-			contentArray = append(contentArray, imageContent)
-		}
-	}
-
-	return map[string]interface{}{
-		"role":    role,
-		"content": contentArray,
-	}
 }
 
 func (s *ChatService) Init(config *dao.Config) *sql.DB {

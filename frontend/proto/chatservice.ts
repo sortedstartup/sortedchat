@@ -1436,76 +1436,78 @@ export class ProjectContext extends pb_1.Message {
     }
 }
 export class MessageContent extends pb_1.Message {
-    #one_of_decls: number[][] = [[1, 2]];
-    constructor(data?: any[] | ({} & (({
-        text?: TextContent;
-        image?: never;
-    } | {
-        text?: never;
-        image?: ImageContent;
-    })))) {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        type?: string;
+        text?: string;
+        image_url?: ImageUrl;
+    }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
+            if ("type" in data && data.type != undefined) {
+                this.type = data.type;
+            }
             if ("text" in data && data.text != undefined) {
                 this.text = data.text;
             }
-            if ("image" in data && data.image != undefined) {
-                this.image = data.image;
+            if ("image_url" in data && data.image_url != undefined) {
+                this.image_url = data.image_url;
             }
         }
     }
+    get type() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set type(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
     get text() {
-        return pb_1.Message.getWrapperField(this, TextContent, 1) as TextContent;
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
     }
-    set text(value: TextContent) {
-        pb_1.Message.setOneofWrapperField(this, 1, this.#one_of_decls[0], value);
+    set text(value: string) {
+        pb_1.Message.setField(this, 2, value);
     }
-    get has_text() {
-        return pb_1.Message.getField(this, 1) != null;
+    get image_url() {
+        return pb_1.Message.getWrapperField(this, ImageUrl, 3) as ImageUrl;
     }
-    get image() {
-        return pb_1.Message.getWrapperField(this, ImageContent, 2) as ImageContent;
+    set image_url(value: ImageUrl) {
+        pb_1.Message.setWrapperField(this, 3, value);
     }
-    set image(value: ImageContent) {
-        pb_1.Message.setOneofWrapperField(this, 2, this.#one_of_decls[0], value);
-    }
-    get has_image() {
-        return pb_1.Message.getField(this, 2) != null;
-    }
-    get content() {
-        const cases: {
-            [index: number]: "none" | "text" | "image";
-        } = {
-            0: "none",
-            1: "text",
-            2: "image"
-        };
-        return cases[pb_1.Message.computeOneofCase(this, [1, 2])];
+    get has_image_url() {
+        return pb_1.Message.getField(this, 3) != null;
     }
     static fromObject(data: {
-        text?: ReturnType<typeof TextContent.prototype.toObject>;
-        image?: ReturnType<typeof ImageContent.prototype.toObject>;
+        type?: string;
+        text?: string;
+        image_url?: ReturnType<typeof ImageUrl.prototype.toObject>;
     }): MessageContent {
         const message = new MessageContent({});
-        if (data.text != null) {
-            message.text = TextContent.fromObject(data.text);
+        if (data.type != null) {
+            message.type = data.type;
         }
-        if (data.image != null) {
-            message.image = ImageContent.fromObject(data.image);
+        if (data.text != null) {
+            message.text = data.text;
+        }
+        if (data.image_url != null) {
+            message.image_url = ImageUrl.fromObject(data.image_url);
         }
         return message;
     }
     toObject() {
         const data: {
-            text?: ReturnType<typeof TextContent.prototype.toObject>;
-            image?: ReturnType<typeof ImageContent.prototype.toObject>;
+            type?: string;
+            text?: string;
+            image_url?: ReturnType<typeof ImageUrl.prototype.toObject>;
         } = {};
-        if (this.text != null) {
-            data.text = this.text.toObject();
+        if (this.type != null) {
+            data.type = this.type;
         }
-        if (this.image != null) {
-            data.image = this.image.toObject();
+        if (this.text != null) {
+            data.text = this.text;
+        }
+        if (this.image_url != null) {
+            data.image_url = this.image_url.toObject();
         }
         return data;
     }
@@ -1513,10 +1515,12 @@ export class MessageContent extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.has_text)
-            writer.writeMessage(1, this.text, () => this.text.serialize(writer));
-        if (this.has_image)
-            writer.writeMessage(2, this.image, () => this.image.serialize(writer));
+        if (this.type.length)
+            writer.writeString(1, this.type);
+        if (this.text.length)
+            writer.writeString(2, this.text);
+        if (this.has_image_url)
+            writer.writeMessage(3, this.image_url, () => this.image_url.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1527,10 +1531,13 @@ export class MessageContent extends pb_1.Message {
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
-                    reader.readMessage(message.text, () => message.text = TextContent.deserialize(reader));
+                    message.type = reader.readString();
                     break;
                 case 2:
-                    reader.readMessage(message.image, () => message.image = ImageContent.deserialize(reader));
+                    message.text = reader.readString();
+                    break;
+                case 3:
+                    reader.readMessage(message.image_url, () => message.image_url = ImageUrl.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -1544,94 +1551,27 @@ export class MessageContent extends pb_1.Message {
         return MessageContent.deserialize(bytes);
     }
 }
-export class TextContent extends pb_1.Message {
+export class ImageUrl extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        text?: string;
-    }) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") {
-            if ("text" in data && data.text != undefined) {
-                this.text = data.text;
-            }
-        }
-    }
-    get text() {
-        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
-    }
-    set text(value: string) {
-        pb_1.Message.setField(this, 1, value);
-    }
-    static fromObject(data: {
-        text?: string;
-    }): TextContent {
-        const message = new TextContent({});
-        if (data.text != null) {
-            message.text = data.text;
-        }
-        return message;
-    }
-    toObject() {
-        const data: {
-            text?: string;
-        } = {};
-        if (this.text != null) {
-            data.text = this.text;
-        }
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (this.text.length)
-            writer.writeString(1, this.text);
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): TextContent {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new TextContent();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                case 1:
-                    message.text = reader.readString();
-                    break;
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): TextContent {
-        return TextContent.deserialize(bytes);
-    }
-}
-export class ImageContent extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {
-        image_url_or_base64?: string;
+        url?: string;
         detail?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
-            if ("image_url_or_base64" in data && data.image_url_or_base64 != undefined) {
-                this.image_url_or_base64 = data.image_url_or_base64;
+            if ("url" in data && data.url != undefined) {
+                this.url = data.url;
             }
             if ("detail" in data && data.detail != undefined) {
                 this.detail = data.detail;
             }
         }
     }
-    get image_url_or_base64() {
+    get url() {
         return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
     }
-    set image_url_or_base64(value: string) {
+    set url(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
     get detail() {
@@ -1641,12 +1581,12 @@ export class ImageContent extends pb_1.Message {
         pb_1.Message.setField(this, 2, value);
     }
     static fromObject(data: {
-        image_url_or_base64?: string;
+        url?: string;
         detail?: string;
-    }): ImageContent {
-        const message = new ImageContent({});
-        if (data.image_url_or_base64 != null) {
-            message.image_url_or_base64 = data.image_url_or_base64;
+    }): ImageUrl {
+        const message = new ImageUrl({});
+        if (data.url != null) {
+            message.url = data.url;
         }
         if (data.detail != null) {
             message.detail = data.detail;
@@ -1655,11 +1595,11 @@ export class ImageContent extends pb_1.Message {
     }
     toObject() {
         const data: {
-            image_url_or_base64?: string;
+            url?: string;
             detail?: string;
         } = {};
-        if (this.image_url_or_base64 != null) {
-            data.image_url_or_base64 = this.image_url_or_base64;
+        if (this.url != null) {
+            data.url = this.url;
         }
         if (this.detail != null) {
             data.detail = this.detail;
@@ -1670,21 +1610,21 @@ export class ImageContent extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.image_url_or_base64.length)
-            writer.writeString(1, this.image_url_or_base64);
+        if (this.url.length)
+            writer.writeString(1, this.url);
         if (this.detail.length)
             writer.writeString(2, this.detail);
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ImageContent {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ImageContent();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ImageUrl {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ImageUrl();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
-                    message.image_url_or_base64 = reader.readString();
+                    message.url = reader.readString();
                     break;
                 case 2:
                     message.detail = reader.readString();
@@ -1697,8 +1637,8 @@ export class ImageContent extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): ImageContent {
-        return ImageContent.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ImageUrl {
+        return ImageUrl.deserialize(bytes);
     }
 }
 export class ChatRequest extends pb_1.Message {

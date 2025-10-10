@@ -117,23 +117,23 @@ message ProjectContext {
 }
 
 // Add new message types for multi-modal content
+// MessageContent follows OpenAI Vision API format directly
 message MessageContent {
-  oneof content {
-    TextContent text = 1;
-    ImageContent image = 2;
-  }
+  string type = 1;        // "text" or "image_url"
+  
+  // For text content (when type = "text")
+  string text = 2;
+  
+  // For image content (when type = "image_url")
+  ImageUrl image_url = 3;
 }
 
-message TextContent {
-  string text = 1;
-}
-
-message ImageContent {
-  string image_url_or_base64 = 1;  // data:image/jpeg;base64,... or URL
-  string detail = 2;                // "low" | "high" | "auto" (OpenAI vision param)
-                                    // "auto": high for images >512x512, low otherwise
-                                    // "low": fixed token cost (fast, less detail)
-                                    // "high": tile-based calculation (slower, more detail)
+message ImageUrl {
+  string url = 1;      // data:image/jpeg;base64,... or URL
+  string detail = 2;   // "low" | "high" | "auto" (OpenAI vision param)
+                       // "auto": high for images >512x512, low otherwise
+                       // "low": fixed token cost (fast, less detail)
+                       // "high": tile-based calculation (slower, more detail)
 }
 
 message ChatRequest {

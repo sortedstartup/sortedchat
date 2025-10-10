@@ -33,8 +33,7 @@ import {
   RenameChatRequest,
   ChatProgress,
   MessageContent,
-  TextContent,
-  ImageContent,
+  ImageUrl,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -249,7 +248,8 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
   if (msg.trim()) {
     contents.push(
       MessageContent.fromObject({
-        text: TextContent.fromObject({ text: msg })
+        type: "text",
+        text: msg
       })
     );
   }
@@ -270,8 +270,9 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
         const base64 = await imageToBase64(image);
         contents.push(
           MessageContent.fromObject({
-            image: ImageContent.fromObject({
-              image_url_or_base64: base64,
+            type: "image_url",
+            image_url: ImageUrl.fromObject({
+              url: base64,
               detail: imageDetail
             })
           })

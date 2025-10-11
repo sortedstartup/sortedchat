@@ -247,7 +247,6 @@ function Message({
               ) : (
                 /* Fallback to old text-only format */
                 <>
-                  {console.log('Using fallback content for message:', message)} {/* Debug log */}
                   <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
                 </>
               )}

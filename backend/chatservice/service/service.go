@@ -291,7 +291,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	// Separate text and image content
-	var textContents []*pb.MessageContent
+	textContents := make([]*pb.MessageContent, 0)
 	var imageContents []*pb.MessageContent
 
 	for _, content := range contents {

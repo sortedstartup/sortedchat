@@ -1574,7 +1574,7 @@ func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error 
 
 	// Strict regex: data:image/{type};base64,{valid-base64}
 	// Captures image type and base64 payload separately
-	dataURIRegex := regexp.MustCompile(`^data:image/(jpeg|jpg|png|gif|webp|bmp);base64,([A-Za-z0-9+/]+=*)$`)
+	dataURIRegex := regexp.MustCompile(`^data:image/(jpeg|jpg|png|gif|webp);base64,([A-Za-z0-9+/]+=*)$`)
 
 	for _, content := range contents {
 		if content.Type == "image_url" && content.ImageUrl != nil {
@@ -1586,7 +1586,7 @@ func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error 
 				// Validate complete data URI format
 				matches := dataURIRegex.FindStringSubmatch(url)
 				if len(matches) != 3 {
-					return fmt.Errorf("invalid data URI format, must be 'data:image/{type};base64,{base64-data}' where type is one of: jpeg, jpg, png, gif, webp, bmp")
+					return fmt.Errorf("invalid data URI format, must be 'data:image/{type};base64,{base64-data}' where type is one of: jpeg, jpg, png, gif, webp")
 				}
 
 				imageType := matches[1]
@@ -1594,7 +1594,7 @@ func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error 
 
 				// Validate image type (redundant with regex but explicit)
 				if !supportedImageTypes[imageType] {
-					return fmt.Errorf("unsupported image type '%s', supported types: jpeg, jpg, png, gif, webp, bmp", imageType)
+					return fmt.Errorf("unsupported image type '%s', supported types: jpeg, jpg, png, gif, webp", imageType)
 				}
 
 				// Validate base64 payload can be decoded

@@ -1753,6 +1753,212 @@ export class ProjectContext extends pb_1.Message {
         return ProjectContext.deserialize(bytes);
     }
 }
+export class MessageContent extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        type?: string;
+        text?: string;
+        image_url?: ImageUrl;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("type" in data && data.type != undefined) {
+                this.type = data.type;
+            }
+            if ("text" in data && data.text != undefined) {
+                this.text = data.text;
+            }
+            if ("image_url" in data && data.image_url != undefined) {
+                this.image_url = data.image_url;
+            }
+        }
+    }
+    get type() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set type(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get text() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set text(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get image_url() {
+        return pb_1.Message.getWrapperField(this, ImageUrl, 3) as ImageUrl;
+    }
+    set image_url(value: ImageUrl) {
+        pb_1.Message.setWrapperField(this, 3, value);
+    }
+    get has_image_url() {
+        return pb_1.Message.getField(this, 3) != null;
+    }
+    static fromObject(data: {
+        type?: string;
+        text?: string;
+        image_url?: ReturnType<typeof ImageUrl.prototype.toObject>;
+    }): MessageContent {
+        const message = new MessageContent({});
+        if (data.type != null) {
+            message.type = data.type;
+        }
+        if (data.text != null) {
+            message.text = data.text;
+        }
+        if (data.image_url != null) {
+            message.image_url = ImageUrl.fromObject(data.image_url);
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            type?: string;
+            text?: string;
+            image_url?: ReturnType<typeof ImageUrl.prototype.toObject>;
+        } = {};
+        if (this.type != null) {
+            data.type = this.type;
+        }
+        if (this.text != null) {
+            data.text = this.text;
+        }
+        if (this.image_url != null) {
+            data.image_url = this.image_url.toObject();
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.type.length)
+            writer.writeString(1, this.type);
+        if (this.text.length)
+            writer.writeString(2, this.text);
+        if (this.has_image_url)
+            writer.writeMessage(3, this.image_url, () => this.image_url.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): MessageContent {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new MessageContent();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.type = reader.readString();
+                    break;
+                case 2:
+                    message.text = reader.readString();
+                    break;
+                case 3:
+                    reader.readMessage(message.image_url, () => message.image_url = ImageUrl.deserialize(reader));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): MessageContent {
+        return MessageContent.deserialize(bytes);
+    }
+}
+export class ImageUrl extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        url?: string;
+        detail?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("url" in data && data.url != undefined) {
+                this.url = data.url;
+            }
+            if ("detail" in data && data.detail != undefined) {
+                this.detail = data.detail;
+            }
+        }
+    }
+    get url() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set url(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get detail() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set detail(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        url?: string;
+        detail?: string;
+    }): ImageUrl {
+        const message = new ImageUrl({});
+        if (data.url != null) {
+            message.url = data.url;
+        }
+        if (data.detail != null) {
+            message.detail = data.detail;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            url?: string;
+            detail?: string;
+        } = {};
+        if (this.url != null) {
+            data.url = this.url;
+        }
+        if (this.detail != null) {
+            data.detail = this.detail;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.url.length)
+            writer.writeString(1, this.url);
+        if (this.detail.length)
+            writer.writeString(2, this.detail);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ImageUrl {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ImageUrl();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.url = reader.readString();
+                    break;
+                case 2:
+                    message.detail = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ImageUrl {
+        return ImageUrl.deserialize(bytes);
+    }
+}
 export class ChatRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -1760,9 +1966,10 @@ export class ChatRequest extends pb_1.Message {
         chatId?: string;
         model?: string;
         project_context?: ProjectContext;
+        contents?: MessageContent[];
     }) {
         super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [5], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("text" in data && data.text != undefined) {
                 this.text = data.text;
@@ -1775,6 +1982,9 @@ export class ChatRequest extends pb_1.Message {
             }
             if ("project_context" in data && data.project_context != undefined) {
                 this.project_context = data.project_context;
+            }
+            if ("contents" in data && data.contents != undefined) {
+                this.contents = data.contents;
             }
         }
     }
@@ -1805,11 +2015,18 @@ export class ChatRequest extends pb_1.Message {
     get has_project_context() {
         return pb_1.Message.getField(this, 4) != null;
     }
+    get contents() {
+        return pb_1.Message.getRepeatedWrapperField(this, MessageContent, 5) as MessageContent[];
+    }
+    set contents(value: MessageContent[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 5, value);
+    }
     static fromObject(data: {
         text?: string;
         chatId?: string;
         model?: string;
         project_context?: ReturnType<typeof ProjectContext.prototype.toObject>;
+        contents?: ReturnType<typeof MessageContent.prototype.toObject>[];
     }): ChatRequest {
         const message = new ChatRequest({});
         if (data.text != null) {
@@ -1824,6 +2041,9 @@ export class ChatRequest extends pb_1.Message {
         if (data.project_context != null) {
             message.project_context = ProjectContext.fromObject(data.project_context);
         }
+        if (data.contents != null) {
+            message.contents = data.contents.map(item => MessageContent.fromObject(item));
+        }
         return message;
     }
     toObject() {
@@ -1832,6 +2052,7 @@ export class ChatRequest extends pb_1.Message {
             chatId?: string;
             model?: string;
             project_context?: ReturnType<typeof ProjectContext.prototype.toObject>;
+            contents?: ReturnType<typeof MessageContent.prototype.toObject>[];
         } = {};
         if (this.text != null) {
             data.text = this.text;
@@ -1844,6 +2065,9 @@ export class ChatRequest extends pb_1.Message {
         }
         if (this.project_context != null) {
             data.project_context = this.project_context.toObject();
+        }
+        if (this.contents != null) {
+            data.contents = this.contents.map((item: MessageContent) => item.toObject());
         }
         return data;
     }
@@ -1859,6 +2083,8 @@ export class ChatRequest extends pb_1.Message {
             writer.writeString(3, this.model);
         if (this.has_project_context)
             writer.writeMessage(4, this.project_context, () => this.project_context.serialize(writer));
+        if (this.contents.length)
+            writer.writeRepeatedMessage(5, this.contents, (item: MessageContent) => item.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1879,6 +2105,9 @@ export class ChatRequest extends pb_1.Message {
                     break;
                 case 4:
                     reader.readMessage(message.project_context, () => message.project_context = ProjectContext.deserialize(reader));
+                    break;
+                case 5:
+                    reader.readMessage(message.contents, () => pb_1.Message.addToRepeatedWrapperField(message, 5, MessageContent.deserialize(reader), MessageContent));
                     break;
                 default: reader.skipField();
             }
@@ -3023,9 +3252,10 @@ export class ChatMessage extends pb_1.Message {
         output_tokens?: number;
         cached_tokens?: number;
         cost?: number;
+        contents?: MessageContent[];
     }) {
         super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [4], this.#one_of_decls);
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [4, 11], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("role" in data && data.role != undefined) {
                 this.role = data.role;
@@ -3056,6 +3286,9 @@ export class ChatMessage extends pb_1.Message {
             }
             if ("cost" in data && data.cost != undefined) {
                 this.cost = data.cost;
+            }
+            if ("contents" in data && data.contents != undefined) {
+                this.contents = data.contents;
             }
         }
     }
@@ -3119,6 +3352,12 @@ export class ChatMessage extends pb_1.Message {
     set cost(value: number) {
         pb_1.Message.setField(this, 10, value);
     }
+    get contents() {
+        return pb_1.Message.getRepeatedWrapperField(this, MessageContent, 11) as MessageContent[];
+    }
+    set contents(value: MessageContent[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 11, value);
+    }
     static fromObject(data: {
         role?: string;
         content?: string;
@@ -3130,6 +3369,7 @@ export class ChatMessage extends pb_1.Message {
         output_tokens?: number;
         cached_tokens?: number;
         cost?: number;
+        contents?: ReturnType<typeof MessageContent.prototype.toObject>[];
     }): ChatMessage {
         const message = new ChatMessage({});
         if (data.role != null) {
@@ -3162,6 +3402,9 @@ export class ChatMessage extends pb_1.Message {
         if (data.cost != null) {
             message.cost = data.cost;
         }
+        if (data.contents != null) {
+            message.contents = data.contents.map(item => MessageContent.fromObject(item));
+        }
         return message;
     }
     toObject() {
@@ -3176,6 +3419,7 @@ export class ChatMessage extends pb_1.Message {
             output_tokens?: number;
             cached_tokens?: number;
             cost?: number;
+            contents?: ReturnType<typeof MessageContent.prototype.toObject>[];
         } = {};
         if (this.role != null) {
             data.role = this.role;
@@ -3207,6 +3451,9 @@ export class ChatMessage extends pb_1.Message {
         if (this.cost != null) {
             data.cost = this.cost;
         }
+        if (this.contents != null) {
+            data.contents = this.contents.map((item: MessageContent) => item.toObject());
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -3233,6 +3480,8 @@ export class ChatMessage extends pb_1.Message {
             writer.writeInt32(9, this.cached_tokens);
         if (this.cost != 0)
             writer.writeFloat(10, this.cost);
+        if (this.contents.length)
+            writer.writeRepeatedMessage(11, this.contents, (item: MessageContent) => item.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -3271,6 +3520,9 @@ export class ChatMessage extends pb_1.Message {
                     break;
                 case 10:
                     message.cost = reader.readFloat();
+                    break;
+                case 11:
+                    reader.readMessage(message.contents, () => pb_1.Message.addToRepeatedWrapperField(message, 11, MessageContent.deserialize(reader), MessageContent));
                     break;
                 default: reader.skipField();
             }

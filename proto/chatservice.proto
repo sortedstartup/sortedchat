@@ -147,11 +147,32 @@ message ProjectContext {
   bool rag_enabled = 2;
 }
 
+// Add new message types for multi-modal content
+// MessageContent follows OpenAI Vision API format directly
+message MessageContent {
+  string type = 1;        // "text" or "image_url"
+  
+  // For text content (when type = "text")
+  string text = 2;
+  
+  // For image content (when type = "image_url")
+  ImageUrl image_url = 3;
+}
+
+message ImageUrl {
+  string url = 1;      // data:image/jpeg;base64,... or URL
+  string detail = 2;   // "low" | "high" | "auto" (OpenAI vision param)
+                       // "auto": high for images >512x512, low otherwise
+                       // "low": fixed token cost (fast, less detail)
+                       // "high": tile-based calculation (slower, more detail)
+}
+
 message ChatRequest {
-    string text = 1;
+    string text = 1;                      // DEPRECATED: kept for backward compatibility
     string chatId = 2;
     string model = 3;
     ProjectContext project_context = 4;
+    repeated MessageContent contents = 5;  // New: support multiple content pieces
 }
 
 message ChatResponse {
@@ -224,7 +245,7 @@ message GetHistoryResponse {
 
 message ChatMessage {
   string role = 1;
-  string content = 2;
+  string content = 2;              // Keep for text-only (backward compat)
   string message_id = 3;
   repeated RAGDocumentReference references = 4;
   bool rag_enabled = 5;
@@ -233,6 +254,7 @@ message ChatMessage {
   int32 output_tokens = 8;
   int32 cached_tokens = 9;
   float cost = 10;
+  repeated MessageContent contents = 11;  // New: multi-modal content
 }
 
 message GetChatListRequest {

@@ -263,7 +263,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 	}
 
-	// Save user message - convert to consistent JSON format
+	// Save user message - separate text and image content to avoid tsvector 1MB limit
 	var contents []*pb.MessageContent
 	if len(req.GetContents()) > 0 {
 		contents = req.GetContents()
@@ -277,12 +277,37 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 	}
 
-	contentJSON, err := json.Marshal(contents)
-	if err != nil {
-		return fmt.Errorf("failed to marshal message content")
+	// Separate text and image content
+	var textContents []*pb.MessageContent
+	var imageContents []*pb.MessageContent
+
+	for _, content := range contents {
+		if content.Type == "text" {
+			textContents = append(textContents, content)
+		} else if content.Type == "image_url" {
+			imageContents = append(imageContents, content)
+		}
 	}
 
-	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", string(contentJSON), model, 0, 0, 0, referencesJSON, ragEnabled)
+	// Marshal text content for the content column (for tsvector indexing)
+	textContentJSON, err := json.Marshal(textContents)
+	if err != nil {
+		return fmt.Errorf("failed to marshal text content")
+	}
+
+	// Marshal image content for the content_image column (separate from tsvector)
+	var imageContentJSON string
+	if len(imageContents) > 0 {
+		imageContentBytes, err := json.Marshal(imageContents)
+		if err != nil {
+			slog.Error("service:Chat", "message", "failed to marshal image content", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
+			return fmt.Errorf("failed to process request, please try again")
+		}
+		imageContentJSON = string(imageContentBytes)
+	}
+
+	// Always use single method - pass empty string for contentImage when no images
+	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", string(textContentJSON), imageContentJSON, model, 0, 0, 0, referencesJSON, ragEnabled)
 
 	if err != nil {
 		slog.Error("service:Chat", "error", "failed to insert user message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
@@ -301,27 +326,43 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	// Build OpenAI messages array
 	var openAIMessages []interface{}
 	for _, msg := range history {
+		// Reconstruct full message content from separated text and image content
+		var fullContents []*pb.MessageContent
+
+		// Parse text content from content column
 		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
-			// Multi-modal message (content is JSON in OpenAI format)
-			var contents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(msg.Content), &contents); err == nil {
-				// Contents are already in OpenAI format, use directly
-				openAIMessages = append(openAIMessages, map[string]interface{}{
-					"role":    msg.Role,
-					"content": contents,
-				})
-			} else {
-				// If JSON parsing fails, treat as regular text message
-				openAIMessages = append(openAIMessages, map[string]interface{}{
-					"role":    msg.Role,
-					"content": msg.Content,
-				})
+			var textContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.Content), &textContents); err == nil {
+				fullContents = append(fullContents, textContents...)
 			}
-		} else {
+		} else if msg.Content != "" {
 			// Legacy text-only message
+			fullContents = append(fullContents, &pb.MessageContent{
+				Type: "text",
+				Text: msg.Content,
+			})
+		}
+
+		// Parse image content from content_image column
+		if msg.ContentImage != "" {
+			var imageContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.ContentImage), &imageContents); err == nil {
+				fullContents = append(fullContents, imageContents...)
+			}
+		}
+
+		// Add to OpenAI messages
+		if len(fullContents) > 1 || (len(fullContents) == 1 && fullContents[0].Type == "image_url") {
+			// Multi-modal message - use content array
 			openAIMessages = append(openAIMessages, map[string]interface{}{
 				"role":    msg.Role,
-				"content": msg.Content,
+				"content": fullContents,
+			})
+		} else if len(fullContents) == 1 && fullContents[0].Type == "text" {
+			// Single text message - use string content for simplicity
+			openAIMessages = append(openAIMessages, map[string]interface{}{
+				"role":    msg.Role,
+				"content": fullContents[0].Text,
 			})
 		}
 	}
@@ -429,7 +470,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				slog.Warn("service:Chat", "message", "cachedTokens > inputTokens, setting non-cached input tokens to 0", "inputTokens", inputTokens, "cachedTokens", cachedTokens, "chatId", chatId, "userID", userID, "projectID", projectID)
 				nonCachedInputTokens = 0
 			}
-			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, nonCachedInputTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
+			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
 			if err != nil {
 				slog.Error("service:Chat", "message", "failed to save partial assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 			}
@@ -538,7 +579,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			nonCachedInputTokens = 0
 		}
 		// TODO : scope for optimization, can be 1 sql call internally
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, nonCachedInputTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else {
@@ -729,16 +770,40 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			Cost:         float32(m.Cost),
 		}
 
-		// Parse multi-modal content if available (check if content is JSON in OpenAI format)
+		// Reconstruct full message content from separated text and image content
+		var fullContents []*pb.MessageContent
+
+		// Parse text content from content column
 		if strings.HasPrefix(m.Content, "[") && strings.HasSuffix(m.Content, "]") {
-			// Content is JSON array in OpenAI format, parse directly
-			var contents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(m.Content), &contents); err == nil {
-				pbMessage.Contents = contents
-				slog.Info("service:GetHistory", "message", "Successfully parsed OpenAI format content", "messageId", m.Id, "contentsCount", len(contents))
+			var textContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(m.Content), &textContents); err == nil {
+				fullContents = append(fullContents, textContents...)
 			} else {
-				slog.Error("service:GetHistory", "message", "Failed to parse OpenAI format content", "error", err, "messageId", m.Id, "content", m.Content[:min(100, len(m.Content))])
+				slog.Error("service:GetHistory", "message", "Failed to parse text content JSON", "error", err, "messageId", m.Id)
 			}
+		} else if m.Content != "" {
+			// Legacy text-only message - convert to OpenAI format
+			fullContents = append(fullContents, &pb.MessageContent{
+				Type: "text",
+				Text: m.Content,
+			})
+		}
+
+		// Parse image content from content_image column
+		if m.ContentImage != "" {
+			var imageContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(m.ContentImage), &imageContents); err == nil {
+				fullContents = append(fullContents, imageContents...)
+				slog.Info("service:GetHistory", "message", "Successfully parsed image content", "messageId", m.Id, "imageContentsCount", len(imageContents))
+			} else {
+				slog.Error("service:GetHistory", "message", "Failed to parse image content JSON", "error", err, "messageId", m.Id)
+			}
+		}
+
+		// Set the reconstructed contents
+		if len(fullContents) > 0 {
+			pbMessage.Contents = fullContents
+			slog.Info("service:GetHistory", "message", "Successfully reconstructed message content", "messageId", m.Id, "totalContentsCount", len(fullContents))
 		}
 
 		if m.DocumentReferences != "" {

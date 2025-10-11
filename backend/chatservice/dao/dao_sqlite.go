@@ -77,9 +77,18 @@ func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) erro
 }
 
 // AddChatMessage adds a message to a chat
-func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
+func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, contentImage string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
 	slog.Info("dao_sqlite:AddChatMessage", "chatId", chatId, "userID", userID)
-	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", chatId, role, content, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
+
+	// Handle contentImage - use NULL if empty
+	var contentImageValue interface{}
+	if contentImage == "" {
+		contentImageValue = nil
+	} else {
+		contentImageValue = contentImage
+	}
+
+	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, content_image, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", chatId, role, content, contentImageValue, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
 	if err != nil {
 		slog.Error("dao_sqlite:AddChatMessage", "message", "failed to add chat message", "error", err, "chatId", chatId, "userID", userID)
 		return "", err
@@ -108,7 +117,7 @@ func (s *SQLiteDAO) GetModelByID(modelID string) (*Models, error) {
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	slog.Info("dao_sqlite:GetChatMessages", "chatId", chatId, "userID", userID)
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
+	err := s.db.Select(&messages, "SELECT role, content, COALESCE(content_image, '') as content_image, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
 	if err != nil {
 		slog.Error("dao_sqlite:GetChatMessages", "message", "failed to get chat messages", "error", err, "chatId", chatId, "userID", userID)
 		return nil, fmt.Errorf("failed to get chat messages")
@@ -155,6 +164,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 	chatId string,
 	role string,
 	content string,
+	contentImage string,
 	model string,
 	inputTokens int,
 	outputTokens int,
@@ -162,14 +172,22 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 	references string,
 	ragEnabled bool,
 ) (MessageSummary, error) {
+	// Handle contentImage - use NULL if empty
+	var contentImageValue interface{}
+	if contentImage == "" {
+		contentImageValue = nil
+	} else {
+		contentImageValue = contentImage
+	}
+
 	// Insert the message first and capture its ID
 	result, err := s.db.Exec(`
         INSERT INTO chat_messages (
-            chat_id, role, content, model,
+            chat_id, role, content, content_image, model,
             input_token_count, output_token_count, cached_token_count,
             user_id, document_references, rag_enabled
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		chatId, role, content, model,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		chatId, role, content, contentImageValue, model,
 		inputTokens, outputTokens, cachedTokens,
 		userID, references, ragEnabled)
 	if err != nil {

@@ -63,7 +63,7 @@ const MIN_CHAT_NAME_LENGTH = 1
 
 // Image processing constants
 const (
-	MaxImageSizeBytes   = 20 * 1024 * 1024 // 10MB per image
+	MaxImageSizeBytes   = 20 * 1024 * 1024 // 20MB per image
 	MaxImagesPerMessage = 10               // Limit images per message
 	MaxGrpcMessageSize  = 50 * 1024 * 1024 // 50MB total gRPC message
 )
@@ -186,6 +186,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	// STEP 5: Construct user message for OpenAI API
 	var userMessage string
 	var ragChunks []rag.Result
+	var enhancedPrompt string // RAG-enhanced prompt with context
 
 	// Handle backward compatibility - if contents is empty but text is provided, use text
 	if len(req.GetContents()) == 0 && req.Text != "" {
@@ -207,6 +208,8 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			slog.Error("service:Chat", "message", "failed to retrieve similar chunks", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else if len(chunks.Results) > 0 {
 			ragChunks = chunks.Results
+			enhancedPrompt = chunks.Prompt // ← Use RAG-enhanced prompt with context
+			slog.Info("service:Chat", "message", "RAG enhanced prompt created", "chatId", chatId, "userID", userID, "projectID", projectID, "chunksCount", len(chunks.Results))
 
 			// Group chunks by document ID to create summary
 			docChunksMap := make(map[string][]rag.Result)
@@ -367,14 +370,44 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 	}
 
-	// Add current user message
-	if len(req.GetContents()) > 0 {
-		// Contents are already in OpenAI format, use directly
+	// Add current user message (use RAG-enhanced prompt if available)
+	if enhancedPrompt != "" && len(req.GetContents()) == 0 {
+		// Text-only message with RAG enhancement
+		slog.Info("service:Chat", "message", "Using RAG-enhanced prompt for OpenAI", "chatId", chatId, "userID", userID, "projectID", projectID)
+		openAIMessages = append(openAIMessages, map[string]interface{}{
+			"role":    "user",
+			"content": enhancedPrompt,
+		})
+	} else if enhancedPrompt != "" && len(req.GetContents()) > 0 {
+		// Multi-modal message with RAG enhancement - replace text content with enhanced prompt
+		slog.Info("service:Chat", "message", "Using RAG-enhanced prompt for multi-modal message", "chatId", chatId, "userID", userID, "projectID", projectID)
+		var enhancedContents []*pb.MessageContent
+
+		// Add enhanced text content
+		enhancedContents = append(enhancedContents, &pb.MessageContent{
+			Type: "text",
+			Text: enhancedPrompt,
+		})
+
+		// Add original image content
+		for _, content := range req.GetContents() {
+			if content.Type == "image_url" {
+				enhancedContents = append(enhancedContents, content)
+			}
+		}
+
+		openAIMessages = append(openAIMessages, map[string]interface{}{
+			"role":    "user",
+			"content": enhancedContents,
+		})
+	} else if len(req.GetContents()) > 0 {
+		// Multi-modal content without RAG - use original contents
 		openAIMessages = append(openAIMessages, map[string]interface{}{
 			"role":    "user",
 			"content": req.GetContents(),
 		})
 	} else {
+		// Plain text message without RAG - use original user message
 		openAIMessages = append(openAIMessages, map[string]interface{}{
 			"role":    "user",
 			"content": userMessage,

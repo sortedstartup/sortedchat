@@ -422,14 +422,54 @@ function ChatInputBox({
     // Validate file types
     const validFiles = files.filter(f => f.type.startsWith('image/'));
     
-    // Validate file sizes (10MB limit)
+    // Validate file sizes (20MB limit)
     const validSizes = validFiles.filter(f => f.size <= 20 * 1024 * 1024);
     
-    if (validSizes.length !== files.length) {
-      toast.error("Some files were skipped (invalid type or too large)");
+    // Track validation issues
+    const invalidTypeCount = files.length - validFiles.length;
+    const invalidSizeCount = validFiles.length - validSizes.length;
+    
+    // Check total image count limit (current + new)
+    const currentCount = selectedImages.length;
+    const newValidCount = validSizes.length;
+    const totalCount = currentCount + newValidCount;
+    const maxImages = 10;
+    
+    let finalImages = validSizes;
+    let wasLimited = false;
+    
+    if (totalCount > maxImages) {
+      const availableSlots = maxImages - currentCount;
+      if (availableSlots <= 0) {
+        toast.error(`Maximum ${maxImages} images allowed. Remove some images first.`);
+        return;
+      }
+      finalImages = validSizes.slice(0, availableSlots);
+      wasLimited = true;
     }
     
-    setSelectedImages(prev => [...prev, ...validSizes].slice(0, 10)); // Max 10 images
+    // Show appropriate error messages
+    const errors = [];
+    if (invalidTypeCount > 0) {
+      errors.push(`${invalidTypeCount} file(s) skipped (invalid type)`);
+    }
+    if (invalidSizeCount > 0) {
+      errors.push(`${invalidSizeCount} file(s) skipped (too large, max 20MB)`);
+    }
+    if (wasLimited) {
+      const skippedCount = newValidCount - finalImages.length;
+      errors.push(`${skippedCount} image(s) skipped (max ${maxImages} images allowed)`);
+    }
+    
+    if (errors.length > 0) {
+      toast.error(errors.join(", "));
+    }
+    
+    // Only add images if we have valid ones to add
+    if (finalImages.length > 0) {
+      setSelectedImages(prev => [...prev, ...finalImages]);
+      toast.success(`${finalImages.length} image(s) added`);
+    }
   };
   
   const removeImage = (index: number) => {

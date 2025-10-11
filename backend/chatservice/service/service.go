@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -67,6 +69,14 @@ const (
 	MaxImagesPerMessage = 10               // Limit images per message
 	MaxGrpcMessageSize  = 50 * 1024 * 1024 // 50MB total gRPC message
 )
+
+var supportedImageTypes = map[string]bool{
+	"jpeg": true,
+	"jpg":  true,
+	"png":  true,
+	"gif":  true,
+	"webp": true,
+}
 
 func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory dao.DAOFactory) (*ChatService, error) {
 	daoInstance, err := daoFactory.CreateDAO()
@@ -1560,25 +1570,84 @@ func (s *ChatService) RenameItem(ctx context.Context, userID string, itemId stri
 // validateImageContent validates image content in the request
 func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error {
 	imageCount := 0
+	totalImageBytes := 0
+
+	// Strict regex: data:image/{type};base64,{valid-base64}
+	// Captures image type and base64 payload separately
+	dataURIRegex := regexp.MustCompile(`^data:image/(jpeg|jpg|png|gif|webp|bmp);base64,([A-Za-z0-9+/]+=*)$`)
+
 	for _, content := range contents {
 		if content.Type == "image_url" && content.ImageUrl != nil {
 			imageCount++
+			url := content.ImageUrl.Url
 
-			// Check base64 format
-			if !strings.HasPrefix(content.ImageUrl.Url, "data:image/") {
-				return fmt.Errorf("invalid image format, must be base64 data URI")
-			}
+			// Check for data URI scheme
+			if strings.HasPrefix(url, "data:image/") {
+				// Validate complete data URI format
+				matches := dataURIRegex.FindStringSubmatch(url)
+				if len(matches) != 3 {
+					return fmt.Errorf("invalid data URI format, must be 'data:image/{type};base64,{base64-data}' where type is one of: jpeg, jpg, png, gif, webp, bmp")
+				}
 
-			// Estimate size (base64 is ~1.37x original)
-			estimatedSize := len(content.ImageUrl.Url) * 3 / 4
-			if estimatedSize > MaxImageSizeBytes {
-				return fmt.Errorf("image exceeds %d MB limit", MaxImageSizeBytes/(1024*1024))
+				imageType := matches[1]
+				base64Payload := matches[2]
+
+				// Validate image type (redundant with regex but explicit)
+				if !supportedImageTypes[imageType] {
+					return fmt.Errorf("unsupported image type '%s', supported types: jpeg, jpg, png, gif, webp, bmp", imageType)
+				}
+
+				// Validate base64 payload can be decoded
+				decodedData, err := base64.StdEncoding.DecodeString(base64Payload)
+				if err != nil {
+					return fmt.Errorf("invalid base64 data in image URI: %v", err)
+				}
+
+				// Use actual decoded size (most accurate)
+				decodedSize := len(decodedData)
+
+				// Check individual image size limit
+				if decodedSize > MaxImageSizeBytes {
+					return fmt.Errorf("image exceeds %d MB limit (actual size: %.2f MB)",
+						MaxImageSizeBytes/(1024*1024), float64(decodedSize)/(1024*1024))
+				}
+
+				totalImageBytes += decodedSize
+
+			} else if strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "http://") {
+				// Explicitly reject HTTP/HTTPS URLs
+				return fmt.Errorf("HTTPS image URLs are not currently supported, use base64 data URIs only (data:image/{type};base64,...)")
+
+			} else if strings.HasPrefix(url, "file://") || strings.HasPrefix(url, "blob:") {
+				// Reject other common schemes
+				return fmt.Errorf("unsupported URI scheme, only 'data:image/...;base64,' URIs are allowed")
+
+			} else {
+				// Catch-all for any other format
+				return fmt.Errorf("unsupported image URI format, only 'data:image/{type};base64,{base64-data}' URIs are allowed")
 			}
 		}
 	}
 
+	// Check total image count limit
 	if imageCount > MaxImagesPerMessage {
-		return fmt.Errorf("too many images, max %d per message", MaxImagesPerMessage)
+		return fmt.Errorf("too many images (%d), maximum %d images per message", imageCount, MaxImagesPerMessage)
+	}
+
+	// Check total message size against gRPC limit
+	totalMessageSize := totalImageBytes
+	for _, content := range contents {
+		if content.Type == "text" {
+			totalMessageSize += len(content.Text)
+		}
+	}
+
+	// Add estimated overhead for protobuf serialization (~15% to be safe)
+	totalMessageSize = int(float64(totalMessageSize) * 1.15)
+
+	if totalMessageSize > MaxGrpcMessageSize {
+		return fmt.Errorf("total message size exceeds %d MB limit (estimated: %.2f MB)",
+			MaxGrpcMessageSize/(1024*1024), float64(totalMessageSize)/(1024*1024))
 	}
 
 	return nil

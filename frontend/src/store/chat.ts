@@ -202,6 +202,10 @@ export let $isStreaming = atom<boolean>(false);
 
 // Helper function to convert File to base64
 async function imageToBase64(file: File): Promise<string> {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error(`Unsupported image type: ${file.type}. Allowed types: ${allowedTypes.join(', ')}`);
+  }
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -258,6 +262,22 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
   // Add image contents if provided
   if (images && images.length > 0) {
     // Check model capabilities before processing images
+
+    const MAX_IMAGES = 10; // Align with backend limit
+    if (images.length > MAX_IMAGES) {
+      toast.error(`Maximum ${MAX_IMAGES} images allowed per message.`);
+      return;
+    }
+    
+    // Enforce total size limit (e.g., 20MB total)
+    const MAX_TOTAL_SIZE = 20 * 1024 * 1024; // 20MB
+    const totalSize = images.reduce((sum, img) => sum + img.size, 0);
+    if (totalSize > MAX_TOTAL_SIZE) {
+      toast.error(`Total image size must not exceed ${MAX_TOTAL_SIZE / (1024 * 1024)}MB.`);
+      return;
+    }
+
+
     const selectedModel = $selectedModel.get();
     const modelInfo = $availableModels.get().find(m => m.id === selectedModel);
     

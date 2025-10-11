@@ -150,7 +150,7 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 func (p *PostgresDAO) GetModelByID(modelID string) (*Models, error) {
 	var model Models
 	err := p.db.Get(&model,
-		"SELECT id, name, provider, url, input_token_cost, output_token_cost, COALESCE(capabilities, '{}') AS capabilities FROM model_metadata WHERE id = $1",
+		"SELECT id, name, provider, url, input_token_cost, output_token_cost, COALESCE(capabilities, '{}'::jsonb)::text AS capabilities FROM model_metadata WHERE id = $1",
 		modelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get model: %w", err)

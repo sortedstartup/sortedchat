@@ -1,0 +1,1 @@
+-- PostgreSQL complete schema migration

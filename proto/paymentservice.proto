@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package sortedchat;
+
+option go_package = "sortedstartup/paymentservice/proto";
+
+service PaymentService {
+    rpc Infer(InferRequest) returns (stream InferResponse);
+}
+
+message InferRequest {
+}
+
+message InferResponse {
+}

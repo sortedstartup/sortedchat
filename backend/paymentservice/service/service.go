@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"sortedstartup/paymentservice/dao"
 )
 
@@ -13,7 +13,8 @@ type PaymentService struct {
 func NewPaymentService(daoFactory dao.DAOFactory) *PaymentService {
 	dao, err := daoFactory.CreateDAO()
 	if err != nil {
-		log.Fatalf("Failed to create DAO: %v", err)
+		slog.Error("paymentservice:service:NewPaymentService", "error", err)
+		return nil
 	}
 	return &PaymentService{
 		dao: dao,

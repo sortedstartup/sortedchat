@@ -14,13 +14,7 @@ type SQLiteDAO struct {
 }
 
 // NewSQLiteDAO creates a new SQLite DAO instance
-func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
-
-	db, err := sqlx.Open("sqlite3", sqliteUrl)
-	if err != nil {
-		return nil, err
-	}
-
+func NewSQLiteDAO(db *sqlx.DB) (*SQLiteDAO, error) {
 	return &SQLiteDAO{db: db}, nil
 }
 

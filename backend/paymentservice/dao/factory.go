@@ -16,6 +16,7 @@ type DAOFactory interface {
 // SQLiteDAOFactory implements DAOFactory for SQLite
 type SQLiteDAOFactory struct {
 	config *Config
+	db     *sqlx.DB // Shared connection pool
 }
 
 // PostgresDAOFactory implements DAOFactory for PostgreSQL
@@ -33,7 +34,15 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 	switch config.Database.Type {
 	case DatabaseTypeSQLite:
 		slog.Info("Creating SQLite DAO factory", "url", config.Database.SQLite.URL)
-		return &SQLiteDAOFactory{config: config}, nil
+		db, err := sqlx.Open("sqlite3", config.Database.SQLite.URL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open SQLite connection: %w", err)
+		}
+		if err := db.Ping(); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("failed to ping SQLite database: %w", err)
+		}
+		return &SQLiteDAOFactory{config: config, db: db}, nil
 	case DatabaseTypePostgres:
 		slog.Info("Creating PostgreSQL DAO factory",
 			"host", config.Database.Postgres.Host,
@@ -76,11 +85,13 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 // SQLiteDAOFactory implementation
 
 func (f *SQLiteDAOFactory) CreateDAO() (DAO, error) {
-	return NewSQLiteDAO(f.config.Database.SQLite.URL)
+	return NewSQLiteDAO(f.db)
 }
 
 func (f *SQLiteDAOFactory) Close() error {
-	// SQLite connections are closed by individual DAOs
+	if f.db != nil {
+		return f.db.Close()
+	}
 	return nil
 }
 

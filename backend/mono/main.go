@@ -151,6 +151,7 @@ func main() {
 		"/auth/callback",
 		"/",
 		"/index.html",
+		"/webhook",
 	})
 
 	// Skip authentication for path prefixes
@@ -258,7 +259,7 @@ func main() {
 	realtimeServiceApi.Init(realtimeConfig)
 	realtimeProto.RegisterRealtimeServiceServer(grpcServer, realtimeServiceApi)
 
-	paymentServiceApi := paymentApi.NewPaymentServiceAPI(paymentDaoFactory)
+	paymentServiceApi := paymentApi.NewPaymentServiceAPI(mux, paymentDaoFactory)
 	if paymentServiceApi == nil {
 		slog.Error("Failed to create payment service API")
 		return

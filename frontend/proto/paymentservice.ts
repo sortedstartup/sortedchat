@@ -87,6 +87,632 @@ export class InferResponse extends pb_1.Message {
         return InferResponse.deserialize(bytes);
     }
 }
+export class CreateProductRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        name?: string;
+        description?: string;
+        price?: string;
+        currency?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("name" in data && data.name != undefined) {
+                this.name = data.name;
+            }
+            if ("description" in data && data.description != undefined) {
+                this.description = data.description;
+            }
+            if ("price" in data && data.price != undefined) {
+                this.price = data.price;
+            }
+            if ("currency" in data && data.currency != undefined) {
+                this.currency = data.currency;
+            }
+        }
+    }
+    get name() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set name(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get description() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set description(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get price() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set price(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get currency() {
+        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+    }
+    set currency(value: string) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    static fromObject(data: {
+        name?: string;
+        description?: string;
+        price?: string;
+        currency?: string;
+    }): CreateProductRequest {
+        const message = new CreateProductRequest({});
+        if (data.name != null) {
+            message.name = data.name;
+        }
+        if (data.description != null) {
+            message.description = data.description;
+        }
+        if (data.price != null) {
+            message.price = data.price;
+        }
+        if (data.currency != null) {
+            message.currency = data.currency;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            name?: string;
+            description?: string;
+            price?: string;
+            currency?: string;
+        } = {};
+        if (this.name != null) {
+            data.name = this.name;
+        }
+        if (this.description != null) {
+            data.description = this.description;
+        }
+        if (this.price != null) {
+            data.price = this.price;
+        }
+        if (this.currency != null) {
+            data.currency = this.currency;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.name.length)
+            writer.writeString(1, this.name);
+        if (this.description.length)
+            writer.writeString(2, this.description);
+        if (this.price.length)
+            writer.writeString(3, this.price);
+        if (this.currency.length)
+            writer.writeString(4, this.currency);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CreateProductRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CreateProductRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.name = reader.readString();
+                    break;
+                case 2:
+                    message.description = reader.readString();
+                    break;
+                case 3:
+                    message.price = reader.readString();
+                    break;
+                case 4:
+                    message.currency = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CreateProductRequest {
+        return CreateProductRequest.deserialize(bytes);
+    }
+}
+export class CreateProductResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        id?: string;
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("id" in data && data.id != undefined) {
+                this.id = data.id;
+            }
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        id?: string;
+        message?: string;
+    }): CreateProductResponse {
+        const message = new CreateProductResponse({});
+        if (data.id != null) {
+            message.id = data.id;
+        }
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            id?: string;
+            message?: string;
+        } = {};
+        if (this.id != null) {
+            data.id = this.id;
+        }
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.id.length)
+            writer.writeString(1, this.id);
+        if (this.message.length)
+            writer.writeString(2, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CreateProductResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CreateProductResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.id = reader.readString();
+                    break;
+                case 2:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CreateProductResponse {
+        return CreateProductResponse.deserialize(bytes);
+    }
+}
+export class ListProductsRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {}) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") { }
+    }
+    static fromObject(data: {}): ListProductsRequest {
+        const message = new ListProductsRequest({});
+        return message;
+    }
+    toObject() {
+        const data: {} = {};
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListProductsRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListProductsRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListProductsRequest {
+        return ListProductsRequest.deserialize(bytes);
+    }
+}
+export class ListProductsResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        products?: Product[];
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("products" in data && data.products != undefined) {
+                this.products = data.products;
+            }
+        }
+    }
+    get products() {
+        return pb_1.Message.getRepeatedWrapperField(this, Product, 1) as Product[];
+    }
+    set products(value: Product[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 1, value);
+    }
+    static fromObject(data: {
+        products?: ReturnType<typeof Product.prototype.toObject>[];
+    }): ListProductsResponse {
+        const message = new ListProductsResponse({});
+        if (data.products != null) {
+            message.products = data.products.map(item => Product.fromObject(item));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            products?: ReturnType<typeof Product.prototype.toObject>[];
+        } = {};
+        if (this.products != null) {
+            data.products = this.products.map((item: Product) => item.toObject());
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.products.length)
+            writer.writeRepeatedMessage(1, this.products, (item: Product) => item.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ListProductsResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ListProductsResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.products, () => pb_1.Message.addToRepeatedWrapperField(message, 1, Product.deserialize(reader), Product));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ListProductsResponse {
+        return ListProductsResponse.deserialize(bytes);
+    }
+}
+export class Product extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        id?: string;
+        name?: string;
+        price?: string;
+        description?: string;
+        currency?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("id" in data && data.id != undefined) {
+                this.id = data.id;
+            }
+            if ("name" in data && data.name != undefined) {
+                this.name = data.name;
+            }
+            if ("price" in data && data.price != undefined) {
+                this.price = data.price;
+            }
+            if ("description" in data && data.description != undefined) {
+                this.description = data.description;
+            }
+            if ("currency" in data && data.currency != undefined) {
+                this.currency = data.currency;
+            }
+        }
+    }
+    get id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get name() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set name(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get price() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set price(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get description() {
+        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+    }
+    set description(value: string) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    get currency() {
+        return pb_1.Message.getFieldWithDefault(this, 5, "") as string;
+    }
+    set currency(value: string) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    static fromObject(data: {
+        id?: string;
+        name?: string;
+        price?: string;
+        description?: string;
+        currency?: string;
+    }): Product {
+        const message = new Product({});
+        if (data.id != null) {
+            message.id = data.id;
+        }
+        if (data.name != null) {
+            message.name = data.name;
+        }
+        if (data.price != null) {
+            message.price = data.price;
+        }
+        if (data.description != null) {
+            message.description = data.description;
+        }
+        if (data.currency != null) {
+            message.currency = data.currency;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            id?: string;
+            name?: string;
+            price?: string;
+            description?: string;
+            currency?: string;
+        } = {};
+        if (this.id != null) {
+            data.id = this.id;
+        }
+        if (this.name != null) {
+            data.name = this.name;
+        }
+        if (this.price != null) {
+            data.price = this.price;
+        }
+        if (this.description != null) {
+            data.description = this.description;
+        }
+        if (this.currency != null) {
+            data.currency = this.currency;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.id.length)
+            writer.writeString(1, this.id);
+        if (this.name.length)
+            writer.writeString(2, this.name);
+        if (this.price.length)
+            writer.writeString(3, this.price);
+        if (this.description.length)
+            writer.writeString(4, this.description);
+        if (this.currency.length)
+            writer.writeString(5, this.currency);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): Product {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new Product();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.id = reader.readString();
+                    break;
+                case 2:
+                    message.name = reader.readString();
+                    break;
+                case 3:
+                    message.price = reader.readString();
+                    break;
+                case 4:
+                    message.description = reader.readString();
+                    break;
+                case 5:
+                    message.currency = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): Product {
+        return Product.deserialize(bytes);
+    }
+}
+export class CreateCheckoutSessionRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        product_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("product_id" in data && data.product_id != undefined) {
+                this.product_id = data.product_id;
+            }
+        }
+    }
+    get product_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set product_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        product_id?: string;
+    }): CreateCheckoutSessionRequest {
+        const message = new CreateCheckoutSessionRequest({});
+        if (data.product_id != null) {
+            message.product_id = data.product_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            product_id?: string;
+        } = {};
+        if (this.product_id != null) {
+            data.product_id = this.product_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.product_id.length)
+            writer.writeString(1, this.product_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CreateCheckoutSessionRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CreateCheckoutSessionRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.product_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CreateCheckoutSessionRequest {
+        return CreateCheckoutSessionRequest.deserialize(bytes);
+    }
+}
+export class CreateCheckoutSessionResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        session_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("session_id" in data && data.session_id != undefined) {
+                this.session_id = data.session_id;
+            }
+        }
+    }
+    get session_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set session_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        session_id?: string;
+    }): CreateCheckoutSessionResponse {
+        const message = new CreateCheckoutSessionResponse({});
+        if (data.session_id != null) {
+            message.session_id = data.session_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            session_id?: string;
+        } = {};
+        if (this.session_id != null) {
+            data.session_id = this.session_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.session_id.length)
+            writer.writeString(1, this.session_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CreateCheckoutSessionResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CreateCheckoutSessionResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.session_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CreateCheckoutSessionResponse {
+        return CreateCheckoutSessionResponse.deserialize(bytes);
+    }
+}
 // Server-side service class removed for client-side compatibility
 export class PaymentServiceClient {
     private _address: string;
@@ -101,5 +727,17 @@ export class PaymentServiceClient {
     private static Infer = new grpc_web_1.MethodDescriptor<InferRequest, InferResponse>("/sortedchat.PaymentService/Infer", grpc_web_1.MethodType.SERVER_STREAMING, InferRequest, InferResponse, (message: InferRequest) => message.serialize(), InferResponse.deserialize);
     Infer(message: InferRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.serverStreaming(this._address + "/sortedchat.PaymentService/Infer", message, metadata || {}, PaymentServiceClient.Infer);
+    }
+    private static CreateProduct = new grpc_web_1.MethodDescriptor<CreateProductRequest, CreateProductResponse>("/sortedchat.PaymentService/CreateProduct", grpc_web_1.MethodType.UNARY, CreateProductRequest, CreateProductResponse, (message: CreateProductRequest) => message.serialize(), CreateProductResponse.deserialize);
+    CreateProduct(message: CreateProductRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<CreateProductRequest, CreateProductResponse>(this._address + "/sortedchat.PaymentService/CreateProduct", message, metadata || {}, PaymentServiceClient.CreateProduct);
+    }
+    private static ListProducts = new grpc_web_1.MethodDescriptor<ListProductsRequest, ListProductsResponse>("/sortedchat.PaymentService/ListProducts", grpc_web_1.MethodType.UNARY, ListProductsRequest, ListProductsResponse, (message: ListProductsRequest) => message.serialize(), ListProductsResponse.deserialize);
+    ListProducts(message: ListProductsRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<ListProductsRequest, ListProductsResponse>(this._address + "/sortedchat.PaymentService/ListProducts", message, metadata || {}, PaymentServiceClient.ListProducts);
+    }
+    private static CreateCheckoutSession = new grpc_web_1.MethodDescriptor<CreateCheckoutSessionRequest, CreateCheckoutSessionResponse>("/sortedchat.PaymentService/CreateCheckoutSession", grpc_web_1.MethodType.UNARY, CreateCheckoutSessionRequest, CreateCheckoutSessionResponse, (message: CreateCheckoutSessionRequest) => message.serialize(), CreateCheckoutSessionResponse.deserialize);
+    CreateCheckoutSession(message: CreateCheckoutSessionRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<CreateCheckoutSessionRequest, CreateCheckoutSessionResponse>(this._address + "/sortedchat.PaymentService/CreateCheckoutSession", message, metadata || {}, PaymentServiceClient.CreateCheckoutSession);
     }
 }

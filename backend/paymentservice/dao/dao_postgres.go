@@ -3,6 +3,7 @@ package dao
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -49,4 +50,40 @@ func NewPostgresDAOWithDB(db *sqlx.DB) (*PostgresDAO, error) {
 
 func (d *PostgresDAO) Infer(dummy string) error {
 	return nil
+}
+
+func (d *PostgresDAO) CreateProduct(id string, userID string, name string, description string, cost string, currency string) (string, error) {
+	slog.Info("paymentservice:dao_postgres:CreateProduct", "userID", userID, "name", name, "description", description, "cost", cost, "currency", currency)
+
+	query := `INSERT INTO products (id, user_id, name, description, price, currency, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := d.db.Exec(query, id, userID, name, description, cost, currency, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:CreateProduct", "error", err)
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (d *PostgresDAO) ListProducts(userID string) ([]*Product, error) {
+	slog.Info("paymentservice:dao_postgres:ListProducts", "userID", userID)
+
+	query := `SELECT * FROM products WHERE user_id = $1`
+	productList, err := d.db.Queryx(query, userID)
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:ListProducts", "error", err)
+		return nil, err
+	}
+
+	products := []*Product{}
+	for productList.Next() {
+		product := &Product{}
+		err := productList.Scan(product)
+		if err != nil {
+			slog.Error("paymentservice:dao_postgres:ListProducts", "error", err)
+			return nil, err
+		}
+		products = append(products, product)
+	}
+	return products, nil
 }

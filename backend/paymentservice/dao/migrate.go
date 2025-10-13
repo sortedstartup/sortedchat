@@ -130,7 +130,7 @@ func MigratePostgres(dbURL string) error {
 }
 
 func SeedPostgres(dbURL string) error {
-	slog.Info("PaymentService: Seeding PostgreSQL database", "dbURL", dbURL)
+	slog.Info("PaymentService: Seeding PostgreSQL database")
 	sqlDB, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		slog.Error("error", "err", err)

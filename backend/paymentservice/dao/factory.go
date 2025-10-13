@@ -57,8 +57,16 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 		}
 
 		// Configure connection pool
-		db.SetMaxOpenConns(config.Database.Postgres.Pool.MaxOpenConnections)
-		db.SetMaxIdleConns(config.Database.Postgres.Pool.MaxIdleConnections)
+		if v := config.Database.Postgres.Pool.MaxOpenConnections; v > 0 {
+			db.SetMaxOpenConns(v)
+		} else if v < 0 {
+			return nil, fmt.Errorf("invalid postgres pool: MaxOpenConnections cannot be negative: %d", v)
+		}
+		if v := config.Database.Postgres.Pool.MaxIdleConnections; v >= 0 {
+			db.SetMaxIdleConns(v)
+		} else {
+			return nil, fmt.Errorf("invalid postgres pool: MaxIdleConnections cannot be negative: %d", v)
+		}
 		db.SetConnMaxLifetime(config.Database.Postgres.Pool.ConnectionMaxLifetime)
 
 		// Test the connection

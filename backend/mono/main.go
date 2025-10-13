@@ -259,6 +259,10 @@ func main() {
 	realtimeProto.RegisterRealtimeServiceServer(grpcServer, realtimeServiceApi)
 
 	paymentServiceApi := paymentApi.NewPaymentServiceAPI(paymentDaoFactory)
+	if paymentServiceApi == nil {
+		slog.Error("Failed to create payment service API")
+		return
+	}
 	if err := paymentServiceApi.Init(paymentConfig); err != nil {
 		slog.Error("Failed to initialize payment service", "error", err)
 		return

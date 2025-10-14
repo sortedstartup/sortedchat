@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -65,11 +66,11 @@ func (d *PostgresDAO) CreateProduct(id string, userID string, name string, descr
 	return id, nil
 }
 
-func (d *PostgresDAO) ListProducts(userID string) ([]*Product, error) {
-	slog.Info("paymentservice:dao_postgres:ListProducts", "userID", userID)
+func (d *PostgresDAO) ListProducts() ([]*Product, error) {
+	slog.Info("paymentservice:dao_postgres:ListProducts")
 
-	query := `SELECT * FROM products WHERE user_id = $1`
-	productList, err := d.db.Queryx(query, userID)
+	query := `SELECT * FROM products`
+	productList, err := d.db.Queryx(query)
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:ListProducts", "error", err)
 		return nil, err
@@ -78,7 +79,7 @@ func (d *PostgresDAO) ListProducts(userID string) ([]*Product, error) {
 	products := []*Product{}
 	for productList.Next() {
 		product := &Product{}
-		err := productList.Scan(product)
+		err := productList.StructScan(product)
 		if err != nil {
 			slog.Error("paymentservice:dao_postgres:ListProducts", "error", err)
 			return nil, err
@@ -86,4 +87,18 @@ func (d *PostgresDAO) ListProducts(userID string) ([]*Product, error) {
 		products = append(products, product)
 	}
 	return products, nil
+}
+
+func (d *PostgresDAO) CreateUserPurchase(userID string, productID string, transaction_metadata string, is_success bool) (string, error) {
+	id := uuid.New().String()
+	slog.Info("paymentservice:dao_postgres:CreateUserPurchase", "userID", userID, "productID", productID, "is_success", is_success)
+
+	query := `INSERT INTO user_purchases (id, user_id, product_id, transaction_metadata, is_success, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := d.db.Exec(query, id, userID, productID, transaction_metadata, is_success, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:CreateUserPurchase", "error", err)
+		return "", err
+	}
+
+	return id, nil
 }

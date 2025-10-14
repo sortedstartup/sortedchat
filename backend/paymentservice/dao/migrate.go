@@ -92,11 +92,10 @@ func MigrateDB_UsingConnection_Postgres(sqlDB *sql.DB, files embed.FS, directory
 }
 
 func MigrateSQLite(dbURL string) error {
-	slog.Info("PaymentService: Migrating SQLite database", "dbURL", dbURL)
+	slog.Info("PaymentService: Migrating SQLite database")
 	sqlite_vec.Auto()
 	sqlDB, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
-		slog.Error("error", "err", err)
 		return err
 	}
 	defer sqlDB.Close()
@@ -105,7 +104,7 @@ func MigrateSQLite(dbURL string) error {
 }
 
 func SeedSqlite(dbURL string) error {
-	slog.Info("PaymentService: Seeding SQLite database", "dbURL", dbURL)
+	slog.Info("PaymentService: Seeding SQLite database")
 	sqlite_vec.Auto()
 	sqlDB, err := sql.Open("sqlite3", dbURL)
 	if err != nil {

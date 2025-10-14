@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { listProducts, ProductList, createCheckoutSession } from "../store/payment";
+import { listProducts, ProductList } from "./store/payment";
 import { useStore } from "@nanostores/react";
+import Buy from "./Buy";
 
 const ListProducts: React.FC = () => {
     const products = useStore(ProductList);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [buyingProductId, setBuyingProductId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -22,20 +22,6 @@ const ListProducts: React.FC = () => {
 
         fetchProducts();
     }, []);
-
-    const handleBuyNow = async (productId: string) => {
-        try {
-            setBuyingProductId(productId);
-            const sessionId = await createCheckoutSession(productId);
-            // You can redirect to Stripe checkout or handle the session ID as needed
-            console.log("Redirecting to checkout with session:", sessionId); //change variable name sessionId to session URL
-           
-            window.location.href = sessionId;
-        } catch (err: any) {
-            console.error("Failed to create checkout session:", err);
-            setError(err?.message || "Failed to create checkout session");
-        }
-    };
 
     if (loading) {
         return (
@@ -72,13 +58,7 @@ const ListProducts: React.FC = () => {
                                 </span>
                                 <span className="text-sm text-gray-500">ID: {product.id}</span>
                             </div>
-                            <button
-                                onClick={() => handleBuyNow(product.id)}
-                                disabled={buyingProductId === product.id}
-                                className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {buyingProductId === product.id ? "Processing..." : "Buy Now"}
-                            </button>
+                            <Buy productId={product.id} className="w-full" />
                         </div>
                     ))}
                 </div>

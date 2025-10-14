@@ -1,8 +1,8 @@
 import { atom } from "nanostores";
 import {
     CreateProductRequest, PaymentServiceClient, ListProductsRequest, Product, CreateCheckoutSessionRequest
-} from "../../proto/paymentservice"
-import { createAuthenticatedClientOptions } from "../lib/auth";
+} from "../../../proto/paymentservice"
+import { createAuthenticatedClientOptions } from "../../lib/auth";
 
 const client = new PaymentServiceClient(import.meta.env.VITE_API_URL, {}, createAuthenticatedClientOptions());
 

@@ -59,13 +59,8 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 }
 
 func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {
-	userID, err := auth.GetUserIDFromContext_WithError(ctx)
-	if err != nil {
-		slog.Error("paymentservice:api:ListProducts", "error", err)
-		return nil, err
-	}
 
-	daoProducts, err := s.service.ListProducts(ctx, userID)
+	daoProducts, err := s.service.ListProducts(ctx)
 	if err != nil {
 		return nil, err
 	}

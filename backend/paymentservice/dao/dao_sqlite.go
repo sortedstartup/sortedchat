@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -38,11 +39,11 @@ func (d *SQLiteDAO) CreateProduct(id string, userID string, name string, descrip
 	return id, nil
 }
 
-func (d *SQLiteDAO) ListProducts(userID string) ([]*Product, error) {
-	slog.Info("paymentservice:dao_sqlite:ListProducts", "userID", userID)
+func (d *SQLiteDAO) ListProducts() ([]*Product, error) {
+	slog.Info("paymentservice:dao_sqlite:ListProducts")
 
-	query := `SELECT * FROM products WHERE user_id = ?`
-	productList, err := d.db.Queryx(query, userID)
+	query := `SELECT * FROM products`
+	productList, err := d.db.Queryx(query)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:ListProducts", "error", err)
 		return nil, err
@@ -59,4 +60,18 @@ func (d *SQLiteDAO) ListProducts(userID string) ([]*Product, error) {
 		products = append(products, product)
 	}
 	return products, nil
+}
+
+func (d *SQLiteDAO) CreateUserPurchase(userID string, productID string, transaction_metadata string, is_success bool) (string, error) {
+	id := uuid.New().String()
+	slog.Info("paymentservice:dao_sqlite:CreateUserPurchase", "userID", userID, "productID", productID, "is_success", is_success)
+
+	query := `INSERT INTO user_purchases (id, user_id, product_id, transaction_metadata, is_success, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+	_, err := d.db.Exec(query, id, userID, productID, transaction_metadata, is_success, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	if err != nil {
+		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", err)
+		return "", err
+	}
+
+	return id, nil
 }

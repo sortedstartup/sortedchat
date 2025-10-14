@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createProduct } from "../store/payment";
+import { createProduct } from "./store/payment";
 
 const CreateProduct: React.FC = () => {
     const [name, setName] = useState("");

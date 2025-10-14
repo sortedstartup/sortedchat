@@ -75,6 +75,7 @@ func (d *PostgresDAO) ListProducts() ([]*Product, error) {
 		slog.Error("paymentservice:dao_postgres:ListProducts", "error", err)
 		return nil, err
 	}
+	defer productList.Close()
 
 	products := []*Product{}
 	for productList.Next() {

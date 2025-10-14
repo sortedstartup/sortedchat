@@ -15,7 +15,7 @@ export const createProduct = async (name: string, description: string, cost: str
         currency: currency,
     });
     const res = await client.CreateProduct(req, {});
-   
+
     console.log(res);
     console.log(res.message);
     console.log(res.id);
@@ -35,10 +35,12 @@ export const listProducts = async () => {
 }
 
 export const createCheckoutSession = async (productId: string) => {
-    const req = new CreateCheckoutSessionRequest({
-        product_id: productId,
-    });
-    const res = await client.CreateCheckoutSession(req, {});
-    console.log("Checkout session created:", res.session_url);
-    return res.session_url;
+    try {
+        const req = new CreateCheckoutSessionRequest({ product_id: productId });
+        const res = await client.CreateCheckoutSession(req, {});
+        return res.session_url;
+    } catch (err) {
+        console.error("Failed to create checkout session:", err);
+        throw err;
+    }
 }

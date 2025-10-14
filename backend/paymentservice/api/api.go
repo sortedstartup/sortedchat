@@ -99,7 +99,12 @@ func (s *PaymentServiceAPI) CreateCheckoutSession(ctx context.Context, req *pb.C
 
 func (s *PaymentServiceAPI) Init(config *dao.Config) error {
 
-	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+	key := os.Getenv("STRIPE_SECRET_KEY")
+	if key == "" {
+		slog.Error("paymentservice:api:Init", "error", "STRIPE_SECRET_KEY is not set")
+		return fmt.Errorf("STRIPE_SECRET_KEY is not set")
+	}
+	stripe.Key = key
 
 	switch config.Database.Type {
 	case dao.DatabaseTypeSQLite:

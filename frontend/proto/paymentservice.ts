@@ -649,37 +649,37 @@ export class CreateCheckoutSessionRequest extends pb_1.Message {
 export class CreateCheckoutSessionResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        session_id?: string;
+        session_url?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
-            if ("session_id" in data && data.session_id != undefined) {
-                this.session_id = data.session_id;
+            if ("session_url" in data && data.session_url != undefined) {
+                this.session_url = data.session_url;
             }
         }
     }
-    get session_id() {
+    get session_url() {
         return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
     }
-    set session_id(value: string) {
+    set session_url(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
     static fromObject(data: {
-        session_id?: string;
+        session_url?: string;
     }): CreateCheckoutSessionResponse {
         const message = new CreateCheckoutSessionResponse({});
-        if (data.session_id != null) {
-            message.session_id = data.session_id;
+        if (data.session_url != null) {
+            message.session_url = data.session_url;
         }
         return message;
     }
     toObject() {
         const data: {
-            session_id?: string;
+            session_url?: string;
         } = {};
-        if (this.session_id != null) {
-            data.session_id = this.session_id;
+        if (this.session_url != null) {
+            data.session_url = this.session_url;
         }
         return data;
     }
@@ -687,8 +687,8 @@ export class CreateCheckoutSessionResponse extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.session_id.length)
-            writer.writeString(1, this.session_id);
+        if (this.session_url.length)
+            writer.writeString(1, this.session_url);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -699,7 +699,7 @@ export class CreateCheckoutSessionResponse extends pb_1.Message {
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
-                    message.session_id = reader.readString();
+                    message.session_url = reader.readString();
                     break;
                 default: reader.skipField();
             }

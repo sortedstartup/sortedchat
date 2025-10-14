@@ -30,7 +30,8 @@ func (d *SQLiteDAO) CreateProduct(id string, userID string, name string, descrip
 	slog.Info("paymentservice:dao_sqlite:CreateProduct", "userID", userID, "name", name, "description", description, "cost", cost, "currency", currency)
 
 	query := `INSERT INTO products (id, user_id, name, description, price, currency, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := d.db.Exec(query, id, userID, name, description, cost, currency, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	now := time.Now().Format(time.RFC3339)
+	_, err := d.db.Exec(query, id, userID, name, description, cost, currency, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateProduct", "error", err)
 		return "", err
@@ -48,6 +49,7 @@ func (d *SQLiteDAO) ListProducts() ([]*Product, error) {
 		slog.Error("paymentservice:dao_sqlite:ListProducts", "error", err)
 		return nil, err
 	}
+	defer productList.Close()
 
 	products := []*Product{}
 	for productList.Next() {

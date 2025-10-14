@@ -39,6 +39,6 @@ export const createCheckoutSession = async (productId: string) => {
         product_id: productId,
     });
     const res = await client.CreateCheckoutSession(req, {});
-    console.log("Checkout session created:", res.session_id);
-    return res.session_id;
+    console.log("Checkout session created:", res.session_url);
+    return res.session_url;
 }

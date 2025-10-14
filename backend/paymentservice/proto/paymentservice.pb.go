@@ -415,7 +415,7 @@ func (x *CreateCheckoutSessionRequest) GetProductId() string {
 
 type CreateCheckoutSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	SessionUrl    string                 `protobuf:"bytes,1,opt,name=session_url,json=sessionUrl,proto3" json:"session_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -450,9 +450,9 @@ func (*CreateCheckoutSessionResponse) Descriptor() ([]byte, []int) {
 	return file_paymentservice_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *CreateCheckoutSessionResponse) GetSessionId() string {
+func (x *CreateCheckoutSessionResponse) GetSessionUrl() string {
 	if x != nil {
-		return x.SessionId
+		return x.SessionUrl
 	}
 	return ""
 }
@@ -484,10 +484,10 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\bcurrency\x18\x05 \x01(\tR\bcurrency\"=\n" +
 	"\x1cCreateCheckoutSessionRequest\x12\x1d\n" +
 	"\n" +
-	"product_id\x18\x01 \x01(\tR\tproductId\">\n" +
-	"\x1dCreateCheckoutSessionResponse\x12\x1d\n" +
-	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId2\xe7\x02\n" +
+	"product_id\x18\x01 \x01(\tR\tproductId\"@\n" +
+	"\x1dCreateCheckoutSessionResponse\x12\x1f\n" +
+	"\vsession_url\x18\x01 \x01(\tR\n" +
+	"sessionUrl2\xe7\x02\n" +
 	"\x0ePaymentService\x12>\n" +
 	"\x05Infer\x12\x18.sortedchat.InferRequest\x1a\x19.sortedchat.InferResponse0\x01\x12T\n" +
 	"\rCreateProduct\x12 .sortedchat.CreateProductRequest\x1a!.sortedchat.CreateProductResponse\x12Q\n" +

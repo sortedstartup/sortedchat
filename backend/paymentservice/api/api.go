@@ -45,7 +45,7 @@ func (s *PaymentServiceAPI) Infer(_ *pb.InferRequest, stream grpc.ServerStreamin
 func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreateProductRequest) (*pb.CreateProductResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("inferenceservice:api:DownloadModel", "error", err)
+		slog.Error("paymentservice:api:CreateProduct", "error", err)
 		return nil, err
 	}
 	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.Price, req.Currency)
@@ -88,12 +88,12 @@ func (s *PaymentServiceAPI) CreateCheckoutSession(ctx context.Context, req *pb.C
 		slog.Error("paymentservice:api:CreateCheckoutSession", "error", err)
 		return nil, err
 	}
-	sessionID, err := s.service.CreateCheckoutSession(ctx, userID, req.ProductId)
+	SessionUrl, err := s.service.CreateCheckoutSession(ctx, userID, req.ProductId)
 	if err != nil {
 		return nil, err
 	}
 	return &pb.CreateCheckoutSessionResponse{
-		SessionId: sessionID,
+		SessionUrl: SessionUrl,
 	}, nil
 }
 

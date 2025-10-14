@@ -94,8 +94,8 @@ func (s *PaymentService) HandleWebhook(ctx context.Context, r *http.Request) err
 	case "checkout.session.expired":
 		err := s.handlePaymentFailed(ctx, event)
 		if err != nil {
-			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle invoice payment failed", "details", err)
-			return fmt.Errorf("failed to handle invoice payment failed: %v", err)
+			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle checkout session expired", "details", err)
+			return fmt.Errorf("failed to handle checkout session expired: %v", err)
 		}
 	default:
 		slog.Info("paymentservice:service:HandleWebhook", "event", "unhandled event type", "type", event.Type)
@@ -155,7 +155,7 @@ func (s *PaymentService) handlePaymentFailed(ctx context.Context, event stripe.E
 
 	productID, exists := session.Metadata["product_id"]
 	if !exists {
-		return fmt.Errorf("plan_id not found in session metadata")
+		return fmt.Errorf("product_id not found in session metadata")
 	}
 
 	sessionJSON, err := json.Marshal(session)

@@ -53,13 +53,13 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	}
 
 	if strings.TrimSpace(req.Name) == "" {
-		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+		return nil, status.Error(codes.InvalidArgument, "Product name cannot be empty")
 	}
 	if strings.TrimSpace(req.Description) == "" {
-		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+		return nil, status.Error(codes.InvalidArgument, "Product description cannot be empty")
 	}
 	if req.AmountInCents <= 0 {
-		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+		return nil, status.Error(codes.InvalidArgument, "Product amount must be greater than zero")
 	}
 
 	// Convert Currency enum to string
@@ -115,7 +115,7 @@ func (s *PaymentServiceAPI) CreateCheckoutSession(ctx context.Context, req *pb.C
 	}
 
 	if strings.TrimSpace(req.ProductId) == "" {
-		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
 	}
 
 	SessionUrl, err := s.service.CreateCheckoutSession(ctx, userID, req.ProductId)

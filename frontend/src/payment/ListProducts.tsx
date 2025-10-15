@@ -54,8 +54,13 @@ const ListProducts: React.FC = () => {
                             <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
                             <p className="text-gray-600 mb-2">{product.description}</p>
                             <div className="flex justify-between items-center mb-3">
-                                <span className="text-lg font-bold">
-                                    ${(product.amount_in_cents / 100).toFixed(2)} {Currency[product.currency]}
+                            <span className="text-lg font-bold">
+                                    {new Intl.NumberFormat(undefined, {
+                                        style: "currency",
+                                        currency:
+                                            product.currency === Currency.USD ? "USD" :
+                                            product.currency === Currency.INR ? "INR" : "USD",
+                                    }).format(product.amount_in_cents / 100)}
                                 </span>
                                 <span className="text-sm text-gray-500">ID: {product.id}</span>
                             </div>

@@ -8,10 +8,14 @@ import { toast } from "sonner";
 const client = new PaymentServiceClient(import.meta.env.VITE_API_URL, {}, createAuthenticatedClientOptions());
 
 
-export const createProduct = async (name: string, description: string, priceInUSD: string, currency: Currency) => {
+export const createProduct = async (name: string, description: string, price: string, currency: Currency) => {
     try {
-        // Convert USD to cents
-        const amountInCents = Math.round(parseFloat(priceInUSD) * 100);
+        const parsed = Number(price);
+        if(!Number.isFinite(parsed) || parsed < 0) {
+            toast.error("Price must be a non-negative number");
+            toast.error("invalid price");
+        }
+        const amountInCents = Math.round(parsed * 100);
 
         const req = new CreateProductRequest({
             name: name,

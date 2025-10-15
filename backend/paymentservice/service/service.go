@@ -49,22 +49,22 @@ func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name 
 		},
 	}
 
-	product, err := product.New(productParams)
+	stripeProduct, err := product.New(productParams)
 	if err != nil {
 		slog.Error("paymentservice:service:CreateProduct", "error", err)
 		return "", fmt.Errorf("failed to process the request")
 	}
 
-	slog.Info("paymentservice:service:CreateProduct", "id", product.ID)
+	slog.Info("paymentservice:service:CreateProduct", "id", stripeProduct.ID)
 
-	_, err = s.dao.CreateProduct(product.ID, userID, name, description, amountInCents, currency)
+	_, err = s.dao.CreateProduct(stripeProduct.ID, userID, name, description, amountInCents, currency)
 	if err != nil {
 		slog.Error("paymentservice:service:CreateProduct", "error", err)
 		return "", fmt.Errorf("failed to process the request")
 	}
 
 	// Return the product ID (you might want to return both product ID and price ID)
-	return product.ID, nil
+	return stripeProduct.ID, nil
 }
 
 func (s *PaymentService) ListProducts(ctx context.Context) ([]*dao.Product, error) {

@@ -13,14 +13,14 @@ export const createProduct = async (name: string, description: string, price: st
         const parsed = Number(price);
         if(!Number.isFinite(parsed) || parsed < 0) {
             toast.error("Price must be a non-negative number");
-            toast.error("invalid price");
+            throw new Error("invalid price");
         }
-        const amountInCents = Math.round(parsed * 100);
+        const amountInMinorUnits = Math.round(parsed * 100);
 
         const req = new CreateProductRequest({
             name: name,
             description: description,
-            amount_in_cents: amountInCents,
+            amount_in_cents: amountInMinorUnits,
             currency: currency,
         });
         const res = await client.CreateProduct(req, {});
@@ -41,6 +41,7 @@ export const listProducts = async () => {
         ProductList.set(res.products);
         return res.products;
     } catch (err) {
+        toast.error("Failed to list products");
         throw err;
     }
 }

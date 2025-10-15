@@ -58,7 +58,7 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	if strings.TrimSpace(req.Description) == "" {
 		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
 	}
-	if req.AmountInCents <= 0 {
+	if req.AmountInSmallestUnit <= 0 {
 		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
 	}
 
@@ -73,7 +73,7 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 		currencyStr = "USD"
 	}
 
-	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInCents, currencyStr)
+	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInSmallestUnit, currencyStr)
 	if err != nil {
 		return nil, err
 	}
@@ -94,13 +94,13 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 	products := make([]*pb.Product, len(daoProducts))
 	for i, daoProduct := range daoProducts {
 		products[i] = &pb.Product{
-			Id:                daoProduct.ID,
-			StripeProductId:   daoProduct.StripeProductID,
-			RazorpayProductId: daoProduct.RazorpayProductID,
-			Name:              daoProduct.Name,
-			Price:             daoProduct.Price,
-			Description:       daoProduct.Description,
-			Currency:          daoProduct.GetCurrencyEnum(),
+			Id:                   daoProduct.ID,
+			StripeProductId:      daoProduct.StripeProductID,
+			RazorpayProductId:    daoProduct.RazorpayProductID,
+			Name:                 daoProduct.Name,
+			AmountInSmallestUnit: daoProduct.Price,
+			Description:          daoProduct.Description,
+			Currency:             daoProduct.GetCurrencyEnum(),
 		}
 	}
 
@@ -120,7 +120,7 @@ func (s *PaymentServiceAPI) CreateStripeCheckoutSession(ctx context.Context, req
 		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
 	}
 
-	SessionUrl, err := s.service.CreateCheckoutSession(ctx, userID, req.ProductId)
+	SessionUrl, err := s.service.CreateStripeCheckoutSession(ctx, userID, req.ProductId)
 	if err != nil {
 		return nil, err
 	}

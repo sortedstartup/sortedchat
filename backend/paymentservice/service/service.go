@@ -31,11 +31,11 @@ func (s *PaymentService) Infer(ctx context.Context, dummy string) error {
 	return s.dao.Infer(dummy)
 }
 
-func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name string, description string, cost string, currency string) (string, error) {
+func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name string, description string, amountInSmallestUnit int64, currency string) (string, error) {
 	slog.Info("paymentservice:service:CreateProduct", "userID", userID, "name", name)
 
 	// Create product on Stripe
-	stripeProductID, err := s.CreateProductStripe(ctx, name, description, cost, currency)
+	stripeProductID, err := s.CreateProductStripe(ctx, name, description, amountInSmallestUnit, currency)
 	if err != nil {
 		slog.Error("paymentservice:service:CreateProduct", "error", "failed to create Stripe product", "details", err)
 		return "", fmt.Errorf("failed to create Stripe product")
@@ -43,7 +43,7 @@ func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name 
 	slog.Info("paymentservice:service:CreateProduct", "stripeProductID", stripeProductID)
 
 	// Create product on Razorpay
-	razorpayProductID, err := s.CreateProductRazorpay(ctx, name, description, cost, currency)
+	razorpayProductID, err := s.CreateProductRazorpay(ctx, name, description, amountInSmallestUnit, currency)
 	if err != nil {
 		slog.Error("paymentservice:service:CreateProduct", "error", "failed to create Razorpay product", "details", err)
 		return "", fmt.Errorf("failed to create Razorpay product")
@@ -51,7 +51,7 @@ func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name 
 	slog.Info("paymentservice:service:CreateProduct", "razorpayProductID", razorpayProductID)
 
 	// Save to database with both provider IDs
-	productID, err := s.dao.CreateProduct(stripeProductID, razorpayProductID, userID, name, description, cost, currency)
+	productID, err := s.dao.CreateProduct(stripeProductID, razorpayProductID, userID, name, description, amountInSmallestUnit, currency)
 	if err != nil {
 		slog.Error("paymentservice:service:CreateProduct", "error", "failed to save product to database", "details", err)
 		return "", fmt.Errorf("failed to save product to database")

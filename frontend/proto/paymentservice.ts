@@ -96,7 +96,7 @@ export class CreateProductRequest extends pb_1.Message {
     constructor(data?: any[] | {
         name?: string;
         description?: string;
-        amount_in_cents?: number;
+        amount_in_smallest_unit?: number;
         currency?: Currency;
     }) {
         super();
@@ -108,8 +108,8 @@ export class CreateProductRequest extends pb_1.Message {
             if ("description" in data && data.description != undefined) {
                 this.description = data.description;
             }
-            if ("amount_in_cents" in data && data.amount_in_cents != undefined) {
-                this.amount_in_cents = data.amount_in_cents;
+            if ("amount_in_smallest_unit" in data && data.amount_in_smallest_unit != undefined) {
+                this.amount_in_smallest_unit = data.amount_in_smallest_unit;
             }
             if ("currency" in data && data.currency != undefined) {
                 this.currency = data.currency;
@@ -128,10 +128,10 @@ export class CreateProductRequest extends pb_1.Message {
     set description(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
-    get amount_in_cents() {
+    get amount_in_smallest_unit() {
         return pb_1.Message.getFieldWithDefault(this, 3, 0) as number;
     }
-    set amount_in_cents(value: number) {
+    set amount_in_smallest_unit(value: number) {
         pb_1.Message.setField(this, 3, value);
     }
     get currency() {
@@ -143,7 +143,7 @@ export class CreateProductRequest extends pb_1.Message {
     static fromObject(data: {
         name?: string;
         description?: string;
-        amount_in_cents?: number;
+        amount_in_smallest_unit?: number;
         currency?: Currency;
     }): CreateProductRequest {
         const message = new CreateProductRequest({});
@@ -153,8 +153,8 @@ export class CreateProductRequest extends pb_1.Message {
         if (data.description != null) {
             message.description = data.description;
         }
-        if (data.amount_in_cents != null) {
-            message.amount_in_cents = data.amount_in_cents;
+        if (data.amount_in_smallest_unit != null) {
+            message.amount_in_smallest_unit = data.amount_in_smallest_unit;
         }
         if (data.currency != null) {
             message.currency = data.currency;
@@ -165,7 +165,7 @@ export class CreateProductRequest extends pb_1.Message {
         const data: {
             name?: string;
             description?: string;
-            amount_in_cents?: number;
+            amount_in_smallest_unit?: number;
             currency?: Currency;
         } = {};
         if (this.name != null) {
@@ -174,8 +174,8 @@ export class CreateProductRequest extends pb_1.Message {
         if (this.description != null) {
             data.description = this.description;
         }
-        if (this.amount_in_cents != null) {
-            data.amount_in_cents = this.amount_in_cents;
+        if (this.amount_in_smallest_unit != null) {
+            data.amount_in_smallest_unit = this.amount_in_smallest_unit;
         }
         if (this.currency != null) {
             data.currency = this.currency;
@@ -190,8 +190,8 @@ export class CreateProductRequest extends pb_1.Message {
             writer.writeString(1, this.name);
         if (this.description.length)
             writer.writeString(2, this.description);
-        if (this.amount_in_cents != 0)
-            writer.writeInt64(3, this.amount_in_cents);
+        if (this.amount_in_smallest_unit != 0)
+            writer.writeInt64(3, this.amount_in_smallest_unit);
         if (this.currency != Currency.USD)
             writer.writeEnum(4, this.currency);
         if (!w)
@@ -210,7 +210,7 @@ export class CreateProductRequest extends pb_1.Message {
                     message.description = reader.readString();
                     break;
                 case 3:
-                    message.amount_in_cents = reader.readInt64();
+                    message.amount_in_smallest_unit = reader.readInt64();
                     break;
                 case 4:
                     message.currency = reader.readEnum();
@@ -431,7 +431,7 @@ export class Product extends pb_1.Message {
         stripe_product_id?: string;
         razorpay_product_id?: string;
         name?: string;
-        amount_in_cents?: number;
+        amount_in_smallest_unit?: number;
         description?: string;
         currency?: Currency;
     }) {
@@ -450,8 +450,8 @@ export class Product extends pb_1.Message {
             if ("name" in data && data.name != undefined) {
                 this.name = data.name;
             }
-            if ("amount_in_cents" in data && data.amount_in_cents != undefined) {
-                this.amount_in_cents = data.amount_in_cents;
+            if ("amount_in_smallest_unit" in data && data.amount_in_smallest_unit != undefined) {
+                this.amount_in_smallest_unit = data.amount_in_smallest_unit;
             }
             if ("description" in data && data.description != undefined) {
                 this.description = data.description;
@@ -485,10 +485,10 @@ export class Product extends pb_1.Message {
     set name(value: string) {
         pb_1.Message.setField(this, 4, value);
     }
-    get amount_in_cents() {
+    get amount_in_smallest_unit() {
         return pb_1.Message.getFieldWithDefault(this, 5, 0) as number;
     }
-    set amount_in_cents(value: number) {
+    set amount_in_smallest_unit(value: number) {
         pb_1.Message.setField(this, 5, value);
     }
     get description() {
@@ -508,7 +508,7 @@ export class Product extends pb_1.Message {
         stripe_product_id?: string;
         razorpay_product_id?: string;
         name?: string;
-        amount_in_cents?: number;
+        amount_in_smallest_unit?: number;
         description?: string;
         currency?: Currency;
     }): Product {
@@ -525,8 +525,8 @@ export class Product extends pb_1.Message {
         if (data.name != null) {
             message.name = data.name;
         }
-        if (data.amount_in_cents != null) {
-            message.amount_in_cents = data.amount_in_cents;
+        if (data.amount_in_smallest_unit != null) {
+            message.amount_in_smallest_unit = data.amount_in_smallest_unit;
         }
         if (data.description != null) {
             message.description = data.description;
@@ -542,7 +542,7 @@ export class Product extends pb_1.Message {
             stripe_product_id?: string;
             razorpay_product_id?: string;
             name?: string;
-            amount_in_cents?: number;
+            amount_in_smallest_unit?: number;
             description?: string;
             currency?: Currency;
         } = {};
@@ -558,8 +558,8 @@ export class Product extends pb_1.Message {
         if (this.name != null) {
             data.name = this.name;
         }
-        if (this.amount_in_cents != null) {
-            data.amount_in_cents = this.amount_in_cents;
+        if (this.amount_in_smallest_unit != null) {
+            data.amount_in_smallest_unit = this.amount_in_smallest_unit;
         }
         if (this.description != null) {
             data.description = this.description;
@@ -581,8 +581,8 @@ export class Product extends pb_1.Message {
             writer.writeString(3, this.razorpay_product_id);
         if (this.name.length)
             writer.writeString(4, this.name);
-        if (this.amount_in_cents != 0)
-            writer.writeInt64(5, this.amount_in_cents);
+        if (this.amount_in_smallest_unit != 0)
+            writer.writeInt64(5, this.amount_in_smallest_unit);
         if (this.description.length)
             writer.writeString(6, this.description);
         if (this.currency != Currency.USD)
@@ -609,7 +609,7 @@ export class Product extends pb_1.Message {
                     message.name = reader.readString();
                     break;
                 case 5:
-                    message.amount_in_cents = reader.readInt64();
+                    message.amount_in_smallest_unit = reader.readInt64();
                     break;
                 case 6:
                     message.description = reader.readString();
@@ -834,7 +834,7 @@ export class CreateRazorpayCheckoutSessionResponse extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         order_id?: string;
-        amount?: string;
+        amount?: number;
         currency?: string;
     }) {
         super();
@@ -858,9 +858,9 @@ export class CreateRazorpayCheckoutSessionResponse extends pb_1.Message {
         pb_1.Message.setField(this, 1, value);
     }
     get amount() {
-        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+        return pb_1.Message.getFieldWithDefault(this, 2, 0) as number;
     }
-    set amount(value: string) {
+    set amount(value: number) {
         pb_1.Message.setField(this, 2, value);
     }
     get currency() {
@@ -871,7 +871,7 @@ export class CreateRazorpayCheckoutSessionResponse extends pb_1.Message {
     }
     static fromObject(data: {
         order_id?: string;
-        amount?: string;
+        amount?: number;
         currency?: string;
     }): CreateRazorpayCheckoutSessionResponse {
         const message = new CreateRazorpayCheckoutSessionResponse({});
@@ -889,7 +889,7 @@ export class CreateRazorpayCheckoutSessionResponse extends pb_1.Message {
     toObject() {
         const data: {
             order_id?: string;
-            amount?: string;
+            amount?: number;
             currency?: string;
         } = {};
         if (this.order_id != null) {
@@ -909,8 +909,8 @@ export class CreateRazorpayCheckoutSessionResponse extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.order_id.length)
             writer.writeString(1, this.order_id);
-        if (this.amount.length)
-            writer.writeString(2, this.amount);
+        if (this.amount != 0)
+            writer.writeInt64(2, this.amount);
         if (this.currency.length)
             writer.writeString(3, this.currency);
         if (!w)
@@ -926,7 +926,7 @@ export class CreateRazorpayCheckoutSessionResponse extends pb_1.Message {
                     message.order_id = reader.readString();
                     break;
                 case 2:
-                    message.amount = reader.readString();
+                    message.amount = reader.readInt64();
                     break;
                 case 3:
                     message.currency = reader.readString();

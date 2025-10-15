@@ -140,13 +140,13 @@ func (*InferResponse) Descriptor() ([]byte, []int) {
 }
 
 type CreateProductRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	AmountInCents int64                  `protobuf:"varint,3,opt,name=amount_in_cents,json=amountInCents,proto3" json:"amount_in_cents,omitempty"`
-	Currency      Currency               `protobuf:"varint,4,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Name                 string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description          string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	AmountInSmallestUnit int64                  `protobuf:"varint,3,opt,name=amount_in_smallest_unit,json=amountInSmallestUnit,proto3" json:"amount_in_smallest_unit,omitempty"`
+	Currency             Currency               `protobuf:"varint,4,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *CreateProductRequest) Reset() {
@@ -193,9 +193,9 @@ func (x *CreateProductRequest) GetDescription() string {
 	return ""
 }
 
-func (x *CreateProductRequest) GetAmountInCents() int64 {
+func (x *CreateProductRequest) GetAmountInSmallestUnit() int64 {
 	if x != nil {
-		return x.AmountInCents
+		return x.AmountInSmallestUnit
 	}
 	return 0
 }
@@ -340,16 +340,16 @@ func (x *ListProductsResponse) GetProducts() []*Product {
 }
 
 type Product struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	StripeProductId   string                 `protobuf:"bytes,2,opt,name=stripe_product_id,json=stripeProductId,proto3" json:"stripe_product_id,omitempty"`
-	RazorpayProductId string                 `protobuf:"bytes,3,opt,name=razorpay_product_id,json=razorpayProductId,proto3" json:"razorpay_product_id,omitempty"`
-	Name              string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
-	AmountInCents     int64                  `protobuf:"varint,5,opt,name=amount_in_cents,json=amountInCents,proto3" json:"amount_in_cents,omitempty"`
-	Description       string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
-	Currency          Currency               `protobuf:"varint,7,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Id                   string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	StripeProductId      string                 `protobuf:"bytes,2,opt,name=stripe_product_id,json=stripeProductId,proto3" json:"stripe_product_id,omitempty"`
+	RazorpayProductId    string                 `protobuf:"bytes,3,opt,name=razorpay_product_id,json=razorpayProductId,proto3" json:"razorpay_product_id,omitempty"`
+	Name                 string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	AmountInSmallestUnit int64                  `protobuf:"varint,5,opt,name=amount_in_smallest_unit,json=amountInSmallestUnit,proto3" json:"amount_in_smallest_unit,omitempty"`
+	Description          string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
+	Currency             Currency               `protobuf:"varint,7,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *Product) Reset() {
@@ -410,9 +410,9 @@ func (x *Product) GetName() string {
 	return ""
 }
 
-func (x *Product) GetAmountInCents() int64 {
+func (x *Product) GetAmountInSmallestUnit() int64 {
 	if x != nil {
-		return x.AmountInCents
+		return x.AmountInSmallestUnit
 	}
 	return 0
 }
@@ -566,7 +566,7 @@ func (x *CreateRazorpayCheckoutSessionRequest) GetProductId() string {
 type CreateRazorpayCheckoutSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OrderId       string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
-	Amount        string                 `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	Amount        int64                  `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"`
 	Currency      string                 `protobuf:"bytes,3,opt,name=currency,proto3" json:"currency,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -609,11 +609,11 @@ func (x *CreateRazorpayCheckoutSessionResponse) GetOrderId() string {
 	return ""
 }
 
-func (x *CreateRazorpayCheckoutSessionResponse) GetAmount() string {
+func (x *CreateRazorpayCheckoutSessionResponse) GetAmount() int64 {
 	if x != nil {
 		return x.Amount
 	}
-	return ""
+	return 0
 }
 
 func (x *CreateRazorpayCheckoutSessionResponse) GetCurrency() string {
@@ -630,24 +630,24 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\x14paymentservice.proto\x12\n" +
 	"sortedchat\"\x0e\n" +
 	"\fInferRequest\"\x0f\n" +
-	"\rInferResponse\"\xa6\x01\n" +
+	"\rInferResponse\"\xb5\x01\n" +
 	"\x14CreateProductRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x12&\n" +
-	"\x0famount_in_cents\x18\x03 \x01(\x03R\ramountInCents\x120\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x125\n" +
+	"\x17amount_in_smallest_unit\x18\x03 \x01(\x03R\x14amountInSmallestUnit\x120\n" +
 	"\bcurrency\x18\x04 \x01(\x0e2\x14.sortedchat.CurrencyR\bcurrency\"A\n" +
 	"\x15CreateProductResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\x15\n" +
 	"\x13ListProductsRequest\"G\n" +
 	"\x14ListProductsResponse\x12/\n" +
-	"\bproducts\x18\x01 \x03(\v2\x13.sortedchat.ProductR\bproducts\"\x85\x02\n" +
+	"\bproducts\x18\x01 \x03(\v2\x13.sortedchat.ProductR\bproducts\"\x94\x02\n" +
 	"\aProduct\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\x11stripe_product_id\x18\x02 \x01(\tR\x0fstripeProductId\x12.\n" +
 	"\x13razorpay_product_id\x18\x03 \x01(\tR\x11razorpayProductId\x12\x12\n" +
-	"\x04name\x18\x04 \x01(\tR\x04name\x12&\n" +
-	"\x0famount_in_cents\x18\x05 \x01(\x03R\ramountInCents\x12 \n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x125\n" +
+	"\x17amount_in_smallest_unit\x18\x05 \x01(\x03R\x14amountInSmallestUnit\x12 \n" +
 	"\vdescription\x18\x06 \x01(\tR\vdescription\x120\n" +
 	"\bcurrency\x18\a \x01(\x0e2\x14.sortedchat.CurrencyR\bcurrency\"C\n" +
 	"\"CreateStripeCheckoutSessionRequest\x12\x1d\n" +
@@ -661,7 +661,7 @@ const file_paymentservice_proto_rawDesc = "" +
 	"product_id\x18\x01 \x01(\tR\tproductId\"v\n" +
 	"%CreateRazorpayCheckoutSessionResponse\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x16\n" +
-	"\x06amount\x18\x02 \x01(\tR\x06amount\x12\x1a\n" +
+	"\x06amount\x18\x02 \x01(\x03R\x06amount\x12\x1a\n" +
 	"\bcurrency\x18\x03 \x01(\tR\bcurrency*\x1c\n" +
 	"\bCurrency\x12\a\n" +
 	"\x03USD\x10\x00\x12\a\n" +

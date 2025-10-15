@@ -26,7 +26,7 @@ message InferResponse {
 message CreateProductRequest {
     string name = 1;
     string description = 2;
-    int64 amount_in_cents = 3;
+    int64 amount_in_smallest_unit = 3;
     Currency currency = 4;
 }
 
@@ -47,7 +47,7 @@ message Product {
     string stripe_product_id = 2;
     string razorpay_product_id = 3;
     string name = 4;
-    int64 amount_in_cents = 5;
+    int64 amount_in_smallest_unit = 5;
     string description = 6;
     Currency currency = 7;
 }
@@ -66,6 +66,6 @@ message CreateRazorpayCheckoutSessionRequest {
 
 message CreateRazorpayCheckoutSessionResponse {
     string order_id = 1;
-    string amount = 2;
+    int64 amount = 2;
     string currency = 3;
 }

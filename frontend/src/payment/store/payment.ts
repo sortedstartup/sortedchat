@@ -20,7 +20,7 @@ export const createProduct = async (name: string, description: string, price: st
         const req = new CreateProductRequest({
             name: name,
             description: description,
-            amount_in_cents: amountInMinorUnits,
+            amount_in_smallest_unit: amountInMinorUnits,
             currency: currency,
         });
         const res = await client.CreateProduct(req, {});
@@ -64,26 +64,11 @@ export const createRazorpayCheckoutSession = async (productId: string) => {
         const res = await client.CreateRazorpayCheckoutSession(req, {});
         return {
             orderId: res.order_id,
-            amount: parseInt(res.amount),
+            amount: res.amount,
             currency: res.currency
         };
     } catch (err) {
         toast.error("Failed to create checkout session");
-        throw err;
-    }
-}
-
-export const createRazorpayCheckoutSession = async (productId: string) => {
-    try {
-    const req = new CreateRazorpayCheckoutSessionRequest({ product_id: productId });
-        const res = await client.CreateRazorpayCheckoutSession(req, {});
-        return {
-            orderId: res.order_id,
-            amount: parseInt(res.amount),
-            currency: res.currency
-        };
-    } catch (err) {
-        console.error("Failed to create checkout session:", err);
         throw err;
     }
 }

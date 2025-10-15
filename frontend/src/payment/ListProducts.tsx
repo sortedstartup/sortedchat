@@ -61,7 +61,7 @@ const ListProducts: React.FC = () => {
                                         currency:
                                             product.currency === Currency.USD ? "USD" :
                                             product.currency === Currency.INR ? "INR" : "USD",
-                                    }).format(product.amount_in_cents / 100)}
+                                    }).format(product.amount_in_smallest_unit / 100)}
                                 </span>
                                 <span className="text-sm text-gray-500">ID: {product.id}</span>
                             </div>

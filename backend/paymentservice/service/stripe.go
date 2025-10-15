@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/stripe/stripe-go/v83"
 	"github.com/stripe/stripe-go/v83/checkout/session"
@@ -17,16 +16,8 @@ import (
 	"github.com/stripe/stripe-go/v83/webhook"
 )
 
-func (s *PaymentService) CreateProductStripe(ctx context.Context, name string, description string, cost string, currency string) (string, error) {
+func (s *PaymentService) CreateProductStripe(ctx context.Context, name string, description string, amountInSmallestUnit int64, currency string) (string, error) {
 	slog.Info("paymentservice:service:CreateProductStripe", "name", name)
-
-	// Convert price string to int64 (Stripe expects amount in smallest currency unit)
-	priceAmount, err := strconv.ParseInt(cost, 10, 64)
-	if err != nil {
-		slog.Error("paymentservice:service:CreateProductStripe", "error", err)
-		return "", fmt.Errorf("failed to process the request")
-	}
-	slog.Info("paymentservice:service:CreateProductStripe", "priceAmount", priceAmount)
 
 	// Create the product
 	productParams := &stripe.ProductParams{
@@ -34,7 +25,7 @@ func (s *PaymentService) CreateProductStripe(ctx context.Context, name string, d
 		Description: stripe.String(description),
 		DefaultPriceData: &stripe.ProductDefaultPriceDataParams{
 			Currency:   stripe.String(currency),
-			UnitAmount: stripe.Int64(priceAmount * 100),
+			UnitAmount: stripe.Int64(amountInSmallestUnit),
 		},
 	}
 

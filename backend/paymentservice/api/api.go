@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"sortedstartup/common/auth"
 	"sortedstartup/paymentservice/dao"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/stripe/stripe-go/v83"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type PaymentServiceAPI struct {
@@ -47,6 +50,16 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	if err != nil {
 		slog.Error("paymentservice:api:CreateProduct", "error", err)
 		return nil, err
+	}
+
+	if strings.TrimSpace(req.Name) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+	}
+	if strings.TrimSpace(req.Description) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+	}
+	if req.AmountInCents <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
 	}
 
 	// Convert Currency enum to string

@@ -33,12 +33,6 @@ func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name 
 
 	slog.Info("paymentservice:service:CreateProduct", "userID", userID, "name", name, "amountInCents", amountInCents, "currency", currency)
 
-	// add MIN and MAX lenght validation for name and description
-	if name == "" || description == "" || currency == "" || amountInCents <= 0 {
-		slog.Error("paymentservice:service:CreateProduct", "error", "invalid request, please try again with valid parameters")
-		return "", fmt.Errorf("invalid request, please try again with valid parameters")
-	}
-
 	// Create the product first (amount is already in cents)
 	productParams := &stripe.ProductParams{
 		Name:        stripe.String(name),

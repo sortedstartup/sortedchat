@@ -1,6 +1,6 @@
 import { atom } from "nanostores";
 import {
-    CreateProductRequest, PaymentServiceClient, ListProductsRequest, Product, CreateCheckoutSessionRequest
+    CreateProductRequest, PaymentServiceClient, ListProductsRequest, Product, CreateStripeCheckoutSessionRequest, CreateRazorpayCheckoutSessionRequest
 } from "../../../proto/paymentservice"
 import { createAuthenticatedClientOptions } from "../../lib/auth";
 
@@ -34,11 +34,26 @@ export const listProducts = async () => {
     return res.products;
 }
 
-export const createCheckoutSession = async (productId: string) => {
+export const createStripeCheckoutSession = async (productId: string) => {
     try {
-        const req = new CreateCheckoutSessionRequest({ product_id: productId });
-        const res = await client.CreateCheckoutSession(req, {});
+        const req = new CreateStripeCheckoutSessionRequest({ product_id: productId });
+        const res = await client.CreateStripeCheckoutSession(req, {});
         return res.session_url;
+    } catch (err) {
+        console.error("Failed to create checkout session:", err);
+        throw err;
+    }
+}
+
+export const createRazorpayCheckoutSession = async (productId: string) => {
+    try {
+    const req = new CreateRazorpayCheckoutSessionRequest({ product_id: productId });
+        const res = await client.CreateRazorpayCheckoutSession(req, {});
+        return {
+            orderId: res.order_id,
+            amount: parseInt(res.amount),
+            currency: res.currency
+        };
     } catch (err) {
         console.error("Failed to create checkout session:", err);
         throw err;

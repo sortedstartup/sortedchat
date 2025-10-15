@@ -53,11 +53,12 @@ func (d *PostgresDAO) Infer(dummy string) error {
 	return nil
 }
 
-func (d *PostgresDAO) CreateProduct(id string, userID string, name string, description string, price string, currency string) (string, error) {
+func (d *PostgresDAO) CreateProduct(stripeProductID string, razorpayProductID string, userID string, name string, description string, price string, currency string) (string, error) {
+	id := uuid.New().String()
 	slog.Info("paymentservice:dao_postgres:CreateProduct", "userID", userID, "name", name, "description", description, "cost", price, "currency", currency)
 
-	query := `INSERT INTO products (id, user_id, name, description, price, currency, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	_, err := d.db.Exec(query, id, userID, name, description, price, currency, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	query := `INSERT INTO products (id, stripe_product_id, razorpay_product_id, user_id, name, description, price, currency, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := d.db.Exec(query, id, stripeProductID, razorpayProductID, userID, name, description, price, currency, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:CreateProduct", "error", err)
 		return "", err
@@ -102,4 +103,17 @@ func (d *PostgresDAO) CreateUserPurchase(userID string, productID string, transa
 	}
 
 	return id, nil
+}
+
+func (d *PostgresDAO) GetRazorpayProductById(razorpayProductID string) (*Product, error) {
+	slog.Info("paymentservice:dao_postgres:GetRazorpayProductById", "razorpayProductID", razorpayProductID)
+
+	query := `SELECT * FROM products WHERE razorpay_product_id = $1`
+	product := &Product{}
+	err := d.db.Get(product, query, razorpayProductID)
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:GetRazorpayProductById", "error", err)
+		return nil, err
+	}
+	return product, nil
 }

@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PaymentService_Infer_FullMethodName                 = "/sortedchat.PaymentService/Infer"
-	PaymentService_CreateProduct_FullMethodName         = "/sortedchat.PaymentService/CreateProduct"
-	PaymentService_ListProducts_FullMethodName          = "/sortedchat.PaymentService/ListProducts"
-	PaymentService_CreateCheckoutSession_FullMethodName = "/sortedchat.PaymentService/CreateCheckoutSession"
+	PaymentService_Infer_FullMethodName                         = "/sortedchat.PaymentService/Infer"
+	PaymentService_CreateProduct_FullMethodName                 = "/sortedchat.PaymentService/CreateProduct"
+	PaymentService_ListProducts_FullMethodName                  = "/sortedchat.PaymentService/ListProducts"
+	PaymentService_CreateStripeCheckoutSession_FullMethodName   = "/sortedchat.PaymentService/CreateStripeCheckoutSession"
+	PaymentService_CreateRazorpayCheckoutSession_FullMethodName = "/sortedchat.PaymentService/CreateRazorpayCheckoutSession"
 )
 
 // PaymentServiceClient is the client API for PaymentService service.
@@ -32,7 +33,8 @@ type PaymentServiceClient interface {
 	Infer(ctx context.Context, in *InferRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[InferResponse], error)
 	CreateProduct(ctx context.Context, in *CreateProductRequest, opts ...grpc.CallOption) (*CreateProductResponse, error)
 	ListProducts(ctx context.Context, in *ListProductsRequest, opts ...grpc.CallOption) (*ListProductsResponse, error)
-	CreateCheckoutSession(ctx context.Context, in *CreateCheckoutSessionRequest, opts ...grpc.CallOption) (*CreateCheckoutSessionResponse, error)
+	CreateStripeCheckoutSession(ctx context.Context, in *CreateStripeCheckoutSessionRequest, opts ...grpc.CallOption) (*CreateStripeCheckoutSessionResponse, error)
+	CreateRazorpayCheckoutSession(ctx context.Context, in *CreateRazorpayCheckoutSessionRequest, opts ...grpc.CallOption) (*CreateRazorpayCheckoutSessionResponse, error)
 }
 
 type paymentServiceClient struct {
@@ -82,10 +84,20 @@ func (c *paymentServiceClient) ListProducts(ctx context.Context, in *ListProduct
 	return out, nil
 }
 
-func (c *paymentServiceClient) CreateCheckoutSession(ctx context.Context, in *CreateCheckoutSessionRequest, opts ...grpc.CallOption) (*CreateCheckoutSessionResponse, error) {
+func (c *paymentServiceClient) CreateStripeCheckoutSession(ctx context.Context, in *CreateStripeCheckoutSessionRequest, opts ...grpc.CallOption) (*CreateStripeCheckoutSessionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateCheckoutSessionResponse)
-	err := c.cc.Invoke(ctx, PaymentService_CreateCheckoutSession_FullMethodName, in, out, cOpts...)
+	out := new(CreateStripeCheckoutSessionResponse)
+	err := c.cc.Invoke(ctx, PaymentService_CreateStripeCheckoutSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paymentServiceClient) CreateRazorpayCheckoutSession(ctx context.Context, in *CreateRazorpayCheckoutSessionRequest, opts ...grpc.CallOption) (*CreateRazorpayCheckoutSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateRazorpayCheckoutSessionResponse)
+	err := c.cc.Invoke(ctx, PaymentService_CreateRazorpayCheckoutSession_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +111,8 @@ type PaymentServiceServer interface {
 	Infer(*InferRequest, grpc.ServerStreamingServer[InferResponse]) error
 	CreateProduct(context.Context, *CreateProductRequest) (*CreateProductResponse, error)
 	ListProducts(context.Context, *ListProductsRequest) (*ListProductsResponse, error)
-	CreateCheckoutSession(context.Context, *CreateCheckoutSessionRequest) (*CreateCheckoutSessionResponse, error)
+	CreateStripeCheckoutSession(context.Context, *CreateStripeCheckoutSessionRequest) (*CreateStripeCheckoutSessionResponse, error)
+	CreateRazorpayCheckoutSession(context.Context, *CreateRazorpayCheckoutSessionRequest) (*CreateRazorpayCheckoutSessionResponse, error)
 	mustEmbedUnimplementedPaymentServiceServer()
 }
 
@@ -119,8 +132,11 @@ func (UnimplementedPaymentServiceServer) CreateProduct(context.Context, *CreateP
 func (UnimplementedPaymentServiceServer) ListProducts(context.Context, *ListProductsRequest) (*ListProductsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProducts not implemented")
 }
-func (UnimplementedPaymentServiceServer) CreateCheckoutSession(context.Context, *CreateCheckoutSessionRequest) (*CreateCheckoutSessionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateCheckoutSession not implemented")
+func (UnimplementedPaymentServiceServer) CreateStripeCheckoutSession(context.Context, *CreateStripeCheckoutSessionRequest) (*CreateStripeCheckoutSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateStripeCheckoutSession not implemented")
+}
+func (UnimplementedPaymentServiceServer) CreateRazorpayCheckoutSession(context.Context, *CreateRazorpayCheckoutSessionRequest) (*CreateRazorpayCheckoutSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateRazorpayCheckoutSession not implemented")
 }
 func (UnimplementedPaymentServiceServer) mustEmbedUnimplementedPaymentServiceServer() {}
 func (UnimplementedPaymentServiceServer) testEmbeddedByValue()                        {}
@@ -190,20 +206,38 @@ func _PaymentService_ListProducts_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PaymentService_CreateCheckoutSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateCheckoutSessionRequest)
+func _PaymentService_CreateStripeCheckoutSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateStripeCheckoutSessionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PaymentServiceServer).CreateCheckoutSession(ctx, in)
+		return srv.(PaymentServiceServer).CreateStripeCheckoutSession(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PaymentService_CreateCheckoutSession_FullMethodName,
+		FullMethod: PaymentService_CreateStripeCheckoutSession_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentServiceServer).CreateCheckoutSession(ctx, req.(*CreateCheckoutSessionRequest))
+		return srv.(PaymentServiceServer).CreateStripeCheckoutSession(ctx, req.(*CreateStripeCheckoutSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PaymentService_CreateRazorpayCheckoutSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRazorpayCheckoutSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentServiceServer).CreateRazorpayCheckoutSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PaymentService_CreateRazorpayCheckoutSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentServiceServer).CreateRazorpayCheckoutSession(ctx, req.(*CreateRazorpayCheckoutSessionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -224,8 +258,12 @@ var PaymentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PaymentService_ListProducts_Handler,
 		},
 		{
-			MethodName: "CreateCheckoutSession",
-			Handler:    _PaymentService_CreateCheckoutSession_Handler,
+			MethodName: "CreateStripeCheckoutSession",
+			Handler:    _PaymentService_CreateStripeCheckoutSession_Handler,
+		},
+		{
+			MethodName: "CreateRazorpayCheckoutSession",
+			Handler:    _PaymentService_CreateRazorpayCheckoutSession_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

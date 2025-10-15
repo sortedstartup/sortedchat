@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { listProducts, ProductList } from "./store/payment";
 import { useStore } from "@nanostores/react";
-import Buy from "./Buy";
+import StripeBuy from "./StripeBuy";
+import RazorpayBuy from "./RazorpayBuy";
 
 const ListProducts: React.FC = () => {
     const products = useStore(ProductList);
@@ -58,7 +59,30 @@ const ListProducts: React.FC = () => {
                                 </span>
                                 <span className="text-sm text-gray-500">ID: {product.id}</span>
                             </div>
-                            <Buy productId={product.id} className="w-full" />
+                            
+                            {/* Provider IDs */}
+                            <div className="text-xs text-gray-500 mb-3 space-y-1">
+                                {product.stripe_product_id && (
+                                    <div>Stripe ID: {product.stripe_product_id}</div>
+                                )}
+                                {product.razorpay_product_id && (
+                                    <div>Razorpay ID: {product.razorpay_product_id}</div>
+                                )}
+                            </div>
+
+                            {/* Buy Buttons */}
+                            <div className="space-y-2">
+                                {product.stripe_product_id && (
+                                    <StripeBuy productId={product.stripe_product_id} className="w-full">
+                                        Buy with Stripe
+                                    </StripeBuy>
+                                )}
+                                {product.razorpay_product_id && (
+                                    <RazorpayBuy razorpayProductId={product.razorpay_product_id} className="w-full">
+                                        Buy with Razorpay
+                                    </RazorpayBuy>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>

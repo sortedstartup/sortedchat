@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createCheckoutSession } from "./store/payment";
+import { createStripeCheckoutSession } from "./store/payment";
 
 interface BuyProps {
     productId: string;
@@ -15,7 +15,7 @@ const Buy: React.FC<BuyProps> = ({ productId, className = "", children }) => {
         try {
             setIsLoading(true);
             setError("");
-            const sessionUrl = await createCheckoutSession(productId);
+            const sessionUrl = await createStripeCheckoutSession(productId);
             // Redirect to Stripe checkout
             window.location.href = sessionUrl;
         } catch (err: any) {

@@ -8,14 +8,47 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/stripe/stripe-go/v83"
 	"github.com/stripe/stripe-go/v83/checkout/session"
 	"github.com/stripe/stripe-go/v83/price"
+	"github.com/stripe/stripe-go/v83/product"
 	"github.com/stripe/stripe-go/v83/webhook"
 )
 
-func (s *PaymentService) CreateCheckoutSession(ctx context.Context, userID string, productID string) (string, error) {
+func (s *PaymentService) CreateProductStripe(ctx context.Context, name string, description string, cost string, currency string) (string, error) {
+	slog.Info("paymentservice:service:CreateProductStripe", "name", name)
+
+	// Convert price string to int64 (Stripe expects amount in smallest currency unit)
+	priceAmount, err := strconv.ParseInt(cost, 10, 64)
+	if err != nil {
+		slog.Error("paymentservice:service:CreateProductStripe", "error", err)
+		return "", fmt.Errorf("failed to process the request")
+	}
+	slog.Info("paymentservice:service:CreateProductStripe", "priceAmount", priceAmount)
+
+	// Create the product
+	productParams := &stripe.ProductParams{
+		Name:        stripe.String(name),
+		Description: stripe.String(description),
+		DefaultPriceData: &stripe.ProductDefaultPriceDataParams{
+			Currency:   stripe.String(currency),
+			UnitAmount: stripe.Int64(priceAmount * 100),
+		},
+	}
+
+	stripeProduct, err := product.New(productParams)
+	if err != nil {
+		slog.Error("paymentservice:service:CreateProductStripe", "error", err)
+		return "", fmt.Errorf("failed to process the request")
+	}
+
+	slog.Info("paymentservice:service:CreateProductStripe", "id", stripeProduct.ID)
+	return stripeProduct.ID, nil
+}
+
+func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID string, productID string) (string, error) {
 	slog.Info("paymentservice:service:CreateCheckoutSession", "userID", userID, "productID", productID)
 
 	var priceID string
@@ -63,7 +96,7 @@ func (s *PaymentService) CreateCheckoutSession(ctx context.Context, userID strin
 	return session.URL, nil
 }
 
-func (s *PaymentService) HandleWebhook(ctx context.Context, r *http.Request) error {
+func (s *PaymentService) HandleStripeWebhook(ctx context.Context, r *http.Request) error {
 	slog.Info("paymentservice:service:HandleWebhook")
 
 	payload, err := io.ReadAll(r.Body)

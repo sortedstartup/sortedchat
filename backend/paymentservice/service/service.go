@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"sortedstartup/paymentservice/dao"
-	"strconv"
 
-	"github.com/stripe/stripe-go/v83"
-	"github.com/stripe/stripe-go/v83/product"
+	razorpay "github.com/razorpay/razorpay-go"
 )
 
 type PaymentService struct {
-	dao dao.DAO
+	dao            dao.DAO
+	razorpayClient *razorpay.Client
 }
 
 func NewPaymentService(daoFactory dao.DAOFactory) (*PaymentService, error) {
@@ -22,7 +22,8 @@ func NewPaymentService(daoFactory dao.DAOFactory) (*PaymentService, error) {
 		return nil, err
 	}
 	return &PaymentService{
-		dao: dao,
+		dao:            dao,
+		razorpayClient: razorpay.NewClient(os.Getenv("RAZORPAY_KEY_ID"), os.Getenv("RAZORPAY_KEY_SECRET")),
 	}, nil
 }
 
@@ -33,42 +34,31 @@ func (s *PaymentService) Infer(ctx context.Context, dummy string) error {
 func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name string, description string, cost string, currency string) (string, error) {
 	slog.Info("paymentservice:service:CreateProduct", "userID", userID, "name", name)
 
-	// Convert price string to int64 (Stripe expects amount in smallest currency unit)
-	priceAmount, err := strconv.ParseInt(cost, 10, 64)
+	// Create product on Stripe
+	stripeProductID, err := s.CreateProductStripe(ctx, name, description, cost, currency)
 	if err != nil {
-		slog.Error("paymentservice:service:CreateProduct", "error", err)
-		return "", fmt.Errorf("failed to process the request")
+		slog.Error("paymentservice:service:CreateProduct", "error", "failed to create Stripe product", "details", err)
+		return "", fmt.Errorf("failed to create Stripe product")
 	}
-	slog.Info("paymentservice:service:CreateProduct", "priceAmount", priceAmount)
+	slog.Info("paymentservice:service:CreateProduct", "stripeProductID", stripeProductID)
 
-	// Create the product first
-	productParams := &stripe.ProductParams{
-		Name:        stripe.String(name),
-		Description: stripe.String(description),
-		DefaultPriceData: &stripe.ProductDefaultPriceDataParams{
-			Currency:   stripe.String(currency),
-			UnitAmount: stripe.Int64(priceAmount * 100),
-		},
-	}
-
-	product, err := product.New(productParams)
+	// Create product on Razorpay
+	razorpayProductID, err := s.CreateProductRazorpay(ctx, name, description, cost, currency)
 	if err != nil {
-		slog.Error("paymentservice:service:CreateProduct", "error", err)
-		return "", fmt.Errorf("failed to process the request")
+		slog.Error("paymentservice:service:CreateProduct", "error", "failed to create Razorpay product", "details", err)
+		return "", fmt.Errorf("failed to create Razorpay product")
 	}
+	slog.Info("paymentservice:service:CreateProduct", "razorpayProductID", razorpayProductID)
 
-	slog.Info("paymentservice:service:CreateProduct", "id", product.ID)
-
-	_, err = s.dao.CreateProduct(product.ID, userID, name, description, cost, currency)
+	// Save to database with both provider IDs
+	productID, err := s.dao.CreateProduct(stripeProductID, razorpayProductID, userID, name, description, cost, currency)
 	if err != nil {
-		slog.Error("paymentservice:service:CreateProduct", "error", err)
-		return "", fmt.Errorf("failed to process the request")
+		slog.Error("paymentservice:service:CreateProduct", "error", "failed to save product to database", "details", err)
+		return "", fmt.Errorf("failed to save product to database")
 	}
 
-	slog.Info("paymentservice:service:CreateProduct", "defaultPrice", product.DefaultPrice.ID)
-
-	// Return the product ID (you might want to return both product ID and price ID)
-	return product.ID, nil
+	slog.Info("paymentservice:service:CreateProduct", "productID", productID, "stripeProductID", stripeProductID, "razorpayProductID", razorpayProductID)
+	return productID, nil
 }
 
 func (s *PaymentService) ListProducts(ctx context.Context) ([]*dao.Product, error) {

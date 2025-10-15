@@ -7,6 +7,10 @@
 import * as pb_1 from "google-protobuf";
 import * as grpc_1 from "grpc-web";
 import * as grpc_web_1 from "grpc-web";
+export enum Currency {
+    USD = 0,
+    INR = 1
+}
 export class InferRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {}) {
@@ -92,8 +96,8 @@ export class CreateProductRequest extends pb_1.Message {
     constructor(data?: any[] | {
         name?: string;
         description?: string;
-        price?: string;
-        currency?: string;
+        amount_in_cents?: number;
+        currency?: Currency;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -104,8 +108,8 @@ export class CreateProductRequest extends pb_1.Message {
             if ("description" in data && data.description != undefined) {
                 this.description = data.description;
             }
-            if ("price" in data && data.price != undefined) {
-                this.price = data.price;
+            if ("amount_in_cents" in data && data.amount_in_cents != undefined) {
+                this.amount_in_cents = data.amount_in_cents;
             }
             if ("currency" in data && data.currency != undefined) {
                 this.currency = data.currency;
@@ -124,23 +128,23 @@ export class CreateProductRequest extends pb_1.Message {
     set description(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
-    get price() {
-        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    get amount_in_cents() {
+        return pb_1.Message.getFieldWithDefault(this, 3, 0) as number;
     }
-    set price(value: string) {
+    set amount_in_cents(value: number) {
         pb_1.Message.setField(this, 3, value);
     }
     get currency() {
-        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+        return pb_1.Message.getFieldWithDefault(this, 4, Currency.USD) as Currency;
     }
-    set currency(value: string) {
+    set currency(value: Currency) {
         pb_1.Message.setField(this, 4, value);
     }
     static fromObject(data: {
         name?: string;
         description?: string;
-        price?: string;
-        currency?: string;
+        amount_in_cents?: number;
+        currency?: Currency;
     }): CreateProductRequest {
         const message = new CreateProductRequest({});
         if (data.name != null) {
@@ -149,8 +153,8 @@ export class CreateProductRequest extends pb_1.Message {
         if (data.description != null) {
             message.description = data.description;
         }
-        if (data.price != null) {
-            message.price = data.price;
+        if (data.amount_in_cents != null) {
+            message.amount_in_cents = data.amount_in_cents;
         }
         if (data.currency != null) {
             message.currency = data.currency;
@@ -161,8 +165,8 @@ export class CreateProductRequest extends pb_1.Message {
         const data: {
             name?: string;
             description?: string;
-            price?: string;
-            currency?: string;
+            amount_in_cents?: number;
+            currency?: Currency;
         } = {};
         if (this.name != null) {
             data.name = this.name;
@@ -170,8 +174,8 @@ export class CreateProductRequest extends pb_1.Message {
         if (this.description != null) {
             data.description = this.description;
         }
-        if (this.price != null) {
-            data.price = this.price;
+        if (this.amount_in_cents != null) {
+            data.amount_in_cents = this.amount_in_cents;
         }
         if (this.currency != null) {
             data.currency = this.currency;
@@ -186,10 +190,10 @@ export class CreateProductRequest extends pb_1.Message {
             writer.writeString(1, this.name);
         if (this.description.length)
             writer.writeString(2, this.description);
-        if (this.price.length)
-            writer.writeString(3, this.price);
-        if (this.currency.length)
-            writer.writeString(4, this.currency);
+        if (this.amount_in_cents != 0)
+            writer.writeInt64(3, this.amount_in_cents);
+        if (this.currency != Currency.USD)
+            writer.writeEnum(4, this.currency);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -206,10 +210,10 @@ export class CreateProductRequest extends pb_1.Message {
                     message.description = reader.readString();
                     break;
                 case 3:
-                    message.price = reader.readString();
+                    message.amount_in_cents = reader.readInt64();
                     break;
                 case 4:
-                    message.currency = reader.readString();
+                    message.currency = reader.readEnum();
                     break;
                 default: reader.skipField();
             }
@@ -427,9 +431,9 @@ export class Product extends pb_1.Message {
         stripe_product_id?: string;
         razorpay_product_id?: string;
         name?: string;
-        price?: string;
+        amount_in_cents?: number;
         description?: string;
-        currency?: string;
+        currency?: Currency;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -446,8 +450,8 @@ export class Product extends pb_1.Message {
             if ("name" in data && data.name != undefined) {
                 this.name = data.name;
             }
-            if ("price" in data && data.price != undefined) {
-                this.price = data.price;
+            if ("amount_in_cents" in data && data.amount_in_cents != undefined) {
+                this.amount_in_cents = data.amount_in_cents;
             }
             if ("description" in data && data.description != undefined) {
                 this.description = data.description;
@@ -481,10 +485,10 @@ export class Product extends pb_1.Message {
     set name(value: string) {
         pb_1.Message.setField(this, 4, value);
     }
-    get price() {
-        return pb_1.Message.getFieldWithDefault(this, 5, "") as string;
+    get amount_in_cents() {
+        return pb_1.Message.getFieldWithDefault(this, 5, 0) as number;
     }
-    set price(value: string) {
+    set amount_in_cents(value: number) {
         pb_1.Message.setField(this, 5, value);
     }
     get description() {
@@ -494,9 +498,9 @@ export class Product extends pb_1.Message {
         pb_1.Message.setField(this, 6, value);
     }
     get currency() {
-        return pb_1.Message.getFieldWithDefault(this, 7, "") as string;
+        return pb_1.Message.getFieldWithDefault(this, 7, Currency.USD) as Currency;
     }
-    set currency(value: string) {
+    set currency(value: Currency) {
         pb_1.Message.setField(this, 7, value);
     }
     static fromObject(data: {
@@ -504,9 +508,9 @@ export class Product extends pb_1.Message {
         stripe_product_id?: string;
         razorpay_product_id?: string;
         name?: string;
-        price?: string;
+        amount_in_cents?: number;
         description?: string;
-        currency?: string;
+        currency?: Currency;
     }): Product {
         const message = new Product({});
         if (data.id != null) {
@@ -521,8 +525,8 @@ export class Product extends pb_1.Message {
         if (data.name != null) {
             message.name = data.name;
         }
-        if (data.price != null) {
-            message.price = data.price;
+        if (data.amount_in_cents != null) {
+            message.amount_in_cents = data.amount_in_cents;
         }
         if (data.description != null) {
             message.description = data.description;
@@ -538,9 +542,9 @@ export class Product extends pb_1.Message {
             stripe_product_id?: string;
             razorpay_product_id?: string;
             name?: string;
-            price?: string;
+            amount_in_cents?: number;
             description?: string;
-            currency?: string;
+            currency?: Currency;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -554,8 +558,8 @@ export class Product extends pb_1.Message {
         if (this.name != null) {
             data.name = this.name;
         }
-        if (this.price != null) {
-            data.price = this.price;
+        if (this.amount_in_cents != null) {
+            data.amount_in_cents = this.amount_in_cents;
         }
         if (this.description != null) {
             data.description = this.description;
@@ -577,12 +581,12 @@ export class Product extends pb_1.Message {
             writer.writeString(3, this.razorpay_product_id);
         if (this.name.length)
             writer.writeString(4, this.name);
-        if (this.price.length)
-            writer.writeString(5, this.price);
+        if (this.amount_in_cents != 0)
+            writer.writeInt64(5, this.amount_in_cents);
         if (this.description.length)
             writer.writeString(6, this.description);
-        if (this.currency.length)
-            writer.writeString(7, this.currency);
+        if (this.currency != Currency.USD)
+            writer.writeEnum(7, this.currency);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -605,13 +609,13 @@ export class Product extends pb_1.Message {
                     message.name = reader.readString();
                     break;
                 case 5:
-                    message.price = reader.readString();
+                    message.amount_in_cents = reader.readInt64();
                     break;
                 case 6:
                     message.description = reader.readString();
                     break;
                 case 7:
-                    message.currency = reader.readString();
+                    message.currency = reader.readEnum();
                     break;
                 default: reader.skipField();
             }

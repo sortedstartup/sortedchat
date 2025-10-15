@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"sortedstartup/common/auth"
 	"sortedstartup/paymentservice/dao"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/stripe/stripe-go/v83"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type PaymentServiceAPI struct {
@@ -48,7 +51,29 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 		slog.Error("paymentservice:api:CreateProduct", "error", err)
 		return nil, err
 	}
-	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.Price, req.Currency)
+
+	if strings.TrimSpace(req.Name) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+	}
+	if strings.TrimSpace(req.Description) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+	}
+	if req.AmountInCents <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+	}
+
+	// Convert Currency enum to string
+	var currencyStr string
+	switch req.Currency {
+	case pb.Currency_USD:
+		currencyStr = "USD"
+	case pb.Currency_INR:
+		currencyStr = "INR"
+	default:
+		currencyStr = "USD"
+	}
+
+	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInCents, currencyStr)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +100,7 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 			Name:              daoProduct.Name,
 			Price:             daoProduct.Price,
 			Description:       daoProduct.Description,
-			Currency:          daoProduct.Currency,
+			Currency:          daoProduct.GetCurrencyEnum(),
 		}
 	}
 
@@ -90,7 +115,12 @@ func (s *PaymentServiceAPI) CreateStripeCheckoutSession(ctx context.Context, req
 		slog.Error("paymentservice:api:CreateStripeCheckoutSession", "error", err)
 		return nil, err
 	}
-	SessionUrl, err := s.service.CreateStripeCheckoutSession(ctx, userID, req.ProductId)
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+	}
+
+	SessionUrl, err := s.service.CreateCheckoutSession(ctx, userID, req.ProductId)
 	if err != nil {
 		return nil, err
 	}

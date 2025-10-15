@@ -113,6 +113,11 @@ func (s *PaymentServiceAPI) CreateCheckoutSession(ctx context.Context, req *pb.C
 		slog.Error("paymentservice:api:CreateCheckoutSession", "error", err)
 		return nil, err
 	}
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+	}
+
 	SessionUrl, err := s.service.CreateCheckoutSession(ctx, userID, req.ProductId)
 	if err != nil {
 		return nil, err

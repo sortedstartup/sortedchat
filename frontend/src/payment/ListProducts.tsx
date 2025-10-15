@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { listProducts, ProductList } from "./store/payment";
 import { useStore } from "@nanostores/react";
 import Buy from "./Buy";
+import { Currency } from "../../proto/paymentservice";
 
 const ListProducts: React.FC = () => {
     const products = useStore(ProductList);
@@ -54,7 +55,7 @@ const ListProducts: React.FC = () => {
                             <p className="text-gray-600 mb-2">{product.description}</p>
                             <div className="flex justify-between items-center mb-3">
                                 <span className="text-lg font-bold">
-                                    {product.price} {product.currency}
+                                    ${(product.amount_in_cents / 100).toFixed(2)} {Currency[product.currency]}
                                 </span>
                                 <span className="text-sm text-gray-500">ID: {product.id}</span>
                             </div>

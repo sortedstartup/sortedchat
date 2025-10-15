@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { createProduct } from "./store/payment";
+import { Currency } from "../../proto/paymentservice";
 
 const CreateProduct: React.FC = () => {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [cost, setCost] = useState("");
-    const [currency, setCurrency] = useState("");
+    const [currency, setCurrency] = useState<Currency>(Currency.USD);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -19,7 +20,7 @@ const CreateProduct: React.FC = () => {
             setName("");
             setDescription("");
             setCost("");
-            setCurrency("");
+            setCurrency(Currency.USD);
         } catch (err: any) {
             setMessage(err?.message || "Failed to create product");
         } finally {
@@ -52,13 +53,15 @@ const CreateProduct: React.FC = () => {
                     onChange={(e) => setCost(e.target.value)}
                     required
                 />
-                <input
+                <select
                     className="w-full border p-2 rounded"
-                    placeholder="Currency (e.g. USD)"
                     value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
+                    onChange={(e) => setCurrency(parseInt(e.target.value) as Currency)}
                     required
-                />
+                >
+                    <option value={Currency.USD}>USD</option>
+                    <option value={Currency.INR}>INR</option>
+                </select>
                 <button
                     type="submit"
                     disabled={loading}

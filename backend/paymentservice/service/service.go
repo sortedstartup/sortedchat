@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sortedstartup/paymentservice/dao"
-	"strconv"
 
 	"github.com/stripe/stripe-go/v83"
 	"github.com/stripe/stripe-go/v83/product"
@@ -30,24 +29,23 @@ func (s *PaymentService) Infer(ctx context.Context, dummy string) error {
 	return s.dao.Infer(dummy)
 }
 
-func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name string, description string, cost string, currency string) (string, error) {
-	slog.Info("paymentservice:service:CreateProduct", "userID", userID, "name", name)
+func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name string, description string, amountInCents int64, currency string) (string, error) {
 
-	// Convert price string to int64 (Stripe expects amount in smallest currency unit)
-	priceAmount, err := strconv.ParseInt(cost, 10, 64)
-	if err != nil {
-		slog.Error("paymentservice:service:CreateProduct", "error", err)
-		return "", fmt.Errorf("failed to process the request")
+	slog.Info("paymentservice:service:CreateProduct", "userID", userID, "name", name, "amountInCents", amountInCents, "currency", currency)
+
+	// add MIN and MAX lenght validation for name and description
+	if name == "" || description == "" || currency == "" || amountInCents <= 0 {
+		slog.Error("paymentservice:service:CreateProduct", "error", "invalid request, please try again with valid parameters")
+		return "", fmt.Errorf("invalid request, please try again with valid parameters")
 	}
-	slog.Info("paymentservice:service:CreateProduct", "priceAmount", priceAmount)
 
-	// Create the product first
+	// Create the product first (amount is already in cents)
 	productParams := &stripe.ProductParams{
 		Name:        stripe.String(name),
 		Description: stripe.String(description),
 		DefaultPriceData: &stripe.ProductDefaultPriceDataParams{
 			Currency:   stripe.String(currency),
-			UnitAmount: stripe.Int64(priceAmount * 100),
+			UnitAmount: stripe.Int64(amountInCents),
 		},
 	}
 
@@ -59,13 +57,11 @@ func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name 
 
 	slog.Info("paymentservice:service:CreateProduct", "id", product.ID)
 
-	_, err = s.dao.CreateProduct(product.ID, userID, name, description, cost, currency)
+	_, err = s.dao.CreateProduct(product.ID, userID, name, description, amountInCents, currency)
 	if err != nil {
 		slog.Error("paymentservice:service:CreateProduct", "error", err)
 		return "", fmt.Errorf("failed to process the request")
 	}
-
-	slog.Info("paymentservice:service:CreateProduct", "defaultPrice", product.DefaultPrice.ID)
 
 	// Return the product ID (you might want to return both product ID and price ID)
 	return product.ID, nil

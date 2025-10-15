@@ -48,7 +48,19 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 		slog.Error("paymentservice:api:CreateProduct", "error", err)
 		return nil, err
 	}
-	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.Price, req.Currency)
+
+	// Convert Currency enum to string
+	var currencyStr string
+	switch req.Currency {
+	case pb.Currency_USD:
+		currencyStr = "USD"
+	case pb.Currency_INR:
+		currencyStr = "INR"
+	default:
+		currencyStr = "USD"
+	}
+
+	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInCents, currencyStr)
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +81,11 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 	products := make([]*pb.Product, len(daoProducts))
 	for i, daoProduct := range daoProducts {
 		products[i] = &pb.Product{
-			Id:          daoProduct.ID,
-			Name:        daoProduct.Name,
-			Price:       daoProduct.Price,
-			Description: daoProduct.Description,
-			Currency:    daoProduct.Currency,
+			Id:            daoProduct.ID,
+			Name:          daoProduct.Name,
+			AmountInCents: daoProduct.Price,
+			Description:   daoProduct.Description,
+			Currency:      daoProduct.GetCurrencyEnum(),
 		}
 	}
 

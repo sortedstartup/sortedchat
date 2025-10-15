@@ -26,12 +26,12 @@ func (d *SQLiteDAO) Infer(dummy string) error {
 	return nil
 }
 
-func (d *SQLiteDAO) CreateProduct(id string, userID string, name string, description string, cost string, currency string) (string, error) {
-	slog.Info("paymentservice:dao_sqlite:CreateProduct", "userID", userID, "name", name, "description", description, "cost", cost, "currency", currency)
+func (d *SQLiteDAO) CreateProduct(id string, userID string, name string, description string, amountInCents int64, currency string) (string, error) {
+	slog.Info("paymentservice:dao_sqlite:CreateProduct", "userID", userID, "name", name, "description", description, "amountInCents", amountInCents, "currency", currency)
 
 	query := `INSERT INTO products (id, user_id, name, description, price, currency, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	now := time.Now().Format(time.RFC3339)
-	_, err := d.db.Exec(query, id, userID, name, description, cost, currency, now, now)
+	_, err := d.db.Exec(query, id, userID, name, description, amountInCents, currency, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateProduct", "error", err)
 		return "", err

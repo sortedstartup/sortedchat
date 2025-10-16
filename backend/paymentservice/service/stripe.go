@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/stripe/stripe-go/v83"
 	"github.com/stripe/stripe-go/v83/checkout/session"
@@ -70,6 +71,12 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 		return "", fmt.Errorf("failed to process the request")
 	}
 
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if strings.TrimSpace(frontendURL) == "" {
+		slog.Error("paymentservice:service:CreateCheckoutSession", "error", "FRONTEND_URL is not set")
+		return "", fmt.Errorf("configuration error")
+	}
+
 	//lets create session
 	sessionParams := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
@@ -80,8 +87,8 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 			},
 		},
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String(os.Getenv("FRONTEND_URL") + "/success"),
-		CancelURL:  stripe.String(os.Getenv("FRONTEND_URL") + "/cancel"),
+		SuccessURL: stripe.String(frontendURL + "/success"),
+		CancelURL:  stripe.String(frontendURL + "/cancel"),
 		Metadata:   map[string]string{"user_id": userID, "product_id": productID},
 	}
 

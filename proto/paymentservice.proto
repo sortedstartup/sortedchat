@@ -4,12 +4,55 @@ package sortedchat;
 
 option go_package = "sortedstartup/paymentservice/proto";
 
+enum Currency {
+    USD = 0;
+    INR = 1;
+}
+
 service PaymentService {
     rpc Infer(InferRequest) returns (stream InferResponse);
+    rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+    rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+    rpc CreateCheckoutSession(CreateCheckoutSessionRequest) returns (CreateCheckoutSessionResponse);
 }
 
 message InferRequest {
 }
 
 message InferResponse {
+}
+
+message CreateProductRequest {
+    string name = 1;
+    string description = 2;
+    int64 amount_in_cents = 3;
+    Currency currency = 4;
+}
+
+message CreateProductResponse {
+    string id = 1;
+    string message = 2;
+}
+
+message ListProductsRequest {
+}
+
+message ListProductsResponse {
+    repeated Product products = 1;
+}
+
+message Product {
+    string id = 1;
+    string name = 2;
+    int64 amount_in_cents = 3;
+    string description = 4;
+    Currency currency = 5;
+}
+
+message CreateCheckoutSessionRequest {
+    string product_id = 1;
+}
+
+message CreateCheckoutSessionResponse {
+    string session_url = 1;
 }

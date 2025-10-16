@@ -21,6 +21,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Currency int32
+
+const (
+	Currency_USD Currency = 0
+	Currency_INR Currency = 1
+)
+
+// Enum value maps for Currency.
+var (
+	Currency_name = map[int32]string{
+		0: "USD",
+		1: "INR",
+	}
+	Currency_value = map[string]int32{
+		"USD": 0,
+		"INR": 1,
+	}
+)
+
+func (x Currency) Enum() *Currency {
+	p := new(Currency)
+	*p = x
+	return p
+}
+
+func (x Currency) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Currency) Descriptor() protoreflect.EnumDescriptor {
+	return file_paymentservice_proto_enumTypes[0].Descriptor()
+}
+
+func (Currency) Type() protoreflect.EnumType {
+	return &file_paymentservice_proto_enumTypes[0]
+}
+
+func (x Currency) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Currency.Descriptor instead.
+func (Currency) EnumDescriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{0}
+}
+
 type InferRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -93,6 +139,370 @@ func (*InferResponse) Descriptor() ([]byte, []int) {
 	return file_paymentservice_proto_rawDescGZIP(), []int{1}
 }
 
+type CreateProductRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	AmountInCents int64                  `protobuf:"varint,3,opt,name=amount_in_cents,json=amountInCents,proto3" json:"amount_in_cents,omitempty"`
+	Currency      Currency               `protobuf:"varint,4,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateProductRequest) Reset() {
+	*x = CreateProductRequest{}
+	mi := &file_paymentservice_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateProductRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateProductRequest) ProtoMessage() {}
+
+func (x *CreateProductRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateProductRequest.ProtoReflect.Descriptor instead.
+func (*CreateProductRequest) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *CreateProductRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateProductRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *CreateProductRequest) GetAmountInCents() int64 {
+	if x != nil {
+		return x.AmountInCents
+	}
+	return 0
+}
+
+func (x *CreateProductRequest) GetCurrency() Currency {
+	if x != nil {
+		return x.Currency
+	}
+	return Currency_USD
+}
+
+type CreateProductResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateProductResponse) Reset() {
+	*x = CreateProductResponse{}
+	mi := &file_paymentservice_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateProductResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateProductResponse) ProtoMessage() {}
+
+func (x *CreateProductResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateProductResponse.ProtoReflect.Descriptor instead.
+func (*CreateProductResponse) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CreateProductResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *CreateProductResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type ListProductsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProductsRequest) Reset() {
+	*x = ListProductsRequest{}
+	mi := &file_paymentservice_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProductsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProductsRequest) ProtoMessage() {}
+
+func (x *ListProductsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProductsRequest.ProtoReflect.Descriptor instead.
+func (*ListProductsRequest) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{4}
+}
+
+type ListProductsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Products      []*Product             `protobuf:"bytes,1,rep,name=products,proto3" json:"products,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProductsResponse) Reset() {
+	*x = ListProductsResponse{}
+	mi := &file_paymentservice_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProductsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProductsResponse) ProtoMessage() {}
+
+func (x *ListProductsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProductsResponse.ProtoReflect.Descriptor instead.
+func (*ListProductsResponse) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ListProductsResponse) GetProducts() []*Product {
+	if x != nil {
+		return x.Products
+	}
+	return nil
+}
+
+type Product struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	AmountInCents int64                  `protobuf:"varint,3,opt,name=amount_in_cents,json=amountInCents,proto3" json:"amount_in_cents,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Currency      Currency               `protobuf:"varint,5,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Product) Reset() {
+	*x = Product{}
+	mi := &file_paymentservice_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Product) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Product) ProtoMessage() {}
+
+func (x *Product) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Product.ProtoReflect.Descriptor instead.
+func (*Product) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *Product) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Product) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Product) GetAmountInCents() int64 {
+	if x != nil {
+		return x.AmountInCents
+	}
+	return 0
+}
+
+func (x *Product) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *Product) GetCurrency() Currency {
+	if x != nil {
+		return x.Currency
+	}
+	return Currency_USD
+}
+
+type CreateCheckoutSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProductId     string                 `protobuf:"bytes,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCheckoutSessionRequest) Reset() {
+	*x = CreateCheckoutSessionRequest{}
+	mi := &file_paymentservice_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCheckoutSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCheckoutSessionRequest) ProtoMessage() {}
+
+func (x *CreateCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCheckoutSessionRequest.ProtoReflect.Descriptor instead.
+func (*CreateCheckoutSessionRequest) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CreateCheckoutSessionRequest) GetProductId() string {
+	if x != nil {
+		return x.ProductId
+	}
+	return ""
+}
+
+type CreateCheckoutSessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionUrl    string                 `protobuf:"bytes,1,opt,name=session_url,json=sessionUrl,proto3" json:"session_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCheckoutSessionResponse) Reset() {
+	*x = CreateCheckoutSessionResponse{}
+	mi := &file_paymentservice_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCheckoutSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCheckoutSessionResponse) ProtoMessage() {}
+
+func (x *CreateCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCheckoutSessionResponse.ProtoReflect.Descriptor instead.
+func (*CreateCheckoutSessionResponse) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CreateCheckoutSessionResponse) GetSessionUrl() string {
+	if x != nil {
+		return x.SessionUrl
+	}
+	return ""
+}
+
 var File_paymentservice_proto protoreflect.FileDescriptor
 
 const file_paymentservice_proto_rawDesc = "" +
@@ -100,9 +510,38 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\x14paymentservice.proto\x12\n" +
 	"sortedchat\"\x0e\n" +
 	"\fInferRequest\"\x0f\n" +
-	"\rInferResponse2P\n" +
+	"\rInferResponse\"\xa6\x01\n" +
+	"\x14CreateProductRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12&\n" +
+	"\x0famount_in_cents\x18\x03 \x01(\x03R\ramountInCents\x120\n" +
+	"\bcurrency\x18\x04 \x01(\x0e2\x14.sortedchat.CurrencyR\bcurrency\"A\n" +
+	"\x15CreateProductResponse\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\x15\n" +
+	"\x13ListProductsRequest\"G\n" +
+	"\x14ListProductsResponse\x12/\n" +
+	"\bproducts\x18\x01 \x03(\v2\x13.sortedchat.ProductR\bproducts\"\xa9\x01\n" +
+	"\aProduct\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12&\n" +
+	"\x0famount_in_cents\x18\x03 \x01(\x03R\ramountInCents\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x120\n" +
+	"\bcurrency\x18\x05 \x01(\x0e2\x14.sortedchat.CurrencyR\bcurrency\"=\n" +
+	"\x1cCreateCheckoutSessionRequest\x12\x1d\n" +
+	"\n" +
+	"product_id\x18\x01 \x01(\tR\tproductId\"@\n" +
+	"\x1dCreateCheckoutSessionResponse\x12\x1f\n" +
+	"\vsession_url\x18\x01 \x01(\tR\n" +
+	"sessionUrl*\x1c\n" +
+	"\bCurrency\x12\a\n" +
+	"\x03USD\x10\x00\x12\a\n" +
+	"\x03INR\x10\x012\xe7\x02\n" +
 	"\x0ePaymentService\x12>\n" +
-	"\x05Infer\x12\x18.sortedchat.InferRequest\x1a\x19.sortedchat.InferResponse0\x01B$Z\"sortedstartup/paymentservice/protob\x06proto3"
+	"\x05Infer\x12\x18.sortedchat.InferRequest\x1a\x19.sortedchat.InferResponse0\x01\x12T\n" +
+	"\rCreateProduct\x12 .sortedchat.CreateProductRequest\x1a!.sortedchat.CreateProductResponse\x12Q\n" +
+	"\fListProducts\x12\x1f.sortedchat.ListProductsRequest\x1a .sortedchat.ListProductsResponse\x12l\n" +
+	"\x15CreateCheckoutSession\x12(.sortedchat.CreateCheckoutSessionRequest\x1a).sortedchat.CreateCheckoutSessionResponseB$Z\"sortedstartup/paymentservice/protob\x06proto3"
 
 var (
 	file_paymentservice_proto_rawDescOnce sync.Once
@@ -116,19 +555,37 @@ func file_paymentservice_proto_rawDescGZIP() []byte {
 	return file_paymentservice_proto_rawDescData
 }
 
-var file_paymentservice_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_paymentservice_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_paymentservice_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_paymentservice_proto_goTypes = []any{
-	(*InferRequest)(nil),  // 0: sortedchat.InferRequest
-	(*InferResponse)(nil), // 1: sortedchat.InferResponse
+	(Currency)(0),                         // 0: sortedchat.Currency
+	(*InferRequest)(nil),                  // 1: sortedchat.InferRequest
+	(*InferResponse)(nil),                 // 2: sortedchat.InferResponse
+	(*CreateProductRequest)(nil),          // 3: sortedchat.CreateProductRequest
+	(*CreateProductResponse)(nil),         // 4: sortedchat.CreateProductResponse
+	(*ListProductsRequest)(nil),           // 5: sortedchat.ListProductsRequest
+	(*ListProductsResponse)(nil),          // 6: sortedchat.ListProductsResponse
+	(*Product)(nil),                       // 7: sortedchat.Product
+	(*CreateCheckoutSessionRequest)(nil),  // 8: sortedchat.CreateCheckoutSessionRequest
+	(*CreateCheckoutSessionResponse)(nil), // 9: sortedchat.CreateCheckoutSessionResponse
 }
 var file_paymentservice_proto_depIdxs = []int32{
-	0, // 0: sortedchat.PaymentService.Infer:input_type -> sortedchat.InferRequest
-	1, // 1: sortedchat.PaymentService.Infer:output_type -> sortedchat.InferResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: sortedchat.CreateProductRequest.currency:type_name -> sortedchat.Currency
+	7, // 1: sortedchat.ListProductsResponse.products:type_name -> sortedchat.Product
+	0, // 2: sortedchat.Product.currency:type_name -> sortedchat.Currency
+	1, // 3: sortedchat.PaymentService.Infer:input_type -> sortedchat.InferRequest
+	3, // 4: sortedchat.PaymentService.CreateProduct:input_type -> sortedchat.CreateProductRequest
+	5, // 5: sortedchat.PaymentService.ListProducts:input_type -> sortedchat.ListProductsRequest
+	8, // 6: sortedchat.PaymentService.CreateCheckoutSession:input_type -> sortedchat.CreateCheckoutSessionRequest
+	2, // 7: sortedchat.PaymentService.Infer:output_type -> sortedchat.InferResponse
+	4, // 8: sortedchat.PaymentService.CreateProduct:output_type -> sortedchat.CreateProductResponse
+	6, // 9: sortedchat.PaymentService.ListProducts:output_type -> sortedchat.ListProductsResponse
+	9, // 10: sortedchat.PaymentService.CreateCheckoutSession:output_type -> sortedchat.CreateCheckoutSessionResponse
+	7, // [7:11] is the sub-list for method output_type
+	3, // [3:7] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_paymentservice_proto_init() }
@@ -141,13 +598,14 @@ func file_paymentservice_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_paymentservice_proto_rawDesc), len(file_paymentservice_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      1,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_paymentservice_proto_goTypes,
 		DependencyIndexes: file_paymentservice_proto_depIdxs,
+		EnumInfos:         file_paymentservice_proto_enumTypes,
 		MessageInfos:      file_paymentservice_proto_msgTypes,
 	}.Build()
 	File_paymentservice_proto = out.File

@@ -11,6 +11,10 @@ import { LoginPage } from "./auth/pages/login";
 import { OnboardingWizard } from "./pages/onboard";
 import { GetIsFirstBootStatus } from "./store/setting";
 import React from "react";
+import CreateProduct from "./payment/CreateProduct";
+import ListProducts from "./payment/ListProducts";
+import Success from "./payment/Success";
+import Cancel from "./payment/Cancel";
 
 
 // Protected route wrapper component with onboarding check
@@ -98,6 +102,22 @@ const router = createBrowserRouter([
       {
         path: "models",
         element: <Models />,
+      },
+      {
+        path: "create-product",
+        element: <CreateProduct />,
+      },
+      {
+        path: "list-products",
+        element: <ListProducts />,
+        },
+      {
+        path: "success",
+        element: <Success />,
+      },
+      {
+        path: "cancel",
+        element: <Cancel />,
       },
       {
         path: "*",

@@ -1,6 +1,6 @@
 import { atom } from "nanostores";
 import {
-    CreateProductRequest, PaymentServiceClient, ListProductsRequest, Product, CreateStripeCheckoutSessionRequest, CreateRazorpayCheckoutSessionRequest, Currency
+    CreateProductRequest, PaymentServiceClient, ListProductsRequest, Product, CreateStripeCheckoutSessionRequest, CreateRazorpayCheckoutSessionRequest, Currency, PaymentType, Interval
 } from "../../../proto/paymentservice"
 import { createAuthenticatedClientOptions } from "../../lib/auth";
 import { toast } from "sonner";
@@ -8,7 +8,15 @@ import { toast } from "sonner";
 const client = new PaymentServiceClient(import.meta.env.VITE_API_URL, {}, createAuthenticatedClientOptions());
 
 
-export const createProduct = async (name: string, description: string, price: string, currency: Currency) => {
+export const createProduct = async (
+    name: string, 
+    description: string, 
+    price: string, 
+    currency: Currency, 
+    paymentType: PaymentType, 
+    intervalCount?: number, 
+    interval?: Interval
+) => {
     try {
         const parsed = Number(price);
         if(!Number.isFinite(parsed) || parsed < 0) {
@@ -17,11 +25,26 @@ export const createProduct = async (name: string, description: string, price: st
         }
         const amountInMinorUnits = Math.round(parsed * 100);
 
+        // Validate recurring payment parameters
+        if (paymentType === PaymentType.RECURRING) {
+            if (!intervalCount || intervalCount <= 0) {
+                toast.error("Interval count must be greater than 0 for recurring payments");
+                throw new Error("invalid interval count");
+            }
+            if (interval === undefined) {
+                toast.error("Interval must be specified for recurring payments");
+                throw new Error("invalid interval");
+            }
+        }
+
         const req = new CreateProductRequest({
             name: name,
             description: description,
             amount_in_smallest_unit: amountInMinorUnits,
             currency: currency,
+            payment_type: paymentType,
+            interval_count: intervalCount || 1,
+            interval: interval || Interval.MONTH,
         });
         const res = await client.CreateProduct(req, {});
         toast.success("Product created successfully");

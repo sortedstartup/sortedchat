@@ -11,6 +11,17 @@ export enum Currency {
     USD = 0,
     INR = 1
 }
+export enum PaymentType {
+    RECURRING = 0,
+    ONE_TIME = 1
+}
+export enum Interval {
+    DAY = 0,
+    WEEK = 1,
+    MONTH = 2,
+    QUARTER = 3,
+    YEAR = 4
+}
 export class InferRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {}) {
@@ -98,6 +109,9 @@ export class CreateProductRequest extends pb_1.Message {
         description?: string;
         amount_in_smallest_unit?: number;
         currency?: Currency;
+        payment_type?: PaymentType;
+        interval_count?: number;
+        interval?: Interval;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -113,6 +127,15 @@ export class CreateProductRequest extends pb_1.Message {
             }
             if ("currency" in data && data.currency != undefined) {
                 this.currency = data.currency;
+            }
+            if ("payment_type" in data && data.payment_type != undefined) {
+                this.payment_type = data.payment_type;
+            }
+            if ("interval_count" in data && data.interval_count != undefined) {
+                this.interval_count = data.interval_count;
+            }
+            if ("interval" in data && data.interval != undefined) {
+                this.interval = data.interval;
             }
         }
     }
@@ -140,11 +163,32 @@ export class CreateProductRequest extends pb_1.Message {
     set currency(value: Currency) {
         pb_1.Message.setField(this, 4, value);
     }
+    get payment_type() {
+        return pb_1.Message.getFieldWithDefault(this, 5, PaymentType.RECURRING) as PaymentType;
+    }
+    set payment_type(value: PaymentType) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    get interval_count() {
+        return pb_1.Message.getFieldWithDefault(this, 6, 0) as number;
+    }
+    set interval_count(value: number) {
+        pb_1.Message.setField(this, 6, value);
+    }
+    get interval() {
+        return pb_1.Message.getFieldWithDefault(this, 7, Interval.DAY) as Interval;
+    }
+    set interval(value: Interval) {
+        pb_1.Message.setField(this, 7, value);
+    }
     static fromObject(data: {
         name?: string;
         description?: string;
         amount_in_smallest_unit?: number;
         currency?: Currency;
+        payment_type?: PaymentType;
+        interval_count?: number;
+        interval?: Interval;
     }): CreateProductRequest {
         const message = new CreateProductRequest({});
         if (data.name != null) {
@@ -159,6 +203,15 @@ export class CreateProductRequest extends pb_1.Message {
         if (data.currency != null) {
             message.currency = data.currency;
         }
+        if (data.payment_type != null) {
+            message.payment_type = data.payment_type;
+        }
+        if (data.interval_count != null) {
+            message.interval_count = data.interval_count;
+        }
+        if (data.interval != null) {
+            message.interval = data.interval;
+        }
         return message;
     }
     toObject() {
@@ -167,6 +220,9 @@ export class CreateProductRequest extends pb_1.Message {
             description?: string;
             amount_in_smallest_unit?: number;
             currency?: Currency;
+            payment_type?: PaymentType;
+            interval_count?: number;
+            interval?: Interval;
         } = {};
         if (this.name != null) {
             data.name = this.name;
@@ -179,6 +235,15 @@ export class CreateProductRequest extends pb_1.Message {
         }
         if (this.currency != null) {
             data.currency = this.currency;
+        }
+        if (this.payment_type != null) {
+            data.payment_type = this.payment_type;
+        }
+        if (this.interval_count != null) {
+            data.interval_count = this.interval_count;
+        }
+        if (this.interval != null) {
+            data.interval = this.interval;
         }
         return data;
     }
@@ -194,6 +259,12 @@ export class CreateProductRequest extends pb_1.Message {
             writer.writeInt64(3, this.amount_in_smallest_unit);
         if (this.currency != Currency.USD)
             writer.writeEnum(4, this.currency);
+        if (this.payment_type != PaymentType.RECURRING)
+            writer.writeEnum(5, this.payment_type);
+        if (this.interval_count != 0)
+            writer.writeInt64(6, this.interval_count);
+        if (this.interval != Interval.DAY)
+            writer.writeEnum(7, this.interval);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -214,6 +285,15 @@ export class CreateProductRequest extends pb_1.Message {
                     break;
                 case 4:
                     message.currency = reader.readEnum();
+                    break;
+                case 5:
+                    message.payment_type = reader.readEnum();
+                    break;
+                case 6:
+                    message.interval_count = reader.readInt64();
+                    break;
+                case 7:
+                    message.interval = reader.readEnum();
                     break;
                 default: reader.skipField();
             }

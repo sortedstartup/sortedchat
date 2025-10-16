@@ -17,17 +17,30 @@ import (
 	"github.com/stripe/stripe-go/v83/webhook"
 )
 
-func (s *PaymentService) CreateProductStripe(ctx context.Context, name string, description string, amountInSmallestUnit int64, currency string) (string, error) {
-	slog.Info("paymentservice:service:CreateProductStripe", "name", name)
+func (s *PaymentService) CreateProductStripe(ctx context.Context, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, interval string) (string, error) {
+	slog.Info("paymentservice:service:CreateProductStripe", "name", name, "isRecurring", isRecurring, "intervalCount", intervalCount, "interval", interval)
 
-	// Create the product
+	// Create the product with appropriate pricing
 	productParams := &stripe.ProductParams{
 		Name:        stripe.String(name),
 		Description: stripe.String(description),
-		DefaultPriceData: &stripe.ProductDefaultPriceDataParams{
+	}
+
+	// Handle recurring vs one-time payments
+	if isRecurring {
+		productParams.DefaultPriceData = &stripe.ProductDefaultPriceDataParams{
 			Currency:   stripe.String(currency),
 			UnitAmount: stripe.Int64(amountInSmallestUnit),
-		},
+			Recurring: &stripe.ProductDefaultPriceDataRecurringParams{
+				Interval:      stripe.String(interval),     // "day", "week", "month", or "year"
+				IntervalCount: stripe.Int64(intervalCount), // e.g., 1 for every month, 3 for every 3 months
+			},
+		}
+	} else {
+		productParams.DefaultPriceData = &stripe.ProductDefaultPriceDataParams{
+			Currency:   stripe.String(currency),
+			UnitAmount: stripe.Int64(amountInSmallestUnit),
+		}
 	}
 
 	stripeProduct, err := product.New(productParams)
@@ -77,6 +90,14 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 		return "", fmt.Errorf("configuration error")
 	}
 
+	// Determine session mode based on whether product is recurring
+	var sessionMode string
+	if product.IsRecurring {
+		sessionMode = string(stripe.CheckoutSessionModeSubscription)
+	} else {
+		sessionMode = string(stripe.CheckoutSessionModePayment)
+	}
+
 	//lets create session
 	sessionParams := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
@@ -86,7 +107,7 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 				Quantity: stripe.Int64(1),
 			},
 		},
-		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
+		Mode:       stripe.String(sessionMode),
 		SuccessURL: stripe.String(frontendURL + "/success"),
 		CancelURL:  stripe.String(frontendURL + "/cancel"),
 		Metadata:   map[string]string{"user_id": userID, "product_id": productID},

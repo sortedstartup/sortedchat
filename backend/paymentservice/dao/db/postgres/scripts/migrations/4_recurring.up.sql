@@ -1,0 +1,3 @@
+ALTER TABLE products ADD COLUMN is_recurring BOOLEAN DEFAULT FALSE;
+ALTER TABLE products ADD COLUMN interval_count INTEGER DEFAULT 1;
+ALTER TABLE products ADD COLUMN interval_period TEXT DEFAULT 'month';

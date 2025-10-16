@@ -9,6 +9,19 @@ enum Currency {
     INR = 1;
 }
 
+enum PaymentType {
+    RECURRING = 0;
+    ONE_TIME = 1;
+}
+
+enum Interval {
+    DAY = 0;
+    WEEK = 1;
+    MONTH = 2;
+    QUARTER = 3;
+    YEAR = 4;
+}
+
 service PaymentService {
     rpc Infer(InferRequest) returns (stream InferResponse);
     rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
@@ -28,6 +41,9 @@ message CreateProductRequest {
     string description = 2;
     int64 amount_in_smallest_unit = 3;
     Currency currency = 4;
+    PaymentType payment_type = 5;
+    int64 interval_count = 6;
+    Interval interval = 7;
 }
 
 message CreateProductResponse {

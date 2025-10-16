@@ -73,7 +73,38 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 		return nil, status.Error(codes.InvalidArgument, "Unsupported currency type")
 	}
 
-	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInSmallestUnit, currencyStr)
+	// Determine if payment is recurring
+	isRecurring := req.PaymentType == pb.PaymentType_RECURRING
+
+	// Convert interval enum to string for database storage
+	var intervalPeriod string
+	if isRecurring {
+		switch req.Interval {
+		case pb.Interval_DAY:
+			intervalPeriod = "day"
+		case pb.Interval_WEEK:
+			intervalPeriod = "week"
+		case pb.Interval_MONTH:
+			intervalPeriod = "month"
+		case pb.Interval_QUARTER:
+			intervalPeriod = "quarter"
+		case pb.Interval_YEAR:
+			intervalPeriod = "year"
+		default:
+			return nil, status.Error(codes.InvalidArgument, "Invalid interval type")
+		}
+
+		// Validate interval count for recurring payments
+		if req.IntervalCount <= 0 {
+			return nil, status.Error(codes.InvalidArgument, "Interval count must be greater than 0 for recurring payments")
+		}
+	} else {
+		// For one-time payments, set defaults
+		intervalPeriod = "month"
+		req.IntervalCount = 1
+	}
+
+	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInSmallestUnit, currencyStr, isRecurring, req.IntervalCount, intervalPeriod)
 	if err != nil {
 		return nil, err
 	}

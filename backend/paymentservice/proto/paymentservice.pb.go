@@ -67,6 +67,107 @@ func (Currency) EnumDescriptor() ([]byte, []int) {
 	return file_paymentservice_proto_rawDescGZIP(), []int{0}
 }
 
+type PaymentType int32
+
+const (
+	PaymentType_RECURRING PaymentType = 0
+	PaymentType_ONE_TIME  PaymentType = 1
+)
+
+// Enum value maps for PaymentType.
+var (
+	PaymentType_name = map[int32]string{
+		0: "RECURRING",
+		1: "ONE_TIME",
+	}
+	PaymentType_value = map[string]int32{
+		"RECURRING": 0,
+		"ONE_TIME":  1,
+	}
+)
+
+func (x PaymentType) Enum() *PaymentType {
+	p := new(PaymentType)
+	*p = x
+	return p
+}
+
+func (x PaymentType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PaymentType) Descriptor() protoreflect.EnumDescriptor {
+	return file_paymentservice_proto_enumTypes[1].Descriptor()
+}
+
+func (PaymentType) Type() protoreflect.EnumType {
+	return &file_paymentservice_proto_enumTypes[1]
+}
+
+func (x PaymentType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PaymentType.Descriptor instead.
+func (PaymentType) EnumDescriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{1}
+}
+
+type Interval int32
+
+const (
+	Interval_DAY     Interval = 0
+	Interval_WEEK    Interval = 1
+	Interval_MONTH   Interval = 2
+	Interval_QUARTER Interval = 3
+	Interval_YEAR    Interval = 4
+)
+
+// Enum value maps for Interval.
+var (
+	Interval_name = map[int32]string{
+		0: "DAY",
+		1: "WEEK",
+		2: "MONTH",
+		3: "QUARTER",
+		4: "YEAR",
+	}
+	Interval_value = map[string]int32{
+		"DAY":     0,
+		"WEEK":    1,
+		"MONTH":   2,
+		"QUARTER": 3,
+		"YEAR":    4,
+	}
+)
+
+func (x Interval) Enum() *Interval {
+	p := new(Interval)
+	*p = x
+	return p
+}
+
+func (x Interval) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Interval) Descriptor() protoreflect.EnumDescriptor {
+	return file_paymentservice_proto_enumTypes[2].Descriptor()
+}
+
+func (Interval) Type() protoreflect.EnumType {
+	return &file_paymentservice_proto_enumTypes[2]
+}
+
+func (x Interval) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Interval.Descriptor instead.
+func (Interval) EnumDescriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{2}
+}
+
 type InferRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -145,6 +246,9 @@ type CreateProductRequest struct {
 	Description          string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	AmountInSmallestUnit int64                  `protobuf:"varint,3,opt,name=amount_in_smallest_unit,json=amountInSmallestUnit,proto3" json:"amount_in_smallest_unit,omitempty"`
 	Currency             Currency               `protobuf:"varint,4,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
+	PaymentType          PaymentType            `protobuf:"varint,5,opt,name=payment_type,json=paymentType,proto3,enum=sortedchat.PaymentType" json:"payment_type,omitempty"`
+	IntervalCount        int64                  `protobuf:"varint,6,opt,name=interval_count,json=intervalCount,proto3" json:"interval_count,omitempty"`
+	Interval             Interval               `protobuf:"varint,7,opt,name=interval,proto3,enum=sortedchat.Interval" json:"interval,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -205,6 +309,27 @@ func (x *CreateProductRequest) GetCurrency() Currency {
 		return x.Currency
 	}
 	return Currency_USD
+}
+
+func (x *CreateProductRequest) GetPaymentType() PaymentType {
+	if x != nil {
+		return x.PaymentType
+	}
+	return PaymentType_RECURRING
+}
+
+func (x *CreateProductRequest) GetIntervalCount() int64 {
+	if x != nil {
+		return x.IntervalCount
+	}
+	return 0
+}
+
+func (x *CreateProductRequest) GetInterval() Interval {
+	if x != nil {
+		return x.Interval
+	}
+	return Interval_DAY
 }
 
 type CreateProductResponse struct {
@@ -630,12 +755,15 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\x14paymentservice.proto\x12\n" +
 	"sortedchat\"\x0e\n" +
 	"\fInferRequest\"\x0f\n" +
-	"\rInferResponse\"\xb5\x01\n" +
+	"\rInferResponse\"\xca\x02\n" +
 	"\x14CreateProductRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x125\n" +
 	"\x17amount_in_smallest_unit\x18\x03 \x01(\x03R\x14amountInSmallestUnit\x120\n" +
-	"\bcurrency\x18\x04 \x01(\x0e2\x14.sortedchat.CurrencyR\bcurrency\"A\n" +
+	"\bcurrency\x18\x04 \x01(\x0e2\x14.sortedchat.CurrencyR\bcurrency\x12:\n" +
+	"\fpayment_type\x18\x05 \x01(\x0e2\x17.sortedchat.PaymentTypeR\vpaymentType\x12%\n" +
+	"\x0einterval_count\x18\x06 \x01(\x03R\rintervalCount\x120\n" +
+	"\binterval\x18\a \x01(\x0e2\x14.sortedchat.IntervalR\binterval\"A\n" +
 	"\x15CreateProductResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\x15\n" +
@@ -665,7 +793,16 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\bcurrency\x18\x03 \x01(\tR\bcurrency*\x1c\n" +
 	"\bCurrency\x12\a\n" +
 	"\x03USD\x10\x00\x12\a\n" +
-	"\x03INR\x10\x012\x80\x04\n" +
+	"\x03INR\x10\x01**\n" +
+	"\vPaymentType\x12\r\n" +
+	"\tRECURRING\x10\x00\x12\f\n" +
+	"\bONE_TIME\x10\x01*?\n" +
+	"\bInterval\x12\a\n" +
+	"\x03DAY\x10\x00\x12\b\n" +
+	"\x04WEEK\x10\x01\x12\t\n" +
+	"\x05MONTH\x10\x02\x12\v\n" +
+	"\aQUARTER\x10\x03\x12\b\n" +
+	"\x04YEAR\x10\x042\x80\x04\n" +
 	"\x0ePaymentService\x12>\n" +
 	"\x05Infer\x12\x18.sortedchat.InferRequest\x1a\x19.sortedchat.InferResponse0\x01\x12T\n" +
 	"\rCreateProduct\x12 .sortedchat.CreateProductRequest\x1a!.sortedchat.CreateProductResponse\x12Q\n" +
@@ -685,41 +822,45 @@ func file_paymentservice_proto_rawDescGZIP() []byte {
 	return file_paymentservice_proto_rawDescData
 }
 
-var file_paymentservice_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_paymentservice_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_paymentservice_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_paymentservice_proto_goTypes = []any{
 	(Currency)(0),                                 // 0: sortedchat.Currency
-	(*InferRequest)(nil),                          // 1: sortedchat.InferRequest
-	(*InferResponse)(nil),                         // 2: sortedchat.InferResponse
-	(*CreateProductRequest)(nil),                  // 3: sortedchat.CreateProductRequest
-	(*CreateProductResponse)(nil),                 // 4: sortedchat.CreateProductResponse
-	(*ListProductsRequest)(nil),                   // 5: sortedchat.ListProductsRequest
-	(*ListProductsResponse)(nil),                  // 6: sortedchat.ListProductsResponse
-	(*Product)(nil),                               // 7: sortedchat.Product
-	(*CreateStripeCheckoutSessionRequest)(nil),    // 8: sortedchat.CreateStripeCheckoutSessionRequest
-	(*CreateStripeCheckoutSessionResponse)(nil),   // 9: sortedchat.CreateStripeCheckoutSessionResponse
-	(*CreateRazorpayCheckoutSessionRequest)(nil),  // 10: sortedchat.CreateRazorpayCheckoutSessionRequest
-	(*CreateRazorpayCheckoutSessionResponse)(nil), // 11: sortedchat.CreateRazorpayCheckoutSessionResponse
+	(PaymentType)(0),                              // 1: sortedchat.PaymentType
+	(Interval)(0),                                 // 2: sortedchat.Interval
+	(*InferRequest)(nil),                          // 3: sortedchat.InferRequest
+	(*InferResponse)(nil),                         // 4: sortedchat.InferResponse
+	(*CreateProductRequest)(nil),                  // 5: sortedchat.CreateProductRequest
+	(*CreateProductResponse)(nil),                 // 6: sortedchat.CreateProductResponse
+	(*ListProductsRequest)(nil),                   // 7: sortedchat.ListProductsRequest
+	(*ListProductsResponse)(nil),                  // 8: sortedchat.ListProductsResponse
+	(*Product)(nil),                               // 9: sortedchat.Product
+	(*CreateStripeCheckoutSessionRequest)(nil),    // 10: sortedchat.CreateStripeCheckoutSessionRequest
+	(*CreateStripeCheckoutSessionResponse)(nil),   // 11: sortedchat.CreateStripeCheckoutSessionResponse
+	(*CreateRazorpayCheckoutSessionRequest)(nil),  // 12: sortedchat.CreateRazorpayCheckoutSessionRequest
+	(*CreateRazorpayCheckoutSessionResponse)(nil), // 13: sortedchat.CreateRazorpayCheckoutSessionResponse
 }
 var file_paymentservice_proto_depIdxs = []int32{
 	0,  // 0: sortedchat.CreateProductRequest.currency:type_name -> sortedchat.Currency
-	7,  // 1: sortedchat.ListProductsResponse.products:type_name -> sortedchat.Product
-	0,  // 2: sortedchat.Product.currency:type_name -> sortedchat.Currency
-	1,  // 3: sortedchat.PaymentService.Infer:input_type -> sortedchat.InferRequest
-	3,  // 4: sortedchat.PaymentService.CreateProduct:input_type -> sortedchat.CreateProductRequest
-	5,  // 5: sortedchat.PaymentService.ListProducts:input_type -> sortedchat.ListProductsRequest
-	8,  // 6: sortedchat.PaymentService.CreateStripeCheckoutSession:input_type -> sortedchat.CreateStripeCheckoutSessionRequest
-	10, // 7: sortedchat.PaymentService.CreateRazorpayCheckoutSession:input_type -> sortedchat.CreateRazorpayCheckoutSessionRequest
-	2,  // 8: sortedchat.PaymentService.Infer:output_type -> sortedchat.InferResponse
-	4,  // 9: sortedchat.PaymentService.CreateProduct:output_type -> sortedchat.CreateProductResponse
-	6,  // 10: sortedchat.PaymentService.ListProducts:output_type -> sortedchat.ListProductsResponse
-	9,  // 11: sortedchat.PaymentService.CreateStripeCheckoutSession:output_type -> sortedchat.CreateStripeCheckoutSessionResponse
-	11, // 12: sortedchat.PaymentService.CreateRazorpayCheckoutSession:output_type -> sortedchat.CreateRazorpayCheckoutSessionResponse
-	8,  // [8:13] is the sub-list for method output_type
-	3,  // [3:8] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	1,  // 1: sortedchat.CreateProductRequest.payment_type:type_name -> sortedchat.PaymentType
+	2,  // 2: sortedchat.CreateProductRequest.interval:type_name -> sortedchat.Interval
+	9,  // 3: sortedchat.ListProductsResponse.products:type_name -> sortedchat.Product
+	0,  // 4: sortedchat.Product.currency:type_name -> sortedchat.Currency
+	3,  // 5: sortedchat.PaymentService.Infer:input_type -> sortedchat.InferRequest
+	5,  // 6: sortedchat.PaymentService.CreateProduct:input_type -> sortedchat.CreateProductRequest
+	7,  // 7: sortedchat.PaymentService.ListProducts:input_type -> sortedchat.ListProductsRequest
+	10, // 8: sortedchat.PaymentService.CreateStripeCheckoutSession:input_type -> sortedchat.CreateStripeCheckoutSessionRequest
+	12, // 9: sortedchat.PaymentService.CreateRazorpayCheckoutSession:input_type -> sortedchat.CreateRazorpayCheckoutSessionRequest
+	4,  // 10: sortedchat.PaymentService.Infer:output_type -> sortedchat.InferResponse
+	6,  // 11: sortedchat.PaymentService.CreateProduct:output_type -> sortedchat.CreateProductResponse
+	8,  // 12: sortedchat.PaymentService.ListProducts:output_type -> sortedchat.ListProductsResponse
+	11, // 13: sortedchat.PaymentService.CreateStripeCheckoutSession:output_type -> sortedchat.CreateStripeCheckoutSessionResponse
+	13, // 14: sortedchat.PaymentService.CreateRazorpayCheckoutSession:output_type -> sortedchat.CreateRazorpayCheckoutSessionResponse
+	10, // [10:15] is the sub-list for method output_type
+	5,  // [5:10] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_paymentservice_proto_init() }
@@ -732,7 +873,7 @@ func file_paymentservice_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_paymentservice_proto_rawDesc), len(file_paymentservice_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      3,
 			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,

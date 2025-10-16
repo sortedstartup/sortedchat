@@ -15,33 +15,78 @@ import (
 	"strings"
 )
 
-func (s *PaymentService) CreateProductRazorpay(ctx context.Context, name string, description string, amountInSmallestUnit int64, currency string) (string, error) {
-	slog.Info("paymentservice:service:CreateProductRazorpay", "name", name)
+func (s *PaymentService) CreateProductRazorpay(ctx context.Context, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, period string) (string, error) {
+	slog.Info("paymentservice:service:CreateProductRazorpay", "name", name, "isRecurring", isRecurring, "intervalCount", intervalCount, "period", period, "description", description, "amountInSmallestUnit", amountInSmallestUnit, "currency", currency)
 
-	// Create item data for Razorpay
-	itemData := map[string]interface{}{
-		"name":        name,
-		"description": description,
-		"amount":      amountInSmallestUnit, // Convert to smallest currency unit (paise)
-		"currency":    currency,
+	if isRecurring {
+		razorpayCurrency := strings.ToLower(currency)
+
+		// Validate interval count for daily plans (minimum 7 according to Razorpay docs)
+		actualIntervalCount := intervalCount
+		if period == "daily" && intervalCount < 7 {
+			slog.Warn("paymentservice:service:CreateProductRazorpay", "warning", "Daily plans require minimum interval of 7, adjusting", "original", intervalCount, "adjusted", 7)
+			actualIntervalCount = 7
+		}
+
+		planData := map[string]interface{}{
+			"period":   period,              // "daily", "weekly", "monthly", "quarterly", "yearly"
+			"interval": actualIntervalCount, // e.g., 1 for every month, 3 for every 3 months
+			"item": map[string]interface{}{
+				"name":        name,
+				"amount":      amountInSmallestUnit,
+				"currency":    razorpayCurrency, // Required field according to API docs
+				"description": description,
+			},
+			"notes": map[string]interface{}{
+				"created_by": "sortedstartup",
+			},
+		}
+
+		slog.Info("paymentservice:service:CreateProductRazorpay", "planData", planData)
+
+		// Create plan in Razorpay
+		plan, err := s.razorpayClient.Plan.Create(planData, nil)
+		if err != nil {
+			slog.Error("paymentservice:service:CreateProductRazorpay", "error", err, "errorType", fmt.Sprintf("%T", err), "planData", planData)
+			// Return more specific error information for debugging
+			return "", fmt.Errorf("failed to create Razorpay plan: %v", err)
+		}
+
+		// Extract plan ID from response
+		planID, ok := plan["id"].(string)
+		if !ok {
+			slog.Error("paymentservice:service:CreateProductRazorpay", "error", "failed to get plan ID", "response", plan)
+			return "", fmt.Errorf("failed to process the request")
+		}
+
+		slog.Info("paymentservice:service:CreateProductRazorpay", "planID", planID)
+		return planID, nil // Return plan ID for recurring payments
+	} else {
+		// Create item data for one-time payments
+		itemData := map[string]interface{}{
+			"name":        name,
+			"description": description,
+			"amount":      amountInSmallestUnit,
+			"currency":    currency,
+		}
+
+		// Create item in Razorpay
+		item, err := s.razorpayClient.Item.Create(itemData, nil)
+		if err != nil {
+			slog.Error("paymentservice:service:CreateProductRazorpay", "error", err)
+			return "", fmt.Errorf("failed to process the request")
+		}
+
+		// Extract item ID from response
+		itemID, ok := item["id"].(string)
+		if !ok {
+			slog.Error("paymentservice:service:CreateProductRazorpay", "error", "failed to get item ID")
+			return "", fmt.Errorf("failed to process the request")
+		}
+
+		slog.Info("paymentservice:service:CreateProductRazorpay", "itemID", itemID)
+		return itemID, nil
 	}
-
-	// Create item in Razorpay
-	item, err := s.razorpayClient.Item.Create(itemData, nil)
-	if err != nil {
-		slog.Error("paymentservice:service:CreateProductRazorpay", "error", err)
-		return "", fmt.Errorf("failed to process the request")
-	}
-
-	// Extract item ID from response
-	itemID, ok := item["id"].(string)
-	if !ok {
-		slog.Error("paymentservice:service:CreateProductRazorpay", "error", "failed to get item ID")
-		return "", fmt.Errorf("failed to process the request")
-	}
-
-	slog.Info("paymentservice:service:CreateProductRazorpay", "itemID", itemID)
-	return itemID, nil
 }
 
 func (s *PaymentService) CreateRazorpayCheckoutSession(ctx context.Context, userID string, productID string) (string, int64, string, error) {
@@ -54,35 +99,64 @@ func (s *PaymentService) CreateRazorpayCheckoutSession(ctx context.Context, user
 		return "", 0, "", fmt.Errorf("failed to create Razorpay checkout session")
 	}
 
-	slog.Info("paymentservice:service:CreateRazorpayCheckoutSession", "product", product.Price, "type", reflect.TypeOf(product.Price))
+	slog.Info("paymentservice:service:CreateRazorpayCheckoutSession", "product", product.Price, "type", reflect.TypeOf(product.Price), "isRecurring", product.IsRecurring)
 
-	// Razorpay expects amount in the smallest currency unit (paise for INR, cents for USD, etc.)
-	orderParams := map[string]interface{}{
-		"amount":   product.Price,
-		"currency": product.Currency,
-		"receipt":  product.RazorpayProductID,
-		"notes": map[string]interface{}{
-			"user_id":    userID,
-			"product_id": product.ID,
-		},
-		"payment_capture": 1, // Auto-capture payment after authorization
+	if product.IsRecurring {
+		// For recurring payments, create a subscription
+		subscriptionParams := map[string]interface{}{
+			"plan_id":         product.RazorpayProductID, // This should be the plan ID for recurring
+			"total_count":     12,                        // Total number of charges (can be customized)
+			"customer_notify": 1,
+			"notes": map[string]interface{}{
+				"user_id":    userID,
+				"product_id": product.ID,
+			},
+		}
+
+		subscription, err := s.razorpayClient.Subscription.Create(subscriptionParams, nil)
+		if err != nil {
+			slog.Error("paymentservice:service:CreateRazorpayCheckoutSession", "error", err)
+			return "", 0, "", fmt.Errorf("failed to create Razorpay subscription")
+		}
+
+		// Extract Subscription ID
+		subscriptionID, ok := subscription["id"].(string)
+		if !ok {
+			slog.Error("paymentservice:service:CreateRazorpayCheckoutSession", "error", "Subscription ID not found in response")
+			return "", 0, "", fmt.Errorf("failed to create Razorpay subscription")
+		}
+
+		slog.Info("paymentservice:service:CreateRazorpayCheckoutSession", "subscriptionID", subscriptionID)
+		return subscriptionID, product.Price, product.Currency, nil
+	} else {
+		// For one-time payments, create an order
+		orderParams := map[string]interface{}{
+			"amount":   product.Price,
+			"currency": product.Currency,
+			"receipt":  product.RazorpayProductID,
+			"notes": map[string]interface{}{
+				"user_id":    userID,
+				"product_id": product.ID,
+			},
+			"payment_capture": 1, // Auto-capture payment after authorization
+		}
+
+		order, err := s.razorpayClient.Order.Create(orderParams, nil)
+		if err != nil {
+			slog.Error("paymentservice:service:CreateRazorpayCheckoutSession", "error", err)
+			return "", 0, "", fmt.Errorf("failed to create Razorpay checkout session")
+		}
+
+		// Extract Order ID
+		orderID, ok := order["id"].(string)
+		if !ok {
+			slog.Error("paymentservice:service:CreateRazorpayCheckoutSession", "error", "Order ID not found in response")
+			return "", 0, "", fmt.Errorf("failed to create Razorpay checkout session")
+		}
+
+		slog.Info("paymentservice:service:CreateRazorpayCheckoutSession", "orderID", orderID)
+		return orderID, product.Price, product.Currency, nil
 	}
-
-	order, err := s.razorpayClient.Order.Create(orderParams, nil)
-	if err != nil {
-		slog.Error("paymentservice:service:CreateRazorpayCheckoutSession", "error", err)
-		return "", 0, "", fmt.Errorf("failed to create Razorpay checkout session")
-	}
-
-	// Extract Order ID
-	orderID, ok := order["id"].(string)
-	if !ok {
-		slog.Error("paymentservice:service:CreateRazorpayCheckoutSession", "error", "Order ID not found in response")
-		return "", 0, "", fmt.Errorf("failed to create Razorpay checkout session")
-	}
-
-	slog.Info("paymentservice:service:CreateRazorpayCheckoutSession", "orderID", orderID)
-	return orderID, product.Price, product.Currency, nil
 }
 
 func (s *PaymentService) HandleRazorpayWebhook(ctx context.Context, r *http.Request) error {

@@ -11,6 +11,9 @@ type Product struct {
 	Description       string `db:"description"`
 	Price             int64  `db:"price"`
 	Currency          string `db:"currency"`
+	IsRecurring       bool   `db:"is_recurring"`
+	IntervalCount     int64  `db:"interval_count"`
+	IntervalPeriod    string `db:"interval_period"`
 	CreatedAt         string `db:"created_at"`
 	UpdatedAt         string `db:"updated_at"`
 }

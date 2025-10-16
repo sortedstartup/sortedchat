@@ -53,10 +53,10 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	}
 
 	if strings.TrimSpace(req.Name) == "" {
-		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+		return nil, status.Error(codes.InvalidArgument, "Product name cannot be empty")
 	}
 	if strings.TrimSpace(req.Description) == "" {
-		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+		return nil, status.Error(codes.InvalidArgument, "Product description cannot be empty")
 	}
 	if req.AmountInSmallestUnit <= 0 {
 		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
@@ -117,7 +117,7 @@ func (s *PaymentServiceAPI) CreateStripeCheckoutSession(ctx context.Context, req
 	}
 
 	if strings.TrimSpace(req.ProductId) == "" {
-		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
+		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
 	}
 
 	SessionUrl, err := s.service.CreateStripeCheckoutSession(ctx, userID, req.ProductId)

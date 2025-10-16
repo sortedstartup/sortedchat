@@ -160,7 +160,7 @@ func (s *PaymentService) handleCheckoutSessionCompleted(ctx context.Context, eve
 		return fmt.Errorf("failed to marshal session to JSON: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPurchase(userID, productID, string(sessionJSON), true, "stripe")
+	_, err = s.dao.CreateUserPurchase(session.ID, userID, productID, string(sessionJSON), true, "stripe")
 	if err != nil {
 		slog.Error("paymentservice:service:handleCheckoutSessionCompleted", "error", "failed to create user purchase", "details", err)
 		return fmt.Errorf("failed to create user purchase: %v", err)
@@ -195,7 +195,7 @@ func (s *PaymentService) handlePaymentFailed(ctx context.Context, event stripe.E
 		return fmt.Errorf("failed to marshal session to JSON: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPurchase(userID, productID, string(sessionJSON), false, "stripe")
+	_, err = s.dao.CreateUserPurchase(session.ID, userID, productID, string(sessionJSON), false, "stripe")
 	if err != nil {
 		slog.Error("paymentservice:service:handlePaymentFailed", "error", "failed to create user purchase", "details", err)
 		return fmt.Errorf("failed to create user purchase: %v", err)

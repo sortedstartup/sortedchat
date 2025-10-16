@@ -65,16 +65,6 @@ const ListProducts: React.FC = () => {
                                 </span>
                                 <span className="text-sm text-gray-500">ID: {product.id}</span>
                             </div>
-                            
-                            {/* Provider IDs */}
-                            <div className="text-xs text-gray-500 mb-3 space-y-1">
-                                {product.stripe_product_id && (
-                                    <div>Stripe ID: {product.stripe_product_id}</div>
-                                )}
-                                {product.razorpay_product_id && (
-                                    <div>Razorpay ID: {product.razorpay_product_id}</div>
-                                )}
-                            </div>
 
                             {/* Buy Buttons */}
                             <div className="space-y-2">

@@ -91,18 +91,32 @@ func (d *PostgresDAO) ListProducts() ([]*Product, error) {
 	return products, nil
 }
 
-func (d *PostgresDAO) CreateUserPurchase(userID string, productID string, transaction_metadata string, is_success bool, provider string) (string, error) {
+func (d *PostgresDAO) CreateUserPurchase(sessionID string, userID string, productID string, transaction_metadata string, is_success bool, provider string) (string, error) {
 	id := uuid.New().String()
-	slog.Info("paymentservice:dao_postgres:CreateUserPurchase", "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
+	now := time.Now().Format(time.RFC3339)
+	slog.Info("paymentservice:dao_postgres:CreateUserPurchase", "sessionID", sessionID, "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
 
-	query := `INSERT INTO user_purchases (id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	_, err := d.db.Exec(query, id, userID, productID, transaction_metadata, is_success, provider, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	// Use INSERT ... ON CONFLICT for upsert functionality in PostgreSQL
+	query := `INSERT INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
+			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			  ON CONFLICT (session_id) 
+			  DO UPDATE SET 
+				  user_id = EXCLUDED.user_id,
+				  product_id = EXCLUDED.product_id,
+				  transaction_metadata = EXCLUDED.transaction_metadata,
+				  is_success = EXCLUDED.is_success,
+				  provider = EXCLUDED.provider,
+				  updated_at = EXCLUDED.updated_at
+			  RETURNING id`
+
+	var actualID string
+	err := d.db.Get(&actualID, query, id, sessionID, userID, productID, transaction_metadata, is_success, provider, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:CreateUserPurchase", "error", err)
 		return "", err
 	}
 
-	return id, nil
+	return actualID, nil
 }
 
 func (d *PostgresDAO) GetProductById(productID string) (*Product, error) {

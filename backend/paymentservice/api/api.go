@@ -122,7 +122,8 @@ func (s *PaymentServiceAPI) CreateStripeCheckoutSession(ctx context.Context, req
 
 	SessionUrl, err := s.service.CreateStripeCheckoutSession(ctx, userID, req.ProductId)
 	if err != nil {
-		return nil, err
+		slog.Error("paymentservice:api:CreateStripeCheckoutSession", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to create Stripe checkout session: %v", err)
 	}
 	return &pb.CreateStripeCheckoutSessionResponse{
 		SessionUrl: SessionUrl,

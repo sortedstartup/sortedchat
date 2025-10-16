@@ -65,18 +65,34 @@ func (d *SQLiteDAO) ListProducts() ([]*Product, error) {
 	return products, nil
 }
 
-func (d *SQLiteDAO) CreateUserPurchase(userID string, productID string, transaction_metadata string, is_success bool, provider string) (string, error) {
+func (d *SQLiteDAO) CreateUserPurchase(sessionID string, userID string, productID string, transaction_metadata string, is_success bool, provider string) (string, error) {
 	id := uuid.New().String()
-	slog.Info("paymentservice:dao_sqlite:CreateUserPurchase", "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
+	now := time.Now().Format(time.RFC3339)
+	slog.Info("paymentservice:dao_sqlite:CreateUserPurchase", "sessionID", sessionID, "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
 
-	query := `INSERT INTO user_purchases (id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := d.db.Exec(query, id, userID, productID, transaction_metadata, is_success, provider, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	// Use INSERT OR REPLACE for upsert functionality in SQLite
+	query := `INSERT OR REPLACE INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
+			  VALUES (
+				  COALESCE((SELECT id FROM user_purchases WHERE session_id = ?), ?),
+				  ?, ?, ?, ?, ?, ?,
+				  COALESCE((SELECT created_at FROM user_purchases WHERE session_id = ?), ?),
+				  ?
+			  )`
+	_, err := d.db.Exec(query, sessionID, id, sessionID, userID, productID, transaction_metadata, is_success, provider, sessionID, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", err)
 		return "", err
 	}
 
-	return id, nil
+	// Get the actual ID that was used (either existing or new)
+	var actualID string
+	err = d.db.Get(&actualID, "SELECT id FROM user_purchases WHERE session_id = ?", sessionID)
+	if err != nil {
+		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", "failed to get actual ID", "details", err)
+		return "", err
+	}
+
+	return actualID, nil
 }
 
 func (d *SQLiteDAO) GetProductById(productID string) (*Product, error) {

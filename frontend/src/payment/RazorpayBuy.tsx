@@ -38,7 +38,6 @@ const RazorpayBuy: React.FC<RazorpayBuyProps> = ({ productId, className = "", ch
             const rzp = new window.Razorpay(options);
             rzp.open();
         } catch (err: any) {
-            console.error("Failed to create Razorpay checkout session:", err);
             setError(err?.message || "Failed to create checkout session");
         } finally {
             setIsLoading(false);

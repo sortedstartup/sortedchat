@@ -22,7 +22,7 @@ const RazorpayBuy: React.FC<RazorpayBuyProps> = ({ productId, className = "", ch
             setIsLoading(true);
             setError("");
             const { orderId, amount, currency } = await createRazorpayCheckoutSession(productId);
-            
+
             // Initialize Razorpay checkout
             const options = {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Your Razorpay key ID mandatory
@@ -34,6 +34,10 @@ const RazorpayBuy: React.FC<RazorpayBuyProps> = ({ productId, className = "", ch
                     window.location.href = '/success'
                 }
             };
+
+            if (!window.Razorpay) {
+                throw new Error('Razorpay SDK failed to load. Please check your internet connection and try again.');
+            }
 
             const rzp = new window.Razorpay(options);
             rzp.open();

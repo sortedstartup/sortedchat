@@ -99,13 +99,12 @@ func (d *PostgresDAO) CreateUserPurchase(sessionID string, userID string, produc
 	// Use INSERT ... ON CONFLICT for upsert functionality in PostgreSQL
 	query := `INSERT INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
 			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-			  ON CONFLICT (session_id) 
+			  ON CONFLICT (provider, session_id) 
 			  DO UPDATE SET 
 				  user_id = EXCLUDED.user_id,
 				  product_id = EXCLUDED.product_id,
 				  transaction_metadata = EXCLUDED.transaction_metadata,
 				  is_success = EXCLUDED.is_success,
-				  provider = EXCLUDED.provider,
 				  updated_at = EXCLUDED.updated_at
 			  RETURNING id`
 

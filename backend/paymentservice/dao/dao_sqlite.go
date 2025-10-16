@@ -70,31 +70,22 @@ func (d *SQLiteDAO) CreateUserPurchase(sessionID string, userID string, productI
 	now := time.Now().Format(time.RFC3339)
 	slog.Info("paymentservice:dao_sqlite:CreateUserPurchase", "sessionID", sessionID, "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
 
-	// Simple INSERT OR IGNORE followed by UPDATE - much cleaner with unique index
-	// First, try to insert a new record
-	insertQuery := `INSERT OR IGNORE INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := d.db.Exec(insertQuery, id, sessionID, userID, productID, transaction_metadata, is_success, provider, now, now)
-	if err != nil {
-		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", "failed to insert", "details", err)
-		return "", err
-	}
+	// Use proper SQLite UPSERT syntax with ON CONFLICT - atomic operation
+	query := `INSERT INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
+			  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			  ON CONFLICT(provider, session_id) 
+			  DO UPDATE SET 
+				  user_id = excluded.user_id,
+				  product_id = excluded.product_id,
+				  transaction_metadata = excluded.transaction_metadata,
+				  is_success = excluded.is_success,
+				  updated_at = excluded.updated_at
+			  RETURNING id`
 
-	// Then update the record (will update existing or the just-inserted record)
-	updateQuery := `UPDATE user_purchases 
-					SET user_id = ?, product_id = ?, transaction_metadata = ?, is_success = ?, provider = ?, updated_at = ?
-					WHERE session_id = ?`
-	_, err = d.db.Exec(updateQuery, userID, productID, transaction_metadata, is_success, provider, now, sessionID)
-	if err != nil {
-		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", "failed to update", "details", err)
-		return "", err
-	}
-
-	// Get the actual ID
 	var actualID string
-	err = d.db.Get(&actualID, "SELECT id FROM user_purchases WHERE session_id = ?", sessionID)
+	err := d.db.Get(&actualID, query, id, sessionID, userID, productID, transaction_metadata, is_success, provider, now, now)
 	if err != nil {
-		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", "failed to get actual ID", "details", err)
+		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", err)
 		return "", err
 	}
 

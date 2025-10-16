@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 )
 
 func (s *PaymentService) CreateProductRazorpay(ctx context.Context, name string, description string, amountInSmallestUnit int64, currency string) (string, error) {
@@ -88,6 +89,7 @@ func (s *PaymentService) HandleRazorpayWebhook(ctx context.Context, r *http.Requ
 	slog.Info("paymentservice:service:HandleRazorpayWebhook")
 
 	// Read the raw webhook payload
+	defer r.Body.Close()
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
 		slog.Error("paymentservice:service:HandleRazorpayWebhook", "error", "failed to read request body", "details", err)
@@ -101,8 +103,14 @@ func (s *PaymentService) HandleRazorpayWebhook(ctx context.Context, r *http.Requ
 		return fmt.Errorf("missing signature header")
 	}
 
+	secret := os.Getenv("RAZORPAY_WEBHOOK_SECRET")
+	if strings.TrimSpace(secret) == "" {
+		slog.Error("paymentservice:service:HandleRazorpayWebhook", "error", "RAZORPAY_WEBHOOK_SECRET is not set")
+		return fmt.Errorf("configuration error")
+	}
+
 	// Verify signature using raw payload
-	if !s.verifySignature(payload, signature, os.Getenv("RAZORPAY_WEBHOOK_SECRET")) {
+	if !s.verifySignature(payload, signature, secret) {
 		slog.Error("paymentservice:service:HandleRazorpayWebhook", "error", "invalid signature")
 		return fmt.Errorf("invalid signature")
 	}

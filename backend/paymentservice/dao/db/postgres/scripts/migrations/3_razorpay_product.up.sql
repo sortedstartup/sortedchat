@@ -2,4 +2,4 @@ ALTER TABLE products ADD COLUMN razorpay_product_id TEXT;
 ALTER TABLE products ADD COLUMN stripe_product_id TEXT;
 ALTER TABLE user_purchases ADD COLUMN provider TEXT;
 ALTER TABLE user_purchases ADD COLUMN session_id TEXT;
-ALTER TABLE user_purchases ADD CONSTRAINT unique_session_id UNIQUE (session_id);
+ALTER TABLE user_purchases ADD CONSTRAINT unique_provider_session UNIQUE (provider, session_id);

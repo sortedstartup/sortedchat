@@ -70,21 +70,27 @@ func (d *SQLiteDAO) CreateUserPurchase(sessionID string, userID string, productI
 	now := time.Now().Format(time.RFC3339)
 	slog.Info("paymentservice:dao_sqlite:CreateUserPurchase", "sessionID", sessionID, "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
 
-	// Use INSERT OR REPLACE for upsert functionality in SQLite
-	query := `INSERT OR REPLACE INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
-			  VALUES (
-				  COALESCE((SELECT id FROM user_purchases WHERE session_id = ?), ?),
-				  ?, ?, ?, ?, ?, ?,
-				  COALESCE((SELECT created_at FROM user_purchases WHERE session_id = ?), ?),
-				  ?
-			  )`
-	_, err := d.db.Exec(query, sessionID, id, sessionID, userID, productID, transaction_metadata, is_success, provider, sessionID, now, now)
+	// Simple INSERT OR IGNORE followed by UPDATE - much cleaner with unique index
+	// First, try to insert a new record
+	insertQuery := `INSERT OR IGNORE INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := d.db.Exec(insertQuery, id, sessionID, userID, productID, transaction_metadata, is_success, provider, now, now)
 	if err != nil {
-		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", err)
+		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", "failed to insert", "details", err)
 		return "", err
 	}
 
-	// Get the actual ID that was used (either existing or new)
+	// Then update the record (will update existing or the just-inserted record)
+	updateQuery := `UPDATE user_purchases 
+					SET user_id = ?, product_id = ?, transaction_metadata = ?, is_success = ?, provider = ?, updated_at = ?
+					WHERE session_id = ?`
+	_, err = d.db.Exec(updateQuery, userID, productID, transaction_metadata, is_success, provider, now, sessionID)
+	if err != nil {
+		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", "failed to update", "details", err)
+		return "", err
+	}
+
+	// Get the actual ID
 	var actualID string
 	err = d.db.Get(&actualID, "SELECT id FROM user_purchases WHERE session_id = ?", sessionID)
 	if err != nil {

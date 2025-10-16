@@ -8,12 +8,12 @@ declare global {
 }
 
 interface RazorpayBuyProps {
-    razorpayProductId: string;
+    productId: string;
     className?: string;
     children?: React.ReactNode;
 }
 
-const RazorpayBuy: React.FC<RazorpayBuyProps> = ({ razorpayProductId, className = "", children }) => {
+const RazorpayBuy: React.FC<RazorpayBuyProps> = ({ productId, className = "", children }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -21,21 +21,16 @@ const RazorpayBuy: React.FC<RazorpayBuyProps> = ({ razorpayProductId, className 
         try {
             setIsLoading(true);
             setError("");
-            const { orderId, amount, currency } = await createRazorpayCheckoutSession(razorpayProductId);
-            console.log("orderId", orderId);
-            console.log("amount", amount);
-            console.log("currency", currency);
+            const { orderId, amount, currency } = await createRazorpayCheckoutSession(productId);
             
             // Initialize Razorpay checkout
             const options = {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Your Razorpay key ID mandatory
                 amount: amount, // mandatory - amount in smallest currency unit
                 order_id: orderId, // mandatory
-                name: "Your Company Name", // mandatory
+                name: "SortedChat", // mandatory
                 currency: currency, // mandatory
                 handler: function (response: any) {
-                    // Handle successful payment
-                    console.log("Payment successful:", response);
                     window.location.href = '/success'
                 }
             };

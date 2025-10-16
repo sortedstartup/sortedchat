@@ -139,7 +139,7 @@ func (s *PaymentServiceAPI) CreateRazorpayCheckoutSession(ctx context.Context, r
 	OrderId, Amount, Currency, err := s.service.CreateRazorpayCheckoutSession(ctx, userID, req.ProductId)
 	if err != nil {
 		slog.Error("paymentservice:api:CreateRazorpayCheckoutSession", "error", err)
-		return nil, fmt.Errorf("failed to create Razorpay checkout session")
+		return nil, status.Errorf(codes.Internal, "failed to create Razorpay checkout session: %v", err)
 	}
 	return &pb.CreateRazorpayCheckoutSessionResponse{
 		OrderId:  OrderId,

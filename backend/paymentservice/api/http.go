@@ -28,11 +28,11 @@ func (s *PaymentServiceAPI) handleWebhook(w http.ResponseWriter, r *http.Request
 
 func (s *PaymentServiceAPI) handleRazorpayWebhook(w http.ResponseWriter, r *http.Request) {
 	slog.Info("api:handleRazorpayWebhook")
-
 	err := s.service.HandleRazorpayWebhook(r.Context(), r)
 	if err != nil {
 		slog.Error("api:handleRazorpayWebhook", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 }

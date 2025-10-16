@@ -42,10 +42,17 @@ func (s *PaymentService) CreateProductStripe(ctx context.Context, name string, d
 func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID string, productID string) (string, error) {
 	slog.Info("paymentservice:service:CreateCheckoutSession", "userID", userID, "productID", productID)
 
+	// Get product by product ID to get the Stripe product ID
+	product, err := s.dao.GetProductById(productID)
+	if err != nil {
+		slog.Error("paymentservice:service:CreateStripeCheckoutSession", "error", err)
+		return "", fmt.Errorf("failed to create Stripe checkout session")
+	}
+
 	var priceID string
-	//lets get price id from product id
+	//lets get price id from stripe product id
 	params := &stripe.PriceListParams{
-		Product: stripe.String(productID),
+		Product: stripe.String(product.StripeProductID),
 		Active:  stripe.Bool(true),
 	}
 
@@ -144,7 +151,7 @@ func (s *PaymentService) handleCheckoutSessionCompleted(ctx context.Context, eve
 
 	productID, exists := session.Metadata["product_id"]
 	if !exists {
-		return fmt.Errorf("plan_id not found in session metadata")
+		return fmt.Errorf("product_id not found in session metadata")
 	}
 
 	sessionJSON, err := json.Marshal(session)
@@ -153,7 +160,7 @@ func (s *PaymentService) handleCheckoutSessionCompleted(ctx context.Context, eve
 		return fmt.Errorf("failed to marshal session to JSON: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPurchase(userID, productID, string(sessionJSON), true)
+	_, err = s.dao.CreateUserPurchase(userID, productID, string(sessionJSON), true, "stripe")
 	if err != nil {
 		slog.Error("paymentservice:service:handleCheckoutSessionCompleted", "error", "failed to create user purchase", "details", err)
 		return fmt.Errorf("failed to create user purchase: %v", err)
@@ -188,7 +195,7 @@ func (s *PaymentService) handlePaymentFailed(ctx context.Context, event stripe.E
 		return fmt.Errorf("failed to marshal session to JSON: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPurchase(userID, productID, string(sessionJSON), false)
+	_, err = s.dao.CreateUserPurchase(userID, productID, string(sessionJSON), false, "stripe")
 	if err != nil {
 		slog.Error("paymentservice:service:handlePaymentFailed", "error", "failed to create user purchase", "details", err)
 		return fmt.Errorf("failed to create user purchase: %v", err)

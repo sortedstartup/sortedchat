@@ -79,12 +79,12 @@ const ListProducts: React.FC = () => {
                             {/* Buy Buttons */}
                             <div className="space-y-2">
                                 {product.stripe_product_id && (
-                                    <StripeBuy productId={product.stripe_product_id} className="w-full">
+                                    <StripeBuy productId={product.id} className="w-full">
                                         Buy with Stripe
                                     </StripeBuy>
                                 )}
                                 {product.razorpay_product_id && (
-                                    <RazorpayBuy razorpayProductId={product.razorpay_product_id} className="w-full">
+                                    <RazorpayBuy productId={product.id} className="w-full">
                                         Buy with Razorpay
                                     </RazorpayBuy>
                                 )}

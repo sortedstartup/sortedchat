@@ -91,12 +91,12 @@ func (d *PostgresDAO) ListProducts() ([]*Product, error) {
 	return products, nil
 }
 
-func (d *PostgresDAO) CreateUserPurchase(userID string, productID string, transaction_metadata string, is_success bool) (string, error) {
+func (d *PostgresDAO) CreateUserPurchase(userID string, productID string, transaction_metadata string, is_success bool, provider string) (string, error) {
 	id := uuid.New().String()
-	slog.Info("paymentservice:dao_postgres:CreateUserPurchase", "userID", userID, "productID", productID, "is_success", is_success)
+	slog.Info("paymentservice:dao_postgres:CreateUserPurchase", "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
 
-	query := `INSERT INTO user_purchases (id, user_id, product_id, transaction_metadata, is_success, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := d.db.Exec(query, id, userID, productID, transaction_metadata, is_success, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	query := `INSERT INTO user_purchases (id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := d.db.Exec(query, id, userID, productID, transaction_metadata, is_success, provider, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:CreateUserPurchase", "error", err)
 		return "", err
@@ -105,14 +105,14 @@ func (d *PostgresDAO) CreateUserPurchase(userID string, productID string, transa
 	return id, nil
 }
 
-func (d *PostgresDAO) GetRazorpayProductById(razorpayProductID string) (*Product, error) {
-	slog.Info("paymentservice:dao_postgres:GetRazorpayProductById", "razorpayProductID", razorpayProductID)
+func (d *PostgresDAO) GetProductById(productID string) (*Product, error) {
+	slog.Info("paymentservice:dao_postgres:GetProductById", "productID", productID)
 
-	query := `SELECT * FROM products WHERE razorpay_product_id = $1`
+	query := `SELECT * FROM products WHERE id = $1`
 	product := &Product{}
-	err := d.db.Get(product, query, razorpayProductID)
+	err := d.db.Get(product, query, productID)
 	if err != nil {
-		slog.Error("paymentservice:dao_postgres:GetRazorpayProductById", "error", err)
+		slog.Error("paymentservice:dao_postgres:GetProductById", "error", err)
 		return nil, err
 	}
 	return product, nil

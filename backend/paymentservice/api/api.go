@@ -70,7 +70,7 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	case pb.Currency_INR:
 		currencyStr = "INR"
 	default:
-		currencyStr = "USD"
+		return nil, status.Error(codes.InvalidArgument, "Unsupported currency type")
 	}
 
 	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInSmallestUnit, currencyStr)
@@ -136,6 +136,11 @@ func (s *PaymentServiceAPI) CreateRazorpayCheckoutSession(ctx context.Context, r
 		slog.Error("paymentservice:api:CreateRazorpayCheckoutSession", "error", err)
 		return nil, err
 	}
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "product ID cannot be empty")
+	}
+
 	OrderId, Amount, Currency, err := s.service.CreateRazorpayCheckoutSession(ctx, userID, req.ProductId)
 	if err != nil {
 		slog.Error("paymentservice:api:CreateRazorpayCheckoutSession", "error", err)

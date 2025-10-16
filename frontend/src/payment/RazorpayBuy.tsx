@@ -30,7 +30,7 @@ const RazorpayBuy: React.FC<RazorpayBuyProps> = ({ productId, className = "", ch
                 order_id: orderId, // mandatory
                 name: "SortedChat", // mandatory
                 currency: currency, // mandatory
-                handler: function (response: any) {
+                handler: function () {
                     window.location.href = '/success'
                 }
             };

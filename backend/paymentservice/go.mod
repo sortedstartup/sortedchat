@@ -13,7 +13,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/stripe/stripe-go/v83 v83.0.1
-	google.golang.org/grpc v1.76.0
+	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.10
 )
 

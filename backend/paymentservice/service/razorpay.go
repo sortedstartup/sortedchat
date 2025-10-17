@@ -19,7 +19,6 @@ func (s *PaymentService) CreateProductRazorpay(ctx context.Context, name string,
 	slog.Info("paymentservice:service:CreateProductRazorpay", "name", name, "isRecurring", isRecurring, "intervalCount", intervalCount, "period", period, "description", description, "amountInSmallestUnit", amountInSmallestUnit, "currency", currency)
 
 	if isRecurring {
-		razorpayCurrency := strings.ToLower(currency)
 
 		// Validate interval count for daily plans (minimum 7 according to Razorpay docs)
 		actualIntervalCount := intervalCount
@@ -34,7 +33,7 @@ func (s *PaymentService) CreateProductRazorpay(ctx context.Context, name string,
 			"item": map[string]interface{}{
 				"name":        name,
 				"amount":      amountInSmallestUnit,
-				"currency":    razorpayCurrency, // Required field according to API docs
+				"currency":    currency, // Required field according to API docs
 				"description": description,
 			},
 			"notes": map[string]interface{}{

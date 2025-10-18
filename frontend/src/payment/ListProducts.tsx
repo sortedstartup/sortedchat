@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { listProducts, ProductList } from "./store/payment";
 import { useStore } from "@nanostores/react";
-import Buy from "./Buy";
+import StripeBuy from "./StripeBuy";
+import RazorpayBuy from "./RazorpayBuy";
 import { Currency } from "../../proto/paymentservice";
 
 const ListProducts: React.FC = () => {
@@ -60,11 +61,24 @@ const ListProducts: React.FC = () => {
                                         currency:
                                             product.currency === Currency.USD ? "USD" :
                                             product.currency === Currency.INR ? "INR" : "USD",
-                                    }).format(product.amount_in_cents / 100)}
+                                    }).format(product.amount_in_smallest_unit / 100)}
                                 </span>
                                 <span className="text-sm text-gray-500">ID: {product.id}</span>
                             </div>
-                            <Buy productId={product.id} className="w-full" />
+
+                            {/* Buy Buttons */}
+                            <div className="space-y-2">
+                                {product.stripe_product_id && (
+                                    <StripeBuy productId={product.id} className="w-full">
+                                        Buy with Stripe
+                                    </StripeBuy>
+                                )}
+                                {product.razorpay_product_id && (
+                                    <RazorpayBuy productId={product.id} className="w-full">
+                                        Buy with Razorpay
+                                    </RazorpayBuy>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>

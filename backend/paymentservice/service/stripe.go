@@ -8,20 +8,52 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/stripe/stripe-go/v83"
 	"github.com/stripe/stripe-go/v83/checkout/session"
 	"github.com/stripe/stripe-go/v83/price"
+	"github.com/stripe/stripe-go/v83/product"
 	"github.com/stripe/stripe-go/v83/webhook"
 )
 
-func (s *PaymentService) CreateCheckoutSession(ctx context.Context, userID string, productID string) (string, error) {
+func (s *PaymentService) CreateProductStripe(ctx context.Context, name string, description string, amountInSmallestUnit int64, currency string) (string, error) {
+	slog.Info("paymentservice:service:CreateProductStripe", "name", name)
+
+	// Create the product
+	productParams := &stripe.ProductParams{
+		Name:        stripe.String(name),
+		Description: stripe.String(description),
+		DefaultPriceData: &stripe.ProductDefaultPriceDataParams{
+			Currency:   stripe.String(currency),
+			UnitAmount: stripe.Int64(amountInSmallestUnit),
+		},
+	}
+
+	stripeProduct, err := product.New(productParams)
+	if err != nil {
+		slog.Error("paymentservice:service:CreateProductStripe", "error", err)
+		return "", fmt.Errorf("failed to process the request")
+	}
+
+	slog.Info("paymentservice:service:CreateProductStripe", "id", stripeProduct.ID)
+	return stripeProduct.ID, nil
+}
+
+func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID string, productID string) (string, error) {
 	slog.Info("paymentservice:service:CreateCheckoutSession", "userID", userID, "productID", productID)
 
+	// Get product by product ID to get the Stripe product ID
+	product, err := s.dao.GetProductById(productID)
+	if err != nil {
+		slog.Error("paymentservice:service:CreateStripeCheckoutSession", "error", err)
+		return "", fmt.Errorf("failed to create Stripe checkout session")
+	}
+
 	var priceID string
-	//lets get price id from product id
+	//lets get price id from stripe product id
 	params := &stripe.PriceListParams{
-		Product: stripe.String(productID),
+		Product: stripe.String(product.StripeProductID),
 		Active:  stripe.Bool(true),
 	}
 
@@ -39,6 +71,12 @@ func (s *PaymentService) CreateCheckoutSession(ctx context.Context, userID strin
 		return "", fmt.Errorf("failed to process the request")
 	}
 
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if strings.TrimSpace(frontendURL) == "" {
+		slog.Error("paymentservice:service:CreateCheckoutSession", "error", "FRONTEND_URL is not set")
+		return "", fmt.Errorf("configuration error")
+	}
+
 	//lets create session
 	sessionParams := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
@@ -49,8 +87,8 @@ func (s *PaymentService) CreateCheckoutSession(ctx context.Context, userID strin
 			},
 		},
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String(os.Getenv("FRONTEND_URL") + "/success"),
-		CancelURL:  stripe.String(os.Getenv("FRONTEND_URL") + "/cancel"),
+		SuccessURL: stripe.String(frontendURL + "/success"),
+		CancelURL:  stripe.String(frontendURL + "/cancel"),
 		Metadata:   map[string]string{"user_id": userID, "product_id": productID},
 	}
 
@@ -63,7 +101,7 @@ func (s *PaymentService) CreateCheckoutSession(ctx context.Context, userID strin
 	return session.URL, nil
 }
 
-func (s *PaymentService) HandleWebhook(ctx context.Context, r *http.Request) error {
+func (s *PaymentService) HandleStripeWebhook(ctx context.Context, r *http.Request) error {
 	slog.Info("paymentservice:service:HandleWebhook")
 
 	payload, err := io.ReadAll(r.Body)
@@ -120,7 +158,7 @@ func (s *PaymentService) handleCheckoutSessionCompleted(ctx context.Context, eve
 
 	productID, exists := session.Metadata["product_id"]
 	if !exists {
-		return fmt.Errorf("plan_id not found in session metadata")
+		return fmt.Errorf("product_id not found in session metadata")
 	}
 
 	sessionJSON, err := json.Marshal(session)
@@ -129,7 +167,7 @@ func (s *PaymentService) handleCheckoutSessionCompleted(ctx context.Context, eve
 		return fmt.Errorf("failed to marshal session to JSON: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPurchase(userID, productID, string(sessionJSON), true)
+	_, err = s.dao.CreateUserPurchase(session.ID, userID, productID, string(sessionJSON), true, "stripe")
 	if err != nil {
 		slog.Error("paymentservice:service:handleCheckoutSessionCompleted", "error", "failed to create user purchase", "details", err)
 		return fmt.Errorf("failed to create user purchase: %v", err)
@@ -164,7 +202,7 @@ func (s *PaymentService) handlePaymentFailed(ctx context.Context, event stripe.E
 		return fmt.Errorf("failed to marshal session to JSON: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPurchase(userID, productID, string(sessionJSON), false)
+	_, err = s.dao.CreateUserPurchase(session.ID, userID, productID, string(sessionJSON), false, "stripe")
 	if err != nil {
 		slog.Error("paymentservice:service:handlePaymentFailed", "error", "failed to create user purchase", "details", err)
 		return fmt.Errorf("failed to create user purchase: %v", err)

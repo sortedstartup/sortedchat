@@ -26,12 +26,13 @@ func (d *SQLiteDAO) Infer(dummy string) error {
 	return nil
 }
 
-func (d *SQLiteDAO) CreateProduct(id string, userID string, name string, description string, amountInCents int64, currency string) (string, error) {
-	slog.Info("paymentservice:dao_sqlite:CreateProduct", "userID", userID, "name", name, "description", description, "amountInCents", amountInCents, "currency", currency)
+func (d *SQLiteDAO) CreateProduct(stripeProductID string, razorpayProductID string, userID string, name string, description string, amountInSmallestUnit int64, currency string) (string, error) {
+	id := uuid.New().String()
+	slog.Info("paymentservice:dao_sqlite:CreateProduct", "userID", userID, "name", name, "description", description, "cost", amountInSmallestUnit, "currency", currency)
 
-	query := `INSERT INTO products (id, user_id, name, description, price, currency, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO products (id, stripe_product_id, razorpay_product_id, user_id, name, description, price, currency, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	now := time.Now().Format(time.RFC3339)
-	_, err := d.db.Exec(query, id, userID, name, description, amountInCents, currency, now, now)
+	_, err := d.db.Exec(query, id, stripeProductID, razorpayProductID, userID, name, description, amountInSmallestUnit, currency, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateProduct", "error", err)
 		return "", err
@@ -64,16 +65,43 @@ func (d *SQLiteDAO) ListProducts() ([]*Product, error) {
 	return products, nil
 }
 
-func (d *SQLiteDAO) CreateUserPurchase(userID string, productID string, transaction_metadata string, is_success bool) (string, error) {
+func (d *SQLiteDAO) CreateUserPurchase(sessionID string, userID string, productID string, transaction_metadata string, is_success bool, provider string) (string, error) {
 	id := uuid.New().String()
-	slog.Info("paymentservice:dao_sqlite:CreateUserPurchase", "userID", userID, "productID", productID, "is_success", is_success)
+	now := time.Now().Format(time.RFC3339)
+	slog.Info("paymentservice:dao_sqlite:CreateUserPurchase", "sessionID", sessionID, "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
 
-	query := `INSERT INTO user_purchases (id, user_id, product_id, transaction_metadata, is_success, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
-	_, err := d.db.Exec(query, id, userID, productID, transaction_metadata, is_success, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	// Use proper SQLite UPSERT syntax with ON CONFLICT - atomic operation
+	query := `INSERT INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
+			  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			  ON CONFLICT(provider, session_id) 
+			  DO UPDATE SET 
+				  user_id = excluded.user_id,
+				  product_id = excluded.product_id,
+				  transaction_metadata = excluded.transaction_metadata,
+				  is_success = excluded.is_success,
+				  updated_at = excluded.updated_at
+			  RETURNING id`
+
+	var actualID string
+	err := d.db.Get(&actualID, query, id, sessionID, userID, productID, transaction_metadata, is_success, provider, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", err)
 		return "", err
 	}
 
-	return id, nil
+	return actualID, nil
+}
+
+func (d *SQLiteDAO) GetProductById(productID string) (*Product, error) {
+	slog.Info("paymentservice:dao_sqlite:GetProductById", "productID", productID)
+
+	query := `SELECT * FROM products WHERE id = ?`
+	product := &Product{}
+	err := d.db.Get(product, query, productID)
+	if err != nil {
+		slog.Error("paymentservice:dao_sqlite:GetProductById", "error", err)
+		return nil, err
+	}
+
+	return product, nil
 }

@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS products (
     user_id TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
-    price TEXT NOT NULL,
+    price BIGINT NOT NULL,
     currency TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL

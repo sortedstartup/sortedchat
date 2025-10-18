@@ -1,6 +1,8 @@
 module sortedstartup/paymentservice
 
-go 1.24
+go 1.24.0
+
+toolchain go1.24.3
 
 require (
 	github.com/asg017/sqlite-vec-go-bindings v0.1.6
@@ -11,7 +13,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/stripe/stripe-go/v83 v83.0.1
-	google.golang.org/grpc v1.76.0
+	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.10
 )
 
@@ -26,6 +28,7 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/razorpay/razorpay-go v1.4.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	golang.org/x/mod v0.25.0 // indirect
 	golang.org/x/net v0.42.0 // indirect

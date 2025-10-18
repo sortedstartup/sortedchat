@@ -140,13 +140,13 @@ func (*InferResponse) Descriptor() ([]byte, []int) {
 }
 
 type CreateProductRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	AmountInCents int64                  `protobuf:"varint,3,opt,name=amount_in_cents,json=amountInCents,proto3" json:"amount_in_cents,omitempty"`
-	Currency      Currency               `protobuf:"varint,4,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Name                 string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description          string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	AmountInSmallestUnit int64                  `protobuf:"varint,3,opt,name=amount_in_smallest_unit,json=amountInSmallestUnit,proto3" json:"amount_in_smallest_unit,omitempty"`
+	Currency             Currency               `protobuf:"varint,4,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *CreateProductRequest) Reset() {
@@ -193,9 +193,9 @@ func (x *CreateProductRequest) GetDescription() string {
 	return ""
 }
 
-func (x *CreateProductRequest) GetAmountInCents() int64 {
+func (x *CreateProductRequest) GetAmountInSmallestUnit() int64 {
 	if x != nil {
-		return x.AmountInCents
+		return x.AmountInSmallestUnit
 	}
 	return 0
 }
@@ -340,14 +340,16 @@ func (x *ListProductsResponse) GetProducts() []*Product {
 }
 
 type Product struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	AmountInCents int64                  `protobuf:"varint,3,opt,name=amount_in_cents,json=amountInCents,proto3" json:"amount_in_cents,omitempty"`
-	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Currency      Currency               `protobuf:"varint,5,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Id                   string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	StripeProductId      string                 `protobuf:"bytes,2,opt,name=stripe_product_id,json=stripeProductId,proto3" json:"stripe_product_id,omitempty"`
+	RazorpayProductId    string                 `protobuf:"bytes,3,opt,name=razorpay_product_id,json=razorpayProductId,proto3" json:"razorpay_product_id,omitempty"`
+	Name                 string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	AmountInSmallestUnit int64                  `protobuf:"varint,5,opt,name=amount_in_smallest_unit,json=amountInSmallestUnit,proto3" json:"amount_in_smallest_unit,omitempty"`
+	Description          string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
+	Currency             Currency               `protobuf:"varint,7,opt,name=currency,proto3,enum=sortedchat.Currency" json:"currency,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *Product) Reset() {
@@ -387,6 +389,20 @@ func (x *Product) GetId() string {
 	return ""
 }
 
+func (x *Product) GetStripeProductId() string {
+	if x != nil {
+		return x.StripeProductId
+	}
+	return ""
+}
+
+func (x *Product) GetRazorpayProductId() string {
+	if x != nil {
+		return x.RazorpayProductId
+	}
+	return ""
+}
+
 func (x *Product) GetName() string {
 	if x != nil {
 		return x.Name
@@ -394,9 +410,9 @@ func (x *Product) GetName() string {
 	return ""
 }
 
-func (x *Product) GetAmountInCents() int64 {
+func (x *Product) GetAmountInSmallestUnit() int64 {
 	if x != nil {
-		return x.AmountInCents
+		return x.AmountInSmallestUnit
 	}
 	return 0
 }
@@ -415,27 +431,27 @@ func (x *Product) GetCurrency() Currency {
 	return Currency_USD
 }
 
-type CreateCheckoutSessionRequest struct {
+type CreateStripeCheckoutSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProductId     string                 `protobuf:"bytes,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CreateCheckoutSessionRequest) Reset() {
-	*x = CreateCheckoutSessionRequest{}
+func (x *CreateStripeCheckoutSessionRequest) Reset() {
+	*x = CreateStripeCheckoutSessionRequest{}
 	mi := &file_paymentservice_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CreateCheckoutSessionRequest) String() string {
+func (x *CreateStripeCheckoutSessionRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CreateCheckoutSessionRequest) ProtoMessage() {}
+func (*CreateStripeCheckoutSessionRequest) ProtoMessage() {}
 
-func (x *CreateCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
+func (x *CreateStripeCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_paymentservice_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -447,39 +463,39 @@ func (x *CreateCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CreateCheckoutSessionRequest.ProtoReflect.Descriptor instead.
-func (*CreateCheckoutSessionRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateStripeCheckoutSessionRequest.ProtoReflect.Descriptor instead.
+func (*CreateStripeCheckoutSessionRequest) Descriptor() ([]byte, []int) {
 	return file_paymentservice_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *CreateCheckoutSessionRequest) GetProductId() string {
+func (x *CreateStripeCheckoutSessionRequest) GetProductId() string {
 	if x != nil {
 		return x.ProductId
 	}
 	return ""
 }
 
-type CreateCheckoutSessionResponse struct {
+type CreateStripeCheckoutSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionUrl    string                 `protobuf:"bytes,1,opt,name=session_url,json=sessionUrl,proto3" json:"session_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CreateCheckoutSessionResponse) Reset() {
-	*x = CreateCheckoutSessionResponse{}
+func (x *CreateStripeCheckoutSessionResponse) Reset() {
+	*x = CreateStripeCheckoutSessionResponse{}
 	mi := &file_paymentservice_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CreateCheckoutSessionResponse) String() string {
+func (x *CreateStripeCheckoutSessionResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CreateCheckoutSessionResponse) ProtoMessage() {}
+func (*CreateStripeCheckoutSessionResponse) ProtoMessage() {}
 
-func (x *CreateCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
+func (x *CreateStripeCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_paymentservice_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -491,14 +507,118 @@ func (x *CreateCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CreateCheckoutSessionResponse.ProtoReflect.Descriptor instead.
-func (*CreateCheckoutSessionResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateStripeCheckoutSessionResponse.ProtoReflect.Descriptor instead.
+func (*CreateStripeCheckoutSessionResponse) Descriptor() ([]byte, []int) {
 	return file_paymentservice_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *CreateCheckoutSessionResponse) GetSessionUrl() string {
+func (x *CreateStripeCheckoutSessionResponse) GetSessionUrl() string {
 	if x != nil {
 		return x.SessionUrl
+	}
+	return ""
+}
+
+type CreateRazorpayCheckoutSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProductId     string                 `protobuf:"bytes,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateRazorpayCheckoutSessionRequest) Reset() {
+	*x = CreateRazorpayCheckoutSessionRequest{}
+	mi := &file_paymentservice_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateRazorpayCheckoutSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateRazorpayCheckoutSessionRequest) ProtoMessage() {}
+
+func (x *CreateRazorpayCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateRazorpayCheckoutSessionRequest.ProtoReflect.Descriptor instead.
+func (*CreateRazorpayCheckoutSessionRequest) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CreateRazorpayCheckoutSessionRequest) GetProductId() string {
+	if x != nil {
+		return x.ProductId
+	}
+	return ""
+}
+
+type CreateRazorpayCheckoutSessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrderId       string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	Amount        int64                  `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	Currency      string                 `protobuf:"bytes,3,opt,name=currency,proto3" json:"currency,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateRazorpayCheckoutSessionResponse) Reset() {
+	*x = CreateRazorpayCheckoutSessionResponse{}
+	mi := &file_paymentservice_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateRazorpayCheckoutSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateRazorpayCheckoutSessionResponse) ProtoMessage() {}
+
+func (x *CreateRazorpayCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateRazorpayCheckoutSessionResponse.ProtoReflect.Descriptor instead.
+func (*CreateRazorpayCheckoutSessionResponse) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CreateRazorpayCheckoutSessionResponse) GetOrderId() string {
+	if x != nil {
+		return x.OrderId
+	}
+	return ""
+}
+
+func (x *CreateRazorpayCheckoutSessionResponse) GetAmount() int64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *CreateRazorpayCheckoutSessionResponse) GetCurrency() string {
+	if x != nil {
+		return x.Currency
 	}
 	return ""
 }
@@ -510,38 +630,48 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\x14paymentservice.proto\x12\n" +
 	"sortedchat\"\x0e\n" +
 	"\fInferRequest\"\x0f\n" +
-	"\rInferResponse\"\xa6\x01\n" +
+	"\rInferResponse\"\xb5\x01\n" +
 	"\x14CreateProductRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x12&\n" +
-	"\x0famount_in_cents\x18\x03 \x01(\x03R\ramountInCents\x120\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x125\n" +
+	"\x17amount_in_smallest_unit\x18\x03 \x01(\x03R\x14amountInSmallestUnit\x120\n" +
 	"\bcurrency\x18\x04 \x01(\x0e2\x14.sortedchat.CurrencyR\bcurrency\"A\n" +
 	"\x15CreateProductResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\x15\n" +
 	"\x13ListProductsRequest\"G\n" +
 	"\x14ListProductsResponse\x12/\n" +
-	"\bproducts\x18\x01 \x03(\v2\x13.sortedchat.ProductR\bproducts\"\xa9\x01\n" +
+	"\bproducts\x18\x01 \x03(\v2\x13.sortedchat.ProductR\bproducts\"\x94\x02\n" +
 	"\aProduct\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12&\n" +
-	"\x0famount_in_cents\x18\x03 \x01(\x03R\ramountInCents\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x120\n" +
-	"\bcurrency\x18\x05 \x01(\x0e2\x14.sortedchat.CurrencyR\bcurrency\"=\n" +
-	"\x1cCreateCheckoutSessionRequest\x12\x1d\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
+	"\x11stripe_product_id\x18\x02 \x01(\tR\x0fstripeProductId\x12.\n" +
+	"\x13razorpay_product_id\x18\x03 \x01(\tR\x11razorpayProductId\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x125\n" +
+	"\x17amount_in_smallest_unit\x18\x05 \x01(\x03R\x14amountInSmallestUnit\x12 \n" +
+	"\vdescription\x18\x06 \x01(\tR\vdescription\x120\n" +
+	"\bcurrency\x18\a \x01(\x0e2\x14.sortedchat.CurrencyR\bcurrency\"C\n" +
+	"\"CreateStripeCheckoutSessionRequest\x12\x1d\n" +
 	"\n" +
-	"product_id\x18\x01 \x01(\tR\tproductId\"@\n" +
-	"\x1dCreateCheckoutSessionResponse\x12\x1f\n" +
+	"product_id\x18\x01 \x01(\tR\tproductId\"F\n" +
+	"#CreateStripeCheckoutSessionResponse\x12\x1f\n" +
 	"\vsession_url\x18\x01 \x01(\tR\n" +
-	"sessionUrl*\x1c\n" +
+	"sessionUrl\"E\n" +
+	"$CreateRazorpayCheckoutSessionRequest\x12\x1d\n" +
+	"\n" +
+	"product_id\x18\x01 \x01(\tR\tproductId\"v\n" +
+	"%CreateRazorpayCheckoutSessionResponse\x12\x19\n" +
+	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x16\n" +
+	"\x06amount\x18\x02 \x01(\x03R\x06amount\x12\x1a\n" +
+	"\bcurrency\x18\x03 \x01(\tR\bcurrency*\x1c\n" +
 	"\bCurrency\x12\a\n" +
 	"\x03USD\x10\x00\x12\a\n" +
-	"\x03INR\x10\x012\xe7\x02\n" +
+	"\x03INR\x10\x012\x80\x04\n" +
 	"\x0ePaymentService\x12>\n" +
 	"\x05Infer\x12\x18.sortedchat.InferRequest\x1a\x19.sortedchat.InferResponse0\x01\x12T\n" +
 	"\rCreateProduct\x12 .sortedchat.CreateProductRequest\x1a!.sortedchat.CreateProductResponse\x12Q\n" +
-	"\fListProducts\x12\x1f.sortedchat.ListProductsRequest\x1a .sortedchat.ListProductsResponse\x12l\n" +
-	"\x15CreateCheckoutSession\x12(.sortedchat.CreateCheckoutSessionRequest\x1a).sortedchat.CreateCheckoutSessionResponseB$Z\"sortedstartup/paymentservice/protob\x06proto3"
+	"\fListProducts\x12\x1f.sortedchat.ListProductsRequest\x1a .sortedchat.ListProductsResponse\x12~\n" +
+	"\x1bCreateStripeCheckoutSession\x12..sortedchat.CreateStripeCheckoutSessionRequest\x1a/.sortedchat.CreateStripeCheckoutSessionResponse\x12\x84\x01\n" +
+	"\x1dCreateRazorpayCheckoutSession\x120.sortedchat.CreateRazorpayCheckoutSessionRequest\x1a1.sortedchat.CreateRazorpayCheckoutSessionResponseB$Z\"sortedstartup/paymentservice/protob\x06proto3"
 
 var (
 	file_paymentservice_proto_rawDescOnce sync.Once
@@ -556,36 +686,40 @@ func file_paymentservice_proto_rawDescGZIP() []byte {
 }
 
 var file_paymentservice_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_paymentservice_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_paymentservice_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_paymentservice_proto_goTypes = []any{
-	(Currency)(0),                         // 0: sortedchat.Currency
-	(*InferRequest)(nil),                  // 1: sortedchat.InferRequest
-	(*InferResponse)(nil),                 // 2: sortedchat.InferResponse
-	(*CreateProductRequest)(nil),          // 3: sortedchat.CreateProductRequest
-	(*CreateProductResponse)(nil),         // 4: sortedchat.CreateProductResponse
-	(*ListProductsRequest)(nil),           // 5: sortedchat.ListProductsRequest
-	(*ListProductsResponse)(nil),          // 6: sortedchat.ListProductsResponse
-	(*Product)(nil),                       // 7: sortedchat.Product
-	(*CreateCheckoutSessionRequest)(nil),  // 8: sortedchat.CreateCheckoutSessionRequest
-	(*CreateCheckoutSessionResponse)(nil), // 9: sortedchat.CreateCheckoutSessionResponse
+	(Currency)(0),                                 // 0: sortedchat.Currency
+	(*InferRequest)(nil),                          // 1: sortedchat.InferRequest
+	(*InferResponse)(nil),                         // 2: sortedchat.InferResponse
+	(*CreateProductRequest)(nil),                  // 3: sortedchat.CreateProductRequest
+	(*CreateProductResponse)(nil),                 // 4: sortedchat.CreateProductResponse
+	(*ListProductsRequest)(nil),                   // 5: sortedchat.ListProductsRequest
+	(*ListProductsResponse)(nil),                  // 6: sortedchat.ListProductsResponse
+	(*Product)(nil),                               // 7: sortedchat.Product
+	(*CreateStripeCheckoutSessionRequest)(nil),    // 8: sortedchat.CreateStripeCheckoutSessionRequest
+	(*CreateStripeCheckoutSessionResponse)(nil),   // 9: sortedchat.CreateStripeCheckoutSessionResponse
+	(*CreateRazorpayCheckoutSessionRequest)(nil),  // 10: sortedchat.CreateRazorpayCheckoutSessionRequest
+	(*CreateRazorpayCheckoutSessionResponse)(nil), // 11: sortedchat.CreateRazorpayCheckoutSessionResponse
 }
 var file_paymentservice_proto_depIdxs = []int32{
-	0, // 0: sortedchat.CreateProductRequest.currency:type_name -> sortedchat.Currency
-	7, // 1: sortedchat.ListProductsResponse.products:type_name -> sortedchat.Product
-	0, // 2: sortedchat.Product.currency:type_name -> sortedchat.Currency
-	1, // 3: sortedchat.PaymentService.Infer:input_type -> sortedchat.InferRequest
-	3, // 4: sortedchat.PaymentService.CreateProduct:input_type -> sortedchat.CreateProductRequest
-	5, // 5: sortedchat.PaymentService.ListProducts:input_type -> sortedchat.ListProductsRequest
-	8, // 6: sortedchat.PaymentService.CreateCheckoutSession:input_type -> sortedchat.CreateCheckoutSessionRequest
-	2, // 7: sortedchat.PaymentService.Infer:output_type -> sortedchat.InferResponse
-	4, // 8: sortedchat.PaymentService.CreateProduct:output_type -> sortedchat.CreateProductResponse
-	6, // 9: sortedchat.PaymentService.ListProducts:output_type -> sortedchat.ListProductsResponse
-	9, // 10: sortedchat.PaymentService.CreateCheckoutSession:output_type -> sortedchat.CreateCheckoutSessionResponse
-	7, // [7:11] is the sub-list for method output_type
-	3, // [3:7] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: sortedchat.CreateProductRequest.currency:type_name -> sortedchat.Currency
+	7,  // 1: sortedchat.ListProductsResponse.products:type_name -> sortedchat.Product
+	0,  // 2: sortedchat.Product.currency:type_name -> sortedchat.Currency
+	1,  // 3: sortedchat.PaymentService.Infer:input_type -> sortedchat.InferRequest
+	3,  // 4: sortedchat.PaymentService.CreateProduct:input_type -> sortedchat.CreateProductRequest
+	5,  // 5: sortedchat.PaymentService.ListProducts:input_type -> sortedchat.ListProductsRequest
+	8,  // 6: sortedchat.PaymentService.CreateStripeCheckoutSession:input_type -> sortedchat.CreateStripeCheckoutSessionRequest
+	10, // 7: sortedchat.PaymentService.CreateRazorpayCheckoutSession:input_type -> sortedchat.CreateRazorpayCheckoutSessionRequest
+	2,  // 8: sortedchat.PaymentService.Infer:output_type -> sortedchat.InferResponse
+	4,  // 9: sortedchat.PaymentService.CreateProduct:output_type -> sortedchat.CreateProductResponse
+	6,  // 10: sortedchat.PaymentService.ListProducts:output_type -> sortedchat.ListProductsResponse
+	9,  // 11: sortedchat.PaymentService.CreateStripeCheckoutSession:output_type -> sortedchat.CreateStripeCheckoutSessionResponse
+	11, // 12: sortedchat.PaymentService.CreateRazorpayCheckoutSession:output_type -> sortedchat.CreateRazorpayCheckoutSessionResponse
+	8,  // [8:13] is the sub-list for method output_type
+	3,  // [3:8] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_paymentservice_proto_init() }
@@ -599,7 +733,7 @@ func file_paymentservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_paymentservice_proto_rawDesc), len(file_paymentservice_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

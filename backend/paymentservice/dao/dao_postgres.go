@@ -53,11 +53,12 @@ func (d *PostgresDAO) Infer(dummy string) error {
 	return nil
 }
 
-func (d *PostgresDAO) CreateProduct(id string, userID string, name string, description string, amountInCents int64, currency string) (string, error) {
-	slog.Info("paymentservice:dao_postgres:CreateProduct", "userID", userID, "name", name, "description", description, "amountInCents", amountInCents, "currency", currency)
+func (d *PostgresDAO) CreateProduct(stripeProductID string, razorpayProductID string, userID string, name string, description string, amountInSmallestUnit int64, currency string) (string, error) {
+	id := uuid.New().String()
+	slog.Info("paymentservice:dao_postgres:CreateProduct", "userID", userID, "name", name, "description", description, "cost", amountInSmallestUnit, "currency", currency)
 
-	query := `INSERT INTO products (id, user_id, name, description, price, currency, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	_, err := d.db.Exec(query, id, userID, name, description, amountInCents, currency, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	query := `INSERT INTO products (id,stripe_product_id, razorpay_product_id, user_id, name, description, price, currency, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := d.db.Exec(query, id, stripeProductID, razorpayProductID, userID, name, description, amountInSmallestUnit, currency, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:CreateProduct", "error", err)
 		return "", err
@@ -90,16 +91,42 @@ func (d *PostgresDAO) ListProducts() ([]*Product, error) {
 	return products, nil
 }
 
-func (d *PostgresDAO) CreateUserPurchase(userID string, productID string, transaction_metadata string, is_success bool) (string, error) {
+func (d *PostgresDAO) CreateUserPurchase(sessionID string, userID string, productID string, transaction_metadata string, is_success bool, provider string) (string, error) {
 	id := uuid.New().String()
-	slog.Info("paymentservice:dao_postgres:CreateUserPurchase", "userID", userID, "productID", productID, "is_success", is_success)
+	now := time.Now().Format(time.RFC3339)
+	slog.Info("paymentservice:dao_postgres:CreateUserPurchase", "sessionID", sessionID, "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
 
-	query := `INSERT INTO user_purchases (id, user_id, product_id, transaction_metadata, is_success, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := d.db.Exec(query, id, userID, productID, transaction_metadata, is_success, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	// Use INSERT ... ON CONFLICT for upsert functionality in PostgreSQL
+	query := `INSERT INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
+			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			  ON CONFLICT (provider, session_id) 
+			  DO UPDATE SET 
+				  user_id = EXCLUDED.user_id,
+				  product_id = EXCLUDED.product_id,
+				  transaction_metadata = EXCLUDED.transaction_metadata,
+				  is_success = EXCLUDED.is_success,
+				  updated_at = EXCLUDED.updated_at
+			  RETURNING id`
+
+	var actualID string
+	err := d.db.Get(&actualID, query, id, sessionID, userID, productID, transaction_metadata, is_success, provider, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:CreateUserPurchase", "error", err)
 		return "", err
 	}
 
-	return id, nil
+	return actualID, nil
+}
+
+func (d *PostgresDAO) GetProductById(productID string) (*Product, error) {
+	slog.Info("paymentservice:dao_postgres:GetProductById", "productID", productID)
+
+	query := `SELECT * FROM products WHERE id = $1`
+	product := &Product{}
+	err := d.db.Get(product, query, productID)
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:GetProductById", "error", err)
+		return nil, err
+	}
+	return product, nil
 }

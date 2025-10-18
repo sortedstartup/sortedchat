@@ -1,6 +1,6 @@
 import { atom } from "nanostores";
 import {
-    CreateProductRequest, PaymentServiceClient, ListProductsRequest, Product, CreateCheckoutSessionRequest, Currency
+    CreateProductRequest, PaymentServiceClient, ListProductsRequest, Product, CreateStripeCheckoutSessionRequest, CreateRazorpayCheckoutSessionRequest, Currency
 } from "../../../proto/paymentservice"
 import { createAuthenticatedClientOptions } from "../../lib/auth";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ export const createProduct = async (name: string, description: string, price: st
         const req = new CreateProductRequest({
             name: name,
             description: description,
-            amount_in_cents: amountInMinorUnits,
+            amount_in_smallest_unit: amountInMinorUnits,
             currency: currency,
         });
         const res = await client.CreateProduct(req, {});
@@ -46,12 +46,27 @@ export const listProducts = async () => {
     }
 }
 
-export const createCheckoutSession = async (productId: string) => {
+export const createStripeCheckoutSession = async (productId: string) => {
     try {
-        const req = new CreateCheckoutSessionRequest({ product_id: productId });
-        const res = await client.CreateCheckoutSession(req, {});
+        const req = new CreateStripeCheckoutSessionRequest({ product_id: productId });
+        const res = await client.CreateStripeCheckoutSession(req, {});
         toast.success("Checkout session created successfully");
         return res.session_url;
+    } catch (err) {
+        toast.error("Failed to create checkout session");
+        throw err;
+    }
+}
+
+export const createRazorpayCheckoutSession = async (productId: string) => {
+    try {
+    const req = new CreateRazorpayCheckoutSessionRequest({ product_id: productId });
+        const res = await client.CreateRazorpayCheckoutSession(req, {});
+        return {
+            orderId: res.order_id,
+            amount: res.amount,
+            currency: res.currency
+        };
     } catch (err) {
         toast.error("Failed to create checkout session");
         throw err;

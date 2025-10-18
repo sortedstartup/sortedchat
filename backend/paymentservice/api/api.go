@@ -58,8 +58,8 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	if strings.TrimSpace(req.Description) == "" {
 		return nil, status.Error(codes.InvalidArgument, "Product description cannot be empty")
 	}
-	if req.AmountInCents <= 0 {
-		return nil, status.Error(codes.InvalidArgument, "Product amount must be greater than zero")
+	if req.AmountInSmallestUnit <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "Invalid request, please try again with valid parameters")
 	}
 
 	// Convert Currency enum to string
@@ -70,10 +70,10 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	case pb.Currency_INR:
 		currencyStr = "INR"
 	default:
-		currencyStr = "USD"
+		return nil, status.Error(codes.InvalidArgument, "Unsupported currency type")
 	}
 
-	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInCents, currencyStr)
+	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInSmallestUnit, currencyStr)
 	if err != nil {
 		return nil, err
 	}
@@ -94,11 +94,13 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 	products := make([]*pb.Product, len(daoProducts))
 	for i, daoProduct := range daoProducts {
 		products[i] = &pb.Product{
-			Id:            daoProduct.ID,
-			Name:          daoProduct.Name,
-			AmountInCents: daoProduct.Price,
-			Description:   daoProduct.Description,
-			Currency:      daoProduct.GetCurrencyEnum(),
+			Id:                   daoProduct.ID,
+			StripeProductId:      daoProduct.StripeProductID,
+			RazorpayProductId:    daoProduct.RazorpayProductID,
+			Name:                 daoProduct.Name,
+			AmountInSmallestUnit: daoProduct.Price,
+			Description:          daoProduct.Description,
+			Currency:             daoProduct.GetCurrencyEnum(),
 		}
 	}
 
@@ -107,10 +109,10 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 	}, nil
 }
 
-func (s *PaymentServiceAPI) CreateCheckoutSession(ctx context.Context, req *pb.CreateCheckoutSessionRequest) (*pb.CreateCheckoutSessionResponse, error) {
+func (s *PaymentServiceAPI) CreateStripeCheckoutSession(ctx context.Context, req *pb.CreateStripeCheckoutSessionRequest) (*pb.CreateStripeCheckoutSessionResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
-		slog.Error("paymentservice:api:CreateCheckoutSession", "error", err)
+		slog.Error("paymentservice:api:CreateStripeCheckoutSession", "error", err)
 		return nil, err
 	}
 
@@ -118,12 +120,37 @@ func (s *PaymentServiceAPI) CreateCheckoutSession(ctx context.Context, req *pb.C
 		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
 	}
 
-	SessionUrl, err := s.service.CreateCheckoutSession(ctx, userID, req.ProductId)
+	SessionUrl, err := s.service.CreateStripeCheckoutSession(ctx, userID, req.ProductId)
 	if err != nil {
+		slog.Error("paymentservice:api:CreateStripeCheckoutSession", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to create Stripe checkout session: %v", err)
+	}
+	return &pb.CreateStripeCheckoutSessionResponse{
+		SessionUrl: SessionUrl,
+	}, nil
+}
+
+func (s *PaymentServiceAPI) CreateRazorpayCheckoutSession(ctx context.Context, req *pb.CreateRazorpayCheckoutSessionRequest) (*pb.CreateRazorpayCheckoutSessionResponse, error) {
+
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateRazorpayCheckoutSession", "error", err)
 		return nil, err
 	}
-	return &pb.CreateCheckoutSessionResponse{
-		SessionUrl: SessionUrl,
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "product ID cannot be empty")
+	}
+
+	OrderId, Amount, Currency, err := s.service.CreateRazorpayCheckoutSession(ctx, userID, req.ProductId)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateRazorpayCheckoutSession", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to create Razorpay checkout session: %v", err)
+	}
+	return &pb.CreateRazorpayCheckoutSessionResponse{
+		OrderId:  OrderId,
+		Amount:   Amount,
+		Currency: Currency,
 	}, nil
 }
 

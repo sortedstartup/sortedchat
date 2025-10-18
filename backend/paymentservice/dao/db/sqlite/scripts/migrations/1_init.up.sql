@@ -1,10 +1,47 @@
 CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
+    razorpay_product_id TEXT, -- Razorpay product ID or plan ID
+    stripe_product_id TEXT, -- Stripe product ID
     user_id TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     price INTEGER NOT NULL,
     currency TEXT NOT NULL,
+    is_recurring BOOLEAN DEFAULT FALSE,
+    interval_count INTEGER, -- Only for recurring (NULL for one-time)
+    interval_period TEXT, -- Only for recurring (NULL for one-time)
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
+);
+
+-- reference for all user payments
+CREATE TABLE IF NOT EXISTS user_payments (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    subscription_id TEXT,
+    transaction_metadata TEXT NOT NULL,
+    payment_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+);
+
+-- reference for all products subscriptions whether recurring or one-time
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id TEXT PRIMARY KEY, --uuid 
+    user_id TEXT NOT NULL, 
+    product_id TEXT NOT NULL, -- product ID
+    provider TEXT NOT NULL, -- Stripe or Razorpay
+    provider_subscription_id TEXT, -- Razorpay subscription ID or Stripe subscription ID or null if one-time payment
+    provider_subscription_status TEXT, -- Provider's subscription lifecycle  status (active, canceled, past_due, etc.)
+    provider_customer_id TEXT, -- Provider's customer ID
+    status TEXT NOT NULL, -- User access status (active, inactive, expired)
+    current_period_start DATETIME NOT NULL, --period cycle start date
+    current_period_end DATETIME NOT NULL, --period cycle end date
+    cancel_at_period_end BOOLEAN DEFAULT FALSE, -- whether the subscription will be canceled at the end of the current period
+    created_at DATETIME NOT NULL, -- timestamp of when the subscription was created
+    updated_at DATETIME NOT NULL, -- timestamp of when the subscription was last updated
+    canceled_at TEXT, -- timestamp of when the subscription was canceled
+    FOREIGN KEY (product_id) REFERENCES products(id)
 );

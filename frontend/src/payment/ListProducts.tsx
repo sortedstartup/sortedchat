@@ -3,6 +3,8 @@ import { listProducts, ProductList } from "./store/payment";
 import { useStore } from "@nanostores/react";
 import StripeBuy from "./StripeBuy";
 import RazorpayBuy from "./RazorpayBuy";
+import SubscriptionStripeBuy from "./SubscriptionStripeBuy";
+import SubscriptionRazorpayBuy from "./SubscriptionRazorpayBuy";
 import { Currency } from "../../proto/paymentservice";
 
 const ListProducts: React.FC = () => {
@@ -54,29 +56,68 @@ const ListProducts: React.FC = () => {
                         <div key={product.id} className="border rounded-lg p-4 shadow-sm">
                             <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
                             <p className="text-gray-600 mb-2">{product.description}</p>
+                            
+                            {/* Payment Type Badge */}
+                            <div className="mb-3">
+                                {product.is_recurring ? (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                        🔄 Subscription
+                                        {product.interval_count > 1 ? ` (Every ${product.interval_count} ${product.interval_period}s)` : ` (${product.interval_period}ly)`}
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        💳 One-time
+                                    </span>
+                                )}
+                            </div>
+
                             <div className="flex justify-between items-center mb-3">
-                            <span className="text-lg font-bold">
+                                <span className="text-lg font-bold">
                                     {new Intl.NumberFormat(undefined, {
                                         style: "currency",
                                         currency:
                                             product.currency === Currency.USD ? "USD" :
                                             product.currency === Currency.INR ? "INR" : "USD",
                                     }).format(product.amount_in_smallest_unit / 100)}
+                                    {product.is_recurring && (
+                                        <span className="text-sm text-gray-500 font-normal">
+                                            /{product.interval_count > 1 ? `${product.interval_count} ${product.interval_period}s` : product.interval_period}
+                                        </span>
+                                    )}
                                 </span>
                                 <span className="text-sm text-gray-500">ID: {product.id}</span>
                             </div>
 
-                            {/* Buy Buttons */}
+                            {/* Buy/Subscribe Buttons */}
                             <div className="space-y-2">
-                                {product.stripe_product_id && (
-                                    <StripeBuy productId={product.id} className="w-full">
-                                        Buy with Stripe
-                                    </StripeBuy>
-                                )}
-                                {product.razorpay_product_id && (
-                                    <RazorpayBuy productId={product.id} className="w-full">
-                                        Buy with Razorpay
-                                    </RazorpayBuy>
+                                {product.is_recurring ? (
+                                    // Subscription buttons
+                                    <>
+                                        {product.stripe_product_id && (
+                                            <SubscriptionStripeBuy productId={product.id} className="w-full">
+                                                Subscribe with Stripe
+                                            </SubscriptionStripeBuy>
+                                        )}
+                                        {product.razorpay_product_id && (
+                                            <SubscriptionRazorpayBuy productId={product.id} className="w-full">
+                                                Subscribe with Razorpay
+                                            </SubscriptionRazorpayBuy>
+                                        )}
+                                    </>
+                                ) : (
+                                    // One-time payment buttons
+                                    <>
+                                        {product.stripe_product_id && (
+                                            <StripeBuy productId={product.id} className="w-full">
+                                                Buy with Stripe
+                                            </StripeBuy>
+                                        )}
+                                        {product.razorpay_product_id && (
+                                            <RazorpayBuy productId={product.id} className="w-full">
+                                                Buy with Razorpay
+                                            </RazorpayBuy>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>

@@ -1,6 +1,6 @@
 import { atom } from "nanostores";
 import {
-    CreateProductRequest, PaymentServiceClient, ListProductsRequest, Product, CreateStripeCheckoutSessionRequest, CreateRazorpayCheckoutSessionRequest, Currency, PaymentType, Interval
+    CreateProductRequest, PaymentServiceClient, ListProductsRequest, Product, CreateStripeCheckoutSessionRequest, CreateRazorpayCheckoutSessionRequest, Currency, PaymentType, Interval, CreateStripeSubscriptionCheckoutSessionRequest, CreateRazorpaySubscriptionCheckoutSessionRequest, CheckUserProductAccessRequest
 } from "../../../proto/paymentservice"
 import { createAuthenticatedClientOptions } from "../../lib/auth";
 import { toast } from "sonner";
@@ -92,6 +92,56 @@ export const createRazorpayCheckoutSession = async (productId: string) => {
         };
     } catch (err) {
         toast.error("Failed to create checkout session");
+        throw err;
+    }
+}
+
+// New subscription methods
+export const createStripeSubscriptionCheckoutSession = async (productId: string) => {
+    try {
+        const req = new CreateStripeSubscriptionCheckoutSessionRequest({ 
+            product_id: productId
+        });
+        const res = await client.CreateStripeSubscriptionCheckoutSession(req, {});
+        toast.success("Subscription checkout session created successfully");
+        return res.session_url;
+    } catch (err) {
+        toast.error("Failed to create subscription checkout session");
+        throw err;
+    }
+}
+
+export const createRazorpaySubscriptionCheckoutSession = async (productId: string) => {
+    try {
+        const req = new CreateRazorpaySubscriptionCheckoutSessionRequest({ 
+            product_id: productId
+        });
+        const res = await client.CreateRazorpaySubscriptionCheckoutSession(req, {});
+        return {
+            subscriptionId: res.subscription_id,
+            amount: res.amount,
+            currency: res.currency
+        };
+    } catch (err) {
+        toast.error("Failed to create subscription checkout session");
+        throw err;
+    }
+}
+
+export const checkUserProductAccess = async (productId: string) => {
+    try {
+        const req = new CheckUserProductAccessRequest({ 
+            product_id: productId
+        });
+        const res = await client.CheckUserProductAccess(req, {});
+        return {
+            hasAccess: res.has_access,
+            subscriptionId: res.subscription_id,
+            status: res.status,
+            currentPeriodEnd: res.current_period_end
+        };
+    } catch (err) {
+        // Don't show toast for access check failures as they're expected
         throw err;
     }
 }

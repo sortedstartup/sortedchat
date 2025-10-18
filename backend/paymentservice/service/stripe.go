@@ -90,14 +90,6 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 		return "", fmt.Errorf("configuration error")
 	}
 
-	// Determine session mode based on whether product is recurring
-	var sessionMode string
-	if product.IsRecurring {
-		sessionMode = string(stripe.CheckoutSessionModeSubscription)
-	} else {
-		sessionMode = string(stripe.CheckoutSessionModePayment)
-	}
-
 	//lets create session
 	sessionParams := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
@@ -107,7 +99,6 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 				Quantity: stripe.Int64(1),
 			},
 		},
-		Mode:       stripe.String(sessionMode),
 		SuccessURL: stripe.String(frontendURL + "/success"),
 		CancelURL:  stripe.String(frontendURL + "/cancel"),
 		Metadata:   map[string]string{"user_id": userID, "product_id": productID},
@@ -116,6 +107,67 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 	session, err := session.New(sessionParams)
 	if err != nil {
 		slog.Error("paymentservice:service:CreateCheckoutSession", "error", err)
+		return "", fmt.Errorf("failed to process the request")
+	}
+
+	return session.URL, nil
+}
+
+func (s *PaymentService) CreateStripeSubscriptionCheckoutSession(ctx context.Context, userID string, productID string) (string, error) {
+	slog.Info("paymentservice:service:CreateStripeSubscriptionCheckoutSession", "userID", userID, "productID", productID)
+
+	// Get product by product ID to get the Stripe product ID
+	product, err := s.dao.GetProductById(productID)
+	if err != nil {
+		slog.Error("paymentservice:service:CreateStripeSubscriptionCheckoutSession", "error", err)
+		return "", fmt.Errorf("failed to create Stripe subscription checkout session")
+	}
+
+	var priceID string
+	//lets get price id from stripe product id
+	params := &stripe.PriceListParams{
+		Product: stripe.String(product.StripeProductID),
+		Active:  stripe.Bool(true),
+	}
+
+	i := price.List(params)
+	if i.Next() {
+		priceID = i.Price().ID
+		slog.Info("paymentservice:service:CreateStripeSubscriptionCheckoutSession", "priceFound", priceID)
+	} else {
+		slog.Error("paymentservice:service:CreateStripeSubscriptionCheckoutSession", "error", "no active prices found for product")
+		return "", fmt.Errorf("failed to process the request")
+	}
+
+	if err := i.Err(); err != nil {
+		slog.Error("paymentservice:service:CreateStripeSubscriptionCheckoutSession", "error", err)
+		return "", fmt.Errorf("failed to process the request")
+	}
+
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if strings.TrimSpace(frontendURL) == "" {
+		slog.Error("paymentservice:service:CreateStripeSubscriptionCheckoutSession", "error", "FRONTEND_URL is not set")
+		return "", fmt.Errorf("configuration error")
+	}
+
+	sessionParams := &stripe.CheckoutSessionParams{
+		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				Price:    stripe.String(priceID), // Use price_id, not product_id
+				Quantity: stripe.Int64(1),
+			},
+		},
+		Mode:              stripe.String("subscription"), // Key difference: subscription mode
+		SuccessURL:        stripe.String(frontendURL + "/success"),
+		CancelURL:         stripe.String(frontendURL + "/cancel"),
+		ClientReferenceID: stripe.String(userID),
+		Metadata:          map[string]string{"user_id": userID, "product_id": productID},
+	}
+
+	session, err := session.New(sessionParams)
+	if err != nil {
+		slog.Error("paymentservice:service:CreateStripeSubscriptionCheckoutSession", "error", err)
 		return "", fmt.Errorf("failed to process the request")
 	}
 
@@ -156,6 +208,44 @@ func (s *PaymentService) HandleStripeWebhook(ctx context.Context, r *http.Reques
 			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle checkout session expired", "details", err)
 			return fmt.Errorf("failed to handle checkout session expired: %v", err)
 		}
+
+	// Subscription events
+	case "customer.subscription.created":
+		slog.Info("paymentservice:service:HandleWebhooksanskar", "event", "customer.subscription.created", "data", event.Data.Raw)
+		err := s.handleSubscriptionCreated(ctx, event)
+		if err != nil {
+			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle subscription created", "details", err)
+			return fmt.Errorf("failed to handle subscription created: %v", err)
+		}
+
+	case "customer.subscription.updated":
+		err := s.handleSubscriptionUpdated(ctx, event)
+		if err != nil {
+			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle subscription updated", "details", err)
+			return fmt.Errorf("failed to handle subscription updated: %v", err)
+		}
+
+	case "customer.subscription.deleted":
+		err := s.handleSubscriptionDeleted(ctx, event)
+		if err != nil {
+			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle subscription deleted", "details", err)
+			return fmt.Errorf("failed to handle subscription deleted: %v", err)
+		}
+
+	case "invoice.paid":
+		err := s.handleInvoicePaid(ctx, event)
+		if err != nil {
+			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle invoice paid", "details", err)
+			return fmt.Errorf("failed to handle invoice paid: %v", err)
+		}
+
+	case "invoice.payment_failed":
+		err := s.handleInvoicePaymentFailed(ctx, event)
+		if err != nil {
+			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle invoice payment failed", "details", err)
+			return fmt.Errorf("failed to handle invoice payment failed: %v", err)
+		}
+
 	default:
 		slog.Info("paymentservice:service:HandleWebhook", "event", "unhandled event type", "type", event.Type)
 	}
@@ -228,6 +318,85 @@ func (s *PaymentService) handlePaymentFailed(ctx context.Context, event stripe.E
 		slog.Error("paymentservice:service:handlePaymentFailed", "error", "failed to create user purchase", "details", err)
 		return fmt.Errorf("failed to create user purchase: %v", err)
 	}
+
+	return nil
+}
+
+// New subscription webhook handlers
+func (s *PaymentService) handleSubscriptionCreated(ctx context.Context, event stripe.Event) error {
+	var subscription stripe.Subscription
+	err := json.Unmarshal(event.Data.Raw, &subscription)
+	if err != nil {
+		slog.Error("paymentservice:service:handleSubscriptionCreated", "error", "failed to parse webhook JSON", "details", err)
+		return fmt.Errorf("error parsing webhook JSON: %v", err)
+	}
+
+	// For now, we'll log the subscription creation
+	// In a real implementation, you might want to find the subscription by metadata or other means
+	slog.Info("paymentservice:service:handleSubscriptionCreated", "subscriptionID", subscription.ID, "status", subscription.Status)
+
+	// TODO: Update subscription record in database with provider_subscription_id and status
+	// This would require finding the subscription by some correlation (e.g., customer metadata)
+
+	return nil
+}
+
+func (s *PaymentService) handleSubscriptionUpdated(ctx context.Context, event stripe.Event) error {
+	var subscription stripe.Subscription
+	err := json.Unmarshal(event.Data.Raw, &subscription)
+	if err != nil {
+		slog.Error("paymentservice:service:handleSubscriptionUpdated", "error", "failed to parse webhook JSON", "details", err)
+		return fmt.Errorf("error parsing webhook JSON: %v", err)
+	}
+
+	slog.Info("paymentservice:service:handleSubscriptionUpdated", "subscriptionID", subscription.ID, "status", subscription.Status)
+
+	// TODO: Update subscription status in database
+
+	return nil
+}
+
+func (s *PaymentService) handleSubscriptionDeleted(ctx context.Context, event stripe.Event) error {
+	var subscription stripe.Subscription
+	err := json.Unmarshal(event.Data.Raw, &subscription)
+	if err != nil {
+		slog.Error("paymentservice:service:handleSubscriptionDeleted", "error", "failed to parse webhook JSON", "details", err)
+		return fmt.Errorf("error parsing webhook JSON: %v", err)
+	}
+
+	slog.Info("paymentservice:service:handleSubscriptionDeleted", "subscriptionID", subscription.ID)
+
+	// TODO: Mark subscription as cancelled in database
+
+	return nil
+}
+
+func (s *PaymentService) handleInvoicePaid(ctx context.Context, event stripe.Event) error {
+	var invoice stripe.Invoice
+	err := json.Unmarshal(event.Data.Raw, &invoice)
+	if err != nil {
+		slog.Error("paymentservice:service:handleInvoicePaid", "error", "failed to parse webhook JSON", "details", err)
+		return fmt.Errorf("error parsing webhook JSON: %v", err)
+	}
+
+	slog.Info("paymentservice:service:handleInvoicePaid", "invoiceID", invoice.ID, "amount", invoice.AmountPaid)
+
+	// TODO: Create user_payment record for this invoice payment
+
+	return nil
+}
+
+func (s *PaymentService) handleInvoicePaymentFailed(ctx context.Context, event stripe.Event) error {
+	var invoice stripe.Invoice
+	err := json.Unmarshal(event.Data.Raw, &invoice)
+	if err != nil {
+		slog.Error("paymentservice:service:handleInvoicePaymentFailed", "error", "failed to parse webhook JSON", "details", err)
+		return fmt.Errorf("error parsing webhook JSON: %v", err)
+	}
+
+	slog.Info("paymentservice:service:handleInvoicePaymentFailed", "invoiceID", invoice.ID)
+
+	// TODO: Handle failed payment (maybe update subscription status, send notification, etc.)
 
 	return nil
 }

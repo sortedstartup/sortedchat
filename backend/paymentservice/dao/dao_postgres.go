@@ -58,7 +58,18 @@ func (d *PostgresDAO) CreateProduct(stripeProductID string, razorpayProductID st
 	slog.Info("paymentservice:dao_postgres:CreateProduct", "userID", userID, "name", name, "description", description, "cost", amountInSmallestUnit, "currency", currency, "isRecurring", isRecurring, "intervalCount", intervalCount, "intervalPeriod", intervalPeriod)
 
 	query := `INSERT INTO products (id, stripe_product_id, razorpay_product_id, user_id, name, description, price, currency, is_recurring, interval_count, interval_period, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
-	_, err := d.db.Exec(query, id, stripeProductID, razorpayProductID, userID, name, description, amountInSmallestUnit, currency, isRecurring, intervalCount, intervalPeriod, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	now := time.Now().Format(time.RFC3339)
+
+	// Handle NULL values for one-time payments
+	var intervalCountValue interface{} = intervalCount
+	var intervalPeriodValue interface{} = intervalPeriod
+
+	if !isRecurring {
+		intervalCountValue = nil
+		intervalPeriodValue = nil
+	}
+
+	_, err := d.db.Exec(query, id, stripeProductID, razorpayProductID, userID, name, description, amountInSmallestUnit, currency, isRecurring, intervalCountValue, intervalPeriodValue, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:CreateProduct", "error", err)
 		return "", err
@@ -129,4 +140,80 @@ func (d *PostgresDAO) GetProductById(productID string) (*Product, error) {
 		return nil, err
 	}
 	return product, nil
+}
+
+// Subscription methods
+func (d *PostgresDAO) CreateSubscription(userID, productID, provider string) (string, error) {
+	id := uuid.New().String()
+	now := time.Now().Format(time.RFC3339)
+
+	// For one-time payments, set far future end date to indicate lifetime access
+	currentPeriodStart := now
+	currentPeriodEnd := "9999-12-31T23:59:59Z" // Far future for one-time payments
+
+	query := `INSERT INTO subscriptions (id, user_id, product_id, provider, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := d.db.Exec(query, id, userID, productID, provider, "pending", currentPeriodStart, currentPeriodEnd, false, now, now)
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:CreateSubscription", "error", err)
+		return "", err
+	}
+
+	slog.Info("paymentservice:dao_postgres:CreateSubscription", "subscriptionID", id, "userID", userID, "productID", productID)
+	return id, nil
+}
+
+func (d *PostgresDAO) UpdateSubscription(subscriptionID, providerSubscriptionID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd string, cancelAtPeriodEnd bool) error {
+	now := time.Now().Format(time.RFC3339)
+
+	query := `UPDATE subscriptions SET provider_subscription_id = $1, provider_subscription_status = $2, status = $3, current_period_start = $4, current_period_end = $5, cancel_at_period_end = $6, updated_at = $7 WHERE id = $8`
+	_, err := d.db.Exec(query, providerSubscriptionID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, subscriptionID)
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:UpdateSubscription", "error", err)
+		return err
+	}
+
+	slog.Info("paymentservice:dao_postgres:UpdateSubscription", "subscriptionID", subscriptionID, "status", status)
+	return nil
+}
+
+func (d *PostgresDAO) GetSubscriptionByID(subscriptionID string) (*Subscription, error) {
+	subscription := &Subscription{}
+	query := `SELECT * FROM subscriptions WHERE id = $1`
+
+	err := d.db.Get(subscription, query, subscriptionID)
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:GetSubscriptionByID", "error", err)
+		return nil, err
+	}
+
+	return subscription, nil
+}
+
+func (d *PostgresDAO) CheckUserProductAccess(userID, productID string) (*Subscription, error) {
+	subscription := &Subscription{}
+	query := `SELECT * FROM subscriptions WHERE user_id = $1 AND product_id = $2 AND status = 'active' AND current_period_end > NOW() ORDER BY created_at DESC LIMIT 1`
+
+	err := d.db.Get(subscription, query, userID, productID)
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:CheckUserProductAccess", "error", err)
+		return nil, err
+	}
+
+	return subscription, nil
+}
+
+// User payment methods
+func (d *PostgresDAO) CreateUserPayment(userID, productID, subscriptionID, paymentID string) (string, error) {
+	id := uuid.New().String()
+	now := time.Now().Format(time.RFC3339)
+
+	query := `INSERT INTO user_payments (id, user_id, product_id, subscription_id, payment_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := d.db.Exec(query, id, userID, productID, subscriptionID, paymentID, now, now)
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:CreateUserPayment", "error", err)
+		return "", err
+	}
+
+	slog.Info("paymentservice:dao_postgres:CreateUserPayment", "paymentID", id, "userID", userID, "productID", productID)
+	return id, nil
 }

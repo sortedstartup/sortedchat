@@ -29,3 +29,29 @@ func (p *Product) GetCurrencyEnum() pb.Currency {
 		return pb.Currency_USD // default to USD
 	}
 }
+
+type Subscription struct {
+	ID                         string `db:"id"`
+	UserID                     string `db:"user_id"`
+	ProductID                  string `db:"product_id"`
+	Provider                   string `db:"provider"`
+	ProviderSubscriptionID     string `db:"provider_subscription_id"`
+	ProviderSubscriptionStatus string `db:"provider_subscription_status"`
+	Status                     string `db:"status"`
+	CurrentPeriodStart         string `db:"current_period_start"`
+	CurrentPeriodEnd           string `db:"current_period_end"`
+	CancelAtPeriodEnd          bool   `db:"cancel_at_period_end"`
+	CreatedAt                  string `db:"created_at"`
+	UpdatedAt                  string `db:"updated_at"`
+	CanceledAt                 string `db:"canceled_at"`
+}
+
+type UserPayment struct {
+	ID             string `db:"id"`
+	UserID         string `db:"user_id"`
+	ProductID      string `db:"product_id"`
+	SubscriptionID string `db:"subscription_id"`
+	PaymentID      string `db:"payment_id"`
+	CreatedAt      string `db:"created_at"`
+	UpdatedAt      string `db:"updated_at"`
+}

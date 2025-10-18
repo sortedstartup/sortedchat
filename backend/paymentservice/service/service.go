@@ -34,6 +34,12 @@ func (s *PaymentService) Infer(ctx context.Context, dummy string) error {
 func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, intervalPeriod string) (string, error) {
 	slog.Info("paymentservice:service:CreateProduct", "userID", userID, "name", name, "isRecurring", isRecurring, "intervalCount", intervalCount, "intervalPeriod", intervalPeriod)
 
+	// For one-time payments, set interval values to 0 and empty string to store as NULL
+	if !isRecurring {
+		intervalCount = 0
+		intervalPeriod = ""
+	}
+
 	// Convert interval period for Stripe (day, week, month, year)
 	stripeInterval := s.convertIntervalForStripe(intervalPeriod)
 	stripeIntervalCount := intervalCount
@@ -118,4 +124,17 @@ func (s *PaymentService) convertIntervalForRazorpay(intervalPeriod string) strin
 	default:
 		return "monthly" // default to monthly
 	}
+}
+
+func (s *PaymentService) CheckUserProductAccess(ctx context.Context, userID, productID string) (bool, string, string, string, error) {
+	slog.Info("paymentservice:service:CheckUserProductAccess", "userID", userID, "productID", productID)
+
+	subscription, err := s.dao.CheckUserProductAccess(userID, productID)
+	if err != nil {
+		slog.Info("paymentservice:service:CheckUserProductAccess", "result", "no access", "userID", userID, "productID", productID)
+		return false, "", "", "", nil // No access, but not an error
+	}
+
+	slog.Info("paymentservice:service:CheckUserProductAccess", "result", "has access", "userID", userID, "productID", productID, "subscriptionID", subscription.ID)
+	return true, subscription.ID, subscription.Status, subscription.CurrentPeriodEnd, nil
 }

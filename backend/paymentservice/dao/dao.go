@@ -6,4 +6,13 @@ type DAO interface {
 	ListProducts() ([]*Product, error)
 	CreateUserPurchase(sessionID string, userID string, productID string, transaction_metadata string, is_success bool, provider string) (string, error)
 	GetProductById(productID string) (*Product, error)
+
+	// Subscription methods
+	CreateSubscription(userID, productID, provider string) (string, error)
+	UpdateSubscription(subscriptionID, providerSubscriptionID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd string, cancelAtPeriodEnd bool) error
+	GetSubscriptionByID(subscriptionID string) (*Subscription, error)
+	CheckUserProductAccess(userID, productID string) (*Subscription, error)
+
+	// User payment methods
+	CreateUserPayment(userID, productID, subscriptionID, paymentID string) (string, error)
 }

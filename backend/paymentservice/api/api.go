@@ -132,6 +132,9 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 			AmountInSmallestUnit: daoProduct.Price,
 			Description:          daoProduct.Description,
 			Currency:             daoProduct.GetCurrencyEnum(),
+			IsRecurring:          daoProduct.IsRecurring,
+			IntervalCount:        daoProduct.IntervalCount,
+			IntervalPeriod:       daoProduct.IntervalPeriod,
 		}
 	}
 
@@ -182,6 +185,77 @@ func (s *PaymentServiceAPI) CreateRazorpayCheckoutSession(ctx context.Context, r
 		OrderId:  OrderId,
 		Amount:   Amount,
 		Currency: Currency,
+	}, nil
+}
+
+func (s *PaymentServiceAPI) CreateStripeSubscriptionCheckoutSession(ctx context.Context, req *pb.CreateStripeSubscriptionCheckoutSessionRequest) (*pb.CreateStripeSubscriptionCheckoutSessionResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateStripeSubscriptionCheckoutSession", "error", err)
+		return nil, err
+	}
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
+	}
+
+	sessionURL, err := s.service.CreateStripeSubscriptionCheckoutSession(ctx, userID, req.ProductId)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateStripeSubscriptionCheckoutSession", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to create Stripe subscription checkout session: %v", err)
+	}
+
+	return &pb.CreateStripeSubscriptionCheckoutSessionResponse{
+		SessionUrl: sessionURL,
+	}, nil
+}
+
+func (s *PaymentServiceAPI) CreateRazorpaySubscriptionCheckoutSession(ctx context.Context, req *pb.CreateRazorpaySubscriptionCheckoutSessionRequest) (*pb.CreateRazorpaySubscriptionCheckoutSessionResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateRazorpaySubscriptionCheckoutSession", "error", err)
+		return nil, err
+	}
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
+	}
+
+	subscriptionID, amount, currency, err := s.service.CreateRazorpaySubscriptionCheckoutSession(ctx, userID, req.ProductId)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateRazorpaySubscriptionCheckoutSession", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to create Razorpay subscription checkout session: %v", err)
+	}
+
+	return &pb.CreateRazorpaySubscriptionCheckoutSessionResponse{
+		SubscriptionId: subscriptionID,
+		Amount:         amount,
+		Currency:       currency,
+	}, nil
+}
+
+func (s *PaymentServiceAPI) CheckUserProductAccess(ctx context.Context, req *pb.CheckUserProductAccessRequest) (*pb.CheckUserProductAccessResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:CheckUserProductAccess", "error", err)
+		return nil, err
+	}
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
+	}
+
+	hasAccess, subscriptionID, statusStr, currentPeriodEnd, err := s.service.CheckUserProductAccess(ctx, userID, req.ProductId)
+	if err != nil {
+		slog.Error("paymentservice:api:CheckUserProductAccess", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to check user product access: %v", err)
+	}
+
+	return &pb.CheckUserProductAccessResponse{
+		HasAccess:        hasAccess,
+		SubscriptionId:   subscriptionID,
+		Status:           statusStr,
+		CurrentPeriodEnd: currentPeriodEnd,
 	}, nil
 }
 

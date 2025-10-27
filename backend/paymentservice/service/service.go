@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"sortedstartup/paymentservice/dao"
+	"strconv"
 
 	razorpay "github.com/razorpay/razorpay-go"
 )
@@ -136,5 +137,5 @@ func (s *PaymentService) CheckUserProductAccess(ctx context.Context, userID, pro
 	}
 
 	slog.Info("paymentservice:service:CheckUserProductAccess", "result", "has access", "userID", userID, "productID", productID, "subscriptionID", subscription.ID)
-	return true, subscription.ID, subscription.Status, subscription.CurrentPeriodEnd, nil
+	return true, subscription.ID, subscription.Status, strconv.FormatInt(subscription.CurrentPeriodEnd, 10), nil
 }

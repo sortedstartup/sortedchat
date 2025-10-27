@@ -124,6 +124,16 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 	// Convert DAO products to proto products
 	products := make([]*pb.Product, len(daoProducts))
 	for i, daoProduct := range daoProducts {
+		var intervalCount int64
+		if daoProduct.IntervalCount.Valid {
+			intervalCount = daoProduct.IntervalCount.Int64
+		}
+
+		var intervalPeriod string
+		if daoProduct.IntervalPeriod.Valid {
+			intervalPeriod = daoProduct.IntervalPeriod.String
+		}
+
 		products[i] = &pb.Product{
 			Id:                   daoProduct.ID,
 			StripeProductId:      daoProduct.StripeProductID,
@@ -133,8 +143,8 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 			Description:          daoProduct.Description,
 			Currency:             daoProduct.GetCurrencyEnum(),
 			IsRecurring:          daoProduct.IsRecurring,
-			IntervalCount:        daoProduct.IntervalCount,
-			IntervalPeriod:       daoProduct.IntervalPeriod,
+			IntervalCount:        intervalCount,
+			IntervalPeriod:       intervalPeriod,
 		}
 	}
 

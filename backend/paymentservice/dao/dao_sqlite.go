@@ -117,16 +117,12 @@ func (d *SQLiteDAO) GetProductById(productID string) (*Product, error) {
 }
 
 // Subscription methods
-func (d *SQLiteDAO) CreateSubscription(userID, productID, provider string) (string, error) {
+func (d *SQLiteDAO) CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) (string, error) {
 	id := uuid.New().String()
 	now := time.Now().Format(time.RFC3339)
 
-	// For one-time payments, set far future end date to indicate lifetime access
-	currentPeriodStart := now
-	currentPeriodEnd := "9999-12-31T23:59:59Z" // Far future for one-time payments
-
-	query := `INSERT INTO subscriptions (id, user_id, product_id, provider, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := d.db.Exec(query, id, userID, productID, provider, "pending", currentPeriodStart, currentPeriodEnd, false, now, now)
+	query := `INSERT INTO subscriptions (id, user_id, product_id, provider, provider_subscription_id, provider_customer_id, provider_subscription_status, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := d.db.Exec(query, id, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateSubscription", "error", err)
 		return "", err
@@ -136,11 +132,11 @@ func (d *SQLiteDAO) CreateSubscription(userID, productID, provider string) (stri
 	return id, nil
 }
 
-func (d *SQLiteDAO) UpdateSubscription(subscriptionID, providerSubscriptionID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd string, cancelAtPeriodEnd bool) error {
+func (d *SQLiteDAO) UpdateSubscription(subscriptionID, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) error {
 	now := time.Now().Format(time.RFC3339)
 
-	query := `UPDATE subscriptions SET provider_subscription_id = ?, provider_subscription_status = ?, status = ?, current_period_start = ?, current_period_end = ?, cancel_at_period_end = ?, updated_at = ? WHERE id = ?`
-	_, err := d.db.Exec(query, providerSubscriptionID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, subscriptionID)
+	query := `UPDATE subscriptions SET provider_subscription_id = ?, provider_customer_id = ?, provider_subscription_status = ?, status = ?, current_period_start = ?, current_period_end = ?, cancel_at_period_end = ?, updated_at = ? WHERE id = ?`
+	_, err := d.db.Exec(query, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, subscriptionID)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:UpdateSubscription", "error", err)
 		return err
@@ -176,13 +172,27 @@ func (d *SQLiteDAO) CheckUserProductAccess(userID, productID string) (*Subscript
 	return subscription, nil
 }
 
+func (d *SQLiteDAO) GetSubscriptionByProviderID(providerCustomerID string) (*Subscription, error) {
+	slog.Info("paymentservice:dao_sqlite:GetSubscriptionByProviderID", "providerCustomerID", providerCustomerID)
+
+	query := `SELECT * FROM subscriptions WHERE provider_customer_id = ?`
+	subscription := &Subscription{}
+	err := d.db.Get(subscription, query, providerCustomerID)
+	if err != nil {
+		slog.Error("paymentservice:dao_sqlite:GetSubscriptionByProviderID", "error", err)
+		return nil, err
+	}
+
+	return subscription, nil
+}
+
 // User payment methods
-func (d *SQLiteDAO) CreateUserPayment(userID, productID, subscriptionID, paymentID string) (string, error) {
+func (d *SQLiteDAO) CreateUserPayment(userID, productID, subscriptionID, paymentID, transactionMetadata string) (string, error) {
 	id := uuid.New().String()
 	now := time.Now().Format(time.RFC3339)
 
-	query := `INSERT INTO user_payments (id, user_id, product_id, subscription_id, payment_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
-	_, err := d.db.Exec(query, id, userID, productID, subscriptionID, paymentID, now, now)
+	query := `INSERT INTO user_payments (id, user_id, product_id, subscription_id, transaction_metadata, payment_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := d.db.Exec(query, id, userID, productID, subscriptionID, transactionMetadata, paymentID, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateUserPayment", "error", err)
 		return "", err

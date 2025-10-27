@@ -13,6 +13,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 )
 
 func (s *PaymentService) CreateProductRazorpay(ctx context.Context, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, period string) (string, error) {
@@ -237,8 +238,6 @@ func (s *PaymentService) HandleRazorpayWebhook(ctx context.Context, r *http.Requ
 			return fmt.Errorf("failed to handle payment failed: %v", err)
 		}
 
-	case "invoice.paid":
-
 	// Subscription events
 	case "subscription.authenticated":
 		err := s.handleRazorpaySubscriptionAuthenticated(ctx, webhookData)
@@ -246,19 +245,13 @@ func (s *PaymentService) HandleRazorpayWebhook(ctx context.Context, r *http.Requ
 			slog.Error("paymentservice:service:HandleRazorpayWebhook", "error", "failed to handle subscription authenticated", "details", err)
 			return fmt.Errorf("failed to handle subscription authenticated: %v", err)
 		}
-	case "subscription.activated":
-		err := s.handleRazorpaySubscriptionActivated(ctx, webhookData)
-		if err != nil {
-			slog.Error("paymentservice:service:HandleRazorpayWebhook", "error", "failed to handle subscription activated", "details", err)
-			return fmt.Errorf("failed to handle subscription activated: %v", err)
-		}
 	case "subscription.charged":
 		err := s.handleRazorpaySubscriptionCharged(ctx, webhookData)
 		if err != nil {
 			slog.Error("paymentservice:service:HandleRazorpayWebhook", "error", "failed to handle subscription charged", "details", err)
 			return fmt.Errorf("failed to handle subscription charged: %v", err)
 		}
-	case "subscription.cancelled":
+	case "subscription.pending":
 		err := s.handleRazorpaySubscriptionCancelled(ctx, webhookData)
 		if err != nil {
 			slog.Error("paymentservice:service:HandleRazorpayWebhook", "error", "failed to handle subscription cancelled", "details", err)
@@ -273,6 +266,7 @@ func (s *PaymentService) HandleRazorpayWebhook(ctx context.Context, r *http.Requ
 	return nil
 }
 
+// this is for one-time payments
 func (s *PaymentService) handleRazorpayPaymentCaptured(ctx context.Context, webhookData map[string]interface{}) error {
 	slog.Info("paymentservice:service:handleRazorpayPaymentCaptured")
 	// Extract payment data from webhook
@@ -320,6 +314,40 @@ func (s *PaymentService) handleRazorpayPaymentCaptured(ctx context.Context, webh
 		return fmt.Errorf("product_id not found in notes")
 	}
 
+	// Extract created_at timestamp from payment entity
+	var currentTime int64
+	if createdAt, exists := entityData["created_at"]; exists {
+		if createdAtFloat, ok := createdAt.(float64); ok {
+			currentTime = int64(createdAtFloat)
+		}
+	}
+	if currentTime == 0 {
+		// Fallback to current Unix timestamp if not available
+		currentTime = time.Now().Unix()
+	}
+
+	// For one-time payments, create subscription with period end < period start to indicate it's expired/one-time
+	periodStart := currentTime
+	periodEnd := currentTime - 1 // Set end time to be less than start time to indicate one-time payment
+
+	// Create subscription record for one-time payment
+	subscriptionID, err := s.dao.CreateSubscription(
+		userID,
+		productID,
+		"razorpay",  // provider
+		"",          // provider_subscription_id - empty for one-time payments
+		"",          // provider_customer_id - might be empty if no customer
+		"",          // provider_subscription_status - empty for one-time payments
+		"active",    // status - active since payment succeeded
+		periodStart, // current_period_start
+		periodEnd,   // current_period_end - less than start to indicate one-time
+		false,       // cancel_at_period_end - false for one-time payments
+	)
+	if err != nil {
+		slog.Error("paymentservice:service:handleRazorpayPaymentCaptured", "error", "failed to create subscription", "details", err)
+		return fmt.Errorf("failed to create subscription: %v", err)
+	}
+
 	// Marshal the entire webhook data to JSON for storage
 	webhookJSON, err := json.Marshal(webhookData)
 	if err != nil {
@@ -327,14 +355,14 @@ func (s *PaymentService) handleRazorpayPaymentCaptured(ctx context.Context, webh
 		return fmt.Errorf("failed to marshal webhook to JSON: %v", err)
 	}
 
-	// Save to database
-	_, err = s.dao.CreateUserPurchase(paymentID, userID, productID, string(webhookJSON), true, "razorpay")
+	// Create user_payment record for the one-time payment
+	_, err = s.dao.CreateUserPayment(userID, productID, subscriptionID, paymentID, string(webhookJSON))
 	if err != nil {
-		slog.Error("paymentservice:service:handleRazorpayPaymentCaptured", "error", "failed to create user purchase", "details", err)
-		return fmt.Errorf("failed to create user purchase: %v", err)
+		slog.Error("paymentservice:service:handleRazorpayPaymentCaptured", "error", "failed to create user payment", "details", err)
+		return fmt.Errorf("failed to create user payment: %v", err)
 	}
 
-	slog.Info("paymentservice:service:handleRazorpayPaymentCaptured", "userID", userID, "productID", productID, "data", "saved in transaction in database")
+	slog.Info("paymentservice:service:handleRazorpayPaymentCaptured", "subscriptionID", subscriptionID, "paymentID", paymentID, "userID", userID, "productID", productID)
 
 	return nil
 }
@@ -404,84 +432,241 @@ func (s *PaymentService) handleRazorpayPaymentFailed(ctx context.Context, webhoo
 	return nil
 }
 
-// New Razorpay subscription webhook handlers
+// New Razorpay subscription webhook handlers- this is for recurring payments(subscription created)
 func (s *PaymentService) handleRazorpaySubscriptionAuthenticated(ctx context.Context, webhookData map[string]interface{}) error {
-	slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated")
+	slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "webhookData", webhookData)
 
-	// Extract subscription data from webhook
-	payloadData, ok := webhookData["payload"].(map[string]interface{})
-	if !ok {
-		slog.Error("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "error", "payload not found in webhook data")
-		return fmt.Errorf("payload not found in webhook data")
+	// Debug: Log the entire webhook data structure
+	webhookJSON, _ := json.Marshal(webhookData)
+	slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "webhookData", string(webhookJSON))
+
+	// Extract subscription data from webhook - try different possible structures
+	var subscriptionEntity map[string]interface{}
+
+	// First try: payload.subscription.entity structure (like payment webhooks)
+	if payloadData, ok := webhookData["payload"].(map[string]interface{}); ok {
+		if subscriptionData, ok := payloadData["subscription"].(map[string]interface{}); ok {
+			if entity, ok := subscriptionData["entity"].(map[string]interface{}); ok {
+				subscriptionEntity = entity
+				slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "structure", "payload.subscription.entity")
+			} else {
+				// Second try: payload.subscription structure (direct)
+				subscriptionEntity = subscriptionData
+				slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "structure", "payload.subscription")
+			}
+		}
 	}
 
-	subscriptionEntity, ok := payloadData["subscription"].(map[string]interface{})
-	if !ok {
-		slog.Error("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "error", "subscription entity not found in payload")
-		return fmt.Errorf("subscription entity not found in payload")
+	// Third try: direct subscription in webhook data
+	if subscriptionEntity == nil {
+		if subscription, ok := webhookData["subscription"].(map[string]interface{}); ok {
+			subscriptionEntity = subscription
+			slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "structure", "direct subscription")
+		}
 	}
 
-	subscriptionID, ok := subscriptionEntity["id"].(string)
+	if subscriptionEntity == nil {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "error", "subscription entity not found in any expected structure")
+		return fmt.Errorf("subscription entity not found in webhook data")
+	}
+
+	// Extract subscription ID
+	razorpaySubscriptionID, ok := subscriptionEntity["id"].(string)
 	if !ok {
-		slog.Error("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "error", "subscription ID not found")
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "error", "subscription ID not found", "subscriptionEntity", subscriptionEntity)
 		return fmt.Errorf("subscription ID not found")
 	}
 
-	slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "subscriptionID", subscriptionID)
+	razorpayCustomerID, ok := subscriptionEntity["customer_id"].(string)
+	if !ok {
+		slog.Warn("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "warning", "customer ID not found in subscription entity")
+		razorpayCustomerID = ""
+	}
 
-	// TODO: Update subscription record in database with provider_subscription_id and status
+	// Extract user_id and product_id from notes
+	notes, ok := subscriptionEntity["notes"].(map[string]interface{})
+	if !ok {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "error", "notes not found in subscription entity")
+		return fmt.Errorf("notes not found in subscription entity")
+	}
 
+	userID, userExists := notes["user_id"].(string)
+	if !userExists {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "error", "user_id not found in subscription notes")
+		return fmt.Errorf("user_id not found in subscription notes")
+	}
+
+	productID, productExists := notes["product_id"].(string)
+	if !productExists {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "error", "product_id not found in subscription notes")
+		return fmt.Errorf("product_id not found in subscription notes")
+	}
+
+	// Extract period information from subscription
+	var currentPeriodStart, currentPeriodEnd int64
+
+	// Extract start_at timestamp (when subscription starts)
+	if startAt, exists := subscriptionEntity["start_at"]; exists {
+		if startAtFloat, ok := startAt.(float64); ok {
+			currentPeriodStart = int64(startAtFloat)
+		}
+	}
+
+	// Extract end_at timestamp (when subscription ends)
+	if endAt, exists := subscriptionEntity["end_at"]; exists {
+		if endAtFloat, ok := endAt.(float64); ok {
+			currentPeriodEnd = int64(endAtFloat)
+		}
+	}
+
+	// Extract subscription status
+	status, ok := subscriptionEntity["status"].(string)
+	if !ok {
+		status = "created" // Default status
+	}
+
+	// Create subscription record in our database with all details
+	subscriptionID, err := s.dao.CreateSubscription(
+		userID,
+		productID,
+		"razorpay",             // provider
+		razorpaySubscriptionID, // provider_subscription_id
+		razorpayCustomerID,     // provider_customer_id - Razorpay doesn't have explicit customer ID in this webhook
+		status,                 // provider_subscription_status
+		"active",               // status - set to active since subscription is authenticated
+		currentPeriodStart,     // current_period_start from subscription
+		currentPeriodEnd,       // current_period_end from subscription
+		false,                  // cancel_at_period_end - default to false
+	)
+	if err != nil {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "error", "failed to create subscription", "details", err)
+		return fmt.Errorf("failed to create subscription: %v", err)
+	}
+
+	slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "subscriptionID", subscriptionID, "userID", userID, "productID", productID, "razorpaySubscriptionID", razorpaySubscriptionID, "currentPeriodStart", currentPeriodStart, "currentPeriodEnd", currentPeriodEnd, "status", status)
 	return nil
 }
 
-func (s *PaymentService) handleRazorpaySubscriptionActivated(ctx context.Context, webhookData map[string]interface{}) error {
-	slog.Info("paymentservice:service:handleRazorpaySubscriptionActivated")
-
-	// Similar implementation to authenticated
-	payloadData, ok := webhookData["payload"].(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("payload not found in webhook data")
-	}
-
-	subscriptionEntity, ok := payloadData["subscription"].(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("subscription entity not found in payload")
-	}
-
-	subscriptionID, ok := subscriptionEntity["id"].(string)
-	if !ok {
-		return fmt.Errorf("subscription ID not found")
-	}
-
-	slog.Info("paymentservice:service:handleRazorpaySubscriptionActivated", "subscriptionID", subscriptionID)
-
-	// TODO: Update subscription status to active
-
-	return nil
-}
-
+// this is for recurring payments(subscription charged)
 func (s *PaymentService) handleRazorpaySubscriptionCharged(ctx context.Context, webhookData map[string]interface{}) error {
 	slog.Info("paymentservice:service:handleRazorpaySubscriptionCharged")
 
-	// Extract payment data for subscription charge
+	// Extract payment and subscription data from webhook
 	payloadData, ok := webhookData["payload"].(map[string]interface{})
 	if !ok {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "payload not found in webhook data")
 		return fmt.Errorf("payload not found in webhook data")
 	}
 
-	paymentEntity, ok := payloadData["payment"].(map[string]interface{})
+	// Extract payment data
+	paymentData, ok := payloadData["payment"].(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("payment entity not found in payload")
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "payment data not found in payload")
+		return fmt.Errorf("payment data not found in payload")
+	}
+
+	paymentEntity, ok := paymentData["entity"].(map[string]interface{})
+	if !ok {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "payment entity not found")
+		return fmt.Errorf("payment entity not found")
 	}
 
 	paymentID, ok := paymentEntity["id"].(string)
 	if !ok {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "payment ID not found")
 		return fmt.Errorf("payment ID not found")
 	}
 
-	slog.Info("paymentservice:service:handleRazorpaySubscriptionCharged", "paymentID", paymentID)
+	// Extract subscription data
+	subscriptionData, ok := payloadData["subscription"].(map[string]interface{})
+	if !ok {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "subscription data not found in payload")
+		return fmt.Errorf("subscription data not found in payload")
+	}
 
-	// TODO: Create user_payment record for this subscription charge
+	subscriptionEntity, ok := subscriptionData["entity"].(map[string]interface{})
+	if !ok {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "subscription entity not found")
+		return fmt.Errorf("subscription entity not found")
+	}
+
+	razorpaySubscriptionID, ok := subscriptionEntity["id"].(string)
+	if !ok {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "subscription ID not found")
+		return fmt.Errorf("subscription ID not found")
+	}
+
+	slog.Info("paymentservice:service:handleRazorpaySubscriptionCharged", "paymentID", paymentID, "subscriptionID", razorpaySubscriptionID)
+
+	// Extract customer ID from subscription entity
+	razorpayCustomerID, ok := subscriptionEntity["customer_id"].(string)
+	if !ok {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "customer ID not found in subscription entity")
+		return fmt.Errorf("customer ID not found in subscription entity")
+	}
+
+	// Find our internal subscription by provider_customer_id
+	subscription, err := s.dao.GetSubscriptionByProviderID(razorpayCustomerID)
+	if err != nil {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "failed to find subscription", "details", err)
+		return fmt.Errorf("failed to find subscription: %v", err)
+	}
+
+	// Extract period information from subscription entity
+	var currentPeriodStart, currentPeriodEnd int64
+
+	// Extract current_start timestamp
+	if currentStart, exists := subscriptionEntity["current_start"]; exists {
+		if currentStartFloat, ok := currentStart.(float64); ok {
+			currentPeriodStart = int64(currentStartFloat)
+		}
+	}
+
+	// Extract current_end timestamp
+	if currentEnd, exists := subscriptionEntity["current_end"]; exists {
+		if currentEndFloat, ok := currentEnd.(float64); ok {
+			currentPeriodEnd = int64(currentEndFloat)
+		}
+	}
+
+	// Extract subscription status
+	status, ok := subscriptionEntity["status"].(string)
+	if !ok {
+		status = subscription.ProviderSubscriptionStatus // Keep existing status if not provided
+	}
+
+	// Update subscription with period dates and set status to active
+	err = s.dao.UpdateSubscription(
+		subscription.ID,
+		subscription.ProviderSubscriptionID, // keep existing provider_subscription_id
+		subscription.ProviderCustomerID,     // keep existing provider_customer_id
+		status,                              // update provider_subscription_status
+		"active",                            // set status to active since payment is charged
+		currentPeriodStart,
+		currentPeriodEnd,
+		subscription.CancelAtPeriodEnd, // keep existing cancel_at_period_end
+	)
+	if err != nil {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "failed to update subscription", "details", err)
+		return fmt.Errorf("failed to update subscription: %v", err)
+	}
+
+	slog.Info("paymentservice:service:handleRazorpaySubscriptionCharged", "status", "subscription updated", "subscriptionID", subscription.ID, "currentPeriodStart", currentPeriodStart, "currentPeriodEnd", currentPeriodEnd)
+
+	// Create user_payment record for this subscription charge
+	webhookJSON, err := json.Marshal(webhookData)
+	if err != nil {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "failed to marshal webhook to JSON", "details", err)
+		return fmt.Errorf("failed to marshal webhook to JSON: %v", err)
+	}
+
+	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, paymentID, string(webhookJSON))
+	if err != nil {
+		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "failed to create user payment", "details", err)
+		return fmt.Errorf("failed to create user payment: %v", err)
+	}
+
+	slog.Info("paymentservice:service:handleRazorpaySubscriptionCharged", "status", "user payment created", "paymentID", paymentID, "userID", subscription.UserID, "productID", subscription.ProductID)
 
 	return nil
 }

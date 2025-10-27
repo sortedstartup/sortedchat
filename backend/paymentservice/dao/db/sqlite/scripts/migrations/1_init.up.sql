@@ -14,10 +14,11 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at TEXT NOT NULL
 );
 
--- reference for all user payments
+-- Fixed: Added product_id column
 CREATE TABLE IF NOT EXISTS user_payments (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
     subscription_id TEXT,
     transaction_metadata TEXT NOT NULL,
     payment_id TEXT NOT NULL,
@@ -27,7 +28,6 @@ CREATE TABLE IF NOT EXISTS user_payments (
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
 );
 
--- reference for all products subscriptions whether recurring or one-time
 CREATE TABLE IF NOT EXISTS subscriptions (
     id TEXT PRIMARY KEY, --uuid 
     user_id TEXT NOT NULL, 
@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     provider_subscription_status TEXT, -- Provider's subscription lifecycle  status (active, canceled, past_due, etc.)
     provider_customer_id TEXT, -- Provider's customer ID
     status TEXT NOT NULL, -- User access status (active, inactive, expired)
-    current_period_start DATETIME NOT NULL, --period cycle start date
-    current_period_end DATETIME NOT NULL, --period cycle end date
+    current_period_start INTEGER NOT NULL, --period cycle start date (Unix timestamp)
+    current_period_end INTEGER NOT NULL, --period cycle end date (Unix timestamp)
     cancel_at_period_end BOOLEAN DEFAULT FALSE, -- whether the subscription will be canceled at the end of the current period
     created_at DATETIME NOT NULL, -- timestamp of when the subscription was created
     updated_at DATETIME NOT NULL, -- timestamp of when the subscription was last updated

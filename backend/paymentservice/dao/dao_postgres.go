@@ -143,16 +143,12 @@ func (d *PostgresDAO) GetProductById(productID string) (*Product, error) {
 }
 
 // Subscription methods
-func (d *PostgresDAO) CreateSubscription(userID, productID, provider string) (string, error) {
+func (d *PostgresDAO) CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) (string, error) {
 	id := uuid.New().String()
 	now := time.Now().Format(time.RFC3339)
 
-	// For one-time payments, set far future end date to indicate lifetime access
-	currentPeriodStart := now
-	currentPeriodEnd := "9999-12-31T23:59:59Z" // Far future for one-time payments
-
-	query := `INSERT INTO subscriptions (id, user_id, product_id, provider, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-	_, err := d.db.Exec(query, id, userID, productID, provider, "pending", currentPeriodStart, currentPeriodEnd, false, now, now)
+	query := `INSERT INTO subscriptions (id, user_id, product_id, provider, provider_subscription_id, provider_customer_id, provider_subscription_status, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
+	_, err := d.db.Exec(query, id, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:CreateSubscription", "error", err)
 		return "", err
@@ -162,11 +158,11 @@ func (d *PostgresDAO) CreateSubscription(userID, productID, provider string) (st
 	return id, nil
 }
 
-func (d *PostgresDAO) UpdateSubscription(subscriptionID, providerSubscriptionID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd string, cancelAtPeriodEnd bool) error {
+func (d *PostgresDAO) UpdateSubscription(subscriptionID, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) error {
 	now := time.Now().Format(time.RFC3339)
 
-	query := `UPDATE subscriptions SET provider_subscription_id = $1, provider_subscription_status = $2, status = $3, current_period_start = $4, current_period_end = $5, cancel_at_period_end = $6, updated_at = $7 WHERE id = $8`
-	_, err := d.db.Exec(query, providerSubscriptionID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, subscriptionID)
+	query := `UPDATE subscriptions SET provider_subscription_id = $1, provider_customer_id = $2, provider_subscription_status = $3, status = $4, current_period_start = $5, current_period_end = $6, cancel_at_period_end = $7, updated_at = $8 WHERE id = $9`
+	_, err := d.db.Exec(query, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, subscriptionID)
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:UpdateSubscription", "error", err)
 		return err
@@ -202,13 +198,27 @@ func (d *PostgresDAO) CheckUserProductAccess(userID, productID string) (*Subscri
 	return subscription, nil
 }
 
+func (d *PostgresDAO) GetSubscriptionByProviderID(providerCustomerID string) (*Subscription, error) {
+	slog.Info("paymentservice:dao_postgres:GetSubscriptionByProviderID", "providerCustomerID", providerCustomerID)
+
+	query := `SELECT * FROM subscriptions WHERE provider_customer_id = $1`
+	subscription := &Subscription{}
+	err := d.db.Get(subscription, query, providerCustomerID)
+	if err != nil {
+		slog.Error("paymentservice:dao_postgres:GetSubscriptionByProviderID", "error", err)
+		return nil, err
+	}
+
+	return subscription, nil
+}
+
 // User payment methods
-func (d *PostgresDAO) CreateUserPayment(userID, productID, subscriptionID, paymentID string) (string, error) {
+func (d *PostgresDAO) CreateUserPayment(userID, productID, subscriptionID, paymentID, transactionMetadata string) (string, error) {
 	id := uuid.New().String()
 	now := time.Now().Format(time.RFC3339)
 
-	query := `INSERT INTO user_payments (id, user_id, product_id, subscription_id, payment_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := d.db.Exec(query, id, userID, productID, subscriptionID, paymentID, now, now)
+	query := `INSERT INTO user_payments (id, user_id, product_id, subscription_id, transaction_metadata, payment_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := d.db.Exec(query, id, userID, productID, subscriptionID, transactionMetadata, paymentID, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:CreateUserPayment", "error", err)
 		return "", err

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -61,6 +63,21 @@ type GenerateEmbeddingMessage struct {
 const MAX_CHAT_NAME_LENGTH = 50
 const MIN_CHAT_NAME_LENGTH = 1
 
+// Image processing constants
+const (
+	MaxImageSizeBytes   = 20 * 1024 * 1024 // 20MB per image
+	MaxImagesPerMessage = 10               // Limit images per message
+	MaxGrpcMessageSize  = 50 * 1024 * 1024 // 50MB total gRPC message
+)
+
+var supportedImageTypes = map[string]bool{
+	"jpeg": true,
+	"jpg":  true,
+	"png":  true,
+	"gif":  true,
+	"webp": true,
+}
+
 func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory dao.DAOFactory) (*ChatService, error) {
 	daoInstance, err := daoFactory.CreateDAO()
 	if err != nil {
@@ -105,6 +122,41 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	projectID := req.GetProjectContext().GetProjectId()
 	ragEnabled := req.GetProjectContext().GetRagEnabled()
 
+	// STEP 1: Validate model capabilities
+	modelID := req.Model
+	modelInfo, err := s.dao.GetModelByID(modelID)
+	if err != nil {
+		slog.Error("service:Chat", "error", "failed to get model info", "error", err, "modelID", modelID)
+		return fmt.Errorf("failed to get model info")
+	}
+
+	capabilities, err := dao.ParseCapabilities(modelInfo.Capabilities)
+	if err != nil {
+		slog.Error("service:Chat", "error", "failed to parse model capabilities", "error", err, "modelID", modelID)
+		return fmt.Errorf("failed to parse model capabilities")
+	}
+
+	// STEP 2: Check if message contains images
+	hasImages := false
+	for _, content := range req.GetContents() {
+		if content.Type == "image_url" {
+			hasImages = true
+			break
+		}
+	}
+
+	// STEP 3: Validate image input against model capability
+	if hasImages {
+		if capabilities.Image == nil || !capabilities.Image.Input {
+			return fmt.Errorf("selected model does not support image input")
+		}
+
+		// Validate image content
+		if err := s.validateImageContent(req.GetContents()); err != nil {
+			return err
+		}
+	}
+
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	if apiKey == "" {
 		slog.Error("service:Chat", "error", "OpenAI API key not set")
@@ -134,24 +186,40 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("model is required")
 	}
 
-	// Get chat history using DAO
+	// STEP 4: Build message history with multi-modal support
 	history, err := s.dao.GetChatMessages(userID, chatId)
 	if err != nil {
 		slog.Error("service:Chat", "message", "failed to fetch message history", "error", err, "chatId", chatId, "userID", userID)
 		return fmt.Errorf("failed to fetch chat message")
 	}
 
-	userMessage := req.Text
+	// STEP 5: Construct user message for OpenAI API
+	var userMessage string
 	var ragChunks []rag.Result
+	var enhancedPrompt string // RAG-enhanced prompt with context
+
+	// Handle backward compatibility - if contents is empty but text is provided, use text
+	if len(req.GetContents()) == 0 && req.Text != "" {
+		userMessage = req.Text
+	} else if len(req.GetContents()) > 0 {
+		// Extract text from contents for RAG processing
+		for _, content := range req.GetContents() {
+			if content.Type == "text" && content.Text != "" {
+				userMessage += content.Text + " "
+			}
+		}
+		userMessage = strings.TrimSpace(userMessage)
+	}
 
 	// First, check if this chat is in context of a project and retrieve similar chunks
-	if projectID != "" && projectID != "null" && ragEnabled { // if this chat is in context of a project
-		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, req.Text)
+	if projectID != "" && projectID != "null" && ragEnabled && userMessage != "" {
+		chunks, err := s.retrieveSimilarChunks(ctx, userID, projectID, userMessage)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to retrieve similar chunks", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else if len(chunks.Results) > 0 {
-			userMessage = chunks.Prompt
 			ragChunks = chunks.Results
+			enhancedPrompt = chunks.Prompt // ← Use RAG-enhanced prompt with context
+			slog.Info("service:Chat", "message", "RAG enhanced prompt created", "chatId", chatId, "userID", userID, "projectID", projectID, "chunksCount", len(chunks.Results))
 
 			// Group chunks by document ID to create summary
 			docChunksMap := make(map[string][]rag.Result)
@@ -195,7 +263,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 	}
 
-	// Save user message with RAG document references if available
+	// STEP 6: Save user message with multi-modal content
 	var requestMessageId string
 	var referencesJSON string
 	if len(ragChunks) > 0 {
@@ -207,11 +275,58 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			referencesJSON = string(referencesBytes)
 		}
 	}
-	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", req.Text, model, 0, 0, 0, referencesJSON, ragEnabled)
+
+	// Save user message - separate text and image content to avoid tsvector 1MB limit
+	var contents []*pb.MessageContent
+	if len(req.GetContents()) > 0 {
+		contents = req.GetContents()
+	} else if req.Text != "" {
+		// Convert legacy text to OpenAI format for consistency
+		contents = []*pb.MessageContent{
+			{
+				Type: "text",
+				Text: req.Text,
+			},
+		}
+	}
+
+	// Separate text and image content
+	textContents := make([]*pb.MessageContent, 0)
+	var imageContents []*pb.MessageContent
+
+	for _, content := range contents {
+		if content.Type == "text" {
+			textContents = append(textContents, content)
+		} else if content.Type == "image_url" {
+			imageContents = append(imageContents, content)
+		}
+	}
+
+	// Marshal text content for the content column (for tsvector indexing)
+	textContentJSON, err := json.Marshal(textContents)
+	if err != nil {
+		return fmt.Errorf("failed to marshal text content")
+	}
+
+	// Marshal image content for the content_image column (separate from tsvector)
+	var imageContentJSON string
+	if len(imageContents) > 0 {
+		imageContentBytes, err := json.Marshal(imageContents)
+		if err != nil {
+			slog.Error("service:Chat", "message", "failed to marshal image content", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
+			return fmt.Errorf("failed to process request, please try again")
+		}
+		imageContentJSON = string(imageContentBytes)
+	}
+
+	// Always use single method - pass empty string for contentImage when no images
+	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", string(textContentJSON), imageContentJSON, model, 0, 0, 0, referencesJSON, ragEnabled)
+
 	if err != nil {
 		slog.Error("service:Chat", "error", "failed to insert user message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to insert user message")
 	}
+
 	if err := stream(&pb.ChatResponse{
 		Response: &pb.ChatResponse_RequestMessageId{
 			RequestMessageId: requestMessageId,
@@ -221,11 +336,97 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
-	history = append(history, dao.ChatMessageRow{Role: "user", Content: userMessage})
+	// Build OpenAI messages array
+	var openAIMessages []interface{}
+	for _, msg := range history {
+		// Reconstruct full message content from separated text and image content
+		var fullContents []*pb.MessageContent
+
+		// Parse text content from content column
+		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
+			var textContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.Content), &textContents); err == nil {
+				fullContents = append(fullContents, textContents...)
+			}
+		} else if msg.Content != "" {
+			// Legacy text-only message
+			fullContents = append(fullContents, &pb.MessageContent{
+				Type: "text",
+				Text: msg.Content,
+			})
+		}
+
+		// Parse image content from content_image column
+		if msg.ContentImage != "" {
+			var imageContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.ContentImage), &imageContents); err == nil {
+				fullContents = append(fullContents, imageContents...)
+			}
+		}
+
+		// Add to OpenAI messages
+		if len(fullContents) > 1 || (len(fullContents) == 1 && fullContents[0].Type == "image_url") {
+			// Multi-modal message - use content array
+			openAIMessages = append(openAIMessages, map[string]interface{}{
+				"role":    msg.Role,
+				"content": fullContents,
+			})
+		} else if len(fullContents) == 1 && fullContents[0].Type == "text" {
+			// Single text message - use string content for simplicity
+			openAIMessages = append(openAIMessages, map[string]interface{}{
+				"role":    msg.Role,
+				"content": fullContents[0].Text,
+			})
+		}
+	}
+
+	// Add current user message (use RAG-enhanced prompt if available)
+	if enhancedPrompt != "" && len(req.GetContents()) == 0 {
+		// Text-only message with RAG enhancement
+		slog.Info("service:Chat", "message", "Using RAG-enhanced prompt for OpenAI", "chatId", chatId, "userID", userID, "projectID", projectID)
+		openAIMessages = append(openAIMessages, map[string]interface{}{
+			"role":    "user",
+			"content": enhancedPrompt,
+		})
+	} else if enhancedPrompt != "" && len(req.GetContents()) > 0 {
+		// Multi-modal message with RAG enhancement - replace text content with enhanced prompt
+		slog.Info("service:Chat", "message", "Using RAG-enhanced prompt for multi-modal message", "chatId", chatId, "userID", userID, "projectID", projectID)
+		var enhancedContents []*pb.MessageContent
+
+		// Add enhanced text content
+		enhancedContents = append(enhancedContents, &pb.MessageContent{
+			Type: "text",
+			Text: enhancedPrompt,
+		})
+
+		// Add original image content
+		for _, content := range req.GetContents() {
+			if content.Type == "image_url" {
+				enhancedContents = append(enhancedContents, content)
+			}
+		}
+
+		openAIMessages = append(openAIMessages, map[string]interface{}{
+			"role":    "user",
+			"content": enhancedContents,
+		})
+	} else if len(req.GetContents()) > 0 {
+		// Multi-modal content without RAG - use original contents
+		openAIMessages = append(openAIMessages, map[string]interface{}{
+			"role":    "user",
+			"content": req.GetContents(),
+		})
+	} else {
+		// Plain text message without RAG - use original user message
+		openAIMessages = append(openAIMessages, map[string]interface{}{
+			"role":    "user",
+			"content": userMessage,
+		})
+	}
 
 	requestBody := map[string]interface{}{
 		"model":    model,
-		"messages": history,
+		"messages": openAIMessages,
 		"stream":   true,
 		"stream_options": map[string]interface{}{
 			"include_usage": true,
@@ -281,8 +482,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 	defer resp.Body.Close()
 
-	// UI can show request sent, useful because sometimes there is a delay from the API server
-
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		slog.Error("service:Chat", "message", "OpenAI API error", "status", resp.StatusCode, "body", string(bodyBytes), "chatId", chatId, "userID", userID, "projectID", projectID, "bodyBytes", string(bodyBytes))
@@ -309,7 +508,12 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 					partialReferencesJSON = string(partialRefsBytes)
 				}
 			}
-			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
+			nonCachedInputTokens := inputTokens - cachedTokens
+			if nonCachedInputTokens < 0 {
+				slog.Warn("service:Chat", "message", "cachedTokens > inputTokens, setting non-cached input tokens to 0", "inputTokens", inputTokens, "cachedTokens", cachedTokens, "chatId", chatId, "userID", userID, "projectID", projectID)
+				nonCachedInputTokens = 0
+			}
+			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
 			if err != nil {
 				slog.Error("service:Chat", "message", "failed to save partial assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 			}
@@ -412,8 +616,13 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				finalReferencesJSON = string(finalRefsBytes)
 			}
 		}
+		nonCachedInputTokens := inputTokens - cachedTokens
+		if nonCachedInputTokens < 0 {
+			slog.Warn("service:Chat", "message", "cachedTokens > inputTokens, setting non-cached input tokens to 0", "inputTokens", inputTokens, "cachedTokens", cachedTokens, "chatId", chatId, "userID", userID, "projectID", projectID)
+			nonCachedInputTokens = 0
+		}
 		// TODO : scope for optimization, can be 1 sql call internally
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, model, inputTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else {
@@ -594,7 +803,7 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 	for _, m := range messages {
 		pbMessage := &pb.ChatMessage{
 			Role:         m.Role,
-			Content:      m.Content,
+			Content:      m.Content, // Plain text fallback
 			MessageId:    m.Id,
 			RagEnabled:   m.RagEnabled,
 			Model:        m.Model,
@@ -602,6 +811,42 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			OutputTokens: int32(m.OutputTokenCount),
 			CachedTokens: int32(m.CachedTokenCount),
 			Cost:         float32(m.Cost),
+		}
+
+		// Reconstruct full message content from separated text and image content
+		var fullContents []*pb.MessageContent
+
+		// Parse text content from content column
+		if strings.HasPrefix(m.Content, "[") && strings.HasSuffix(m.Content, "]") {
+			var textContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(m.Content), &textContents); err == nil {
+				fullContents = append(fullContents, textContents...)
+			} else {
+				slog.Error("service:GetHistory", "message", "Failed to parse text content JSON", "error", err, "messageId", m.Id)
+			}
+		} else if m.Content != "" {
+			// Legacy text-only message - convert to OpenAI format
+			fullContents = append(fullContents, &pb.MessageContent{
+				Type: "text",
+				Text: m.Content,
+			})
+		}
+
+		// Parse image content from content_image column
+		if m.ContentImage != "" {
+			var imageContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(m.ContentImage), &imageContents); err == nil {
+				fullContents = append(fullContents, imageContents...)
+				slog.Info("service:GetHistory", "message", "Successfully parsed image content", "messageId", m.Id, "imageContentsCount", len(imageContents))
+			} else {
+				slog.Error("service:GetHistory", "message", "Failed to parse image content JSON", "error", err, "messageId", m.Id)
+			}
+		}
+
+		// Set the reconstructed contents
+		if len(fullContents) > 0 {
+			pbMessage.Contents = fullContents
+			slog.Info("service:GetHistory", "message", "Successfully reconstructed message content", "messageId", m.Id, "totalContentsCount", len(fullContents))
 		}
 
 		if m.DocumentReferences != "" {
@@ -723,6 +968,16 @@ func (s *ChatService) CreateProject(ctx context.Context, userID string, name str
 	if name == "" {
 		slog.Error("service:CreateProject", "message", "name is required", "userID", userID, "name", name)
 		return "", fmt.Errorf("name is required")
+	}
+
+	isNameExists, err := s.dao.IsProjectNameExists(userID, id, name)
+	if err != nil {
+		slog.Error("service:CreateProject", "message", "failed to check if name exists", "error", err, "userID", userID, "name", name)
+		return "", fmt.Errorf("error while processing request, please try again")
+	}
+	if isNameExists {
+		slog.Error("service:CreateProject", "message", "name already exists", "userID", userID, "name", name)
+		return "", fmt.Errorf("name already exists, please try again with a different name")
 	}
 
 	projectID, err := s.dao.CreateProject(userID, id, name, description, additionalData)
@@ -1245,29 +1500,156 @@ func (s *ChatService) RestoreChat(ctx context.Context, userID string, chatId str
 	return nil
 }
 
-func (s *ChatService) RenameChat(ctx context.Context, userID string, chatId string, name string) error {
-	if chatId == "" {
-		slog.Error("service:RenameChat", "message", "chat ID is required", "userID", userID, "chatId", chatId, "name", name)
-		return fmt.Errorf("chat ID is required")
+func (s *ChatService) RenameItem(ctx context.Context, userID string, itemId string, name string, itemType pb.RenameItemRequest_ItemType) (string, error) {
+	if itemId == "" {
+		slog.Error("service:RenameItem", "message", "item ID is required", "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+		return "", fmt.Errorf("item ID is required")
 	}
 
 	trimmedName := strings.TrimSpace(name)
 
 	if len(trimmedName) < MIN_CHAT_NAME_LENGTH {
-		slog.Error("service:RenameChat", "message", fmt.Sprintf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH), "userID", userID, "chatId", chatId, "name", name)
-		return fmt.Errorf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH)
+		slog.Error("service:RenameItem", "message", fmt.Sprintf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH), "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+		return "", fmt.Errorf("name must be at least %d characters", MIN_CHAT_NAME_LENGTH)
 	}
 
 	if len(trimmedName) > MAX_CHAT_NAME_LENGTH {
-		slog.Error("service:RenameChat", "message", fmt.Sprintf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH), "userID", userID, "chatId", chatId, "name", name)
-		return fmt.Errorf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH)
+		slog.Error("service:RenameItem", "message", fmt.Sprintf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH), "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+		return "", fmt.Errorf("name must be less than %d characters", MAX_CHAT_NAME_LENGTH)
 	}
 
-	err := s.dao.RenameChat(userID, chatId, trimmedName)
-	if err != nil {
-		slog.Error("service:RenameChat", "message", "failed to rename chat", "error", err, "userID", userID, "chatId", chatId, "name", name)
-		return fmt.Errorf("failed to rename chat, please try again")
+	// Check if name already exists based on item type
+	var isNameExists bool
+	var err error
+
+	switch itemType {
+	case pb.RenameItemRequest_CHAT:
+		isNameExists, err = s.dao.IsNameExists(userID, itemId, trimmedName)
+		if err != nil {
+			slog.Error("service:RenameItem", "message", "failed to check if chat name exists", "error", err, "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+			return "", fmt.Errorf("failed to process request, please try again")
+		}
+		if isNameExists {
+			slog.Error("service:RenameItem", "message", "chat name already exists", "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+			return "", fmt.Errorf("name already exists, please try again with a different name")
+		}
+
+		err = s.dao.RenameChat(userID, itemId, trimmedName)
+		if err != nil {
+			slog.Error("service:RenameItem", "message", "failed to rename chat", "error", err, "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+			return "", fmt.Errorf("failed to rename chat, please try again")
+		}
+
+		return "chat renamed successfully", nil
+
+	case pb.RenameItemRequest_PROJECT:
+		isNameExists, err = s.dao.IsProjectNameExists(userID, itemId, trimmedName)
+		if err != nil {
+			slog.Error("service:RenameItem", "message", "failed to check if project name exists", "error", err, "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+			return "", fmt.Errorf("failed to process request, please try again")
+		}
+		if isNameExists {
+			slog.Error("service:RenameItem", "message", "project name already exists", "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+			return "", fmt.Errorf("name already exists, please try again with a different name")
+		}
+
+		err = s.dao.RenameProject(userID, itemId, trimmedName)
+		if err != nil {
+			slog.Error("service:RenameItem", "message", "failed to rename project", "error", err, "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+			return "", fmt.Errorf("failed to rename project, please try again")
+		}
+
+		return "project renamed successfully", nil
+
+	default:
+		slog.Error("service:RenameItem", "message", "unsupported item type", "userID", userID, "itemId", itemId, "name", name, "itemType", itemType)
+		return "", fmt.Errorf("unsupported item type")
 	}
+}
+
+// validateImageContent validates image content in the request
+func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error {
+	imageCount := 0
+	totalImageBytes := 0
+
+	// Strict regex: data:image/{type};base64,{valid-base64}
+	// Captures image type and base64 payload separately
+	dataURIRegex := regexp.MustCompile(`^data:image/(jpeg|jpg|png|gif|webp);base64,([A-Za-z0-9+/]+=*)$`)
+
+	for _, content := range contents {
+		if content.Type == "image_url" && content.ImageUrl != nil {
+			imageCount++
+			url := content.ImageUrl.Url
+
+			// Check for data URI scheme
+			if strings.HasPrefix(url, "data:image/") {
+				// Validate complete data URI format
+				matches := dataURIRegex.FindStringSubmatch(url)
+				if len(matches) != 3 {
+					return fmt.Errorf("invalid data URI format, must be 'data:image/{type};base64,{base64-data}' where type is one of: jpeg, jpg, png, gif, webp")
+				}
+
+				imageType := matches[1]
+				base64Payload := matches[2]
+
+				// Validate image type (redundant with regex but explicit)
+				if !supportedImageTypes[imageType] {
+					return fmt.Errorf("unsupported image type '%s', supported types: jpeg, jpg, png, gif, webp", imageType)
+				}
+
+				// Validate base64 payload can be decoded
+				decodedData, err := base64.StdEncoding.DecodeString(base64Payload)
+				if err != nil {
+					return fmt.Errorf("invalid base64 data in image URI: %v", err)
+				}
+
+				// Use actual decoded size (most accurate)
+				decodedSize := len(decodedData)
+
+				// Check individual image size limit
+				if decodedSize > MaxImageSizeBytes {
+					return fmt.Errorf("image exceeds %d MB limit (actual size: %.2f MB)",
+						MaxImageSizeBytes/(1024*1024), float64(decodedSize)/(1024*1024))
+				}
+
+				totalImageBytes += decodedSize
+
+			} else if strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "http://") {
+				// Explicitly reject HTTP/HTTPS URLs
+				return fmt.Errorf("HTTPS image URLs are not currently supported, use base64 data URIs only (data:image/{type};base64,...)")
+
+			} else if strings.HasPrefix(url, "file://") || strings.HasPrefix(url, "blob:") {
+				// Reject other common schemes
+				return fmt.Errorf("unsupported URI scheme, only 'data:image/...;base64,' URIs are allowed")
+
+			} else {
+				// Catch-all for any other format
+				return fmt.Errorf("unsupported image URI format, only 'data:image/{type};base64,{base64-data}' URIs are allowed")
+			}
+		}
+	}
+
+	// Check total image count limit
+	if imageCount > MaxImagesPerMessage {
+		return fmt.Errorf("too many images (%d), maximum %d images per message", imageCount, MaxImagesPerMessage)
+	}
+
+	// Check total message size against gRPC limit
+	totalMessageSize := totalImageBytes
+	for _, content := range contents {
+		if content.Type == "text" {
+			totalMessageSize += len(content.Text)
+		}
+	}
+
+	// Add estimated overhead for protobuf serialization (~15% to be safe)
+	totalMessageSize = int(float64(totalMessageSize) * 1.15)
+
+	if totalMessageSize > MaxGrpcMessageSize {
+		return fmt.Errorf("total message size exceeds %d MB limit (estimated: %.2f MB)",
+			MaxGrpcMessageSize/(1024*1024), float64(totalMessageSize)/(1024*1024))
+	}
+
 	return nil
 }
 

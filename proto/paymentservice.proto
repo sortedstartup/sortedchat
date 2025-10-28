@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package sortedchat;
+
+option go_package = "sortedstartup/paymentservice/proto";
+
+enum Currency {
+    USD = 0;
+    INR = 1;
+}
+
+service PaymentService {
+    rpc Infer(InferRequest) returns (stream InferResponse);
+    rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+    rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+    rpc CreateStripeCheckoutSession(CreateStripeCheckoutSessionRequest) returns (CreateStripeCheckoutSessionResponse);
+    rpc CreateRazorpayCheckoutSession(CreateRazorpayCheckoutSessionRequest) returns (CreateRazorpayCheckoutSessionResponse);
+}
+
+message InferRequest {
+}
+
+message InferResponse {
+}
+
+message CreateProductRequest {
+    string name = 1;
+    string description = 2;
+    int64 amount_in_smallest_unit = 3;
+    Currency currency = 4;
+}
+
+message CreateProductResponse {
+    string id = 1;
+    string message = 2;
+}
+
+message ListProductsRequest {
+}
+
+message ListProductsResponse {
+    repeated Product products = 1;
+}
+
+message Product {
+    string id = 1;
+    string stripe_product_id = 2;
+    string razorpay_product_id = 3;
+    string name = 4;
+    int64 amount_in_smallest_unit = 5;
+    string description = 6;
+    Currency currency = 7;
+}
+
+message CreateStripeCheckoutSessionRequest {
+    string product_id = 1;
+}
+
+message CreateStripeCheckoutSessionResponse {
+    string session_url = 1;
+}
+
+message CreateRazorpayCheckoutSessionRequest {
+    string product_id = 1;
+}
+
+message CreateRazorpayCheckoutSessionResponse {
+    string order_id = 1;
+    int64 amount = 2;
+    string currency = 3;
+}

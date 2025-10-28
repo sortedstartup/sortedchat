@@ -43,6 +43,10 @@ import (
 	inferenceDao "sortedstartup/inferenceservice/dao"
 	infereceProto "sortedstartup/inferenceservice/proto"
 
+	paymentApi "sortedstartup/paymentservice/api"
+	paymentDao "sortedstartup/paymentservice/dao"
+	paymentProto "sortedstartup/paymentservice/proto"
+
 	realtimeApi "sortedstartup/realtimeservice/api"
 	realtimeDao "sortedstartup/realtimeservice/dao"
 
@@ -148,6 +152,7 @@ func main() {
 		"/auth/callback",
 		"/",
 		"/index.html",
+		"/webhook",
 	})
 
 	// Skip authentication for path prefixes
@@ -185,6 +190,7 @@ func main() {
 		}
 	}()
 
+	//inference service
 	inferenceConfig, err := inferenceDao.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
@@ -201,6 +207,7 @@ func main() {
 		}
 	}()
 
+	//realtime service
 	realtimeConfig, err := realtimeDao.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
@@ -212,6 +219,23 @@ func main() {
 	}
 	defer func() {
 		if err := realtimeDaoFactory.Close(); err != nil {
+			slog.Error("Error closing DAO factory", "error", err)
+			log.Printf("Error closing DAO factory: %v", err)
+		}
+	}()
+
+	//payment service
+	paymentConfig, err := paymentDao.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	paymentDaoFactory, err := paymentDao.NewDAOFactory(paymentConfig)
+	if err != nil {
+		log.Fatalf("Failed to create DAO factory: %v", err)
+	}
+	defer func() {
+		if err := paymentDaoFactory.Close(); err != nil {
 			slog.Error("Error closing DAO factory", "error", err)
 			log.Printf("Error closing DAO factory: %v", err)
 		}
@@ -235,6 +259,17 @@ func main() {
 	realtimeServiceApi := realtimeApi.NewRealtimeServiceAPI(realtimeDaoFactory)
 	realtimeServiceApi.Init(realtimeConfig)
 	realtimeProto.RegisterRealtimeServiceServer(grpcServer, realtimeServiceApi)
+
+	paymentServiceApi := paymentApi.NewPaymentServiceAPI(mux, paymentDaoFactory)
+	if paymentServiceApi == nil {
+		slog.Error("Failed to create payment service API")
+		return
+	}
+	if err := paymentServiceApi.Init(paymentConfig); err != nil {
+		slog.Error("Failed to initialize payment service", "error", err)
+		return
+	}
+	paymentProto.RegisterPaymentServiceServer(grpcServer, paymentServiceApi)
 
 	authConfig, err := authDao.LoadConfig()
 	if err != nil {

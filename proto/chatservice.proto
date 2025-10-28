@@ -26,14 +26,20 @@ service SortedChat {
     rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
     rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse);
     rpc RestoreChat(RestoreChatRequest) returns (RestoreChatResponse);
-    rpc RenameChat(RenameChatRequest) returns (RenameChatResponse);
+    rpc RenameItem(RenameItemRequest) returns (RenameItemResponse);
 }
 
-message RenameChatRequest {
-  string chat_id = 1;
+message RenameItemRequest {
+  string item_id = 1;
   string name = 2;
+  ItemType item_type = 3;
+  
+  enum ItemType {
+    CHAT = 0;
+    PROJECT = 1;
+  }
 }
-message RenameChatResponse {
+message RenameItemResponse {
   string message = 1;
 }
 
@@ -78,6 +84,24 @@ message RAGDocumentReferenceResponse {
 service SettingService {
     rpc GetSetting(GetSettingRequest) returns (GetSettingResponse);
     rpc SetSetting(SetSettingRequest) returns (SetSettingResponse);
+    rpc IsFirstBoot(IsFirstBootRequest) returns (IsFirstBootResponse);
+    rpc TestConnection(TestConnectionRequest) returns (TestConnectionResponse);  
+
+}
+
+enum ConnectionType {
+    OLLAMA = 0;
+    OPENAI = 1;
+}
+
+message TestConnectionRequest {
+    string url = 1;
+    ConnectionType connection_type = 2;
+}
+
+message TestConnectionResponse {
+    bool success = 1;
+    string message = 2;
 }
 
 message Settings {
@@ -100,6 +124,13 @@ message SetSettingResponse {
     string message = 1;
 }
 
+message IsFirstBootRequest {}
+
+message IsFirstBootResponse {
+    bool is_first_boot = 1;
+}
+
+
 
 message CreateChatRequest {
   string name = 1;
@@ -116,11 +147,32 @@ message ProjectContext {
   bool rag_enabled = 2;
 }
 
+// Add new message types for multi-modal content
+// MessageContent follows OpenAI Vision API format directly
+message MessageContent {
+  string type = 1;        // "text" or "image_url"
+  
+  // For text content (when type = "text")
+  string text = 2;
+  
+  // For image content (when type = "image_url")
+  ImageUrl image_url = 3;
+}
+
+message ImageUrl {
+  string url = 1;      // data:image/jpeg;base64,... or URL
+  string detail = 2;   // "low" | "high" | "auto" (OpenAI vision param)
+                       // "auto": high for images >512x512, low otherwise
+                       // "low": fixed token cost (fast, less detail)
+                       // "high": tile-based calculation (slower, more detail)
+}
+
 message ChatRequest {
-    string text = 1;
+    string text = 1;                      // DEPRECATED: kept for backward compatibility
     string chatId = 2;
     string model = 3;
     ProjectContext project_context = 4;
+    repeated MessageContent contents = 5;  // New: support multiple content pieces
 }
 
 message ChatResponse {
@@ -193,7 +245,7 @@ message GetHistoryResponse {
 
 message ChatMessage {
   string role = 1;
-  string content = 2;
+  string content = 2;              // Keep for text-only (backward compat)
   string message_id = 3;
   repeated RAGDocumentReference references = 4;
   bool rag_enabled = 5;
@@ -202,6 +254,7 @@ message ChatMessage {
   int32 output_tokens = 8;
   int32 cached_tokens = 9;
   float cost = 10;
+  repeated MessageContent contents = 11;  // New: multi-modal content
 }
 
 message GetChatListRequest {

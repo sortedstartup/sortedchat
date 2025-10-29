@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"sortedstartup/paymentservice/dao"
-	"strconv"
 
 	razorpay "github.com/razorpay/razorpay-go"
 )
@@ -125,17 +124,4 @@ func (s *PaymentService) convertIntervalForRazorpay(intervalPeriod string) strin
 	default:
 		return "monthly" // default to monthly
 	}
-}
-
-func (s *PaymentService) CheckUserProductAccess(ctx context.Context, userID, productID string) (bool, string, string, string, error) {
-	slog.Info("paymentservice:service:CheckUserProductAccess", "userID", userID, "productID", productID)
-
-	subscription, err := s.dao.CheckUserProductAccess(userID, productID)
-	if err != nil {
-		slog.Info("paymentservice:service:CheckUserProductAccess", "result", "no access", "userID", userID, "productID", productID)
-		return false, "", "", "", nil // No access, but not an error
-	}
-
-	slog.Info("paymentservice:service:CheckUserProductAccess", "result", "has access", "userID", userID, "productID", productID, "subscriptionID", subscription.ID)
-	return true, subscription.ID, subscription.Status, strconv.FormatInt(subscription.CurrentPeriodEnd, 10), nil
 }

@@ -14,11 +14,13 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at TEXT NOT NULL
 );
 
+-- Fixed: Added product_id column
 CREATE TABLE IF NOT EXISTS user_payments (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     product_id TEXT NOT NULL,
     subscription_id TEXT,
+    transaction_metadata TEXT NOT NULL,
     payment_id TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
@@ -32,41 +34,14 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     product_id TEXT NOT NULL, -- product ID
     provider TEXT NOT NULL, -- Stripe or Razorpay
     provider_subscription_id TEXT, -- Razorpay subscription ID or Stripe subscription ID or null if one-time payment
-    provider_subscription_status TEXT, -- Provider's subscription status (active, canceled, past_due, etc.)
+    provider_subscription_status TEXT, -- Provider's subscription lifecycle  status (active, canceled, past_due, etc.)
+    provider_customer_id TEXT, -- Provider's customer ID
     status TEXT NOT NULL, -- User access status (active, inactive, expired)
-    current_period_start TIMESTAMP NOT NULL, --period cycle start date
-    current_period_end TIMESTAMP NOT NULL, --period cycle end date
+    current_period_start INTEGER NOT NULL, --period cycle start date (Unix timestamp)
+    current_period_end INTEGER NOT NULL, --period cycle end date (Unix timestamp)
     cancel_at_period_end BOOLEAN DEFAULT FALSE, -- whether the subscription will be canceled at the end of the current period
-    created_at TIMESTAMP NOT NULL, -- timestamp of when the subscription was created
-    updated_at TIMESTAMP NOT NULL, -- timestamp of when the subscription was last updated
-    canceled_at TIMESTAMP, -- timestamp of when the subscription was canceled
+    created_at DATETIME NOT NULL, -- timestamp of when the subscription was created
+    updated_at DATETIME NOT NULL, -- timestamp of when the subscription was last updated
+    canceled_at TEXT, -- timestamp of when the subscription was canceled
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
-
-
---stripe webhooks
-
--- Webhook Event                                               
--- -------------------------------
--- customer.subscription.created                       
--- customer.subscription.updated                       
--- customer.subscription.deleted                       
--- invoice.paid                                          
--- invoice.payment_failed         
--- payment_intent.succeeded                              
--- charge.refunded                                       
-
-
---razorpay webhooks
-
--- Webhook Event                       
--- ----------------------------
--- subscription.authenticated  
--- subscription.activated      
--- subscription.charged          
--- subscription.completed      
--- subscription.cancelled      
--- subscription.paused         
--- subscription.halted         
--- payment.captured              
--- payment.failed                

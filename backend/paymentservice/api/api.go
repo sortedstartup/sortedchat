@@ -244,31 +244,6 @@ func (s *PaymentServiceAPI) CreateRazorpaySubscriptionCheckoutSession(ctx contex
 	}, nil
 }
 
-func (s *PaymentServiceAPI) CheckUserProductAccess(ctx context.Context, req *pb.CheckUserProductAccessRequest) (*pb.CheckUserProductAccessResponse, error) {
-	userID, err := auth.GetUserIDFromContext_WithError(ctx)
-	if err != nil {
-		slog.Error("paymentservice:api:CheckUserProductAccess", "error", err)
-		return nil, err
-	}
-
-	if strings.TrimSpace(req.ProductId) == "" {
-		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
-	}
-
-	hasAccess, subscriptionID, statusStr, currentPeriodEnd, err := s.service.CheckUserProductAccess(ctx, userID, req.ProductId)
-	if err != nil {
-		slog.Error("paymentservice:api:CheckUserProductAccess", "error", err)
-		return nil, status.Errorf(codes.Internal, "failed to check user product access: %v", err)
-	}
-
-	return &pb.CheckUserProductAccessResponse{
-		HasAccess:        hasAccess,
-		SubscriptionId:   subscriptionID,
-		Status:           statusStr,
-		CurrentPeriodEnd: currentPeriodEnd,
-	}, nil
-}
-
 func (s *PaymentServiceAPI) Init(config *dao.Config) error {
 
 	key := os.Getenv("STRIPE_SECRET_KEY")

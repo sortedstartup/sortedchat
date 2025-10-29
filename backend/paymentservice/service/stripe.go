@@ -215,19 +215,11 @@ func (s *PaymentService) HandleStripeWebhook(ctx context.Context, r *http.Reques
 			slog.Error("paymentservice:service:HandleStripeWebhook", "error", "failed to handle charge succeeded", "details", err)
 			return fmt.Errorf("failed to handle charge succeeded: %v", err)
 		}
-
-	case "checkout.session.completed":
-		err := s.handleCheckoutSessionCompleted(ctx, event)
+	case "charge.failed":
+		err := s.handleChargeFailed(ctx, event)
 		if err != nil {
-			slog.Error("paymentservice:service:HandleStripeWebhook", "error", "failed to handle checkout session completed", "details", err)
-			return fmt.Errorf("failed to handle checkout session completed: %v", err)
-		}
-
-	case "checkout.session.expired":
-		err := s.handlePaymentFailed(ctx, event)
-		if err != nil {
-			slog.Error("paymentservice:service:HandleStripeWebhook", "error", "failed to handle checkout session expired", "details", err)
-			return fmt.Errorf("failed to handle checkout session expired: %v", err)
+			slog.Error("paymentservice:service:HandleStripeWebhook", "error", "failed to handle charge failed", "details", err)
+			return fmt.Errorf("failed to handle charge failed: %v", err)
 		}
 
 	// Subscription events
@@ -237,6 +229,13 @@ func (s *PaymentService) HandleStripeWebhook(ctx context.Context, r *http.Reques
 		if err != nil {
 			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle subscription created", "details", err)
 			return fmt.Errorf("failed to handle subscription created: %v", err)
+		}
+
+	case "customer.subscription.updated":
+		err := s.handleSubscriptionUpdated(ctx, event)
+		if err != nil {
+			slog.Error("paymentservice:service:HandleStripeWebhook", "error", "failed to handle subscription updated", "details", err)
+			return fmt.Errorf("failed to handle subscription updated: %v", err)
 		}
 
 	case "invoice.paid":
@@ -321,47 +320,48 @@ func (s *PaymentService) handleChargeSucceeded(ctx context.Context, event stripe
 	return nil
 }
 
-func (s *PaymentService) handleCheckoutSessionCompleted(ctx context.Context, event stripe.Event) error {
-	var session stripe.CheckoutSession
-	err := json.Unmarshal(event.Data.Raw, &session)
+func (s *PaymentService) handleChargeFailed(ctx context.Context, event stripe.Event) error {
+	var charge stripe.Charge
+	err := json.Unmarshal(event.Data.Raw, &charge)
 	if err != nil {
-		slog.Error("paymentservice:service:handleCheckoutSessionCompleted", "error", "failed to parse webhook JSON", "details", err)
+		slog.Error("paymentservice:service:handleChargeFailed", "error", "failed to parse webhook JSON", "details", err)
 		return fmt.Errorf("error parsing webhook JSON: %v", err)
 	}
-
-	slog.Info("stripe:service:handleCheckoutSessionCompleted", "data", "checkout session completed")
-
-	return nil
-}
-
-func (s *PaymentService) handlePaymentFailed(ctx context.Context, event stripe.Event) error {
-	var session stripe.CheckoutSession
-	err := json.Unmarshal(event.Data.Raw, &session)
+	chargeJSON, err := json.Marshal(charge)
 	if err != nil {
-		slog.Error("paymentservice:service:handlePaymentFailed", "error", "failed to parse webhook JSON", "details", err)
-		return fmt.Errorf("error parsing webhook JSON: %v", err)
+		slog.Error("paymentservice:service:handleChargeFailed", "error", "failed to marshal charge to JSON", "details", err)
+		return fmt.Errorf("failed to marshal charge to JSON: %v", err)
 	}
 
-	userID, exists := session.Metadata["user_id"]
+	userID, exists := charge.Metadata["user_id"]
 	if !exists {
-		return fmt.Errorf("user_id not found in session metadata")
+		return fmt.Errorf("user_id not found in charge metadata")
 	}
 
-	productID, exists := session.Metadata["product_id"]
+	productID, exists := charge.Metadata["product_id"]
 	if !exists {
-		return fmt.Errorf("product_id not found in session metadata")
+		return fmt.Errorf("product_id not found in charge metadata")
 	}
 
-	sessionJSON, err := json.Marshal(session)
-	if err != nil {
-		slog.Error("paymentservice:service:handlePaymentFailed", "error", "failed to marshal session to JSON", "details", err)
-		return fmt.Errorf("failed to marshal session to JSON: %v", err)
-	}
+	if charge.Customer != nil {
 
-	_, err = s.dao.CreateUserPurchase(session.ID, userID, productID, string(sessionJSON), false, "stripe")
-	if err != nil {
-		slog.Error("paymentservice:service:handlePaymentFailed", "error", "failed to create user purchase", "details", err)
-		return fmt.Errorf("failed to create user purchase: %v", err)
+		providerCustomerID := charge.Customer.ID
+		if providerCustomerID == "" {
+			slog.Error("paymentservice:service:handleChargeFailed", "error", "provider_customer_id not found in charge metadata")
+			return fmt.Errorf("provider_customer_id not found in charge metadata")
+		}
+
+		subscription, err := s.dao.GetSubscriptionByProviderCustomerID(providerCustomerID)
+		if err != nil {
+			slog.Error("paymentservice:service:handleChargeFailed", "error", "failed to find subscription", "details", err)
+			return fmt.Errorf("failed to find subscription: %v", err)
+		}
+
+		_, err = s.dao.CreateUserPayment(userID, productID, subscription.ID, charge.ID, string(chargeJSON))
+		if err != nil {
+			slog.Error("paymentservice:service:handleCheckoutSessionExpired", "error", "failed to create user payment", "details", err)
+			return fmt.Errorf("failed to create user payment: %v", err)
+		}
 	}
 
 	return nil
@@ -421,6 +421,69 @@ func (s *PaymentService) handleSubscriptionCreated(ctx context.Context, event st
 }
 
 // this is for recurring payments
+func (s *PaymentService) handleSubscriptionUpdated(ctx context.Context, event stripe.Event) error {
+	var subscription stripe.Subscription
+	err := json.Unmarshal(event.Data.Raw, &subscription)
+	if err != nil {
+		slog.Error("paymentservice:service:handleSubscriptionUpdated", "error", "failed to parse webhook JSON", "details", err)
+		return fmt.Errorf("error parsing webhook JSON: %v", err)
+	}
+
+	userID, userExists := subscription.Metadata["user_id"]
+	if !userExists {
+		slog.Error("paymentservice:service:handleSubscriptionUpdated", "error", "user_id not found in subscription metadata")
+		return fmt.Errorf("user_id not found in subscription metadata")
+	}
+
+	productID, productExists := subscription.Metadata["product_id"]
+	if !productExists {
+		slog.Error("paymentservice:service:handleSubscriptionUpdated", "error", "product_id not found in subscription metadata")
+		return fmt.Errorf("product_id not found in subscription metadata")
+	}
+
+	// Extract period information from subscription items
+	var currentPeriodStart, currentPeriodEnd int64
+	if len(subscription.Items.Data) > 0 {
+		// Use Unix timestamps directly
+		currentPeriodStart = subscription.Items.Data[0].CurrentPeriodStart
+		currentPeriodEnd = subscription.Items.Data[0].CurrentPeriodEnd
+
+		slog.Info("paymentservice:service:handleSubscriptionUpdated", "currentPeriodStart", currentPeriodStart, "currentPeriodEnd", currentPeriodEnd)
+	}
+
+	providerCustomerID := subscription.Customer.ID
+	if providerCustomerID == "" {
+		slog.Error("paymentservice:service:handleSubscriptionUpdated", "error", "provider_customer_id not found in subscription metadata")
+		return fmt.Errorf("provider_customer_id not found in subscription metadata")
+	}
+
+	subscriptionRecord, err := s.dao.GetSubscriptionByProviderCustomerID(providerCustomerID)
+	if err != nil {
+		slog.Error("paymentservice:service:handleSubscriptionUpdated", "error", "failed to find subscription", "details", err)
+		return fmt.Errorf("failed to find subscription: %v", err)
+	}
+
+	// Update subscription record in our database with all details
+	err = s.dao.UpdateSubscription(
+		subscriptionRecord.ID,
+		subscription.ID,             // keep existing provider_subscription_id
+		subscription.Customer.ID,    // keep existing provider_customer_id
+		string(subscription.Status), // keep existing provider_subscription_status
+		"active",                    // set status to active since subscription is updated
+		currentPeriodStart,
+		currentPeriodEnd,
+		subscription.CancelAtPeriodEnd,
+	)
+	if err != nil {
+		slog.Error("paymentservice:service:handleSubscriptionUpdated", "error", "failed to update subscription", "details", err)
+		return fmt.Errorf("failed to update subscription: %v", err)
+	}
+
+	slog.Info("paymentservice:service:handleSubscriptionUpdated", "subscriptionID", subscription.ID, "userID", userID, "productID", productID, "stripeSubscriptionID", subscription.ID, "currentPeriodStart", currentPeriodStart, "currentPeriodEnd", currentPeriodEnd, "CustomerID", subscription.Customer.ID)
+	return nil
+}
+
+// this is for recurring payments
 func (s *PaymentService) handleInvoicePaid(ctx context.Context, event stripe.Event) error {
 	var invoice stripe.Invoice
 	err := json.Unmarshal(event.Data.Raw, &invoice)
@@ -431,55 +494,29 @@ func (s *PaymentService) handleInvoicePaid(ctx context.Context, event stripe.Eve
 
 	slog.Info("paymentservice:service:handleInvoicePaid", "invoiceID", invoice.ID, "amount", invoice.AmountPaid, "customerID", invoice.Customer.ID)
 
-	// If this invoice is for a subscription, update the subscription period dates
-	if invoice.Customer != nil {
+	invoiceJSON, err := json.Marshal(invoice)
+	if err != nil {
+		slog.Error("paymentservice:service:handleInvoicePaid", "error", "failed to marshal invoice to JSON", "details", err)
+		return fmt.Errorf("failed to marshal invoice to JSON: %v", err)
+	}
 
-		providerCustomerID := invoice.Customer.ID
-		if providerCustomerID == "" {
-			slog.Error("paymentservice:service:handleInvoicePaid", "error", "customerID not found in invoice")
-			return fmt.Errorf("customerID not found in invoice")
-		}
-		// Find our internal subscription by provider_subscription_id
-		subscription, err := s.dao.GetSubscriptionByProviderID(providerCustomerID)
-		if err != nil {
-			slog.Error("paymentservice:service:handleInvoicePaid", "error", "failed to find subscription", "details", err)
-			return fmt.Errorf("failed to find subscription: %v", err)
-		}
+	// Get subscription by customer ID to get user and product info
+	providerCustomerID := invoice.Customer.ID
+	if providerCustomerID == "" {
+		slog.Error("paymentservice:service:handleInvoicePaid", "error", "provider_customer_id not found in invoice")
+		return fmt.Errorf("provider_customer_id not found in invoice")
+	}
 
-		// Use invoice period timestamps directly
-		currentPeriodStart := invoice.PeriodStart
-		currentPeriodEnd := invoice.PeriodEnd
+	subscription, err := s.dao.GetSubscriptionByProviderCustomerID(providerCustomerID)
+	if err != nil {
+		slog.Error("paymentservice:service:handleInvoicePaid", "error", "failed to find subscription", "details", err)
+		return fmt.Errorf("failed to find subscription: %v", err)
+	}
 
-		// Update subscription with period dates and set status to active
-		err = s.dao.UpdateSubscription(
-			subscription.ID,
-			subscription.ProviderSubscriptionID,     // keep existing provider_subscription_id
-			subscription.ProviderCustomerID,         // keep existing provider_customer_id
-			subscription.ProviderSubscriptionStatus, // keep existing provider_subscription_status
-			"active",                                // set status to active since invoice is paid
-			currentPeriodStart,
-			currentPeriodEnd,
-			subscription.CancelAtPeriodEnd, // keep existing cancel_at_period_end
-		)
-		if err != nil {
-			slog.Error("paymentservice:service:handleInvoicePaid", "error", "failed to update subscription", "details", err)
-			return fmt.Errorf("failed to update subscription: %v", err)
-		}
-
-		slog.Info("paymentservice:service:handleInvoicePaid", "status", "subscription updated", "subscriptionID", subscription.ID, "currentPeriodStart", currentPeriodStart, "currentPeriodEnd", currentPeriodEnd)
-
-		// Create user_payment record for this invoice payment
-		invoiceJSON, err := json.Marshal(invoice)
-		if err != nil {
-			slog.Error("paymentservice:service:handleInvoicePaid", "error", "failed to marshal invoice to JSON", "details", err)
-			return fmt.Errorf("failed to marshal invoice to JSON: %v", err)
-		}
-
-		_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, invoice.ID, string(invoiceJSON))
-		if err != nil {
-			slog.Error("paymentservice:service:handleInvoicePaid", "error", "failed to create user payment", "details", err)
-			return fmt.Errorf("failed to create user payment: %v", err)
-		}
+	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, invoice.ID, string(invoiceJSON))
+	if err != nil {
+		slog.Error("paymentservice:service:handleInvoicePaid", "error", "failed to create user payment", "details", err)
+		return fmt.Errorf("failed to create user payment: %v", err)
 	}
 
 	return nil
@@ -496,7 +533,48 @@ func (s *PaymentService) handleInvoicePaymentFailed(ctx context.Context, event s
 
 	slog.Info("paymentservice:service:handleInvoicePaymentFailed", "invoiceID", invoice.ID)
 
-	// TODO: Handle failed payment (maybe update subscription status, send notification, etc.)
+	var userID, productID, subscriptionID string
+
+	if invoice.Customer != nil {
+		providerCustomerID := invoice.Customer.ID
+		if providerCustomerID == "" {
+			slog.Error("paymentservice:service:handleInvoicePaymentFailed", "error", "customerID not found in invoice")
+			return fmt.Errorf("customerID not found in invoice")
+		}
+
+		subscription, err := s.dao.GetSubscriptionByProviderCustomerID(providerCustomerID)
+		if err != nil {
+			slog.Error("paymentservice:service:handleInvoicePaymentFailed", "error", "failed to find subscription", "details", err)
+			return fmt.Errorf("failed to find subscription: %v", err)
+		}
+
+		userID = subscription.UserID
+		productID = subscription.ProductID
+		subscriptionID = subscription.ID
+
+		if userID == "" {
+			slog.Error("paymentservice:service:handleInvoicePaymentFailed", "error", "userID not found in subscription")
+			return fmt.Errorf("userID not found in subscription")
+		}
+
+		if productID == "" {
+			slog.Error("paymentservice:service:handleInvoicePaymentFailed", "error", "productID not found in subscription")
+			return fmt.Errorf("productID not found in subscription")
+		}
+	}
+
+	// Create user_payment record for this invoice payment
+	invoiceJSON, err := json.Marshal(invoice)
+	if err != nil {
+		slog.Error("paymentservice:service:handleInvoicePaymentFailed", "error", "failed to marshal invoice to JSON", "details", err)
+		return fmt.Errorf("failed to marshal invoice to JSON: %v", err)
+	}
+
+	_, err = s.dao.CreateUserPayment(userID, productID, subscriptionID, invoice.ID, string(invoiceJSON))
+	if err != nil {
+		slog.Error("paymentservice:service:handleInvoicePaymentFailed", "error", "failed to create user payment", "details", err)
+		return fmt.Errorf("failed to create user payment: %v", err)
+	}
 
 	return nil
 }

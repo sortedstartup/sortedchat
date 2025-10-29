@@ -75,33 +75,6 @@ func (d *SQLiteDAO) ListProducts() ([]*Product, error) {
 	return products, nil
 }
 
-func (d *SQLiteDAO) CreateUserPurchase(sessionID string, userID string, productID string, transaction_metadata string, is_success bool, provider string) (string, error) {
-	id := uuid.New().String()
-	now := time.Now().Format(time.RFC3339)
-	slog.Info("paymentservice:dao_sqlite:CreateUserPurchase", "sessionID", sessionID, "userID", userID, "productID", productID, "is_success", is_success, "provider", provider)
-
-	// Use proper SQLite UPSERT syntax with ON CONFLICT - atomic operation
-	query := `INSERT INTO user_purchases (id, session_id, user_id, product_id, transaction_metadata, is_success, provider, created_at, updated_at) 
-			  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-			  ON CONFLICT(provider, session_id) 
-			  DO UPDATE SET 
-				  user_id = excluded.user_id,
-				  product_id = excluded.product_id,
-				  transaction_metadata = excluded.transaction_metadata,
-				  is_success = excluded.is_success,
-				  updated_at = excluded.updated_at
-			  RETURNING id`
-
-	var actualID string
-	err := d.db.Get(&actualID, query, id, sessionID, userID, productID, transaction_metadata, is_success, provider, now, now)
-	if err != nil {
-		slog.Error("paymentservice:dao_sqlite:CreateUserPurchase", "error", err)
-		return "", err
-	}
-
-	return actualID, nil
-}
-
 func (d *SQLiteDAO) GetProductById(productID string) (*Product, error) {
 	slog.Info("paymentservice:dao_sqlite:GetProductById", "productID", productID)
 
@@ -146,40 +119,14 @@ func (d *SQLiteDAO) UpdateSubscription(subscriptionID, providerSubscriptionID, p
 	return nil
 }
 
-func (d *SQLiteDAO) GetSubscriptionByID(subscriptionID string) (*Subscription, error) {
-	subscription := &Subscription{}
-	query := `SELECT * FROM subscriptions WHERE id = ?`
-
-	err := d.db.Get(subscription, query, subscriptionID)
-	if err != nil {
-		slog.Error("paymentservice:dao_sqlite:GetSubscriptionByID", "error", err)
-		return nil, err
-	}
-
-	return subscription, nil
-}
-
-func (d *SQLiteDAO) CheckUserProductAccess(userID, productID string) (*Subscription, error) {
-	subscription := &Subscription{}
-	query := `SELECT * FROM subscriptions WHERE user_id = ? AND product_id = ? AND status = 'active' AND current_period_end > datetime('now') ORDER BY created_at DESC LIMIT 1`
-
-	err := d.db.Get(subscription, query, userID, productID)
-	if err != nil {
-		slog.Error("paymentservice:dao_sqlite:CheckUserProductAccess", "error", err)
-		return nil, err
-	}
-
-	return subscription, nil
-}
-
-func (d *SQLiteDAO) GetSubscriptionByProviderID(providerCustomerID string) (*Subscription, error) {
-	slog.Info("paymentservice:dao_sqlite:GetSubscriptionByProviderID", "providerCustomerID", providerCustomerID)
+func (d *SQLiteDAO) GetSubscriptionByProviderCustomerID(providerCustomerID string) (*Subscription, error) {
+	slog.Info("paymentservice:dao_sqlite:GetSubscriptionByProviderCustomerID", "providerCustomerID", providerCustomerID)
 
 	query := `SELECT * FROM subscriptions WHERE provider_customer_id = ?`
 	subscription := &Subscription{}
 	err := d.db.Get(subscription, query, providerCustomerID)
 	if err != nil {
-		slog.Error("paymentservice:dao_sqlite:GetSubscriptionByProviderID", "error", err)
+		slog.Error("paymentservice:dao_sqlite:GetSubscriptionByProviderCustomerID", "error", err)
 		return nil, err
 	}
 

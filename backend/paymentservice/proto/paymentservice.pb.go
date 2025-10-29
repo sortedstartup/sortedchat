@@ -964,118 +964,6 @@ func (x *CreateRazorpaySubscriptionCheckoutSessionResponse) GetCurrency() string
 	return ""
 }
 
-type CheckUserProductAccessRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ProductId     string                 `protobuf:"bytes,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CheckUserProductAccessRequest) Reset() {
-	*x = CheckUserProductAccessRequest{}
-	mi := &file_paymentservice_proto_msgTypes[15]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CheckUserProductAccessRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CheckUserProductAccessRequest) ProtoMessage() {}
-
-func (x *CheckUserProductAccessRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[15]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CheckUserProductAccessRequest.ProtoReflect.Descriptor instead.
-func (*CheckUserProductAccessRequest) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *CheckUserProductAccessRequest) GetProductId() string {
-	if x != nil {
-		return x.ProductId
-	}
-	return ""
-}
-
-type CheckUserProductAccessResponse struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	HasAccess        bool                   `protobuf:"varint,1,opt,name=has_access,json=hasAccess,proto3" json:"has_access,omitempty"`
-	SubscriptionId   string                 `protobuf:"bytes,2,opt,name=subscription_id,json=subscriptionId,proto3" json:"subscription_id,omitempty"`
-	Status           string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
-	CurrentPeriodEnd string                 `protobuf:"bytes,4,opt,name=current_period_end,json=currentPeriodEnd,proto3" json:"current_period_end,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CheckUserProductAccessResponse) Reset() {
-	*x = CheckUserProductAccessResponse{}
-	mi := &file_paymentservice_proto_msgTypes[16]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CheckUserProductAccessResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CheckUserProductAccessResponse) ProtoMessage() {}
-
-func (x *CheckUserProductAccessResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[16]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CheckUserProductAccessResponse.ProtoReflect.Descriptor instead.
-func (*CheckUserProductAccessResponse) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *CheckUserProductAccessResponse) GetHasAccess() bool {
-	if x != nil {
-		return x.HasAccess
-	}
-	return false
-}
-
-func (x *CheckUserProductAccessResponse) GetSubscriptionId() string {
-	if x != nil {
-		return x.SubscriptionId
-	}
-	return ""
-}
-
-func (x *CheckUserProductAccessResponse) GetStatus() string {
-	if x != nil {
-		return x.Status
-	}
-	return ""
-}
-
-func (x *CheckUserProductAccessResponse) GetCurrentPeriodEnd() string {
-	if x != nil {
-		return x.CurrentPeriodEnd
-	}
-	return ""
-}
-
 var File_paymentservice_proto protoreflect.FileDescriptor
 
 const file_paymentservice_proto_rawDesc = "" +
@@ -1135,16 +1023,7 @@ const file_paymentservice_proto_rawDesc = "" +
 	"1CreateRazorpaySubscriptionCheckoutSessionResponse\x12'\n" +
 	"\x0fsubscription_id\x18\x01 \x01(\tR\x0esubscriptionId\x12\x16\n" +
 	"\x06amount\x18\x02 \x01(\x03R\x06amount\x12\x1a\n" +
-	"\bcurrency\x18\x03 \x01(\tR\bcurrency\">\n" +
-	"\x1dCheckUserProductAccessRequest\x12\x1d\n" +
-	"\n" +
-	"product_id\x18\x01 \x01(\tR\tproductId\"\xae\x01\n" +
-	"\x1eCheckUserProductAccessResponse\x12\x1d\n" +
-	"\n" +
-	"has_access\x18\x01 \x01(\bR\thasAccess\x12'\n" +
-	"\x0fsubscription_id\x18\x02 \x01(\tR\x0esubscriptionId\x12\x16\n" +
-	"\x06status\x18\x03 \x01(\tR\x06status\x12,\n" +
-	"\x12current_period_end\x18\x04 \x01(\tR\x10currentPeriodEnd*\x1c\n" +
+	"\bcurrency\x18\x03 \x01(\tR\bcurrency*\x1c\n" +
 	"\bCurrency\x12\a\n" +
 	"\x03USD\x10\x00\x12\a\n" +
 	"\x03INR\x10\x01**\n" +
@@ -1156,7 +1035,7 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\x04WEEK\x10\x01\x12\t\n" +
 	"\x05MONTH\x10\x02\x12\v\n" +
 	"\aQUARTER\x10\x03\x12\b\n" +
-	"\x04YEAR\x10\x042\xc1\a\n" +
+	"\x04YEAR\x10\x042\xd0\x06\n" +
 	"\x0ePaymentService\x12>\n" +
 	"\x05Infer\x12\x18.sortedchat.InferRequest\x1a\x19.sortedchat.InferResponse0\x01\x12T\n" +
 	"\rCreateProduct\x12 .sortedchat.CreateProductRequest\x1a!.sortedchat.CreateProductResponse\x12Q\n" +
@@ -1164,8 +1043,7 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\x1bCreateStripeCheckoutSession\x12..sortedchat.CreateStripeCheckoutSessionRequest\x1a/.sortedchat.CreateStripeCheckoutSessionResponse\x12\x84\x01\n" +
 	"\x1dCreateRazorpayCheckoutSession\x120.sortedchat.CreateRazorpayCheckoutSessionRequest\x1a1.sortedchat.CreateRazorpayCheckoutSessionResponse\x12\xa2\x01\n" +
 	"'CreateStripeSubscriptionCheckoutSession\x12:.sortedchat.CreateStripeSubscriptionCheckoutSessionRequest\x1a;.sortedchat.CreateStripeSubscriptionCheckoutSessionResponse\x12\xa8\x01\n" +
-	")CreateRazorpaySubscriptionCheckoutSession\x12<.sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest\x1a=.sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponse\x12o\n" +
-	"\x16CheckUserProductAccess\x12).sortedchat.CheckUserProductAccessRequest\x1a*.sortedchat.CheckUserProductAccessResponseB$Z\"sortedstartup/paymentservice/protob\x06proto3"
+	")CreateRazorpaySubscriptionCheckoutSession\x12<.sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest\x1a=.sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponseB$Z\"sortedstartup/paymentservice/protob\x06proto3"
 
 var (
 	file_paymentservice_proto_rawDescOnce sync.Once
@@ -1180,7 +1058,7 @@ func file_paymentservice_proto_rawDescGZIP() []byte {
 }
 
 var file_paymentservice_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_paymentservice_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_paymentservice_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_paymentservice_proto_goTypes = []any{
 	(Currency)(0),                                             // 0: sortedchat.Currency
 	(PaymentType)(0),                                          // 1: sortedchat.PaymentType
@@ -1200,8 +1078,6 @@ var file_paymentservice_proto_goTypes = []any{
 	(*CreateStripeSubscriptionCheckoutSessionResponse)(nil),   // 15: sortedchat.CreateStripeSubscriptionCheckoutSessionResponse
 	(*CreateRazorpaySubscriptionCheckoutSessionRequest)(nil),  // 16: sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest
 	(*CreateRazorpaySubscriptionCheckoutSessionResponse)(nil), // 17: sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponse
-	(*CheckUserProductAccessRequest)(nil),                     // 18: sortedchat.CheckUserProductAccessRequest
-	(*CheckUserProductAccessResponse)(nil),                    // 19: sortedchat.CheckUserProductAccessResponse
 }
 var file_paymentservice_proto_depIdxs = []int32{
 	0,  // 0: sortedchat.CreateProductRequest.currency:type_name -> sortedchat.Currency
@@ -1216,17 +1092,15 @@ var file_paymentservice_proto_depIdxs = []int32{
 	12, // 9: sortedchat.PaymentService.CreateRazorpayCheckoutSession:input_type -> sortedchat.CreateRazorpayCheckoutSessionRequest
 	14, // 10: sortedchat.PaymentService.CreateStripeSubscriptionCheckoutSession:input_type -> sortedchat.CreateStripeSubscriptionCheckoutSessionRequest
 	16, // 11: sortedchat.PaymentService.CreateRazorpaySubscriptionCheckoutSession:input_type -> sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest
-	18, // 12: sortedchat.PaymentService.CheckUserProductAccess:input_type -> sortedchat.CheckUserProductAccessRequest
-	4,  // 13: sortedchat.PaymentService.Infer:output_type -> sortedchat.InferResponse
-	6,  // 14: sortedchat.PaymentService.CreateProduct:output_type -> sortedchat.CreateProductResponse
-	8,  // 15: sortedchat.PaymentService.ListProducts:output_type -> sortedchat.ListProductsResponse
-	11, // 16: sortedchat.PaymentService.CreateStripeCheckoutSession:output_type -> sortedchat.CreateStripeCheckoutSessionResponse
-	13, // 17: sortedchat.PaymentService.CreateRazorpayCheckoutSession:output_type -> sortedchat.CreateRazorpayCheckoutSessionResponse
-	15, // 18: sortedchat.PaymentService.CreateStripeSubscriptionCheckoutSession:output_type -> sortedchat.CreateStripeSubscriptionCheckoutSessionResponse
-	17, // 19: sortedchat.PaymentService.CreateRazorpaySubscriptionCheckoutSession:output_type -> sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponse
-	19, // 20: sortedchat.PaymentService.CheckUserProductAccess:output_type -> sortedchat.CheckUserProductAccessResponse
-	13, // [13:21] is the sub-list for method output_type
-	5,  // [5:13] is the sub-list for method input_type
+	4,  // 12: sortedchat.PaymentService.Infer:output_type -> sortedchat.InferResponse
+	6,  // 13: sortedchat.PaymentService.CreateProduct:output_type -> sortedchat.CreateProductResponse
+	8,  // 14: sortedchat.PaymentService.ListProducts:output_type -> sortedchat.ListProductsResponse
+	11, // 15: sortedchat.PaymentService.CreateStripeCheckoutSession:output_type -> sortedchat.CreateStripeCheckoutSessionResponse
+	13, // 16: sortedchat.PaymentService.CreateRazorpayCheckoutSession:output_type -> sortedchat.CreateRazorpayCheckoutSessionResponse
+	15, // 17: sortedchat.PaymentService.CreateStripeSubscriptionCheckoutSession:output_type -> sortedchat.CreateStripeSubscriptionCheckoutSessionResponse
+	17, // 18: sortedchat.PaymentService.CreateRazorpaySubscriptionCheckoutSession:output_type -> sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponse
+	12, // [12:19] is the sub-list for method output_type
+	5,  // [5:12] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name
 	5,  // [5:5] is the sub-list for extension extendee
 	0,  // [0:5] is the sub-list for field type_name
@@ -1243,7 +1117,7 @@ func file_paymentservice_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_paymentservice_proto_rawDesc), len(file_paymentservice_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   17,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

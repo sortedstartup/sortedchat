@@ -30,7 +30,6 @@ service PaymentService {
     rpc CreateRazorpayCheckoutSession(CreateRazorpayCheckoutSessionRequest) returns (CreateRazorpayCheckoutSessionResponse);
     rpc CreateStripeSubscriptionCheckoutSession(CreateStripeSubscriptionCheckoutSessionRequest) returns (CreateStripeSubscriptionCheckoutSessionResponse);
     rpc CreateRazorpaySubscriptionCheckoutSession(CreateRazorpaySubscriptionCheckoutSessionRequest) returns (CreateRazorpaySubscriptionCheckoutSessionResponse);
-    rpc CheckUserProductAccess(CheckUserProductAccessRequest) returns (CheckUserProductAccessResponse);
 }
 
 message InferRequest {
@@ -110,13 +109,3 @@ message CreateRazorpaySubscriptionCheckoutSessionResponse {
     string currency = 3;
 }
 
-message CheckUserProductAccessRequest {
-    string product_id = 1;
-}
-
-message CheckUserProductAccessResponse {
-    bool has_access = 1;
-    string subscription_id = 2;
-    string status = 3;
-    string current_period_end = 4;
-}

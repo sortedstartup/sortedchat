@@ -49,13 +49,3 @@ type Subscription struct {
 	UpdatedAt                  string         `db:"updated_at"`
 	CanceledAt                 sql.NullString `db:"canceled_at"`
 }
-
-type UserPayment struct {
-	ID             string `db:"id"`
-	UserID         string `db:"user_id"`
-	ProductID      string `db:"product_id"`
-	SubscriptionID string `db:"subscription_id"`
-	PaymentID      string `db:"payment_id"`
-	CreatedAt      string `db:"created_at"`
-	UpdatedAt      string `db:"updated_at"`
-}

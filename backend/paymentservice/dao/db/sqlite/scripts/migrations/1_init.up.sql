@@ -14,20 +14,6 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at TEXT NOT NULL
 );
 
--- Fixed: Added product_id column
-CREATE TABLE IF NOT EXISTS user_payments (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    product_id TEXT NOT NULL,
-    subscription_id TEXT,
-    transaction_metadata TEXT NOT NULL,
-    payment_id TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES products(id),
-    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
-);
-
 CREATE TABLE IF NOT EXISTS subscriptions (
     id TEXT PRIMARY KEY, --uuid 
     user_id TEXT NOT NULL, 
@@ -44,4 +30,20 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     updated_at DATETIME NOT NULL, -- timestamp of when the subscription was last updated
     canceled_at TEXT, -- timestamp of when the subscription was canceled
     FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+
+-- Fixed: Added product_id column
+CREATE TABLE IF NOT EXISTS user_payments (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    subscription_id TEXT,
+    transaction_metadata TEXT NOT NULL,
+    payment_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    is_success BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
 );

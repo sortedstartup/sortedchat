@@ -26,6 +26,18 @@ func (s *PaymentService) CreateProductStripe(ctx context.Context, name string, d
 		Description: stripe.String(description),
 	}
 
+	if isRecurring {
+		// Normalize unsupported Stripe interval "quarter" -> month*3
+		normalizedInterval := interval
+		normalizedCount := intervalCount
+		if strings.EqualFold(interval, "quarter") {
+			normalizedInterval = "month"
+			normalizedCount = intervalCount * 3
+		}
+		interval = normalizedInterval
+		intervalCount = normalizedCount
+	}
+
 	// Handle recurring vs one-time payments
 	if isRecurring {
 		productParams.DefaultPriceData = &stripe.ProductDefaultPriceDataParams{
@@ -61,6 +73,11 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 	if err != nil {
 		slog.Error("paymentservice:service:CreateStripeCheckoutSession", "error", err)
 		return "", fmt.Errorf("failed to create Stripe checkout session")
+	}
+
+	if product.IsRecurring {
+		slog.Error("paymentservice:service:CreateStripeCheckoutSession", "error", "cannot create checkout session for a one-time product")
+		return "", fmt.Errorf("cannot create checkout session for a subscription product")
 	}
 
 	var priceID string
@@ -128,6 +145,11 @@ func (s *PaymentService) CreateStripeSubscriptionCheckoutSession(ctx context.Con
 	if err != nil {
 		slog.Error("paymentservice:service:CreateStripeSubscriptionCheckoutSession", "error", err)
 		return "", fmt.Errorf("failed to create Stripe subscription checkout session")
+	}
+
+	if !product.IsRecurring {
+		slog.Error("paymentservice:service:CreateStripeSubscriptionCheckoutSession", "error", "cannot create subscription session for a one-time product")
+		return "", fmt.Errorf("cannot create subscription session for a one-time product")
 	}
 
 	var priceID string
@@ -224,7 +246,7 @@ func (s *PaymentService) HandleStripeWebhook(ctx context.Context, r *http.Reques
 
 	// Subscription events
 	case "customer.subscription.created":
-		slog.Info("paymentservice:service:HandleStripeWebhook", "event", "customer.subscription.created", "data", event.Data.Raw)
+		slog.Info("paymentservice:service:HandleStripeWebhook", "event", "customer.subscription.created")
 		err := s.handleSubscriptionCreated(ctx, event)
 		if err != nil {
 			slog.Error("paymentservice:service:HandleWebhook", "error", "failed to handle subscription created", "details", err)
@@ -309,7 +331,7 @@ func (s *PaymentService) handleChargeSucceeded(ctx context.Context, event stripe
 		return fmt.Errorf("failed to marshal charge to JSON: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPayment(userID, productID, subscriptionID, charge.ID, string(chargeJSON))
+	_, err = s.dao.CreateUserPayment(userID, productID, subscriptionID, charge.ID, string(chargeJSON), true)
 	if err != nil {
 		slog.Error("paymentservice:service:handleChargeSucceeded", "error", "failed to create user payment", "details", err)
 		return fmt.Errorf("failed to create user payment: %v", err)
@@ -357,7 +379,7 @@ func (s *PaymentService) handleChargeFailed(ctx context.Context, event stripe.Ev
 			return fmt.Errorf("failed to find subscription: %v", err)
 		}
 
-		_, err = s.dao.CreateUserPayment(userID, productID, subscription.ID, charge.ID, string(chargeJSON))
+		_, err = s.dao.CreateUserPayment(userID, productID, subscription.ID, charge.ID, string(chargeJSON), false)
 		if err != nil {
 			slog.Error("paymentservice:service:handleCheckoutSessionExpired", "error", "failed to create user payment", "details", err)
 			return fmt.Errorf("failed to create user payment: %v", err)
@@ -513,7 +535,7 @@ func (s *PaymentService) handleInvoicePaid(ctx context.Context, event stripe.Eve
 		return fmt.Errorf("failed to find subscription: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, invoice.ID, string(invoiceJSON))
+	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, invoice.ID, string(invoiceJSON), true)
 	if err != nil {
 		slog.Error("paymentservice:service:handleInvoicePaid", "error", "failed to create user payment", "details", err)
 		return fmt.Errorf("failed to create user payment: %v", err)
@@ -570,7 +592,7 @@ func (s *PaymentService) handleInvoicePaymentFailed(ctx context.Context, event s
 		return fmt.Errorf("failed to marshal invoice to JSON: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPayment(userID, productID, subscriptionID, invoice.ID, string(invoiceJSON))
+	_, err = s.dao.CreateUserPayment(userID, productID, subscriptionID, invoice.ID, string(invoiceJSON), false)
 	if err != nil {
 		slog.Error("paymentservice:service:handleInvoicePaymentFailed", "error", "failed to create user payment", "details", err)
 		return fmt.Errorf("failed to create user payment: %v", err)

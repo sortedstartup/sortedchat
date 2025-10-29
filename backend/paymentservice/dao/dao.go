@@ -10,7 +10,8 @@ type DAO interface {
 	CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) (string, error)
 	UpdateSubscription(subscriptionID, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) error
 	GetSubscriptionByProviderCustomerID(providerCustomerID string) (*Subscription, error)
+	GetSubscriptionByUserIDAndProductID(userID, productID string) (*Subscription, error)
 
 	// User payment methods
-	CreateUserPayment(userID, productID, subscriptionID, paymentID, transactionMetadata string) (string, error)
+	CreateUserPayment(userID, productID, subscriptionID, paymentID, transactionMetadata string, isSuccess bool) (string, error)
 }

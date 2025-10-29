@@ -142,18 +142,9 @@ func (s *PaymentService) CreateRazorpaySubscriptionCheckoutSession(ctx context.C
 
 	subscriptionData := map[string]interface{}{
 		"plan_id":         product.RazorpayProductID,
-		"total_count":     12, //maybe take it from ui
+		"total_count":     999, //taking high value for longer period, stripe doesn't ask for it
 		"quantity":        1,
 		"customer_notify": true,
-		"addons": []interface{}{
-			map[string]interface{}{
-				"item": map[string]interface{}{
-					"name":     product.Name,
-					"amount":   product.Price,
-					"currency": product.Currency,
-				},
-			},
-		},
 		"notes": map[string]interface{}{
 			"user_id":    userID,
 			"product_id": product.ID,
@@ -326,9 +317,9 @@ func (s *PaymentService) handleRazorpayPaymentCaptured(ctx context.Context, webh
 		currentTime = time.Now().Unix()
 	}
 
-	// For one-time payments, create subscription with period end < period start to indicate it's expired/one-time
+	// For one-time payments, create subscription with period end = period start to indicate it's expired/one-time
 	periodStart := currentTime
-	periodEnd := currentTime - 1 // Set end time to be less than start time to indicate one-time payment
+	periodEnd := currentTime // Set end time to be the same as start time to indicate one-time payment
 
 	// Create subscription record for one-time payment
 	subscriptionID, err := s.dao.CreateSubscription(
@@ -356,7 +347,7 @@ func (s *PaymentService) handleRazorpayPaymentCaptured(ctx context.Context, webh
 	}
 
 	// Create user_payment record for the one-time payment
-	_, err = s.dao.CreateUserPayment(userID, productID, subscriptionID, paymentID, string(webhookJSON))
+	_, err = s.dao.CreateUserPayment(userID, productID, subscriptionID, paymentID, string(webhookJSON), true)
 	if err != nil {
 		slog.Error("paymentservice:service:handleRazorpayPaymentCaptured", "error", "failed to create user payment", "details", err)
 		return fmt.Errorf("failed to create user payment: %v", err)
@@ -421,9 +412,14 @@ func (s *PaymentService) handleRazorpayPaymentFailed(ctx context.Context, webhoo
 		return fmt.Errorf("failed to marshal webhook to JSON: %v", err)
 	}
 
+	subscription, err := s.dao.GetSubscriptionByUserIDAndProductID(userID, productID)
+	if err != nil {
+		slog.Error("paymentservice:service:handleRazorpayPaymentFailed", "error", "failed to get subscription", "details", err)
+		return fmt.Errorf("failed to get subscription: %v", err)
+	}
+
 	// Save to database with is_success = false
-	//have to think of subscription id here how can we do that
-	_, err = s.dao.CreateUserPayment(userID, productID, "", paymentID, string(webhookJSON))
+	_, err = s.dao.CreateUserPayment(userID, productID, subscription.ID, paymentID, string(webhookJSON), false)
 	if err != nil {
 		slog.Error("paymentservice:service:handleRazorpayPaymentFailed", "error", "failed to create user payment", "details", err)
 		return fmt.Errorf("failed to create user payment: %v", err)
@@ -437,10 +433,6 @@ func (s *PaymentService) handleRazorpayPaymentFailed(ctx context.Context, webhoo
 // New Razorpay subscription webhook handlers- this is for recurring payments(subscription created)
 func (s *PaymentService) handleRazorpaySubscriptionAuthenticated(ctx context.Context, webhookData map[string]interface{}) error {
 	slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "webhookData", webhookData)
-
-	// Debug: Log the entire webhook data structure
-	webhookJSON, _ := json.Marshal(webhookData)
-	slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "webhookData", string(webhookJSON))
 
 	// Extract subscription data from webhook - try different possible structures
 	var subscriptionEntity map[string]interface{}
@@ -662,7 +654,7 @@ func (s *PaymentService) handleRazorpaySubscriptionCharged(ctx context.Context, 
 		return fmt.Errorf("failed to marshal webhook to JSON: %v", err)
 	}
 
-	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, paymentID, string(webhookJSON))
+	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, paymentID, string(webhookJSON), true)
 	if err != nil {
 		slog.Error("paymentservice:service:handleRazorpaySubscriptionCharged", "error", "failed to create user payment", "details", err)
 		return fmt.Errorf("failed to create user payment: %v", err)
@@ -674,7 +666,7 @@ func (s *PaymentService) handleRazorpaySubscriptionCharged(ctx context.Context, 
 }
 
 func (s *PaymentService) handleRazorpaySubscriptionPaymentFailed(ctx context.Context, webhookData map[string]interface{}) error {
-	slog.Info("paymentservice:service:handleRazorpaySubscriptionCancelled")
+	slog.Info("paymentservice:service:handleRazorpaySubscriptionPaymentFailed")
 
 	webhookJSON, err := json.Marshal(webhookData)
 	if err != nil {
@@ -708,10 +700,10 @@ func (s *PaymentService) handleRazorpaySubscriptionPaymentFailed(ctx context.Con
 		return fmt.Errorf("failed to find subscription: %v", err)
 	}
 
-	slog.Info("paymentservice:service:handleRazorpaySubscriptionCancelled", "subscriptionID", subscriptionID)
+	slog.Info("paymentservice:service:handleRazorpaySubscriptionPaymentFailed", "subscriptionID", subscriptionID)
 
-	// TODO: Mark subscription as cancelled in database
-	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscriptionID, "", string(webhookJSON))
+	// Create user_payment record for this subscription payment failed
+	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, "", string(webhookJSON), false)
 	if err != nil {
 		slog.Error("paymentservice:service:handleRazorpaySubscriptionPaymentFailed", "error", "failed to create user payment", "details", err)
 		return fmt.Errorf("failed to create user payment: %v", err)

@@ -78,6 +78,8 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 
 	// Convert interval enum to string for database storage
 	var intervalPeriod string
+
+	slog.Info("paymentservice:api:CreateProductsanskar", "isRecurring", isRecurring, "interval", req.Interval, "intervalCount", req.IntervalCount, "intervalPeriod", intervalPeriod)
 	if isRecurring {
 		switch req.Interval {
 		case pb.Interval_DAY:
@@ -98,10 +100,6 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 		if req.IntervalCount <= 0 {
 			return nil, status.Error(codes.InvalidArgument, "Interval count must be greater than 0 for recurring payments")
 		}
-	} else {
-		// For one-time payments, set defaults
-		intervalPeriod = "month"
-		req.IntervalCount = 1
 	}
 
 	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInSmallestUnit, currencyStr, isRecurring, req.IntervalCount, intervalPeriod)

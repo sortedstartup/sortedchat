@@ -18,7 +18,7 @@ enum Interval {
     DAY = 0;
     WEEK = 1;
     MONTH = 2;
-    QUARTER = 3;
+    QUARTER = 3; //stripe does not support quarterly, so we use monthly with count 3
     YEAR = 4;
 }
 

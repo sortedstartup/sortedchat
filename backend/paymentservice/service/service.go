@@ -34,6 +34,20 @@ func (s *PaymentService) Infer(ctx context.Context, dummy string) error {
 func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, intervalPeriod string) (string, error) {
 	slog.Info("paymentservice:service:CreateProduct", "userID", userID, "name", name, "isRecurring", isRecurring, "intervalCount", intervalCount, "intervalPeriod", intervalPeriod)
 
+	if isRecurring {
+		if intervalCount <= 0 {
+			slog.Error("paymentservice:service:CreateProduct", "error", "invalid intervalCount for recurring product")
+			return "", fmt.Errorf("invalid intervalCount for recurring product")
+		}
+		// Optional: whitelist intervalPeriod values
+		switch intervalPeriod {
+		case "day", "week", "month", "quarter", "year":
+		default:
+			slog.Error("paymentservice:service:CreateProduct", "error", "invalid intervalPeriod for recurring product")
+			return "", fmt.Errorf("invalid intervalPeriod for recurring product: %v", intervalPeriod)
+		}
+	}
+
 	// For one-time payments, set interval values to 0 and empty string to store as NULL
 	if !isRecurring {
 		intervalCount = 0

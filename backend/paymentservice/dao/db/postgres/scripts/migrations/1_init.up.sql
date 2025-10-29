@@ -5,27 +5,13 @@ CREATE TABLE IF NOT EXISTS products (
     user_id TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
-    price INTEGER NOT NULL,
+    price BIGINT NOT NULL,
     currency TEXT NOT NULL,
     is_recurring BOOLEAN DEFAULT FALSE,
     interval_count INTEGER, -- Only for recurring (NULL for one-time)
     interval_period TEXT, -- Only for recurring (NULL for one-time)
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
-);
-
--- Fixed: Added product_id column
-CREATE TABLE IF NOT EXISTS user_payments (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    product_id TEXT NOT NULL,
-    subscription_id TEXT,
-    transaction_metadata TEXT NOT NULL,
-    payment_id TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES products(id),
-    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
 );
 
 CREATE TABLE IF NOT EXISTS subscriptions (
@@ -45,3 +31,19 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     canceled_at TEXT, -- timestamp of when the subscription was canceled
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
+
+-- Fixed: Added product_id column
+CREATE TABLE IF NOT EXISTS user_payments (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    subscription_id TEXT,
+    transaction_metadata TEXT NOT NULL,
+    payment_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    is_success BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+);
+

@@ -133,18 +133,32 @@ func (d *SQLiteDAO) GetSubscriptionByProviderCustomerID(providerCustomerID strin
 	return subscription, nil
 }
 
+func (d *SQLiteDAO) GetSubscriptionByUserIDAndProductID(userID, productID string) (*Subscription, error) {
+	slog.Info("paymentservice:dao_sqlite:GetSubscriptionByUserIDAndProductID", "userID", userID, "productID", productID)
+
+	query := `SELECT * FROM subscriptions WHERE user_id = ? AND product_id = ?`
+	subscription := &Subscription{}
+	err := d.db.Get(subscription, query, userID, productID)
+	if err != nil {
+		slog.Error("paymentservice:dao_sqlite:GetSubscriptionByUserIDAndProductID", "error", err)
+		return nil, err
+	}
+
+	return subscription, nil
+}
+
 // User payment methods
-func (d *SQLiteDAO) CreateUserPayment(userID, productID, subscriptionID, paymentID, transactionMetadata string) (string, error) {
+func (d *SQLiteDAO) CreateUserPayment(userID, productID, subscriptionID, paymentID, transactionMetadata string, isSuccess bool) (string, error) {
 	id := uuid.New().String()
 	now := time.Now().Format(time.RFC3339)
 
-	query := `INSERT INTO user_payments (id, user_id, product_id, subscription_id, transaction_metadata, payment_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := d.db.Exec(query, id, userID, productID, subscriptionID, transactionMetadata, paymentID, now, now)
+	query := `INSERT INTO user_payments (id, user_id, product_id, subscription_id, transaction_metadata, payment_id, is_success, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := d.db.Exec(query, id, userID, productID, subscriptionID, transactionMetadata, paymentID, isSuccess, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateUserPayment", "error", err)
 		return "", err
 	}
 
-	slog.Info("paymentservice:dao_sqlite:CreateUserPayment", "paymentID", id, "userID", userID, "productID", productID)
+	slog.Info("paymentservice:dao_sqlite:CreateUserPayment", "paymentID", id, "userID", userID, "productID", productID, "isSuccess", isSuccess)
 	return id, nil
 }

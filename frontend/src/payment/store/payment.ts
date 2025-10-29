@@ -44,7 +44,7 @@ export const createProduct = async (
             currency: currency,
             payment_type: paymentType,
             interval_count: intervalCount || 1,
-            interval: interval || Interval.MONTH,
+            interval: interval !== undefined ? interval : Interval.MONTH,
         });
         const res = await client.CreateProduct(req, {});
         toast.success("Product created successfully");

@@ -62,7 +62,16 @@ const ListProducts: React.FC = () => {
                                 {product.is_recurring ? (
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                         🔄 Subscription
-                                        {product.interval_count > 1 ? ` (Every ${product.interval_count} ${product.interval_period}s)` : ` (${product.interval_period}ly)`}
+                                        {product.interval_count > 1
+                                          ? ` (Every ${product.interval_count} ${product.interval_period}s)`
+                                          : ` (${
+                                              ((product.interval_period || '').toString().toLowerCase()) === 'day' ? 'daily' :
+                                              ((product.interval_period || '').toString().toLowerCase()) === 'week' ? 'weekly' :
+                                              ((product.interval_period || '').toString().toLowerCase()) === 'month' ? 'monthly' :
+                                              ((product.interval_period || '').toString().toLowerCase()) === 'quarter' ? 'quarterly' :
+                                              'yearly'
+                                            })`
+                                        }
                                     </span>
                                 ) : (
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">

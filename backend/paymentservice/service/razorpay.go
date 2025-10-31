@@ -708,8 +708,9 @@ func (s *PaymentService) handleRazorpaySubscriptionPaymentFailed(ctx context.Con
 
 	slog.Info("paymentservice:service:handleRazorpaySubscriptionPaymentFailed", "subscriptionID", subscriptionID)
 
+	failedPaymentID := fmt.Sprintf("failed_%s_%d", subscription.ID, time.Now().UnixNano())
 	// Create user_payment record for this subscription payment failed
-	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, "", string(webhookJSON), false)
+	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, failedPaymentID, string(webhookJSON), false)
 	if err != nil {
 		slog.Error("paymentservice:service:handleRazorpaySubscriptionPaymentFailed", "error", "failed to create user payment", "details", err)
 		return fmt.Errorf("failed to create user payment: %v", err)

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     created_at TIMESTAMPTZ NOT NULL, -- timestamp of when the subscription was created
     updated_at TIMESTAMPTZ NOT NULL, -- timestamp of when the subscription was last updated
     canceled_at BIGINT, -- timestamp of when the subscription was canceled
+    event_id TEXT UNIQUE NOT NULL, -- this is to avoid duplicate subscriptions
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 

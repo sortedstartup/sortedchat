@@ -306,8 +306,11 @@ func (s *PaymentService) handleChargeSucceeded(ctx context.Context, event stripe
 	periodStart := currentTime
 	periodEnd := currentTime - 1 // Set end time to be less than start time to indicate one-time payment
 
+	eventID := charge.ID // use charge ID as event ID to avoid duplicate subscriptions
+
 	// Create subscription record for one-time payment
 	subscriptionID, err := s.dao.CreateSubscription(
+		eventID,
 		userID,
 		productID,
 		"stripe",    // provider
@@ -426,8 +429,11 @@ func (s *PaymentService) handleSubscriptionCreated(ctx context.Context, event st
 		slog.Info("paymentservice:service:handleSubscriptionCreated", "currentPeriodStart", currentPeriodStart, "currentPeriodEnd", currentPeriodEnd)
 	}
 
+	eventID := subscription.ID // use subscription ID as event ID to avoid duplicate subscriptions
+
 	// Create subscription record in our database with all details
 	subscriptionID, err := s.dao.CreateSubscription(
+		eventID,
 		userID,
 		productID,
 		"stripe",                    // provider

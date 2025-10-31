@@ -321,8 +321,10 @@ func (s *PaymentService) handleRazorpayPaymentCaptured(ctx context.Context, webh
 	periodStart := currentTime
 	periodEnd := currentTime // Set end time to be the same as start time to indicate one-time payment
 
+	eventID := paymentID // use payment ID as event ID to avoid duplicate subscriptions
 	// Create subscription record for one-time payment
 	subscriptionID, err := s.dao.CreateSubscription(
+		eventID,
 		userID,
 		productID,
 		"razorpay",  // provider
@@ -525,8 +527,11 @@ func (s *PaymentService) handleRazorpaySubscriptionAuthenticated(ctx context.Con
 		status = "created" // Default status
 	}
 
+	eventID := razorpaySubscriptionID // use subscription ID as event ID to avoid duplicate subscriptions
+
 	// Create subscription record in our database with all details
 	subscriptionID, err := s.dao.CreateSubscription(
+		eventID,
 		userID,
 		productID,
 		"razorpay",             // provider

@@ -415,7 +415,13 @@ func (s *PaymentService) handleRazorpayPaymentFailed(ctx context.Context, webhoo
 	subscription, err := s.dao.GetSubscriptionByUserIDAndProductID(userID, productID)
 	if err != nil {
 		slog.Error("paymentservice:service:handleRazorpayPaymentFailed", "error", "failed to get subscription", "details", err)
-		return fmt.Errorf("failed to get subscription: %v", err)
+		// for one-time payments, create user payment without subscription reference
+		_, err = s.dao.CreateUserPayment(userID, productID, "", paymentID, string(webhookJSON), false)
+		if err != nil {
+			slog.Error("paymentservice:service:handleRazorpayPaymentFailed", "error", "failed to create user payment", "details", err)
+			return fmt.Errorf("failed to create user payment: %v", err)
+		}
+		return nil
 	}
 
 	// Save to database with is_success = false

@@ -375,13 +375,19 @@ func (s *PaymentService) handleChargeFailed(ctx context.Context, event stripe.Ev
 
 		subscription, err := s.dao.GetSubscriptionByProviderCustomerID(providerCustomerID)
 		if err != nil {
-			slog.Error("paymentservice:service:handleChargeFailed", "error", "failed to find subscription", "details", err)
-			return fmt.Errorf("failed to find subscription: %v", err)
+			slog.Warn("paymentservice:service:handleChargeFailed", "warning", "subscription not found, creating payment without subscription reference", "details", err)
+			// for one-time payments, create user payment without subscription reference
+			_, err = s.dao.CreateUserPayment(userID, productID, "", charge.ID, string(chargeJSON), false)
+			if err != nil {
+				slog.Error("paymentservice:service:handleChargeFailed", "error", "failed to create user payment", "details", err)
+				return fmt.Errorf("failed to create user payment: %v", err)
+			}
+			return nil
 		}
 
 		_, err = s.dao.CreateUserPayment(userID, productID, subscription.ID, charge.ID, string(chargeJSON), false)
 		if err != nil {
-			slog.Error("paymentservice:service:handleCheckoutSessionExpired", "error", "failed to create user payment", "details", err)
+			slog.Error("paymentservice:service:handleChargeFailed", "error", "failed to create user payment", "details", err)
 			return fmt.Errorf("failed to create user payment: %v", err)
 		}
 	}

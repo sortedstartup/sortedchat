@@ -117,11 +117,20 @@ func (d *PostgresDAO) GetProductById(productID string) (*Product, error) {
 
 // Subscription methods
 func (d *PostgresDAO) CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) (string, error) {
+
+	checkQuery := `SELECT id FROM subscriptions WHERE provider_subscription_id = $1 AND provider = 'razorpay'`
+	var existingID string
+	err := d.db.QueryRow(checkQuery, providerSubscriptionID).Scan(&existingID)
+	if err == nil {
+		slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "info", "subscription already exists", "subscriptionID", existingID)
+		return "", nil
+	}
+
 	id := uuid.New().String()
 	now := time.Now().Format(time.RFC3339)
 
 	query := `INSERT INTO subscriptions (id, user_id, product_id, provider, provider_subscription_id, provider_customer_id, provider_subscription_status, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
-	_, err := d.db.Exec(query, id, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, now)
+	_, err = d.db.Exec(query, id, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, now)
 	if err != nil {
 		slog.Error("paymentservice:dao_postgres:CreateSubscription", "error", err)
 		return "", err

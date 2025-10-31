@@ -245,7 +245,7 @@ func (s *PaymentService) HandleRazorpayWebhook(ctx context.Context, r *http.Requ
 	case "subscription.pending":
 		err := s.handleRazorpaySubscriptionPaymentFailed(ctx, webhookData)
 		if err != nil {
-			slog.Error("paymentservice:service:HandleRazorpayWebhook", "error", "failed to handle subscription cancelled", "details", err)
+			slog.Error("paymentservice:service:HandleRazorpayWebhook", "error", "failed to handle subscription pending", "details", err)
 			return fmt.Errorf("failed to handle subscription cancelled: %v", err)
 		}
 

@@ -118,11 +118,11 @@ func (d *PostgresDAO) GetProductById(productID string) (*Product, error) {
 // Subscription methods
 func (d *PostgresDAO) CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) (string, error) {
 
-	checkQuery := `SELECT id FROM subscriptions WHERE provider_subscription_id = $1 AND provider = 'razorpay'`
+	checkQuery := `SELECT id FROM subscriptions WHERE user_id = $1 AND product_id = $2`
 	var existingID string
-	err := d.db.QueryRow(checkQuery, providerSubscriptionID).Scan(&existingID)
+	err := d.db.QueryRow(checkQuery, userID, productID).Scan(&existingID)
 	if err == nil {
-		slog.Info("paymentservice:service:handleRazorpaySubscriptionAuthenticated", "info", "subscription already exists", "subscriptionID", existingID)
+		slog.Info("paymentservice:dao_postgres:CreateSubscription", "info", "subscription already exists", "subscriptionID", existingID, "userID", userID, "productID", productID)
 		return "", nil
 	}
 

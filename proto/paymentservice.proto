@@ -30,6 +30,7 @@ service PaymentService {
     rpc CreateRazorpayCheckoutSession(CreateRazorpayCheckoutSessionRequest) returns (CreateRazorpayCheckoutSessionResponse);
     rpc CreateStripeSubscriptionCheckoutSession(CreateStripeSubscriptionCheckoutSessionRequest) returns (CreateStripeSubscriptionCheckoutSessionResponse);
     rpc CreateRazorpaySubscriptionCheckoutSession(CreateRazorpaySubscriptionCheckoutSessionRequest) returns (CreateRazorpaySubscriptionCheckoutSessionResponse);
+    rpc CheckUserProductAccess(CheckUserProductAccessRequest) returns (CheckUserProductAccessResponse);
 }
 
 message InferRequest {
@@ -71,6 +72,7 @@ message Product {
     bool is_recurring = 8;
     int64 interval_count = 9;
     string interval_period = 10;
+    bool has_access = 11;
 }
 
 message CreateStripeCheckoutSessionRequest {
@@ -109,3 +111,10 @@ message CreateRazorpaySubscriptionCheckoutSessionResponse {
     string currency = 3;
 }
 
+message CheckUserProductAccessRequest {
+    string product_id = 1;
+}
+
+message CheckUserProductAccessResponse {
+    bool has_access = 1;
+}

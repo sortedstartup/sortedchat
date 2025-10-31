@@ -51,8 +51,8 @@ func (d *SQLiteDAO) CreateProduct(stripeProductID string, razorpayProductID stri
 	return id, nil
 }
 
-func (d *SQLiteDAO) ListProducts() ([]*Product, error) {
-	slog.Info("paymentservice:dao_sqlite:ListProducts")
+func (d *SQLiteDAO) ListProducts(userID string) ([]*Product, error) {
+	slog.Info("paymentservice:dao_sqlite:ListProducts", "userID", userID)
 
 	query := `SELECT * FROM products`
 	productList, err := d.db.Queryx(query)
@@ -70,6 +70,15 @@ func (d *SQLiteDAO) ListProducts() ([]*Product, error) {
 			slog.Error("paymentservice:dao_sqlite:ListProducts", "error", err)
 			return nil, err
 		}
+
+		// Check if user has access to this product
+		hasAccess, err := d.CheckUserProductAccess(userID, product.ID)
+		if err != nil {
+			slog.Error("paymentservice:dao_sqlite:ListProducts", "error checking access", err)
+			hasAccess = false // Default to no access on error
+		}
+		product.HasAccess = hasAccess
+
 		products = append(products, product)
 	}
 	return products, nil
@@ -90,12 +99,12 @@ func (d *SQLiteDAO) GetProductById(productID string) (*Product, error) {
 }
 
 // Subscription methods
-func (d *SQLiteDAO) CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) (string, error) {
+func (d *SQLiteDAO) CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool, isRecurring bool) (string, error) {
 	id := uuid.New().String()
 	now := time.Now().Format(time.RFC3339)
 
-	query := `INSERT INTO subscriptions (id, user_id, product_id, provider, provider_subscription_id, provider_customer_id, provider_subscription_status, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := d.db.Exec(query, id, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, now)
+	query := `INSERT INTO subscriptions (id, user_id, product_id, provider, provider_subscription_id, provider_customer_id, provider_subscription_status, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at, is_recurring) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := d.db.Exec(query, id, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, now, isRecurring)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateSubscription", "error", err)
 		return "", err
@@ -161,4 +170,27 @@ func (d *SQLiteDAO) CreateUserPayment(userID, productID, subscriptionID, payment
 
 	slog.Info("paymentservice:dao_sqlite:CreateUserPayment", "paymentID", id, "userID", userID, "productID", productID, "isSuccess", isSuccess)
 	return id, nil
+}
+
+func (d *SQLiteDAO) CheckUserProductAccess(userID, productID string) (bool, error) {
+	slog.Info("paymentservice:dao_sqlite:CheckUserProductAccess", "userID", userID, "productID", productID)
+
+	query := `
+        SELECT EXISTS(
+            SELECT 1 FROM subscriptions 
+            WHERE user_id = ? AND product_id = ? AND (
+                (is_recurring = 1 AND status = 'active' AND current_period_end > strftime('%s', 'now')) OR
+                (is_recurring = 0)
+            )
+        )`
+
+	var hasAccess bool
+	err := d.db.Get(&hasAccess, query, userID, productID)
+	if err != nil {
+		slog.Error("paymentservice:dao_sqlite:CheckUserProductAccess", "error", err)
+		return false, err
+	}
+
+	slog.Info("paymentservice:dao_sqlite:CheckUserProductAccess", "hasAccess", hasAccess)
+	return hasAccess, nil
 }

@@ -517,6 +517,7 @@ export class Product extends pb_1.Message {
         is_recurring?: boolean;
         interval_count?: number;
         interval_period?: string;
+        has_access?: boolean;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -550,6 +551,9 @@ export class Product extends pb_1.Message {
             }
             if ("interval_period" in data && data.interval_period != undefined) {
                 this.interval_period = data.interval_period;
+            }
+            if ("has_access" in data && data.has_access != undefined) {
+                this.has_access = data.has_access;
             }
         }
     }
@@ -613,6 +617,12 @@ export class Product extends pb_1.Message {
     set interval_period(value: string) {
         pb_1.Message.setField(this, 10, value);
     }
+    get has_access() {
+        return pb_1.Message.getFieldWithDefault(this, 11, false) as boolean;
+    }
+    set has_access(value: boolean) {
+        pb_1.Message.setField(this, 11, value);
+    }
     static fromObject(data: {
         id?: string;
         stripe_product_id?: string;
@@ -624,6 +634,7 @@ export class Product extends pb_1.Message {
         is_recurring?: boolean;
         interval_count?: number;
         interval_period?: string;
+        has_access?: boolean;
     }): Product {
         const message = new Product({});
         if (data.id != null) {
@@ -656,6 +667,9 @@ export class Product extends pb_1.Message {
         if (data.interval_period != null) {
             message.interval_period = data.interval_period;
         }
+        if (data.has_access != null) {
+            message.has_access = data.has_access;
+        }
         return message;
     }
     toObject() {
@@ -670,6 +684,7 @@ export class Product extends pb_1.Message {
             is_recurring?: boolean;
             interval_count?: number;
             interval_period?: string;
+            has_access?: boolean;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -701,6 +716,9 @@ export class Product extends pb_1.Message {
         if (this.interval_period != null) {
             data.interval_period = this.interval_period;
         }
+        if (this.has_access != null) {
+            data.has_access = this.has_access;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -727,6 +745,8 @@ export class Product extends pb_1.Message {
             writer.writeInt64(9, this.interval_count);
         if (this.interval_period.length)
             writer.writeString(10, this.interval_period);
+        if (this.has_access != false)
+            writer.writeBool(11, this.has_access);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -765,6 +785,9 @@ export class Product extends pb_1.Message {
                     break;
                 case 10:
                     message.interval_period = reader.readString();
+                    break;
+                case 11:
+                    message.has_access = reader.readBool();
                     break;
                 default: reader.skipField();
             }
@@ -1406,6 +1429,140 @@ export class CreateRazorpaySubscriptionCheckoutSessionResponse extends pb_1.Mess
         return CreateRazorpaySubscriptionCheckoutSessionResponse.deserialize(bytes);
     }
 }
+export class CheckUserProductAccessRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        product_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("product_id" in data && data.product_id != undefined) {
+                this.product_id = data.product_id;
+            }
+        }
+    }
+    get product_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set product_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        product_id?: string;
+    }): CheckUserProductAccessRequest {
+        const message = new CheckUserProductAccessRequest({});
+        if (data.product_id != null) {
+            message.product_id = data.product_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            product_id?: string;
+        } = {};
+        if (this.product_id != null) {
+            data.product_id = this.product_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.product_id.length)
+            writer.writeString(1, this.product_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CheckUserProductAccessRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CheckUserProductAccessRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.product_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CheckUserProductAccessRequest {
+        return CheckUserProductAccessRequest.deserialize(bytes);
+    }
+}
+export class CheckUserProductAccessResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        has_access?: boolean;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("has_access" in data && data.has_access != undefined) {
+                this.has_access = data.has_access;
+            }
+        }
+    }
+    get has_access() {
+        return pb_1.Message.getFieldWithDefault(this, 1, false) as boolean;
+    }
+    set has_access(value: boolean) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        has_access?: boolean;
+    }): CheckUserProductAccessResponse {
+        const message = new CheckUserProductAccessResponse({});
+        if (data.has_access != null) {
+            message.has_access = data.has_access;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            has_access?: boolean;
+        } = {};
+        if (this.has_access != null) {
+            data.has_access = this.has_access;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.has_access != false)
+            writer.writeBool(1, this.has_access);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CheckUserProductAccessResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CheckUserProductAccessResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.has_access = reader.readBool();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CheckUserProductAccessResponse {
+        return CheckUserProductAccessResponse.deserialize(bytes);
+    }
+}
 // Server-side service class removed for client-side compatibility
 export class PaymentServiceClient {
     private _address: string;
@@ -1444,5 +1601,9 @@ export class PaymentServiceClient {
     private static CreateRazorpaySubscriptionCheckoutSession = new grpc_web_1.MethodDescriptor<CreateRazorpaySubscriptionCheckoutSessionRequest, CreateRazorpaySubscriptionCheckoutSessionResponse>("/sortedchat.PaymentService/CreateRazorpaySubscriptionCheckoutSession", grpc_web_1.MethodType.UNARY, CreateRazorpaySubscriptionCheckoutSessionRequest, CreateRazorpaySubscriptionCheckoutSessionResponse, (message: CreateRazorpaySubscriptionCheckoutSessionRequest) => message.serialize(), CreateRazorpaySubscriptionCheckoutSessionResponse.deserialize);
     CreateRazorpaySubscriptionCheckoutSession(message: CreateRazorpaySubscriptionCheckoutSessionRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<CreateRazorpaySubscriptionCheckoutSessionRequest, CreateRazorpaySubscriptionCheckoutSessionResponse>(this._address + "/sortedchat.PaymentService/CreateRazorpaySubscriptionCheckoutSession", message, metadata || {}, PaymentServiceClient.CreateRazorpaySubscriptionCheckoutSession);
+    }
+    private static CheckUserProductAccess = new grpc_web_1.MethodDescriptor<CheckUserProductAccessRequest, CheckUserProductAccessResponse>("/sortedchat.PaymentService/CheckUserProductAccess", grpc_web_1.MethodType.UNARY, CheckUserProductAccessRequest, CheckUserProductAccessResponse, (message: CheckUserProductAccessRequest) => message.serialize(), CheckUserProductAccessResponse.deserialize);
+    CheckUserProductAccess(message: CheckUserProductAccessRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<CheckUserProductAccessRequest, CheckUserProductAccessResponse>(this._address + "/sortedchat.PaymentService/CheckUserProductAccess", message, metadata || {}, PaymentServiceClient.CheckUserProductAccess);
     }
 }

@@ -93,9 +93,9 @@ func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name 
 	return productID, nil
 }
 
-func (s *PaymentService) ListProducts(ctx context.Context) ([]*dao.Product, error) {
-	slog.Info("paymentservice:service:ListProducts")
-	products, err := s.dao.ListProducts()
+func (s *PaymentService) ListProducts(ctx context.Context, userID string) ([]*dao.Product, error) {
+	slog.Info("paymentservice:service:ListProducts", "userID", userID)
+	products, err := s.dao.ListProducts(userID)
 	if err != nil {
 		slog.Error("paymentservice:service:ListProducts", "error", err)
 		return nil, fmt.Errorf("failed to process the request")
@@ -138,4 +138,17 @@ func (s *PaymentService) convertIntervalForRazorpay(intervalPeriod string) strin
 	default:
 		return "monthly" // default to monthly
 	}
+}
+
+func (s *PaymentService) CheckUserProductAccess(ctx context.Context, userID, productID string) (bool, error) {
+	slog.Info("paymentservice:service:CheckUserProductAccess", "userID", userID, "productID", productID)
+
+	hasAccess, err := s.dao.CheckUserProductAccess(userID, productID)
+	if err != nil {
+		slog.Error("paymentservice:service:CheckUserProductAccess", "error", err)
+		return false, err
+	}
+
+	slog.Info("paymentservice:service:CheckUserProductAccess", "result", hasAccess, "userID", userID, "productID", productID)
+	return hasAccess, nil
 }

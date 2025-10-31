@@ -113,8 +113,13 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 }
 
 func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:ListProducts", "error", err)
+		return nil, err
+	}
 
-	daoProducts, err := s.service.ListProducts(ctx)
+	daoProducts, err := s.service.ListProducts(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +148,7 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 			IsRecurring:          daoProduct.IsRecurring,
 			IntervalCount:        intervalCount,
 			IntervalPeriod:       intervalPeriod,
+			HasAccess:            daoProduct.HasAccess,
 		}
 	}
 
@@ -279,4 +285,26 @@ func (s *PaymentServiceAPI) Init(config *dao.Config) error {
 	}
 
 	return nil
+}
+
+func (s *PaymentServiceAPI) CheckUserProductAccess(ctx context.Context, req *pb.CheckUserProductAccessRequest) (*pb.CheckUserProductAccessResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:CheckUserProductAccess", "error", err)
+		return nil, err
+	}
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
+	}
+
+	hasAccess, err := s.service.CheckUserProductAccess(ctx, userID, req.ProductId)
+	if err != nil {
+		slog.Error("paymentservice:api:CheckUserProductAccess", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to check user product access: %v", err)
+	}
+
+	return &pb.CheckUserProductAccessResponse{
+		HasAccess: hasAccess,
+	}, nil
 }

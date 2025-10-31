@@ -97,34 +97,46 @@ const ListProducts: React.FC = () => {
                                 <span className="text-sm text-gray-500">ID: {product.id}</span>
                             </div>
 
-                            {/* Buy/Subscribe Buttons */}
+                            {/* Buy/Subscribe Buttons or Access Status */}
                             <div className="space-y-2">
-                                {product.is_recurring ? (
-                                    // Subscription buttons
-                                    <>
-                                        {product.stripe_product_id && (
-                                            <SubscriptionStripeBuy productId={product.id} className="w-full">
-                                                Subscribe with Stripe
-                                            </SubscriptionStripeBuy>
-                                        )}
-                                        {product.razorpay_product_id && (
-                                            <SubscriptionRazorpayBuy productId={product.id} className="w-full">
-                                                Subscribe with Razorpay
-                                            </SubscriptionRazorpayBuy>
-                                        )}
-                                    </>
+                                {product.has_access ? (
+                                    // User has access - show access status
+                                    <div className="w-full p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+                                        <span className="text-green-700 font-medium">
+                                            ✅ You have access to this product
+                                        </span>
+                                    </div>
                                 ) : (
-                                    // One-time payment buttons
+                                    // User doesn't have access - show payment buttons
                                     <>
-                                        {product.stripe_product_id && (
-                                            <StripeBuy productId={product.id} className="w-full">
-                                                Buy with Stripe
-                                            </StripeBuy>
-                                        )}
-                                        {product.razorpay_product_id && (
-                                            <RazorpayBuy productId={product.id} className="w-full">
-                                                Buy with Razorpay
-                                            </RazorpayBuy>
+                                        {product.is_recurring ? (
+                                            // Subscription buttons
+                                            <>
+                                                {product.stripe_product_id && (
+                                                    <SubscriptionStripeBuy productId={product.id} className="w-full">
+                                                        Subscribe with Stripe
+                                                    </SubscriptionStripeBuy>
+                                                )}
+                                                {product.razorpay_product_id && (
+                                                    <SubscriptionRazorpayBuy productId={product.id} className="w-full">
+                                                        Subscribe with Razorpay
+                                                    </SubscriptionRazorpayBuy>
+                                                )}
+                                            </>
+                                        ) : (
+                                            // One-time payment buttons
+                                            <>
+                                                {product.stripe_product_id && (
+                                                    <StripeBuy productId={product.id} className="w-full">
+                                                        Buy with Stripe
+                                                    </StripeBuy>
+                                                )}
+                                                {product.razorpay_product_id && (
+                                                    <RazorpayBuy productId={product.id} className="w-full">
+                                                        Buy with Razorpay
+                                                    </RazorpayBuy>
+                                                )}
+                                            </>
                                         )}
                                     </>
                                 )}

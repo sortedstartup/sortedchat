@@ -19,6 +19,7 @@ type Product struct {
 	IntervalPeriod    sql.NullString `db:"interval_period"`
 	CreatedAt         string         `db:"created_at"`
 	UpdatedAt         string         `db:"updated_at"`
+	HasAccess         bool           `db:"-"` // Not stored in DB, computed field
 }
 
 // GetCurrencyEnum converts the string currency to protobuf Currency enum

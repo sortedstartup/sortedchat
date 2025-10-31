@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS user_payments (
     product_id TEXT NOT NULL,
     subscription_id TEXT,
     transaction_metadata TEXT NOT NULL,
-    payment_id TEXT NOT NULL,
+    payment_id TEXT UNIQUE NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     is_success BOOLEAN DEFAULT TRUE,

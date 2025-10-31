@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS products (
     is_recurring BOOLEAN DEFAULT FALSE,
     interval_count INTEGER, -- Only for recurring (NULL for one-time)
     interval_period TEXT, -- Only for recurring (NULL for one-time)
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS subscriptions (
@@ -23,12 +23,12 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     provider_subscription_status TEXT, -- Provider's subscription lifecycle  status (active, canceled, past_due, etc.)
     provider_customer_id TEXT, -- Provider's customer ID
     status TEXT NOT NULL, -- User access status (active, inactive, expired)
-    current_period_start INTEGER NOT NULL, --period cycle start date (Unix timestamp)
-    current_period_end INTEGER NOT NULL, --period cycle end date (Unix timestamp)
+    current_period_start BIGINT NOT NULL, --period cycle start date (Unix timestamp)
+    current_period_end BIGINT NOT NULL, --period cycle end date (Unix timestamp)
     cancel_at_period_end BOOLEAN DEFAULT FALSE, -- whether the subscription will be canceled at the end of the current period
-    created_at DATETIME NOT NULL, -- timestamp of when the subscription was created
-    updated_at DATETIME NOT NULL, -- timestamp of when the subscription was last updated
-    canceled_at TEXT, -- timestamp of when the subscription was canceled
+    created_at TIMESTAMPTZ NOT NULL, -- timestamp of when the subscription was created
+    updated_at TIMESTAMPTZ NOT NULL, -- timestamp of when the subscription was last updated
+    canceled_at BIGINT, -- timestamp of when the subscription was canceled
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS user_payments (
     product_id TEXT NOT NULL,
     subscription_id TEXT,
     transaction_metadata TEXT NOT NULL,
-    payment_id TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
+    payment_id TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     is_success BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (product_id) REFERENCES products(id),
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)

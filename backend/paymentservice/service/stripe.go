@@ -76,7 +76,7 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 	}
 
 	if product.IsRecurring {
-		slog.Error("paymentservice:service:CreateStripeCheckoutSession", "error", "cannot create checkout session for a one-time product")
+		slog.Error("paymentservice:service:CreateStripeCheckoutSession", "error", "cannot create checkout session for a subscription product")
 		return "", fmt.Errorf("cannot create checkout session for a subscription product")
 	}
 
@@ -304,7 +304,7 @@ func (s *PaymentService) handleChargeSucceeded(ctx context.Context, event stripe
 	// For one-time payments, create subscription with period end < period start to indicate it's expired/one-time
 	currentTime := charge.Created // Use charge creation time
 	periodStart := currentTime
-	periodEnd := currentTime - 1 // Set end time to be less than start time to indicate one-time payment
+	periodEnd := currentTime // Set end time to be less than start time to indicate one-time payment
 
 	eventID := charge.ID // use charge ID as event ID to avoid duplicate subscriptions
 

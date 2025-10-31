@@ -99,6 +99,11 @@ func (s *PaymentService) CreateRazorpayCheckoutSession(ctx context.Context, user
 		return "", 0, "", fmt.Errorf("failed to create Razorpay checkout session")
 	}
 
+	if product.IsRecurring {
+		slog.Error("paymentservice:service:CreateRazorpayCheckoutSession", "error", "cannot create checkout session for a subscription product")
+		return "", 0, "", fmt.Errorf("cannot create checkout session for a subscription product")
+	}
+
 	slog.Info("paymentservice:service:CreateRazorpayCheckoutSession", "product", product.Price, "type", reflect.TypeOf(product.Price))
 
 	// Razorpay expects amount in the smallest currency unit (paise for INR, cents for USD, etc.)
@@ -138,6 +143,11 @@ func (s *PaymentService) CreateRazorpaySubscriptionCheckoutSession(ctx context.C
 	if err != nil {
 		slog.Error("paymentservice:service:CreateRazorpaySubscriptionCheckoutSession", "error", err)
 		return "", 0, "", fmt.Errorf("failed to create Razorpay subscription checkout session")
+	}
+
+	if !product.IsRecurring {
+		slog.Error("paymentservice:service:CreateRazorpaySubscriptionCheckoutSession", "error", "cannot create checkout session for a one-time product")
+		return "", 0, "", fmt.Errorf("cannot create checkout session for a one-time product")
 	}
 
 	subscriptionData := map[string]interface{}{

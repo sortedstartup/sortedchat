@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS user_payments (
     payment_id TEXT UNIQUE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    is_success BOOLEAN DEFAULT TRUE,
+    is_success BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (product_id) REFERENCES products(id),
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
 );

@@ -73,7 +73,36 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 		return nil, status.Error(codes.InvalidArgument, "Unsupported currency type")
 	}
 
-	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInSmallestUnit, currencyStr)
+	// Determine if payment is recurring
+	isRecurring := req.PaymentType == pb.PaymentType_RECURRING
+
+	// Convert interval enum to string for database storage
+	var intervalPeriod string
+
+	slog.Info("paymentservice:api:CreateProductsanskar", "isRecurring", isRecurring, "interval", req.Interval, "intervalCount", req.IntervalCount, "intervalPeriod", intervalPeriod)
+	if isRecurring {
+		switch req.Interval {
+		case pb.Interval_DAY:
+			intervalPeriod = "day"
+		case pb.Interval_WEEK:
+			intervalPeriod = "week"
+		case pb.Interval_MONTH:
+			intervalPeriod = "month"
+		case pb.Interval_QUARTER:
+			intervalPeriod = "quarter"
+		case pb.Interval_YEAR:
+			intervalPeriod = "year"
+		default:
+			return nil, status.Error(codes.InvalidArgument, "Invalid interval type")
+		}
+
+		// Validate interval count for recurring payments
+		if req.IntervalCount <= 0 {
+			return nil, status.Error(codes.InvalidArgument, "Interval count must be greater than 0 for recurring payments")
+		}
+	}
+
+	id, err := s.service.CreateProduct(ctx, userID, req.Name, req.Description, req.AmountInSmallestUnit, currencyStr, isRecurring, req.IntervalCount, intervalPeriod)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +122,16 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 	// Convert DAO products to proto products
 	products := make([]*pb.Product, len(daoProducts))
 	for i, daoProduct := range daoProducts {
+		var intervalCount int64
+		if daoProduct.IntervalCount.Valid {
+			intervalCount = daoProduct.IntervalCount.Int64
+		}
+
+		var intervalPeriod string
+		if daoProduct.IntervalPeriod.Valid {
+			intervalPeriod = daoProduct.IntervalPeriod.String
+		}
+
 		products[i] = &pb.Product{
 			Id:                   daoProduct.ID,
 			StripeProductId:      daoProduct.StripeProductID,
@@ -101,6 +140,9 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 			AmountInSmallestUnit: daoProduct.Price,
 			Description:          daoProduct.Description,
 			Currency:             daoProduct.GetCurrencyEnum(),
+			IsRecurring:          daoProduct.IsRecurring,
+			IntervalCount:        intervalCount,
+			IntervalPeriod:       intervalPeriod,
 		}
 	}
 
@@ -151,6 +193,52 @@ func (s *PaymentServiceAPI) CreateRazorpayCheckoutSession(ctx context.Context, r
 		OrderId:  OrderId,
 		Amount:   Amount,
 		Currency: Currency,
+	}, nil
+}
+
+func (s *PaymentServiceAPI) CreateStripeSubscriptionCheckoutSession(ctx context.Context, req *pb.CreateStripeSubscriptionCheckoutSessionRequest) (*pb.CreateStripeSubscriptionCheckoutSessionResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateStripeSubscriptionCheckoutSession", "error", err)
+		return nil, err
+	}
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
+	}
+
+	sessionURL, err := s.service.CreateStripeSubscriptionCheckoutSession(ctx, userID, req.ProductId)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateStripeSubscriptionCheckoutSession", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to create Stripe subscription checkout session: %v", err)
+	}
+
+	return &pb.CreateStripeSubscriptionCheckoutSessionResponse{
+		SessionUrl: sessionURL,
+	}, nil
+}
+
+func (s *PaymentServiceAPI) CreateRazorpaySubscriptionCheckoutSession(ctx context.Context, req *pb.CreateRazorpaySubscriptionCheckoutSessionRequest) (*pb.CreateRazorpaySubscriptionCheckoutSessionResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateRazorpaySubscriptionCheckoutSession", "error", err)
+		return nil, err
+	}
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
+	}
+
+	subscriptionID, amount, currency, err := s.service.CreateRazorpaySubscriptionCheckoutSession(ctx, userID, req.ProductId)
+	if err != nil {
+		slog.Error("paymentservice:api:CreateRazorpaySubscriptionCheckoutSession", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to create Razorpay subscription checkout session: %v", err)
+	}
+
+	return &pb.CreateRazorpaySubscriptionCheckoutSessionResponse{
+		SubscriptionId: subscriptionID,
+		Amount:         amount,
+		Currency:       currency,
 	}, nil
 }
 

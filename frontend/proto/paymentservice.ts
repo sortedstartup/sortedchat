@@ -11,6 +11,17 @@ export enum Currency {
     USD = 0,
     INR = 1
 }
+export enum PaymentType {
+    RECURRING = 0,
+    ONE_TIME = 1
+}
+export enum Interval {
+    DAY = 0,
+    WEEK = 1,
+    MONTH = 2,
+    QUARTER = 3,
+    YEAR = 4
+}
 export class InferRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {}) {
@@ -98,6 +109,9 @@ export class CreateProductRequest extends pb_1.Message {
         description?: string;
         amount_in_smallest_unit?: number;
         currency?: Currency;
+        payment_type?: PaymentType;
+        interval_count?: number;
+        interval?: Interval;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -113,6 +127,15 @@ export class CreateProductRequest extends pb_1.Message {
             }
             if ("currency" in data && data.currency != undefined) {
                 this.currency = data.currency;
+            }
+            if ("payment_type" in data && data.payment_type != undefined) {
+                this.payment_type = data.payment_type;
+            }
+            if ("interval_count" in data && data.interval_count != undefined) {
+                this.interval_count = data.interval_count;
+            }
+            if ("interval" in data && data.interval != undefined) {
+                this.interval = data.interval;
             }
         }
     }
@@ -140,11 +163,32 @@ export class CreateProductRequest extends pb_1.Message {
     set currency(value: Currency) {
         pb_1.Message.setField(this, 4, value);
     }
+    get payment_type() {
+        return pb_1.Message.getFieldWithDefault(this, 5, PaymentType.RECURRING) as PaymentType;
+    }
+    set payment_type(value: PaymentType) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    get interval_count() {
+        return pb_1.Message.getFieldWithDefault(this, 6, 0) as number;
+    }
+    set interval_count(value: number) {
+        pb_1.Message.setField(this, 6, value);
+    }
+    get interval() {
+        return pb_1.Message.getFieldWithDefault(this, 7, Interval.DAY) as Interval;
+    }
+    set interval(value: Interval) {
+        pb_1.Message.setField(this, 7, value);
+    }
     static fromObject(data: {
         name?: string;
         description?: string;
         amount_in_smallest_unit?: number;
         currency?: Currency;
+        payment_type?: PaymentType;
+        interval_count?: number;
+        interval?: Interval;
     }): CreateProductRequest {
         const message = new CreateProductRequest({});
         if (data.name != null) {
@@ -159,6 +203,15 @@ export class CreateProductRequest extends pb_1.Message {
         if (data.currency != null) {
             message.currency = data.currency;
         }
+        if (data.payment_type != null) {
+            message.payment_type = data.payment_type;
+        }
+        if (data.interval_count != null) {
+            message.interval_count = data.interval_count;
+        }
+        if (data.interval != null) {
+            message.interval = data.interval;
+        }
         return message;
     }
     toObject() {
@@ -167,6 +220,9 @@ export class CreateProductRequest extends pb_1.Message {
             description?: string;
             amount_in_smallest_unit?: number;
             currency?: Currency;
+            payment_type?: PaymentType;
+            interval_count?: number;
+            interval?: Interval;
         } = {};
         if (this.name != null) {
             data.name = this.name;
@@ -179,6 +235,15 @@ export class CreateProductRequest extends pb_1.Message {
         }
         if (this.currency != null) {
             data.currency = this.currency;
+        }
+        if (this.payment_type != null) {
+            data.payment_type = this.payment_type;
+        }
+        if (this.interval_count != null) {
+            data.interval_count = this.interval_count;
+        }
+        if (this.interval != null) {
+            data.interval = this.interval;
         }
         return data;
     }
@@ -194,6 +259,12 @@ export class CreateProductRequest extends pb_1.Message {
             writer.writeInt64(3, this.amount_in_smallest_unit);
         if (this.currency != Currency.USD)
             writer.writeEnum(4, this.currency);
+        if (this.payment_type != PaymentType.RECURRING)
+            writer.writeEnum(5, this.payment_type);
+        if (this.interval_count != 0)
+            writer.writeInt64(6, this.interval_count);
+        if (this.interval != Interval.DAY)
+            writer.writeEnum(7, this.interval);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -214,6 +285,15 @@ export class CreateProductRequest extends pb_1.Message {
                     break;
                 case 4:
                     message.currency = reader.readEnum();
+                    break;
+                case 5:
+                    message.payment_type = reader.readEnum();
+                    break;
+                case 6:
+                    message.interval_count = reader.readInt64();
+                    break;
+                case 7:
+                    message.interval = reader.readEnum();
                     break;
                 default: reader.skipField();
             }
@@ -434,6 +514,9 @@ export class Product extends pb_1.Message {
         amount_in_smallest_unit?: number;
         description?: string;
         currency?: Currency;
+        is_recurring?: boolean;
+        interval_count?: number;
+        interval_period?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -458,6 +541,15 @@ export class Product extends pb_1.Message {
             }
             if ("currency" in data && data.currency != undefined) {
                 this.currency = data.currency;
+            }
+            if ("is_recurring" in data && data.is_recurring != undefined) {
+                this.is_recurring = data.is_recurring;
+            }
+            if ("interval_count" in data && data.interval_count != undefined) {
+                this.interval_count = data.interval_count;
+            }
+            if ("interval_period" in data && data.interval_period != undefined) {
+                this.interval_period = data.interval_period;
             }
         }
     }
@@ -503,6 +595,24 @@ export class Product extends pb_1.Message {
     set currency(value: Currency) {
         pb_1.Message.setField(this, 7, value);
     }
+    get is_recurring() {
+        return pb_1.Message.getFieldWithDefault(this, 8, false) as boolean;
+    }
+    set is_recurring(value: boolean) {
+        pb_1.Message.setField(this, 8, value);
+    }
+    get interval_count() {
+        return pb_1.Message.getFieldWithDefault(this, 9, 0) as number;
+    }
+    set interval_count(value: number) {
+        pb_1.Message.setField(this, 9, value);
+    }
+    get interval_period() {
+        return pb_1.Message.getFieldWithDefault(this, 10, "") as string;
+    }
+    set interval_period(value: string) {
+        pb_1.Message.setField(this, 10, value);
+    }
     static fromObject(data: {
         id?: string;
         stripe_product_id?: string;
@@ -511,6 +621,9 @@ export class Product extends pb_1.Message {
         amount_in_smallest_unit?: number;
         description?: string;
         currency?: Currency;
+        is_recurring?: boolean;
+        interval_count?: number;
+        interval_period?: string;
     }): Product {
         const message = new Product({});
         if (data.id != null) {
@@ -534,6 +647,15 @@ export class Product extends pb_1.Message {
         if (data.currency != null) {
             message.currency = data.currency;
         }
+        if (data.is_recurring != null) {
+            message.is_recurring = data.is_recurring;
+        }
+        if (data.interval_count != null) {
+            message.interval_count = data.interval_count;
+        }
+        if (data.interval_period != null) {
+            message.interval_period = data.interval_period;
+        }
         return message;
     }
     toObject() {
@@ -545,6 +667,9 @@ export class Product extends pb_1.Message {
             amount_in_smallest_unit?: number;
             description?: string;
             currency?: Currency;
+            is_recurring?: boolean;
+            interval_count?: number;
+            interval_period?: string;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -567,6 +692,15 @@ export class Product extends pb_1.Message {
         if (this.currency != null) {
             data.currency = this.currency;
         }
+        if (this.is_recurring != null) {
+            data.is_recurring = this.is_recurring;
+        }
+        if (this.interval_count != null) {
+            data.interval_count = this.interval_count;
+        }
+        if (this.interval_period != null) {
+            data.interval_period = this.interval_period;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -587,6 +721,12 @@ export class Product extends pb_1.Message {
             writer.writeString(6, this.description);
         if (this.currency != Currency.USD)
             writer.writeEnum(7, this.currency);
+        if (this.is_recurring != false)
+            writer.writeBool(8, this.is_recurring);
+        if (this.interval_count != 0)
+            writer.writeInt64(9, this.interval_count);
+        if (this.interval_period.length)
+            writer.writeString(10, this.interval_period);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -616,6 +756,15 @@ export class Product extends pb_1.Message {
                     break;
                 case 7:
                     message.currency = reader.readEnum();
+                    break;
+                case 8:
+                    message.is_recurring = reader.readBool();
+                    break;
+                case 9:
+                    message.interval_count = reader.readInt64();
+                    break;
+                case 10:
+                    message.interval_period = reader.readString();
                     break;
                 default: reader.skipField();
             }
@@ -943,6 +1092,320 @@ export class CreateRazorpayCheckoutSessionResponse extends pb_1.Message {
         return CreateRazorpayCheckoutSessionResponse.deserialize(bytes);
     }
 }
+export class CreateStripeSubscriptionCheckoutSessionRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        product_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("product_id" in data && data.product_id != undefined) {
+                this.product_id = data.product_id;
+            }
+        }
+    }
+    get product_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set product_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        product_id?: string;
+    }): CreateStripeSubscriptionCheckoutSessionRequest {
+        const message = new CreateStripeSubscriptionCheckoutSessionRequest({});
+        if (data.product_id != null) {
+            message.product_id = data.product_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            product_id?: string;
+        } = {};
+        if (this.product_id != null) {
+            data.product_id = this.product_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.product_id.length)
+            writer.writeString(1, this.product_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CreateStripeSubscriptionCheckoutSessionRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CreateStripeSubscriptionCheckoutSessionRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.product_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CreateStripeSubscriptionCheckoutSessionRequest {
+        return CreateStripeSubscriptionCheckoutSessionRequest.deserialize(bytes);
+    }
+}
+export class CreateStripeSubscriptionCheckoutSessionResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        session_url?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("session_url" in data && data.session_url != undefined) {
+                this.session_url = data.session_url;
+            }
+        }
+    }
+    get session_url() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set session_url(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        session_url?: string;
+    }): CreateStripeSubscriptionCheckoutSessionResponse {
+        const message = new CreateStripeSubscriptionCheckoutSessionResponse({});
+        if (data.session_url != null) {
+            message.session_url = data.session_url;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            session_url?: string;
+        } = {};
+        if (this.session_url != null) {
+            data.session_url = this.session_url;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.session_url.length)
+            writer.writeString(1, this.session_url);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CreateStripeSubscriptionCheckoutSessionResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CreateStripeSubscriptionCheckoutSessionResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.session_url = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CreateStripeSubscriptionCheckoutSessionResponse {
+        return CreateStripeSubscriptionCheckoutSessionResponse.deserialize(bytes);
+    }
+}
+export class CreateRazorpaySubscriptionCheckoutSessionRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        product_id?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("product_id" in data && data.product_id != undefined) {
+                this.product_id = data.product_id;
+            }
+        }
+    }
+    get product_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set product_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        product_id?: string;
+    }): CreateRazorpaySubscriptionCheckoutSessionRequest {
+        const message = new CreateRazorpaySubscriptionCheckoutSessionRequest({});
+        if (data.product_id != null) {
+            message.product_id = data.product_id;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            product_id?: string;
+        } = {};
+        if (this.product_id != null) {
+            data.product_id = this.product_id;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.product_id.length)
+            writer.writeString(1, this.product_id);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CreateRazorpaySubscriptionCheckoutSessionRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CreateRazorpaySubscriptionCheckoutSessionRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.product_id = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CreateRazorpaySubscriptionCheckoutSessionRequest {
+        return CreateRazorpaySubscriptionCheckoutSessionRequest.deserialize(bytes);
+    }
+}
+export class CreateRazorpaySubscriptionCheckoutSessionResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        subscription_id?: string;
+        amount?: number;
+        currency?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("subscription_id" in data && data.subscription_id != undefined) {
+                this.subscription_id = data.subscription_id;
+            }
+            if ("amount" in data && data.amount != undefined) {
+                this.amount = data.amount;
+            }
+            if ("currency" in data && data.currency != undefined) {
+                this.currency = data.currency;
+            }
+        }
+    }
+    get subscription_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set subscription_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get amount() {
+        return pb_1.Message.getFieldWithDefault(this, 2, 0) as number;
+    }
+    set amount(value: number) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get currency() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set currency(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    static fromObject(data: {
+        subscription_id?: string;
+        amount?: number;
+        currency?: string;
+    }): CreateRazorpaySubscriptionCheckoutSessionResponse {
+        const message = new CreateRazorpaySubscriptionCheckoutSessionResponse({});
+        if (data.subscription_id != null) {
+            message.subscription_id = data.subscription_id;
+        }
+        if (data.amount != null) {
+            message.amount = data.amount;
+        }
+        if (data.currency != null) {
+            message.currency = data.currency;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            subscription_id?: string;
+            amount?: number;
+            currency?: string;
+        } = {};
+        if (this.subscription_id != null) {
+            data.subscription_id = this.subscription_id;
+        }
+        if (this.amount != null) {
+            data.amount = this.amount;
+        }
+        if (this.currency != null) {
+            data.currency = this.currency;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.subscription_id.length)
+            writer.writeString(1, this.subscription_id);
+        if (this.amount != 0)
+            writer.writeInt64(2, this.amount);
+        if (this.currency.length)
+            writer.writeString(3, this.currency);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): CreateRazorpaySubscriptionCheckoutSessionResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new CreateRazorpaySubscriptionCheckoutSessionResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.subscription_id = reader.readString();
+                    break;
+                case 2:
+                    message.amount = reader.readInt64();
+                    break;
+                case 3:
+                    message.currency = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): CreateRazorpaySubscriptionCheckoutSessionResponse {
+        return CreateRazorpaySubscriptionCheckoutSessionResponse.deserialize(bytes);
+    }
+}
 // Server-side service class removed for client-side compatibility
 export class PaymentServiceClient {
     private _address: string;
@@ -973,5 +1436,13 @@ export class PaymentServiceClient {
     private static CreateRazorpayCheckoutSession = new grpc_web_1.MethodDescriptor<CreateRazorpayCheckoutSessionRequest, CreateRazorpayCheckoutSessionResponse>("/sortedchat.PaymentService/CreateRazorpayCheckoutSession", grpc_web_1.MethodType.UNARY, CreateRazorpayCheckoutSessionRequest, CreateRazorpayCheckoutSessionResponse, (message: CreateRazorpayCheckoutSessionRequest) => message.serialize(), CreateRazorpayCheckoutSessionResponse.deserialize);
     CreateRazorpayCheckoutSession(message: CreateRazorpayCheckoutSessionRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<CreateRazorpayCheckoutSessionRequest, CreateRazorpayCheckoutSessionResponse>(this._address + "/sortedchat.PaymentService/CreateRazorpayCheckoutSession", message, metadata || {}, PaymentServiceClient.CreateRazorpayCheckoutSession);
+    }
+    private static CreateStripeSubscriptionCheckoutSession = new grpc_web_1.MethodDescriptor<CreateStripeSubscriptionCheckoutSessionRequest, CreateStripeSubscriptionCheckoutSessionResponse>("/sortedchat.PaymentService/CreateStripeSubscriptionCheckoutSession", grpc_web_1.MethodType.UNARY, CreateStripeSubscriptionCheckoutSessionRequest, CreateStripeSubscriptionCheckoutSessionResponse, (message: CreateStripeSubscriptionCheckoutSessionRequest) => message.serialize(), CreateStripeSubscriptionCheckoutSessionResponse.deserialize);
+    CreateStripeSubscriptionCheckoutSession(message: CreateStripeSubscriptionCheckoutSessionRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<CreateStripeSubscriptionCheckoutSessionRequest, CreateStripeSubscriptionCheckoutSessionResponse>(this._address + "/sortedchat.PaymentService/CreateStripeSubscriptionCheckoutSession", message, metadata || {}, PaymentServiceClient.CreateStripeSubscriptionCheckoutSession);
+    }
+    private static CreateRazorpaySubscriptionCheckoutSession = new grpc_web_1.MethodDescriptor<CreateRazorpaySubscriptionCheckoutSessionRequest, CreateRazorpaySubscriptionCheckoutSessionResponse>("/sortedchat.PaymentService/CreateRazorpaySubscriptionCheckoutSession", grpc_web_1.MethodType.UNARY, CreateRazorpaySubscriptionCheckoutSessionRequest, CreateRazorpaySubscriptionCheckoutSessionResponse, (message: CreateRazorpaySubscriptionCheckoutSessionRequest) => message.serialize(), CreateRazorpaySubscriptionCheckoutSessionResponse.deserialize);
+    CreateRazorpaySubscriptionCheckoutSession(message: CreateRazorpaySubscriptionCheckoutSessionRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<CreateRazorpaySubscriptionCheckoutSessionRequest, CreateRazorpaySubscriptionCheckoutSessionResponse>(this._address + "/sortedchat.PaymentService/CreateRazorpaySubscriptionCheckoutSession", message, metadata || {}, PaymentServiceClient.CreateRazorpaySubscriptionCheckoutSession);
     }
 }

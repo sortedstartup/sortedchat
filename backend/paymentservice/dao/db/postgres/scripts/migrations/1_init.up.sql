@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS paymentservice_products (
     id TEXT PRIMARY KEY,
     razorpay_product_id TEXT, -- Razorpay product ID or plan ID
     stripe_product_id TEXT, -- Stripe product ID
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS subscriptions (
+CREATE TABLE IF NOT EXISTS paymentservice_subscriptions (
     id TEXT PRIMARY KEY, --uuid 
     user_id TEXT NOT NULL, 
     product_id TEXT NOT NULL, -- product ID
@@ -23,19 +23,19 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     provider_subscription_status TEXT, -- Provider's subscription lifecycle  status (active, canceled, past_due, etc.)
     provider_customer_id TEXT, -- Provider's customer ID
     status TEXT NOT NULL, -- User access status (active, inactive, expired)
-    current_period_start BIGINT NOT NULL, --period cycle start date (Unix timestamp)
-    current_period_end BIGINT NOT NULL, --period cycle end date (Unix timestamp)
+    current_period_start TIMESTAMPTZ NOT NULL, --period cycle start date (Unix timestamp)
+    current_period_end TIMESTAMPTZ NOT NULL, --period cycle end date (Unix timestamp)
     cancel_at_period_end BOOLEAN DEFAULT FALSE, -- whether the subscription will be canceled at the end of the current period
     created_at TIMESTAMPTZ NOT NULL, -- timestamp of when the subscription was created
     updated_at TIMESTAMPTZ NOT NULL, -- timestamp of when the subscription was last updated
-    canceled_at BIGINT, -- timestamp of when the subscription was canceled
+    canceled_at TIMESTAMPTZ, -- timestamp of when the subscription was canceled
     is_recurring BOOLEAN DEFAULT FALSE, -- whether the subscription is a one-time payment
     event_id TEXT UNIQUE NOT NULL, -- this is to avoid duplicate subscriptions
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
 -- Fixed: Added product_id column
-CREATE TABLE IF NOT EXISTS user_payments (
+CREATE TABLE IF NOT EXISTS paymentservice_user_payments (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     product_id TEXT NOT NULL,

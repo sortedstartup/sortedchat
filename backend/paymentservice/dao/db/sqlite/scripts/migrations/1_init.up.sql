@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS paymentservice_products (
     id TEXT PRIMARY KEY,
     razorpay_product_id TEXT, -- Razorpay product ID or plan ID
     stripe_product_id TEXT, -- Stripe product ID
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS subscriptions (
+CREATE TABLE IF NOT EXISTS paymentservice_subscriptions (
     id TEXT PRIMARY KEY, --uuid 
     user_id TEXT NOT NULL, 
     product_id TEXT NOT NULL, -- product ID
@@ -31,12 +31,12 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     canceled_at TEXT, -- timestamp of when the subscription was canceled
     is_recurring BOOLEAN DEFAULT FALSE, -- whether the subscription is a one-time payment
     event_id TEXT UNIQUE NOT NULL, -- this is to avoid duplicate subscriptions
-    FOREIGN KEY (product_id) REFERENCES products(id)
+    FOREIGN KEY (product_id) REFERENCES paymentservice_products(id)
 );
 
 
 -- Fixed: Added product_id column
-CREATE TABLE IF NOT EXISTS user_payments (
+CREATE TABLE IF NOT EXISTS paymentservice_user_payments (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     product_id TEXT NOT NULL,
@@ -46,6 +46,6 @@ CREATE TABLE IF NOT EXISTS user_payments (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     is_success BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (product_id) REFERENCES products(id),
-    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+    FOREIGN KEY (product_id) REFERENCES paymentservice_products(id),
+    FOREIGN KEY (subscription_id) REFERENCES paymentservice_subscriptions(id)
 );

@@ -7,7 +7,7 @@ type DAO interface {
 	GetProductById(productID string) (*Product, error)
 
 	// Subscription methods
-	CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool, isRecurring bool) (string, error)
+	CreateSubscription(eventID, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool, isRecurring bool) (string, error)
 	UpdateSubscription(subscriptionID, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool) error
 	GetSubscriptionByProviderCustomerID(providerCustomerID string) (*Subscription, error)
 	GetSubscriptionByUserIDAndProductID(userID, productID string) (*Subscription, error)

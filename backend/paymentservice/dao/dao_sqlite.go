@@ -137,12 +137,14 @@ func (d *SQLiteDAO) GetProductById(productID string) (*Product, error) {
 }
 
 // Subscription methods
-func (d *SQLiteDAO) CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool, isRecurring bool) (string, error) {
+func (d *SQLiteDAO) CreateSubscription(eventID, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool, isRecurring bool) (string, error) {
+	slog.Info("paymentservice:dao_sqlite:CreateSubscription", "userID", userID, "productID", productID, "provider", provider, "providerSubscriptionID", providerSubscriptionID, "providerCustomerID", providerCustomerID, "providerSubscriptionStatus", providerSubscriptionStatus, "status", status, "currentPeriodStart", currentPeriodStart, "currentPeriodEnd", currentPeriodEnd, "cancelAtPeriodEnd", cancelAtPeriodEnd)
+
 	id := uuid.New().String()
 	now := time.Now().Format(time.RFC3339)
 
-	query := `INSERT INTO subscriptions (id, user_id, product_id, provider, provider_subscription_id, provider_customer_id, provider_subscription_status, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at, is_recurring) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := d.db.Exec(query, id, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, now, isRecurring)
+	query := `INSERT INTO subscriptions (id, event_id, user_id, product_id, provider, provider_subscription_id, provider_customer_id, provider_subscription_status, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at, is_recurring) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := d.db.Exec(query, id, eventID, userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, now, now, isRecurring)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:CreateSubscription", "error", err)
 		return "", err

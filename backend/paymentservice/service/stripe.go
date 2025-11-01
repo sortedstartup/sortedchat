@@ -326,7 +326,9 @@ func (s *PaymentService) handleChargeSucceeded(ctx context.Context, event stripe
 	// For one-time payments, create subscription with period end < period start to indicate it's expired/one-time
 	currentTime := charge.Created // Use charge creation time
 	periodStart := currentTime
-	periodEnd := currentTime - 1 // Set end time to be less than start time to indicate one-time payment
+	periodEnd := currentTime // Set end time to be less than start time to indicate one-time payment
+
+	eventID := charge.ID // use charge ID as event ID to avoid duplicate subscriptions
 
 	product, err := s.dao.GetProductById(productID)
 	if err != nil {
@@ -336,6 +338,7 @@ func (s *PaymentService) handleChargeSucceeded(ctx context.Context, event stripe
 
 	// Create subscription record for one-time payment
 	subscriptionID, err := s.dao.CreateSubscription(
+		eventID,
 		userID,
 		productID,
 		"stripe",    // provider
@@ -404,8 +407,14 @@ func (s *PaymentService) handleChargeFailed(ctx context.Context, event stripe.Ev
 
 		subscription, err := s.dao.GetSubscriptionByProviderCustomerID(providerCustomerID)
 		if err != nil {
-			slog.Error("paymentservice:stripe:handleChargeFailed", "error", "failed to find subscription", "details", err)
-			return fmt.Errorf("failed to find subscription: %v", err)
+			slog.Warn("paymentservice:service:handleChargeFailed", "warning", "subscription not found, creating payment without subscription reference", "details", err)
+			// for one-time payments, create user payment without subscription reference
+			_, err = s.dao.CreateUserPayment(userID, productID, "", charge.ID, string(chargeJSON), false)
+			if err != nil {
+				slog.Error("paymentservice:service:handleChargeFailed", "error", "failed to create user payment", "details", err)
+				return fmt.Errorf("failed to create user payment: %v", err)
+			}
+			return nil
 		}
 
 		_, err = s.dao.CreateUserPayment(userID, productID, subscription.ID, charge.ID, string(chargeJSON), false)
@@ -455,8 +464,11 @@ func (s *PaymentService) handleSubscriptionCreated(ctx context.Context, event st
 		slog.Info("paymentservice:stripe:handleSubscriptionCreated", "currentPeriodStart", currentPeriodStart, "currentPeriodEnd", currentPeriodEnd)
 	}
 
+	eventID := subscription.ID // use subscription ID as event ID to avoid duplicate subscriptions
+
 	// Create subscription record in our database with all details
 	subscriptionID, err := s.dao.CreateSubscription(
+		eventID,
 		userID,
 		productID,
 		"stripe",                    // provider

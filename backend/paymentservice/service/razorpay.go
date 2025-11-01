@@ -110,6 +110,11 @@ func (s *PaymentService) CreateRazorpayCheckoutSession(ctx context.Context, user
 		return "", 0, "", fmt.Errorf("failed to create Razorpay checkout session")
 	}
 
+	if product.IsRecurring {
+		slog.Error("paymentservice:service:CreateRazorpayCheckoutSession", "error", "cannot create checkout session for a subscription product")
+		return "", 0, "", fmt.Errorf("cannot create checkout session for a subscription product")
+	}
+
 	slog.Info("paymentservice:razorpay:CreateRazorpayCheckoutSession", "product", product.Price, "type", reflect.TypeOf(product.Price))
 
 	// Razorpay expects amount in the smallest currency unit (paise for INR, cents for USD, etc.)
@@ -160,6 +165,11 @@ func (s *PaymentService) CreateRazorpaySubscriptionCheckoutSession(ctx context.C
 	if err != nil {
 		slog.Error("paymentservice:razorpay:CreateRazorpaySubscriptionCheckoutSession", "error", err)
 		return "", 0, "", fmt.Errorf("failed to create Razorpay subscription checkout session")
+	}
+
+	if !product.IsRecurring {
+		slog.Error("paymentservice:service:CreateRazorpaySubscriptionCheckoutSession", "error", "cannot create checkout session for a one-time product")
+		return "", 0, "", fmt.Errorf("cannot create checkout session for a one-time product")
 	}
 
 	subscriptionData := map[string]interface{}{
@@ -349,8 +359,10 @@ func (s *PaymentService) handleRazorpayPaymentCaptured(ctx context.Context, webh
 		return fmt.Errorf("failed to get product: %v", err)
 	}
 
+	eventID := paymentID // use payment ID as event ID to avoid duplicate subscriptions
 	// Create subscription record for one-time payment
 	subscriptionID, err := s.dao.CreateSubscription(
+		eventID,
 		userID,
 		productID,
 		"razorpay",  // provider
@@ -444,7 +456,13 @@ func (s *PaymentService) handleRazorpayPaymentFailed(ctx context.Context, webhoo
 	subscription, err := s.dao.GetSubscriptionByUserIDAndProductID(userID, productID)
 	if err != nil {
 		slog.Error("paymentservice:razorpay:handleRazorpayPaymentFailed", "error", "failed to get subscription", "details", err)
-		return fmt.Errorf("failed to get subscription: %v", err)
+		// for one-time payments, create user payment without subscription reference
+		_, err = s.dao.CreateUserPayment(userID, productID, "", paymentID, string(webhookJSON), false)
+		if err != nil {
+			slog.Error("paymentservice:razorpay:handleRazorpayPaymentFailed", "error", "failed to create user payment", "details", err)
+			return fmt.Errorf("failed to create user payment: %v", err)
+		}
+		return nil
 	}
 
 	// Save to database with is_success = false
@@ -554,8 +572,11 @@ func (s *PaymentService) handleRazorpaySubscriptionAuthenticated(ctx context.Con
 		status = "created" // Default status
 	}
 
+	eventID := razorpaySubscriptionID // use subscription ID as event ID to avoid duplicate subscriptions
+
 	// Create subscription record in our database with all details
 	subscriptionID, err := s.dao.CreateSubscription(
+		eventID,
 		userID,
 		productID,
 		"razorpay",             // provider
@@ -738,8 +759,9 @@ func (s *PaymentService) handleRazorpaySubscriptionPaymentFailed(ctx context.Con
 
 	slog.Info("paymentservice:razorpay:handleRazorpaySubscriptionPaymentFailed", "subscriptionID", subscriptionID)
 
+	failedPaymentID := fmt.Sprintf("failed_%s_%d", subscription.ID, time.Now().UnixNano())
 	// Create user_payment record for this subscription payment failed
-	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, "", string(webhookJSON), false)
+	_, err = s.dao.CreateUserPayment(subscription.UserID, subscription.ProductID, subscription.ID, failedPaymentID, string(webhookJSON), false)
 	if err != nil {
 		slog.Error("paymentservice:razorpay:handleRazorpaySubscriptionPaymentFailed", "error", "failed to create user payment", "details", err)
 		return fmt.Errorf("failed to create user payment: %v", err)

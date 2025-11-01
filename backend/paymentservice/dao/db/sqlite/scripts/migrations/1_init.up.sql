@@ -26,10 +26,11 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     current_period_start INTEGER NOT NULL, --period cycle start date (Unix timestamp)
     current_period_end INTEGER NOT NULL, --period cycle end date (Unix timestamp)
     cancel_at_period_end BOOLEAN DEFAULT FALSE, -- whether the subscription will be canceled at the end of the current period
-    created_at DATETIME NOT NULL, -- timestamp of when the subscription was created
-    updated_at DATETIME NOT NULL, -- timestamp of when the subscription was last updated
+    created_at TEXT NOT NULL, -- timestamp of when the subscription was created
+    updated_at TEXT NOT NULL, -- timestamp of when the subscription was last updated
     canceled_at TEXT, -- timestamp of when the subscription was canceled
     is_recurring BOOLEAN DEFAULT FALSE, -- whether the subscription is a one-time payment
+    event_id TEXT UNIQUE NOT NULL, -- this is to avoid duplicate subscriptions
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
@@ -44,7 +45,7 @@ CREATE TABLE IF NOT EXISTS user_payments (
     payment_id TEXT UNIQUE NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    is_success BOOLEAN DEFAULT TRUE,
+    is_success BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (product_id) REFERENCES products(id),
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
 );

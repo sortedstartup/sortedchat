@@ -16,11 +16,10 @@ export enum PaymentType {
     ONE_TIME = 1
 }
 export enum Interval {
-    DAY = 0,
-    WEEK = 1,
-    MONTH = 2,
-    QUARTER = 3,
-    YEAR = 4
+    WEEK = 0,
+    MONTH = 1,
+    QUARTER = 2,
+    YEAR = 3
 }
 export class InferRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
@@ -176,7 +175,7 @@ export class CreateProductRequest extends pb_1.Message {
         pb_1.Message.setField(this, 6, value);
     }
     get interval() {
-        return pb_1.Message.getFieldWithDefault(this, 7, Interval.DAY) as Interval;
+        return pb_1.Message.getFieldWithDefault(this, 7, Interval.WEEK) as Interval;
     }
     set interval(value: Interval) {
         pb_1.Message.setField(this, 7, value);
@@ -263,7 +262,7 @@ export class CreateProductRequest extends pb_1.Message {
             writer.writeEnum(5, this.payment_type);
         if (this.interval_count != 0)
             writer.writeInt64(6, this.interval_count);
-        if (this.interval != Interval.DAY)
+        if (this.interval != Interval.WEEK)
             writer.writeEnum(7, this.interval);
         if (!w)
             return writer.getResultBuffer();

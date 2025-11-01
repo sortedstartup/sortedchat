@@ -116,28 +116,25 @@ func (PaymentType) EnumDescriptor() ([]byte, []int) {
 type Interval int32
 
 const (
-	Interval_DAY     Interval = 0
-	Interval_WEEK    Interval = 1
-	Interval_MONTH   Interval = 2
-	Interval_QUARTER Interval = 3 //stripe does not support quarterly, so we use monthly with count 3
-	Interval_YEAR    Interval = 4
+	Interval_WEEK    Interval = 0
+	Interval_MONTH   Interval = 1
+	Interval_QUARTER Interval = 2 //stripe does not support quarterly, so we use monthly with count 3
+	Interval_YEAR    Interval = 3
 )
 
 // Enum value maps for Interval.
 var (
 	Interval_name = map[int32]string{
-		0: "DAY",
-		1: "WEEK",
-		2: "MONTH",
-		3: "QUARTER",
-		4: "YEAR",
+		0: "WEEK",
+		1: "MONTH",
+		2: "QUARTER",
+		3: "YEAR",
 	}
 	Interval_value = map[string]int32{
-		"DAY":     0,
-		"WEEK":    1,
-		"MONTH":   2,
-		"QUARTER": 3,
-		"YEAR":    4,
+		"WEEK":    0,
+		"MONTH":   1,
+		"QUARTER": 2,
+		"YEAR":    3,
 	}
 )
 
@@ -329,7 +326,7 @@ func (x *CreateProductRequest) GetInterval() Interval {
 	if x != nil {
 		return x.Interval
 	}
-	return Interval_DAY
+	return Interval_WEEK
 }
 
 type CreateProductResponse struct {
@@ -1133,13 +1130,12 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\x03INR\x10\x01**\n" +
 	"\vPaymentType\x12\r\n" +
 	"\tRECURRING\x10\x00\x12\f\n" +
-	"\bONE_TIME\x10\x01*?\n" +
-	"\bInterval\x12\a\n" +
-	"\x03DAY\x10\x00\x12\b\n" +
-	"\x04WEEK\x10\x01\x12\t\n" +
-	"\x05MONTH\x10\x02\x12\v\n" +
-	"\aQUARTER\x10\x03\x12\b\n" +
-	"\x04YEAR\x10\x042\xc1\a\n" +
+	"\bONE_TIME\x10\x01*6\n" +
+	"\bInterval\x12\b\n" +
+	"\x04WEEK\x10\x00\x12\t\n" +
+	"\x05MONTH\x10\x01\x12\v\n" +
+	"\aQUARTER\x10\x02\x12\b\n" +
+	"\x04YEAR\x10\x032\xc1\a\n" +
 	"\x0ePaymentService\x12>\n" +
 	"\x05Infer\x12\x18.sortedchat.InferRequest\x1a\x19.sortedchat.InferResponse0\x01\x12T\n" +
 	"\rCreateProduct\x12 .sortedchat.CreateProductRequest\x1a!.sortedchat.CreateProductResponse\x12Q\n" +

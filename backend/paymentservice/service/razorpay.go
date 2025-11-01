@@ -21,15 +21,10 @@ func (s *PaymentService) CreateProductRazorpay(ctx context.Context, name string,
 
 	if isRecurring {
 
-		// Validate interval count for daily plans (minimum 7 according to Razorpay docs)
 		actualIntervalCount := intervalCount
-		if period == "daily" && intervalCount < 7 {
-			slog.Warn("paymentservice:service:CreateProductRazorpay", "warning", "Daily plans require minimum interval of 7, adjusting", "original", intervalCount, "adjusted", 7)
-			actualIntervalCount = 7
-		}
 
 		planData := map[string]interface{}{
-			"period":   period,              // "daily", "weekly", "monthly", "quarterly", "yearly"
+			"period":   period,              // "weekly", "monthly", "quarterly", "yearly"
 			"interval": actualIntervalCount, // e.g., 1 for every month, 3 for every 3 months
 			"item": map[string]interface{}{
 				"name":        name,
@@ -99,7 +94,7 @@ func (s *PaymentService) CreateRazorpayCheckoutSession(ctx context.Context, user
 	}
 
 	if hasAccess {
-		slog.Error("paymentservice:razorpay:CreateRazorpayCheckoutSession", "error", "user does not have access to this product")
+		slog.Error("paymentservice:razorpay:CreateRazorpayCheckoutSession", "error", "user already has access to this product")
 		return "", 0, "", fmt.Errorf("already have access to this product")
 	}
 
@@ -156,7 +151,7 @@ func (s *PaymentService) CreateRazorpaySubscriptionCheckoutSession(ctx context.C
 	}
 
 	if hasAccess {
-		slog.Error("paymentservice:razorpay:CreateRazorpaySubscriptionCheckoutSession", "error", "user does not have access to this product")
+		slog.Error("paymentservice:razorpay:CreateRazorpaySubscriptionCheckoutSession", "error", "user already has access to this product")
 		return "", 0, "", fmt.Errorf("already have access to this product")
 	}
 

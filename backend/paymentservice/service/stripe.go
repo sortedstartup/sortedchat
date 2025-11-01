@@ -75,7 +75,7 @@ func (s *PaymentService) CreateStripeCheckoutSession(ctx context.Context, userID
 	}
 
 	if hasAccess {
-		slog.Error("paymentservice:stripe:CreateStripeCheckoutSession", "error", "user does not have access to this product")
+		slog.Error("paymentservice:stripe:CreateStripeCheckoutSession", "error", "user already has access to this product")
 		return "", fmt.Errorf("already have access to this product")
 	}
 
@@ -158,7 +158,7 @@ func (s *PaymentService) CreateStripeSubscriptionCheckoutSession(ctx context.Con
 	}
 
 	if hasAccess {
-		slog.Error("paymentservice:stripe:CreateStripeCheckoutSession", "error", "user does not have access to this product")
+		slog.Error("paymentservice:stripe:CreateStripeSubscriptionCheckoutSession", "error", "user already has access to this product")
 		return "", fmt.Errorf("already have access to this product")
 	}
 

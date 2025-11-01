@@ -82,8 +82,6 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	slog.Info("paymentservice:api:CreateProduct", "isRecurring", isRecurring, "interval", req.Interval, "intervalCount", req.IntervalCount, "intervalPeriod", intervalPeriod)
 	if isRecurring {
 		switch req.Interval {
-		case pb.Interval_DAY:
-			intervalPeriod = "day"
 		case pb.Interval_WEEK:
 			intervalPeriod = "week"
 		case pb.Interval_MONTH:

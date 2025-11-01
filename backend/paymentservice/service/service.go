@@ -41,7 +41,7 @@ func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name 
 		}
 		// Optional: whitelist intervalPeriod values
 		switch intervalPeriod {
-		case "day", "week", "month", "quarter", "year":
+		case "week", "month", "quarter", "year":
 		default:
 			slog.Error("paymentservice:service:CreateProduct", "error", "invalid intervalPeriod for recurring product")
 			return "", fmt.Errorf("invalid intervalPeriod for recurring product: %v", intervalPeriod)
@@ -107,8 +107,6 @@ func (s *PaymentService) ListProducts(ctx context.Context, userID string) ([]*da
 // convertIntervalForStripe converts internal interval to Stripe format
 func (s *PaymentService) convertIntervalForStripe(intervalPeriod string) string {
 	switch intervalPeriod {
-	case "day":
-		return "day"
 	case "week":
 		return "week"
 	case "month":
@@ -125,8 +123,6 @@ func (s *PaymentService) convertIntervalForStripe(intervalPeriod string) string 
 // convertIntervalForRazorpay converts internal interval to Razorpay format
 func (s *PaymentService) convertIntervalForRazorpay(intervalPeriod string) string {
 	switch intervalPeriod {
-	case "day":
-		return "daily"
 	case "week":
 		return "weekly"
 	case "month":

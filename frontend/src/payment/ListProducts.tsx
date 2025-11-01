@@ -65,7 +65,6 @@ const ListProducts: React.FC = () => {
                                         {product.interval_count > 1
                                           ? ` (Every ${product.interval_count} ${product.interval_period}s)`
                                           : ` (${
-                                              ((product.interval_period || '').toString().toLowerCase()) === 'day' ? 'daily' :
                                               ((product.interval_period || '').toString().toLowerCase()) === 'week' ? 'weekly' :
                                               ((product.interval_period || '').toString().toLowerCase()) === 'month' ? 'monthly' :
                                               ((product.interval_period || '').toString().toLowerCase()) === 'quarter' ? 'quarterly' :

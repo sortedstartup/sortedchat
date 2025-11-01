@@ -163,7 +163,7 @@ func (d *PostgresDAO) GetProductById(productID string) (*Product, error) {
 }
 
 // Subscription methods
-func (d *PostgresDAO) CreateSubscription(userID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool, isRecurring bool, eventID string) (string, error) {
+func (d *PostgresDAO) CreateSubscription(userID, eventID, productID, provider, providerSubscriptionID, providerCustomerID, providerSubscriptionStatus, status string, currentPeriodStart, currentPeriodEnd int64, cancelAtPeriodEnd bool, isRecurring bool) (string, error) {
 	id := uuid.New().String()
 	now := time.Now().Format(time.RFC3339)
 

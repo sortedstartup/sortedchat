@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS paymentservice_subscriptions (
     cancel_at_period_end BOOLEAN DEFAULT FALSE, -- whether the subscription will be canceled at the end of the current period
     created_at TEXT NOT NULL, -- timestamp of when the subscription was created
     updated_at TEXT NOT NULL, -- timestamp of when the subscription was last updated
-    canceled_at TEXT, -- timestamp of when the subscription was canceled
+    canceled_at INTEGER, -- timestamp of when the subscription was canceled
     is_recurring BOOLEAN DEFAULT FALSE, -- whether the subscription is a one-time payment
     event_id TEXT UNIQUE NOT NULL, -- this is to avoid duplicate subscriptions
     FOREIGN KEY (product_id) REFERENCES paymentservice_products(id)

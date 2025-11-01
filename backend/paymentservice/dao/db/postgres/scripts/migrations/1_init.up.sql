@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS paymentservice_subscriptions (
     canceled_at TIMESTAMPTZ, -- timestamp of when the subscription was canceled
     is_recurring BOOLEAN DEFAULT FALSE, -- whether the subscription is a one-time payment
     event_id TEXT UNIQUE NOT NULL, -- this is to avoid duplicate subscriptions
-    FOREIGN KEY (product_id) REFERENCES products(id)
+    FOREIGN KEY (product_id) REFERENCES paymentservice_products(id)
 );
 
 -- Fixed: Added product_id column
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS paymentservice_user_payments (
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     is_success BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (product_id) REFERENCES products(id),
-    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+    FOREIGN KEY (product_id) REFERENCES paymentservice_products(id),
+    FOREIGN KEY (subscription_id) REFERENCES paymentservice_subscriptions(id)
 );
 

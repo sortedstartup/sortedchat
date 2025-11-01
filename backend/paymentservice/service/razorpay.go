@@ -94,12 +94,12 @@ func (s *PaymentService) CreateRazorpayCheckoutSession(ctx context.Context, user
 
 	hasAccess, err := s.dao.CheckUserProductAccess(userID, productID)
 	if err != nil {
-		slog.Error("paymentservice:razorpay:CreateStripeCheckoutSession", "error", err)
+		slog.Error("paymentservice:razorpay:CreateRazorpayCheckoutSession", "error", err)
 		return "", 0, "", fmt.Errorf("failed to process the request")
 	}
 
 	if hasAccess {
-		slog.Error("paymentservice:razorpay:CreateStripeCheckoutSession", "error", "user does not have access to this product")
+		slog.Error("paymentservice:razorpay:CreateRazorpayCheckoutSession", "error", "user does not have access to this product")
 		return "", 0, "", fmt.Errorf("already have access to this product")
 	}
 

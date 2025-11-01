@@ -54,30 +54,68 @@ func (d *SQLiteDAO) CreateProduct(stripeProductID string, razorpayProductID stri
 func (d *SQLiteDAO) ListProducts(userID string) ([]*Product, error) {
 	slog.Info("paymentservice:dao_sqlite:ListProducts", "userID", userID)
 
-	query := `SELECT * FROM products`
-	productList, err := d.db.Queryx(query)
+	// Optimized query that joins products with subscription access in a single query
+	query := `
+		SELECT 
+			p.*,
+			CASE 
+				WHEN s.id IS NOT NULL THEN 1 
+				ELSE 0 
+			END as has_access
+		FROM products p
+		LEFT JOIN subscriptions s ON p.id = s.product_id 
+			AND s.user_id = ? 
+			AND (
+				(s.is_recurring = 1 AND s.status = 'active' AND s.current_period_end > strftime('%s', 'now')) OR
+				(s.is_recurring = 0)
+			)`
+
+	rows, err := d.db.Queryx(query, userID)
 	if err != nil {
 		slog.Error("paymentservice:dao_sqlite:ListProducts", "error", err)
 		return nil, err
 	}
-	defer productList.Close()
+	defer rows.Close()
 
 	products := []*Product{}
-	for productList.Next() {
+	for rows.Next() {
 		product := &Product{}
-		err := productList.StructScan(product)
+		var hasAccess int
+
+		// Create a map to scan both product fields and has_access
+		rowMap := make(map[string]interface{})
+		err := rows.MapScan(rowMap)
 		if err != nil {
-			slog.Error("paymentservice:dao_sqlite:ListProducts", "error", err)
+			slog.Error("paymentservice:dao_sqlite:ListProducts", "error scanning row", err)
 			return nil, err
 		}
 
-		// Check if user has access to this product
-		hasAccess, err := d.CheckUserProductAccess(userID, product.ID)
-		if err != nil {
-			slog.Error("paymentservice:dao_sqlite:ListProducts", "error checking access", err)
-			hasAccess = false // Default to no access on error
+		// Manually map the fields to the product struct
+		product.ID = rowMap["id"].(string)
+		product.StripeProductID = rowMap["stripe_product_id"].(string)
+		product.RazorpayProductID = rowMap["razorpay_product_id"].(string)
+		product.UserID = rowMap["user_id"].(string)
+		product.Name = rowMap["name"].(string)
+		product.Description = rowMap["description"].(string)
+		product.Price = rowMap["price"].(int64)
+		product.Currency = rowMap["currency"].(string)
+		product.IsRecurring = rowMap["is_recurring"].(bool)
+		product.CreatedAt = rowMap["created_at"].(string)
+		product.UpdatedAt = rowMap["updated_at"].(string)
+
+		// Handle nullable fields
+		if intervalCount := rowMap["interval_count"]; intervalCount != nil {
+			product.IntervalCount.Valid = true
+			product.IntervalCount.Int64 = intervalCount.(int64)
 		}
-		product.HasAccess = hasAccess
+		if intervalPeriod := rowMap["interval_period"]; intervalPeriod != nil {
+			product.IntervalPeriod.Valid = true
+			product.IntervalPeriod.String = intervalPeriod.(string)
+		}
+
+		// Set access status
+		hasAccess = int(rowMap["has_access"].(int64))
+		product.HasAccess = hasAccess == 1
 
 		products = append(products, product)
 	}

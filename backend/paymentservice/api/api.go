@@ -79,7 +79,7 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	// Convert interval enum to string for database storage
 	var intervalPeriod string
 
-	slog.Info("paymentservice:api:CreateProductsanskar", "isRecurring", isRecurring, "interval", req.Interval, "intervalCount", req.IntervalCount, "intervalPeriod", intervalPeriod)
+	slog.Info("paymentservice:api:CreateProduct", "isRecurring", isRecurring, "interval", req.Interval, "intervalCount", req.IntervalCount, "intervalPeriod", intervalPeriod)
 	if isRecurring {
 		switch req.Interval {
 		case pb.Interval_DAY:

@@ -410,7 +410,7 @@ func (s *PaymentService) handleChargeFailed(ctx context.Context, event stripe.Ev
 
 		_, err = s.dao.CreateUserPayment(userID, productID, subscription.ID, charge.ID, string(chargeJSON), false)
 		if err != nil {
-			slog.Error("paymentservice:stripe:handleCheckoutSessionExpired", "error", "failed to create user payment", "details", err)
+			slog.Error("paymentservice:stripe:handleChargeFailed", "error", "failed to create user payment", "details", err)
 			return fmt.Errorf("failed to create user payment: %v", err)
 		}
 	}

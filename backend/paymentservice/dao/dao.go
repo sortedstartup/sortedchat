@@ -1,7 +1,6 @@
 package dao
 
 type DAO interface {
-	Infer(dummy string) error
 	CreateProduct(stripeProductID string, razorpayProductID string, userID string, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, intervalPeriod string) (string, error)
 	ListProducts(userID string) ([]*Product, error)
 	GetProductById(productID string) (*Product, error)

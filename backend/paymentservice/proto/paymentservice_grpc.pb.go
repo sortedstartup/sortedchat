@@ -19,7 +19,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PaymentService_Infer_FullMethodName                                     = "/sortedchat.PaymentService/Infer"
 	PaymentService_CreateProduct_FullMethodName                             = "/sortedchat.PaymentService/CreateProduct"
 	PaymentService_ListProducts_FullMethodName                              = "/sortedchat.PaymentService/ListProducts"
 	PaymentService_CreateStripeCheckoutSession_FullMethodName               = "/sortedchat.PaymentService/CreateStripeCheckoutSession"
@@ -33,7 +32,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PaymentServiceClient interface {
-	Infer(ctx context.Context, in *InferRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[InferResponse], error)
 	CreateProduct(ctx context.Context, in *CreateProductRequest, opts ...grpc.CallOption) (*CreateProductResponse, error)
 	ListProducts(ctx context.Context, in *ListProductsRequest, opts ...grpc.CallOption) (*ListProductsResponse, error)
 	CreateStripeCheckoutSession(ctx context.Context, in *CreateStripeCheckoutSessionRequest, opts ...grpc.CallOption) (*CreateStripeCheckoutSessionResponse, error)
@@ -50,25 +48,6 @@ type paymentServiceClient struct {
 func NewPaymentServiceClient(cc grpc.ClientConnInterface) PaymentServiceClient {
 	return &paymentServiceClient{cc}
 }
-
-func (c *paymentServiceClient) Infer(ctx context.Context, in *InferRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[InferResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &PaymentService_ServiceDesc.Streams[0], PaymentService_Infer_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[InferRequest, InferResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type PaymentService_InferClient = grpc.ServerStreamingClient[InferResponse]
 
 func (c *paymentServiceClient) CreateProduct(ctx context.Context, in *CreateProductRequest, opts ...grpc.CallOption) (*CreateProductResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -144,7 +123,6 @@ func (c *paymentServiceClient) CheckUserProductAccess(ctx context.Context, in *C
 // All implementations must embed UnimplementedPaymentServiceServer
 // for forward compatibility.
 type PaymentServiceServer interface {
-	Infer(*InferRequest, grpc.ServerStreamingServer[InferResponse]) error
 	CreateProduct(context.Context, *CreateProductRequest) (*CreateProductResponse, error)
 	ListProducts(context.Context, *ListProductsRequest) (*ListProductsResponse, error)
 	CreateStripeCheckoutSession(context.Context, *CreateStripeCheckoutSessionRequest) (*CreateStripeCheckoutSessionResponse, error)
@@ -162,9 +140,6 @@ type PaymentServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedPaymentServiceServer struct{}
 
-func (UnimplementedPaymentServiceServer) Infer(*InferRequest, grpc.ServerStreamingServer[InferResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method Infer not implemented")
-}
 func (UnimplementedPaymentServiceServer) CreateProduct(context.Context, *CreateProductRequest) (*CreateProductResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProduct not implemented")
 }
@@ -206,17 +181,6 @@ func RegisterPaymentServiceServer(s grpc.ServiceRegistrar, srv PaymentServiceSer
 	}
 	s.RegisterService(&PaymentService_ServiceDesc, srv)
 }
-
-func _PaymentService_Infer_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(InferRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(PaymentServiceServer).Infer(m, &grpc.GenericServerStream[InferRequest, InferResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type PaymentService_InferServer = grpc.ServerStreamingServer[InferResponse]
 
 func _PaymentService_CreateProduct_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateProductRequest)
@@ -380,12 +344,6 @@ var PaymentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PaymentService_CheckUserProductAccess_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "Infer",
-			Handler:       _PaymentService_Infer_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "paymentservice.proto",
 }

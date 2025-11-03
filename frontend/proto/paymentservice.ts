@@ -21,86 +21,6 @@ export enum Interval {
     QUARTER = 2,
     YEAR = 3
 }
-export class InferRequest extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {}) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") { }
-    }
-    static fromObject(data: {}): InferRequest {
-        const message = new InferRequest({});
-        return message;
-    }
-    toObject() {
-        const data: {} = {};
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): InferRequest {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new InferRequest();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): InferRequest {
-        return InferRequest.deserialize(bytes);
-    }
-}
-export class InferResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {}) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") { }
-    }
-    static fromObject(data: {}): InferResponse {
-        const message = new InferResponse({});
-        return message;
-    }
-    toObject() {
-        const data: {} = {};
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): InferResponse {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new InferResponse();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): InferResponse {
-        return InferResponse.deserialize(bytes);
-    }
-}
 export class CreateProductRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -1572,10 +1492,6 @@ export class PaymentServiceClient {
         options.format = options.format || "text";
         this._address = address;
         this._client = new grpc_web_1.GrpcWebClientBase(options);
-    }
-    private static Infer = new grpc_web_1.MethodDescriptor<InferRequest, InferResponse>("/sortedchat.PaymentService/Infer", grpc_web_1.MethodType.SERVER_STREAMING, InferRequest, InferResponse, (message: InferRequest) => message.serialize(), InferResponse.deserialize);
-    Infer(message: InferRequest, metadata: grpc_web_1.Metadata | null) {
-        return this._client.serverStreaming(this._address + "/sortedchat.PaymentService/Infer", message, metadata || {}, PaymentServiceClient.Infer);
     }
     private static CreateProduct = new grpc_web_1.MethodDescriptor<CreateProductRequest, CreateProductResponse>("/sortedchat.PaymentService/CreateProduct", grpc_web_1.MethodType.UNARY, CreateProductRequest, CreateProductResponse, (message: CreateProductRequest) => message.serialize(), CreateProductResponse.deserialize);
     CreateProduct(message: CreateProductRequest, metadata: grpc_web_1.Metadata | null) {

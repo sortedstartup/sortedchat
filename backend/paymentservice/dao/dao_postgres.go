@@ -49,10 +49,6 @@ func NewPostgresDAOWithDB(db *sqlx.DB) (*PostgresDAO, error) {
 	return &PostgresDAO{db: db}, nil
 }
 
-func (d *PostgresDAO) Infer(dummy string) error {
-	return nil
-}
-
 func (d *PostgresDAO) CreateProduct(stripeProductID string, razorpayProductID string, userID string, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, intervalPeriod string) (string, error) {
 	id := uuid.New().String()
 	slog.Info("paymentservice:dao_postgres:CreateProduct", "userID", userID, "name", name, "description", description, "cost", amountInSmallestUnit, "currency", currency, "isRecurring", isRecurring, "intervalCount", intervalCount, "intervalPeriod", intervalPeriod)

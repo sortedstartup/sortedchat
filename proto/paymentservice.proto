@@ -22,7 +22,6 @@ enum Interval {
 }
 
 service PaymentService {
-    rpc Infer(InferRequest) returns (stream InferResponse);
     rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
     rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
     rpc CreateStripeCheckoutSession(CreateStripeCheckoutSessionRequest) returns (CreateStripeCheckoutSessionResponse);
@@ -30,12 +29,6 @@ service PaymentService {
     rpc CreateStripeSubscriptionCheckoutSession(CreateStripeSubscriptionCheckoutSessionRequest) returns (CreateStripeSubscriptionCheckoutSessionResponse);
     rpc CreateRazorpaySubscriptionCheckoutSession(CreateRazorpaySubscriptionCheckoutSessionRequest) returns (CreateRazorpaySubscriptionCheckoutSessionResponse);
     rpc CheckUserProductAccess(CheckUserProductAccessRequest) returns (CheckUserProductAccessResponse);
-}
-
-message InferRequest {
-}
-
-message InferResponse {
 }
 
 message CreateProductRequest {

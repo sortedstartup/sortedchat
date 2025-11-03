@@ -14,7 +14,6 @@ import (
 	"sortedstartup/paymentservice/service"
 
 	"github.com/stripe/stripe-go/v83"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -39,10 +38,6 @@ func NewPaymentServiceAPI(mux *http.ServeMux, daoFactory dao.DAOFactory) *Paymen
 	s.registerRoutes(mux)
 
 	return s
-}
-
-func (s *PaymentServiceAPI) Infer(_ *pb.InferRequest, stream grpc.ServerStreamingServer[pb.InferResponse]) error {
-	return s.service.Infer(stream.Context(), "dummy")
 }
 
 func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreateProductRequest) (*pb.CreateProductResponse, error) {

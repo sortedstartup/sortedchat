@@ -22,10 +22,6 @@ func NewSQLiteDAO(db *sqlx.DB) (*SQLiteDAO, error) {
 	return &SQLiteDAO{db: db}, nil
 }
 
-func (d *SQLiteDAO) Infer(dummy string) error {
-	return nil
-}
-
 func (d *SQLiteDAO) CreateProduct(stripeProductID string, razorpayProductID string, userID string, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, intervalPeriod string) (string, error) {
 	id := uuid.New().String()
 	slog.Info("paymentservice:dao_sqlite:CreateProduct", "userID", userID, "name", name, "description", description, "cost", amountInSmallestUnit, "currency", currency, "isRecurring", isRecurring, "intervalCount", intervalCount, "intervalPeriod", intervalPeriod)

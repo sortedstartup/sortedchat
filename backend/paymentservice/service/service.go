@@ -27,10 +27,6 @@ func NewPaymentService(daoFactory dao.DAOFactory) (*PaymentService, error) {
 	}, nil
 }
 
-func (s *PaymentService) Infer(ctx context.Context, dummy string) error {
-	return s.dao.Infer(dummy)
-}
-
 func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, intervalPeriod string) (string, error) {
 	slog.Info("paymentservice:service:CreateProduct", "userID", userID, "name", name, "isRecurring", isRecurring, "intervalCount", intervalCount, "intervalPeriod", intervalPeriod)
 

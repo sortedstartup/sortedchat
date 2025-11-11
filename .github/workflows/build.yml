@@ -30,7 +30,7 @@ jobs:
 
       - name: Build frontend in standalone mode
         working-directory: frontend
-        run: pnpm run build --mode standalone
+        run: pnpm run build:standalone
 
       - name: Upload frontend build (standalone)
         uses: actions/upload-artifact@v4

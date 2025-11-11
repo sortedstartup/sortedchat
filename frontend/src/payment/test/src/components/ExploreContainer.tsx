@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './ExploreContainer.css';
-import IAP, { Product, Purchase } from '../payment/PaymentPlugin';
+import IAP, { Purchase } from '../payment/PaymentPlugin';
 
 interface ContainerProps {
   name: string;
@@ -8,9 +8,17 @@ interface ContainerProps {
 
 const ExploreContainer: React.FC<ContainerProps> = ({ name }) => {
   const [status, setStatus] = useState<string>('Not initialized');
-  const [products, setProducts] = useState<Product[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Hardcoded product
+  const product = {
+    productId: 'premium_subscription',
+    title: 'Premium Subscription',
+    description: 'Unlock all premium features with our monthly subscription',
+    priceAmount: 9.99,
+    currency: 'USD'
+  };
 
   useEffect(() => {
     initializePayment();
@@ -21,22 +29,12 @@ const ExploreContainer: React.FC<ContainerProps> = ({ name }) => {
       setStatus('Initializing...');
       const result = await IAP.initialize();
       if (result.success) {
-        setStatus('Initialized');
-        await loadProducts();
+        setStatus('Ready for payment');
       } else {
         setStatus('Failed to initialize');
       }
     } catch (error) {
       setStatus('Error initializing: ' + error);
-    }
-  };
-
-  const loadProducts = async () => {
-    try {
-      const result = await IAP.getProducts({ productIds: ['prod_1', 'prod_2'] });
-      setProducts(result.products);
-    } catch (error) {
-      setStatus('Error loading products: ' + error);
     }
   };
 
@@ -69,37 +67,38 @@ const ExploreContainer: React.FC<ContainerProps> = ({ name }) => {
         <h3>Payment Status: {status}</h3>
       </div>
 
-      {products.length > 0 && (
-        <div style={{ marginTop: '20px' }}>
-          <h4>Available Products:</h4>
-          {products.map((product) => (
-            <div key={product.productId} style={{ 
-              border: '1px solid #ccc', 
-              padding: '10px', 
-              margin: '10px 0',
-              borderRadius: '5px'
-            }}>
-              <h5>{product.title}</h5>
-              <p>{product.description}</p>
-              <p>Price: ${product.priceAmount} {product.currency}</p>
-              <button 
-                onClick={() => handlePurchase(product.productId)}
-                disabled={isLoading}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: isLoading ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {isLoading ? 'Processing...' : 'Buy Now'}
-              </button>
-            </div>
-          ))}
+      <div style={{ marginTop: '20px' }}>
+        <h4>Premium Product:</h4>
+        <div style={{ 
+          border: '1px solid #ccc', 
+          padding: '20px', 
+          margin: '10px 0',
+          borderRadius: '10px',
+          backgroundColor: '#f8f9fa'
+        }}>
+          <h5>{product.title}</h5>
+          <p>{product.description}</p>
+          <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#28a745' }}>
+            Price: ${product.priceAmount} {product.currency}
+          </p>
+          <button 
+            onClick={() => handlePurchase(product.productId)}
+            disabled={isLoading}
+            style={{
+              padding: '15px 30px',
+              backgroundColor: isLoading ? '#6c757d' : '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
+          >
+            {isLoading ? 'Processing...' : 'Pay Now'}
+          </button>
         </div>
-      )}
+      </div>
 
       {purchases.length > 0 && (
         <div style={{ marginTop: '20px' }}>
@@ -110,7 +109,7 @@ const ExploreContainer: React.FC<ContainerProps> = ({ name }) => {
               padding: '10px', 
               margin: '10px 0',
               borderRadius: '5px',
-              backgroundColor: '#f8f9fa'
+              backgroundColor: '#d4edda'
             }}>
               <p>Product: {purchase.productId}</p>
               <p>Transaction: {purchase.transactionId}</p>

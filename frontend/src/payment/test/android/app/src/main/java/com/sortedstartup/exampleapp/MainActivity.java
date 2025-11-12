@@ -2,7 +2,7 @@ package com.sortedstartup.exampleapp;
 
 import com.getcapacitor.BridgeActivity;
 import android.os.Bundle;
-import com.test.plugins.PaymentPlugin;
+import com.sortedstartup.exampleapp.plugins.PaymentPlugin;
 
 public class MainActivity extends BridgeActivity {
     @Override

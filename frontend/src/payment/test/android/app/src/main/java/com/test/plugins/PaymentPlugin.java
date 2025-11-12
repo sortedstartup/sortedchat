@@ -110,35 +110,36 @@ public class PaymentPlugin extends Plugin {
 
             JSArray products = new JSArray();
             
-            billingClient.queryProductDetailsAsync(queryProductDetailsParams,
-                (billingResult, queryProductDetailsResult) -> {
-                    if (billingResult.getResponseCode() == BillingResponseCode.OK) {
+            billingClient.queryProductDetailsAsync(
+                queryProductDetailsParams,
+                new ProductDetailsResponseListener() {
+                    public void onProductDetailsResponse(BillingResult billingResult,
+                            QueryProductDetailsResult queryProductDetailsResult) {
+                        if (billingResult.getResponseCode() == BillingResponseCode.OK) {
+                            Log.i("InAppPaymentPlugin getProducts sanskar", "Products: " + queryProductDetailsResult.getProductDetailsList().toString());
                         for (ProductDetails productDetails : queryProductDetailsResult.getProductDetailsList()) {
-                            // Process successfully retrieved product details here.
-
+                            // Process success retrieved product details here.
                             Log.i("InAppPaymentPlugin getProducts sanskar", "Product: " + productDetails.getProductId());
-
                             JSObject product = new JSObject();
                             product.put("productId", productDetails.getProductId());
                             product.put("type", productDetails.getProductType());
                             product.put("title", productDetails.getName());
                             product.put("description", productDetails.getDescription());
                             products.put(product);
+                            Log.i("InAppPaymentPlugin getProducts sanskar", "Products: " + products.toString());
                         }
-                        
-                        Log.i("InAppPaymentPlugin getProducts sanskar", "Products: " + products.toString());
                         JSObject result = new JSObject();
                         result.put("products", products);
                         call.resolve(result);
-                    } else {
-                        Log.e("InAppPaymentPlugin getProducts sanskar", "Failed: " + billingResult.getDebugMessage());
-                        call.reject("Failed: " + billingResult.getDebugMessage());
+                        } else {
+                            Log.e("InAppPaymentPlugin getProducts sanskar", "Failed: " + billingResult.getDebugMessage());
+                            call.reject("Failed: " + billingResult.getDebugMessage());
+                        }
                     }
-                }
-            );
+                });
         } catch (Exception e) {
-            Log.e("InAppPaymentPlugin getProducts sanskar", "Error: " + e.getMessage());
-            call.reject("Error: " + e.getMessage());
+            Log.e("InAppPaymentPlugin getProducts sanskar", "Failed: " + e.getMessage());
+            call.reject("Failed: " + e.getMessage());
         }
     }
 

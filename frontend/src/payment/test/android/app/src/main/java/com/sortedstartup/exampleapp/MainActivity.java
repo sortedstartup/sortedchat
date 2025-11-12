@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package com.sortedstartup.exampleapp;
 
 import com.getcapacitor.BridgeActivity;
 import android.os.Bundle;

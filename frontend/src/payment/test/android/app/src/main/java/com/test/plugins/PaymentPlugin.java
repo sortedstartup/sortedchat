@@ -6,6 +6,8 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.JSArray;
+import android.util.Log;
+
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClient.BillingResponseCode;
@@ -27,6 +29,7 @@ import com.android.billingclient.api.PurchasesResponseListener;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
+import android.app.Activity;
 
 
 import androidx.annotation.NonNull;
@@ -36,10 +39,13 @@ import java.util.ArrayList;
 @CapacitorPlugin(name = "PaymentPlugin")
 public class PaymentPlugin extends Plugin {
     
+    private List<ProductDetails> productDetailsList;
     private BillingClient billingClient;
     
     @PluginMethod
     public void initialize(PluginCall call) {
+        String packageName = getContext().getPackageName();
+        Log.d("PaymentPlugin", "App Package Name: " + packageName);
         try {
             PurchasesUpdatedListener purchasesUpdatedListener = new PurchasesUpdatedListener() {
                 @Override
@@ -58,12 +64,16 @@ public class PaymentPlugin extends Plugin {
                 .enablePendingPurchases(pendingPurchasesParams)
                 .build();
 
+            Log.i("InAppPaymentPlugin", "Starting Billing connection");
+
             billingClient.startConnection(new BillingClientStateListener() {
                 @Override
                 public void onBillingSetupFinished(BillingResult billingResult) {
                     if (billingResult.getResponseCode() == BillingResponseCode.OK) {
                         JSObject jsObject = new JSObject();
                         jsObject.put("success", true);
+                        Log.i("InAppPaymentPlugin", "Billing connection successful");
+                        getProducts(call); // get products from the billing client
                         call.resolve(jsObject);
                     } else {
                         call.reject("Billing setup failed: " + billingResult.getDebugMessage());
@@ -81,14 +91,14 @@ public class PaymentPlugin extends Plugin {
         }
     }
 
-    @PluginMethod
+    // @PluginMethod
     public void getProducts(PluginCall call) {
         try {
-
+            Log.i("InAppPaymentPlugin", "Getting products");
             List<Product> productList = new ArrayList<>();
             productList.add(
                 Product.newBuilder()
-                    .setProductId("androd.test.purchased") 
+                    .setProductId("exampleproduct1") 
                     .setProductType(ProductType.INAPP)
                     .build()
             );
@@ -98,99 +108,70 @@ public class PaymentPlugin extends Plugin {
                     .setProductList(productList)
                     .build();
 
-            billingClient.queryProductDetailsAsync(
-                queryProductDetailsParams,
-                new ProductDetailsResponseListener() {
-                    @Override
-                    public void onProductDetailsResponse(
-                        BillingResult billingResult,
-                        QueryProductDetailsResult queryProductDetailsResult
-                    ) {
-                        if (billingResult.getResponseCode() == BillingResponseCode.OK) {
-                            
-                            JSArray products = new JSArray();
-                            
-                            for (ProductDetails productDetails : queryProductDetailsResult.getProductDetailsList()) {
-                                JSObject product = new JSObject();
-                                product.put("productId", productDetails.getProductId());
-                                product.put("type", productDetails.getProductType());
-                                product.put("title", productDetails.getName());
-                                product.put("description", productDetails.getDescription());
-                                //will add price amount and currency
-                                
-                                products.put(product);
-                            }
-                            
-                            JSObject result = new JSObject();
-                            result.put("products", products);
-                            call.resolve(result);
-                            
-                        } else {
-                            call.reject("Failed: " + billingResult.getDebugMessage());
+            JSArray products = new JSArray();
+            
+            billingClient.queryProductDetailsAsync(queryProductDetailsParams,
+                (billingResult, queryProductDetailsResult) -> {
+                    if (billingResult.getResponseCode() == BillingResponseCode.OK) {
+                        for (ProductDetails productDetails : queryProductDetailsResult.getProductDetailsList()) {
+                            // Process successfully retrieved product details here.
+
+                            Log.i("InAppPaymentPlugin getProducts sanskar", "Product: " + productDetails.getProductId());
+
+                            JSObject product = new JSObject();
+                            product.put("productId", productDetails.getProductId());
+                            product.put("type", productDetails.getProductType());
+                            product.put("title", productDetails.getName());
+                            product.put("description", productDetails.getDescription());
+                            products.put(product);
                         }
+                        
+                        Log.i("InAppPaymentPlugin getProducts sanskar", "Products: " + products.toString());
+                        JSObject result = new JSObject();
+                        result.put("products", products);
+                        call.resolve(result);
+                    } else {
+                        Log.e("InAppPaymentPlugin getProducts sanskar", "Failed: " + billingResult.getDebugMessage());
+                        call.reject("Failed: " + billingResult.getDebugMessage());
                     }
                 }
             );
         } catch (Exception e) {
+            Log.e("InAppPaymentPlugin getProducts sanskar", "Error: " + e.getMessage());
             call.reject("Error: " + e.getMessage());
         }
     }
 
+
     @PluginMethod
 public void purchaseProduct(PluginCall call) {
     try {
-        String productId = call.getString("productId", "andriod.test.purchased");
-        
-        // Build simple product list
-        List<Product> productList = new ArrayList<>();
-        productList.add(
-            Product.newBuilder()
-                .setProductId(productId)
-                .setProductType(ProductType.INAPP)
-                .build()
-        );
+        String productId = call.getString("productId", "exampleproduct1");
+        Activity activity = getActivity();
+        ProductDetails productDetails = this.productDetailsList.get(0);
+        Log.i("InAppPaymentPlugin", "Launching billing flow for product: " + productDetails.getProductId());
+         billingClient.launchBillingFlow(activity,
+                    BillingFlowParams
+                            .newBuilder()
+                            .setProductDetailsParamsList(
+                                    List.of(
+                                            BillingFlowParams.ProductDetailsParams.newBuilder()
+                                                    // retrieve a value for "productDetails" by calling queryProductDetailsAsync()
+                                                    .setProductDetails(productDetails)
 
-        QueryProductDetailsParams queryParams =
-            QueryProductDetailsParams.newBuilder()
-                .setProductList(productList)
-                .build();
-
-        billingClient.queryProductDetailsAsync(queryParams, 
-            new ProductDetailsResponseListener() {
-                @Override
-                public void onProductDetailsResponse(
-                    BillingResult billingResult,
-                    QueryProductDetailsResult queryProductDetailsResult
-                ) {
-                    // Get product details
-                    ProductDetails productDetails = 
-                        queryProductDetailsResult.getProductDetailsList().get(0);
-                    
-                    // Build params
-                    List<ProductDetailsParams> paramsList = new ArrayList<>();
-                    paramsList.add(
-                        ProductDetailsParams.newBuilder()
-                            .setProductDetails(productDetails)
-                            .build()
-                    );
-
-                    // Launch payment UI
-                    billingClient.launchBillingFlow(
-                        getActivity(), 
-                        BillingFlowParams.newBuilder()
-                            .setProductDetailsParamsList(paramsList)
-                            .build()
-                    );
-                    
-                    // Just return success
-                    JSObject ret = new JSObject();
+                                                    // For one-time products, "setOfferToken" method shouldn't be called.
+                                                    // For subscriptions, to get an offer token, call
+                                                    // ProductDetails.subscriptionOfferDetails() for a list of offers
+                                                    // that are available to the user.
+                                                    //.setOfferToken(selectedOfferToken)
+                                                    .build()
+                                    ))
+                            .build());
+                            JSObject ret = new JSObject();
                     ret.put("code", 0);
                     call.resolve(ret);
-                }
-            }
-        );
-        
     } catch (Exception e) {
+        Log.e("InAppPaymentPlugin", "Error launching billing flow: " + e.getMessage());
         JSObject ret = new JSObject();
         ret.put("code", 4);
         ret.put("message", e.getMessage());

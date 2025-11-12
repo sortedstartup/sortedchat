@@ -13,9 +13,9 @@ const ExploreContainer: React.FC<ContainerProps> = ({ name }) => {
 
   // Hardcoded product
   const product = {
-    productId: 'premium_subscription',
-    title: 'Premium Subscription',
-    description: 'Unlock all premium features with our monthly subscription',
+    productId: 'exampleproduct1',
+    title: 'Example Product 1',
+    description: 'Example Product 1',
     priceAmount: 9.99,
     currency: 'USD'
   };

@@ -118,25 +118,25 @@ function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undef
           : chunkText;
 
         return (
-          <div key={index} className="bg-gray-50 rounded-lg p-4">
+          <div key={index} className="bg-muted rounded-lg p-4">
             <div className="flex justify-between items-center mb-2">
-              <div className="text-xs text-gray-600 font-medium">
+              <div className="text-xs text-muted-foreground font-medium">
                 Bytes {chunk.start_byte || 0} - {chunk.end_byte || 0}
               </div>
-              <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+              <div className="text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-2 py-1 rounded">
                 Similarity: {chunk.simillarity?.toFixed(3) || 'N/A'}
               </div>
             </div>
-            <div className="text-sm leading-relaxed whitespace-pre-wrap">
+            <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
               {displayText}
               {shouldTruncate && !isExpanded && (
-                <span className="text-gray-400">...</span>
+                <span className="text-muted-foreground/50">...</span>
               )}
             </div>
             {shouldTruncate && (
               <button
                 onClick={() => toggleChunk(index)}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+                className="mt-2 text-xs text-primary hover:text-primary/80 hover:underline focus:outline-none"
               >
                 {isExpanded ? 'Show less' : 'Show more'}
               </button>
@@ -146,6 +146,7 @@ function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undef
       })}
     </div>
   );
+  
 }
 
 interface MessageProps {
@@ -202,8 +203,8 @@ function Message({
   return (
     <div
       className={`w-full ${isUser
-        ? "bg-gray-50 border-b border-gray-200"
-        : "bg-white border-b border-gray-200"
+        ? "bg-muted border-b border-border"
+        : "bg-card border-b border-border"
         } py-6 px-4`}
     >
       <div
@@ -214,10 +215,10 @@ function Message({
             AI
           </div>
         )}
-
+  
         <div className={`flex-1 min-w-0 ${isUser ? "text-right" : "text-left"}`}>
           {isProgress ? (
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>{chatProgress?.message || getProgressText(chatProgress?.state || 0)}</span>
             </div>
@@ -235,7 +236,7 @@ function Message({
                         <img
                           src={content.image_url.url}
                           alt="Message image"
-                          className="max-w-md rounded-lg shadow-md border border-gray-200"
+                          className="max-w-md rounded-lg shadow-md border border-border"
                           loading="lazy"
                           style={{ maxHeight: '400px', objectFit: 'contain' }}
                         />
@@ -254,7 +255,7 @@ function Message({
           )}
 
           {!isUser && !isProgress && projectId && message.rag_enabled == false && (
-            <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
+            <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-destructive/10 text-destructive">
               <FileX className="h-3 w-3 mr-1" />
               RAG not enabled
             </div>
@@ -262,14 +263,14 @@ function Message({
 
           {!isUser && !isProgress && message.references && message?.references.length > 0 && (
             <div className="mt-3">
-              <div className="text-xs text-gray-500 mb-2">Sources:</div>
+              <div className="text-xs text-muted-foreground mb-2">Sources:</div>
               <div className="flex flex-wrap gap-2">
                 {message.references.map((docRef: RAGDocumentReference, idx: number) => (
                   <Button
                     key={`${docRef.doc_id}-${idx}`}
                     variant="outline"
                     size="sm"
-                    className="text-xs h-6 px-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                    className="text-xs h-6 px-2 bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
                     onClick={() =>
                       onViewRAGDetails(message.message_id, docRef.doc_id, docRef.file_name)
                     }
@@ -277,7 +278,7 @@ function Message({
                     <FileText className="h-3 w-3 mr-1" />
                     {docRef.file_name}
                     {docRef.Chunks?.length > 0 && (
-                      <span className="ml-1 bg-blue-200 text-blue-800 px-1 rounded text-xs">
+                      <span className="ml-1 bg-primary/20 text-primary px-1 rounded text-xs">
                         {docRef.Chunks.length}
                       </span>
                     )}
@@ -295,12 +296,12 @@ function Message({
                   variant="ghost"
                   size="sm"
                   onClick={() => onCopyMessage(message.content, message.message_id)}
-                  className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
+                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   {isCopied ? (
-                    <Check className="h-4 w-4 text-green-400" />
+                    <Check className="h-4 w-4 text-green-500" />
                   ) : (
-                    <Copy className="h-3 w-3 text-gray-600" />
+                    <Copy className="h-3 w-3" />
                   )}
                 </Button>
 
@@ -308,7 +309,7 @@ function Message({
                   variant="ghost"
                   size="sm"
                   onClick={onToggleExpand}
-                  className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
+                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   {isExpanded ? (
                     <Minimize2 className="h-4 w-4" />
@@ -321,14 +322,14 @@ function Message({
                   variant="ghost"
                   size="sm"
                   onClick={() => onBranchChat(message.message_id)}
-                  className="h-8 px-2 text-xs text-gray-600 hover:text-gray-800"
+                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Branch Chat
                 </Button>
               </div>
 
               <div
-                className="flex items-center space-x-2 text-xs text-gray-600"
+                className="flex items-center space-x-2 text-xs text-muted-foreground"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
               >
@@ -351,15 +352,15 @@ function Message({
                     </div>
                   </>
                 ) : (
-                  <Info className="h-4 w-4 text-gray-500 hover:text-gray-800" />
+                  <Info className="h-4 w-4 hover:text-foreground" />
                 )}
               </div>
             </div>
           )}
         </div>
-
+  
         {isUser && (
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
             U
           </div>
         )}
@@ -516,7 +517,7 @@ function ChatInputBox({
 
   return (
     <>
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+      <div className="flex-shrink-0 bg-card border-t border-border p-4">
         <div className="w-full max-w-none px-4">
           {/* Image Preview Area */}
           {selectedImages.length > 0 && (
@@ -526,11 +527,11 @@ function ChatInputBox({
                   <img
                     src={URL.createObjectURL(img)}
                     alt={`Preview ${idx}`}
-                    className="h-20 w-20 object-cover rounded border"
+                    className="h-20 w-20 object-cover rounded border border-border"
                   />
                   <button
                     onClick={() => removeImage(idx)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -541,24 +542,24 @@ function ChatInputBox({
           {/* RAG Toggle for Project Chats */}
           {projectId && (
             <div className="flex items-center mb-3">
-              <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+              <label className="flex items-center space-x-2 text-sm text-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={ragEnabled}
                   onChange={toggleRagEnabled}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-input text-primary focus:ring-ring"
                   disabled={isStreaming}
                 />
                 <span>Enable RAG (Retrieval-Augmented Generation)</span>
               </label>
             </div>
           )}
-
-          <div className="relative rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+          
+          <div className="relative rounded-lg border border-border bg-card focus-within:ring-2 focus-within:ring-ring focus-within:border-ring">
             <textarea
               ref={textareaRef}
               placeholder={isStreaming ? "Response is being generated..." : "Ask anything"}
-              className="w-full min-h-[48px] max-h-[200px] resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0 focus:outline-none overflow-y-auto"
+              className="w-full min-h-[48px] max-h-[200px] resize-none rounded-lg bg-transparent border-0 p-3 shadow-none focus-visible:ring-0 focus:outline-none overflow-y-auto text-foreground placeholder:text-muted-foreground"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -627,7 +628,7 @@ function ChatInputBox({
               ) : (
                 <Button
                   size="sm"
-                  className="bg-black hover:bg-gray-800 text-white px-4"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-4"
                   onClick={handleSend}
                   disabled={!inputValue.trim() && selectedImages.length === 0}
                 >
@@ -639,17 +640,17 @@ function ChatInputBox({
           
           {/* Show warning if images selected but model doesn't support */}
           {!supportsImageInput && selectedImages.length > 0 && (
-            <div className="mt-2 text-xs text-red-600">
+            <div className="mt-2 text-xs text-destructive">
               Selected model doesn't support images. Choose a vision-capable model.
             </div>
           )}
           
           {/* Optional: Detail level selector for advanced users */}
           {selectedImages.length > 0 && supportsImageInput && (
-            <div className="mt-2 flex items-center space-x-2 text-xs text-gray-600">
+            <div className="mt-2 flex items-center space-x-2 text-xs text-muted-foreground">
               <span>Image detail:</span>
               <select 
-                className="text-xs border rounded px-1"
+                className="text-xs border border-border rounded px-1 bg-card text-foreground"
                 value={imageDetail}
                 onChange={(e) => setImageDetail(e.target.value)}
               >
@@ -660,29 +661,28 @@ function ChatInputBox({
             </div>
           )}
         </div>
-        <div className="text-sm text-gray-500 mt-2 flex flex-row gap-2 px-6">
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+        <div className="text-sm text-muted-foreground mt-2 flex flex-row gap-2 px-6">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted border border-border">
             <ArrowUp className="size-3" />
             <span>{chatMetadata?.input_token_count}</span>
           </div>
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted border border-border">
             <ArrowDown className="size-3" />
             <span>{chatMetadata?.output_token_count}</span>
           </div>
           <button
             onClick={toggleDetailedTokens}
-            className="flex items-center gap-1 text-gray-400 hover:text-gray-600 transition-colors px-1"
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors px-1"
             aria-label={showDetailedTokens ? "Hide detailed token usage" : "Show detailed token usage"}
           >
             <ChevronRight className={`size-3 transition-transform ${showDetailedTokens ? 'rotate-90' : ''}`} />
           </button>
           {showDetailedTokens && (
             <>
-
-              {cachedTokensDisplay && <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+              {cachedTokensDisplay && <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted border border-border">
                 <span>{cachedTokensDisplay} cached tokens</span>
               </div>}
-              <div className="flex items-center gap-1  px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted border border-border">
                 <DollarSign className="size-3" />
                 <span>{costDisplay}</span>
               </div>
@@ -823,11 +823,11 @@ export function Chat() {
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto min-h-0">
         <div className={`mx-auto w-full transition-all ${isExpanded ? "max-w-7xl" : "max-w-4xl"}`}>
           {loading ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="flex items-center justify-center h-full text-muted-foreground">
               Loading messages...
             </div>
           ) : combinedMessages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="flex items-center justify-center h-full text-muted-foreground">
               No messages yet
             </div>
           ) : (
@@ -854,9 +854,9 @@ export function Chat() {
 
           <div ref={messagesEndRef} />
           {listChatBranch.length > 0 && (
-            <div className="bg-gray-50 border-t py-4 px-4">
+            <div className="bg-muted border-t border-border py-4 px-4">
               <div className="w-full max-w-none px-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Related Chats:</h3>
+                <h3 className="text-sm font-medium text-foreground mb-2">Related Chats:</h3>
                 <div className="flex flex-wrap gap-2">
                   {listChatBranch.map((chat) => (
                     <Button
@@ -891,17 +891,17 @@ export function Chat() {
           </DialogHeader>
           {ragDocumentDetails.loading && (
             <div className="flex items-center justify-center p-8">
-              <div className="text-sm text-gray-500">Loading document details...</div>
+              <div className="text-sm text-muted-foreground">Loading document details...</div>
             </div>
           )}
           {ragDocumentDetails.error && (
-            <div className="text-red-600 text-sm p-4 bg-red-50 rounded">
+            <div className="text-destructive text-sm p-4 bg-destructive/10 rounded">
               Error: {ragDocumentDetails.error}
             </div>
           )}
           {ragDocumentDetails.data && (
             <div>
-              <div className="text-sm text-gray-500 mb-4">
+              <div className="text-sm text-muted-foreground mb-4">
                 Showing {ragDocumentDetails.data.Chunks?.length || 0} chunk
                 {ragDocumentDetails.data.Chunks?.length !== 1 ? "s" : ""} used to
                 generate this response

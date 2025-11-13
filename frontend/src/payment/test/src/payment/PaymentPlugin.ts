@@ -59,6 +59,8 @@ export interface IAPPlugin {
     //ios: product.purchase()
     purchaseProduct(options: {
         productId: string;
+        accountId?: string;
+        customProductId?: string;
     }): Promise<PurchaseResult>;
 
     //andriod: queryPurchasesAsync()

@@ -30,6 +30,10 @@ import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
 import android.app.Activity;
+import okhttp3.*;
+import java.io.IOException;
+import org.json.JSONObject;
+import org.json.JSONException;
 
 
 import androidx.annotation.NonNull;
@@ -52,7 +56,26 @@ public class PaymentPlugin extends Plugin {
             PurchasesUpdatedListener purchasesUpdatedListener = new PurchasesUpdatedListener() {
                 @Override
                 public void onPurchasesUpdated(BillingResult billingResult, List<Purchase> purchases) {
-                    // To be implemented in a later section.
+                    if (billingResult.getResponseCode() == BillingResponseCode.OK && purchases != null) {
+                        for (Purchase purchase : purchases) {
+                            Log.i("InAppPaymentPlugin", "Purchase: " + purchase.toString());
+                            Log.i("InAppPaymentPlugin", "Making API call for purchase");
+                            makeApiCall(purchase);
+                        }
+                    } else if (billingResult.getResponseCode() == BillingResponseCode.USER_CANCELED && purchases != null) {
+                        // Handle an error caused by a user canceling the purchase flow.
+                    } else if(billingResult.getResponseCode() == BillingResponseCode.ERROR && purchases != null) {
+                        // Handle any other error codes.
+                        Log.e("InAppPaymentPlugin", "Error: " + billingResult.getDebugMessage());
+                        call.reject("Error: " + billingResult.getDebugMessage());
+                    } else if(billingResult.getResponseCode() == BillingResponseCode.ITEM_ALREADY_OWNED && purchases != null) {
+                        // Handle an error caused by a user already owning the item.
+                        Log.e("InAppPaymentPlugin", "Item already owned: " + billingResult.getDebugMessage());
+                        call.reject("Item already owned: " + billingResult.getDebugMessage());
+                    } else if(billingResult.getResponseCode() == BillingResponseCode.SERVICE_TIMEOUT && purchases != null) {
+                        // Handle an error caused by a user not owning the item.
+                        
+                    }
                 }
             };
 
@@ -158,6 +181,8 @@ public class PaymentPlugin extends Plugin {
 public void purchaseProduct(PluginCall call) {
     try {
         String productId = call.getString("productId", "exampleproduct1");
+        String accountId = call.getString("accountId", "exampleaccount1");
+        String customeProductId = call.getString("customeProductId", "examplecustomeproduct1");
         Activity activity = getActivity();
         ProductDetails productDetails = productDetailsMap.get(productId);
 
@@ -182,6 +207,8 @@ public void purchaseProduct(PluginCall call) {
                                                     //.setOfferToken(selectedOfferToken)
                                                     .build()
                                     ))
+                            .setObfuscatedAccountId(accountId)
+                            .setObfuscatedProfileId(customeProductId)
                             .build());
                             JSObject ret = new JSObject();
                     ret.put("code", 0);
@@ -240,7 +267,54 @@ public void purchaseProduct(PluginCall call) {
         }
     }
 
-    
 
+    private void makeApiCall(Purchase purchase) {
+        Log.i("InAppPaymentPlugin:makeApiCall", "Making API call for purchase: " + purchase.toString());
+        OkHttpClient client = new OkHttpClient();
+        
+        try {
+            // Create JSON payload
+            JSONObject json = new JSONObject();
+            json.put("transactionId", purchase.getOrderId());
+            json.put("productId", purchase.getProducts().get(0));
+            json.put("purchaseToken", purchase.getPurchaseToken());
+            json.put("purchaseTime", purchase.getPurchaseTime());
+            json.put("purchaseState", purchase.getPurchaseState());
+            json.put("packageName", purchase.getPackageName());
+            json.put("accountId", purchase.getAccountIdentifiers().getObfuscatedAccountId());
+            json.put("customProductId", purchase.getAccountIdentifiers().getObfuscatedProfileId());
+
+            RequestBody body = RequestBody.create(
+                json.toString(),
+                MediaType.get("application/json; charset=utf-8")
+            );
+            
+            Request request = new Request.Builder()
+                .url("https://intercrural-brycen-anthropometrically.ngrok-free.dev/inapp-purchase-product")
+                .post(body)
+                .addHeader("Content-Type", "application/json")
+                .build();
+            
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.e("InAppPaymentPlugin", "API call failed: " + e.getMessage());
+                }
+                
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    if (response.isSuccessful()) {
+                        Log.i("InAppPaymentPlugin", "API call successful: " + response.body().string());
+                    } else {
+                        Log.e("InAppPaymentPlugin", "API call failed with code: " + response.code());
+                    }
+                }
+            });
+            
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Log.e("InAppPaymentPlugin", "Error creating JSON: " + e.getMessage());
+        }
+    }
 }
 

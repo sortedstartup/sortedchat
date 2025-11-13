@@ -50,7 +50,7 @@ const ExploreContainer: React.FC<ContainerProps> = ({ name }) => {
     setIsLoading(true);
     try {
       setStatus('Processing purchase...');
-      const result = await IAP.purchaseProduct({ productId });
+      const result = await IAP.purchaseProduct({ productId, accountId: 'usersanskar1', customProductId: 'productsortedchat1' });
       
       if (result.purchase) {
         setStatus(`Purchase successful! Transaction: ${result.purchase.transactionId}`);

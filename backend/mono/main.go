@@ -152,6 +152,9 @@ func main() {
 		"/",
 		"/index.html",
 		"/webhook",
+		"/inapp-purchase-product",
+		"/stripe-webhook",
+		"/razorpay-webhook",
 	})
 
 	// Skip authentication for path prefixes

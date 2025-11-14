@@ -124,25 +124,25 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
   const buttonState = getButtonState();
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+    <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{model.name}</h3>
-          <div className="space-y-1 text-sm text-gray-600">
+          <h3 className="text-lg font-semibold text-foreground mb-2">{model.name}</h3>
+          <div className="space-y-1 text-sm text-muted-foreground">
             <p><span className="font-medium">Provider:</span> {model.provider}</p>
             <p><span className="font-medium">ID:</span> {model.id}</p>
             {model.url && (
               <div>
                 <button
                   onClick={() => setShowUrl(!showUrl)}
-                  className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+                  className="text-primary hover:text-primary/80 text-sm font-medium"
                 >
                   {showUrl ? 'Hide URL' : 'Show URL'}
                 </button>
                 {showUrl && (
                   <p className="mt-1">
                     <span className="font-medium">URL:</span>
-                    <span className="ml-1 text-gray-600 break-all font-mono text-xs">
+                    <span className="ml-1 text-muted-foreground break-all font-mono text-xs">
                       {model.url}
                     </span>
                   </p>
@@ -151,7 +151,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
             )}
           </div>
         </div>
-
+  
         <div className="ml-4 flex flex-col items-end space-y-2">
           {buttonState && (
             <button
@@ -162,19 +162,19 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
               {buttonState.text}
             </button>
           )}
-
+  
           {progressData && progressData.status === 2 && (
             <div className="w-48">
-              <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                 <span>{progressData.progress}%</span>
                 <span>{formatFileSize(progressData.filesize)}</span>
                 {progressData.speed > 0 && (
                   <span>{formatSpeed(progressData.speed)}</span>
                 )}
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progressData.progress}%` }}
                 />
               </div>
@@ -182,59 +182,60 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
           )}
         </div>
       </div>
-
+  
       {(model.input_token_cost > 0 || model.output_token_cost > 0) && (
-        <div className="border-t pt-4 mt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Token Costs</h4>
+        <div className="border-t border-border pt-4 mt-4">
+          <h4 className="text-sm font-medium text-foreground mb-2">Token Costs</h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-600">Input:</span>
-              <span className="ml-2 font-mono">${model.input_token_cost.toFixed(6)}</span>
+              <span className="text-muted-foreground">Input:</span>
+              <span className="ml-2 font-mono text-foreground">${model.input_token_cost.toFixed(6)}</span>
             </div>
             <div>
-              <span className="text-gray-600">Output:</span>
-              <span className="ml-2 font-mono">${model.output_token_cost.toFixed(6)}</span>
+              <span className="text-muted-foreground">Output:</span>
+              <span className="ml-2 font-mono text-foreground">${model.output_token_cost.toFixed(6)}</span>
             </div>
           </div>
         </div>
       )}
-
-      <div className="border-t pt-4 mt-4">
+  
+      <div className="border-t border-border pt-4 mt-4">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2 flex-wrap">
             {/* Show downloadable/local status for downloadable models */}
             {isDownloadable && (
               <>
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                   Local
                 </span>
                 {isDownloaded && (
-                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400">
                     Downloaded
                   </span>
                 )}
               </>
             )}
-
+  
             {!isDownloadable && (
               <div className="flex items-center space-x-2">
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                   Remote
                 </span>
                 {model.status !== 0 && (
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-muted-foreground">
                     Model Status: {model.status}
                   </span>
                 )}
               </div>
             )}
           </div>
-
+  
           {progressData && progressData.filesize > 0 && progressData.status !== 2 && (
-            <span className="text-gray-500">{formatFileSize(progressData.filesize)}</span>
+            <span className="text-muted-foreground">{formatFileSize(progressData.filesize)}</span>
           )}
         </div>
       </div>
     </div>
   );
+  
 };

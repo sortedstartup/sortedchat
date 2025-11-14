@@ -227,7 +227,6 @@ function Message({
               {/* Render multi-modal content if available */}
               {message.contents && message.contents.length > 0 ? (
                 message.contents.map((content, idx) => {
-                  console.log('Rendering content:', content); // Debug log
                   if (content.type === "text" && content.text) {
                     return <EnhancedMarkdown key={idx}>{content.text}</EnhancedMarkdown>;
                   } else if (content.type === "image_url" && content.image_url) {
@@ -338,17 +337,20 @@ function Message({
                     <div className="flex items-center space-x-1">
                       <ArrowUp className="size-3" />
                       <span>
-                        {messageSummary?.input_tokens || message.input_tokens}
+                        {messageSummary?.input_tokens ?? message.input_tokens}
                         {cachedTokensDisplay ? `/${cachedTokensDisplay}` : ""}
                       </span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <ArrowDown className="size-3" />
-                      <span>{messageSummary?.output_tokens || message.output_tokens}</span>
+                      <span>{messageSummary?.output_tokens ?? message.output_tokens}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <DollarSign className="size-3" />
                       <span>{costDisplay}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span>{messageSummary?.model ?? message.model}</span>
                     </div>
                   </>
                 ) : (

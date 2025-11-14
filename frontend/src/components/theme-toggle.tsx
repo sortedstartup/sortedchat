@@ -17,15 +17,9 @@ export function ThemeToggle() {
       className="gap-2"
     >
       {theme === "light" ? (
-        <>
           <Sun className="h-[1.2rem] w-[1.2rem]" />
-          <span>Light</span>
-        </>
       ) : (
-        <>
           <Moon className="h-[1.2rem] w-[1.2rem]" />
-          <span>Dark</span>
-        </>
       )}
     </Button>
   );

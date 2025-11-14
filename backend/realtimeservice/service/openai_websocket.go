@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/rtp"
@@ -191,8 +192,23 @@ func (o *OpenAIRealtime) Connect() error {
 	o.connected = true
 	o.mu.Unlock()
 
-	// Start handling responses first
-	go o.handleResponses()
+	// Start handling responses in a goroutine with error channel
+	errorChannel := make(chan error, 1)
+	go func() {
+		err := o.handleResponses()
+		errorChannel <- err
+	}()
+
+	// Check for immediate errors (like connection issues)
+	select {
+	case err := <-errorChannel:
+		if err != nil {
+			slog.Error("Failed to handle responses", "userID", o.userID, "error", err)
+			return err
+		}
+	case <-time.After(100 * time.Millisecond):
+		// Continue if no immediate error - handleResponses is running in background
+	}
 
 	sessionMsg := OpenAIMessage{
 		Type: "session.update",
@@ -302,7 +318,7 @@ func (o *OpenAIRealtime) SendAudio(audioData []byte) {
 }
 
 // handleResponses processes incoming messages from OpenAI
-func (o *OpenAIRealtime) handleResponses() {
+func (o *OpenAIRealtime) handleResponses() error {
 	for {
 		o.mu.RLock()
 		connected := o.connected //connected to OpenAI status
@@ -310,7 +326,7 @@ func (o *OpenAIRealtime) handleResponses() {
 
 		if !connected {
 			slog.Error("RealtimeService:openai_websocket:handleResponses", "message", "OpenAI connection closed", "userID", o.userID)
-			break
+			return fmt.Errorf("OpenAI connection closed")
 		}
 
 		var response map[string]interface{}
@@ -319,7 +335,7 @@ func (o *OpenAIRealtime) handleResponses() {
 			o.mu.Lock()
 			o.connected = false //set connected to false if connection is closed
 			o.mu.Unlock()
-			return
+			return err
 		}
 
 		// Handle different event types
@@ -397,12 +413,12 @@ func (o *OpenAIRealtime) handleResponses() {
 			responseBytes, err := json.Marshal(response)
 			if err != nil {
 				slog.Error("Failed to marshal response", "error", err)
-				break
+				return err
 			}
 			var responseDone ResponseDoneEvent
 			if err := json.Unmarshal(responseBytes, &responseDone); err != nil {
 				slog.Error("Failed to unmarshal response.done event", "openai", err)
-				break
+				return err
 			}
 
 			// Now you have type-safe access to usage data
@@ -437,12 +453,14 @@ func (o *OpenAIRealtime) handleResponses() {
 		case "error":
 			if errorData, ok := response["error"]; ok {
 				slog.Error("OpenAI API error", "userID", o.userID, "error", errorData)
+				return fmt.Errorf("OpenAI API error: %v", errorData)
 			}
 
 		default:
 			slog.Debug("Unhandled OpenAI event", "userID", o.userID, "type", eventType)
 		}
 	}
+	// return nil
 }
 
 // sendAudioToClient sends processed audio to the WebRTC outbound track

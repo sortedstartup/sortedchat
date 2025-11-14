@@ -22,6 +22,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
   const [provider, setProvider] = useState<Provider>('openai');
   const [showDropdown, setShowDropdown] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Select provider and click Connect');
+  const [isConnecting, setIsConnecting] = useState(false);
   const [inputTokens, setInputTokens] = useState(0);
   const [outputTokens, setOutputTokens] = useState(0);
 
@@ -30,6 +31,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
 
   const handleConnection = async () => {
     try {
+      setIsConnecting(true);
       setStatusMessage('Connecting...');
 
       const pc = new RTCPeerConnection();
@@ -43,9 +45,13 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
 
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'connected') {
-          $isConnected.set(true);
+          // $isConnected.set(true);
+          setIsConnecting(false);
+          setStatusMessage('');
         } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
           $isConnected.set(false);
+          setIsConnecting(false);
+          setStatusMessage('Connection failed');
         }
       };
 
@@ -91,10 +97,6 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
             if (message.data.audio_tokens) setOutputTokens(prev => prev + message.data.audio_tokens);
           }
           
-          if (message.type === "session.created") {
-            setStatusMessage("✅ Connected - Start speaking!");
-            $isConnected.set(true);
-          }
         } catch (err) {
           console.error("Message handling error:", err);
         }
@@ -107,7 +109,8 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       await pc.setRemoteDescription({ type: "answer", sdp: String(response) } as RTCSessionDescription);
 
     } catch (error) {
-      setStatusMessage(`Connection failed`);
+      setIsConnecting(false);
+      setStatusMessage(`Connection failed. Verify your API keys.`);
       $isConnected.set(false);
     }
   };
@@ -120,6 +123,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
     streamRef.current = null;
 
     $isConnected.set(false);
+    setIsConnecting(false);
     setStatusMessage('Select provider and click Connect');
     setInputTokens(0);
     setOutputTokens(0);
@@ -185,12 +189,14 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           </div>
 
           {/* Status */}
-          <div className="p-4 rounded-xl border border-border bg-muted">
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'}`} />
-              <span className={`font-medium ${isConnected ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>{statusMessage}</span>
+          {statusMessage && (
+            <div className="p-4 rounded-xl border border-border bg-muted">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                <span className={`font-medium ${isConnected ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>{statusMessage}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Token Info */}
           {(inputTokens > 0 || outputTokens > 0) && (
@@ -226,10 +232,11 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
             {!isConnected ? (
               <Button
                 onClick={handleConnection}
-                className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 px-8 py-3 text-white font-medium"
+                disabled={isConnecting}
+                className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 px-8 py-3 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Phone className="h-4 w-4 mr-2" />
-                Connect
+                {isConnecting ? 'Connecting...' : 'Connect'}
               </Button>
             ) : (
               <Button

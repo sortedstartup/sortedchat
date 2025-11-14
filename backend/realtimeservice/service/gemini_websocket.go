@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/rtp"
@@ -155,8 +156,23 @@ func (g *GeminiRealtime) Connect() error {
 
 	slog.Info("RealtimeService:gemini_websocket:Connect", "message", "Gemini setup complete", "userID", g.userID)
 
-	// Start handling responses
-	go g.handleResponses()
+	// Start handling responses in a goroutine with error channel
+	errorChannel := make(chan error, 1)
+	go func() {
+		err := g.handleResponses()
+		errorChannel <- err
+	}()
+
+	// Check for immediate errors (like connection issues)
+	select {
+	case err := <-errorChannel:
+		if err != nil {
+			slog.Error("Failed to handle responses", "userID", g.userID, "error", err)
+			return err
+		}
+	case <-time.After(100 * time.Millisecond):
+		// Continue if no immediate error - handleResponses is running in background
+	}
 
 	return nil
 }
@@ -241,7 +257,7 @@ func (g *GeminiRealtime) SendAudio(audioData []byte) {
 }
 
 // handleResponses processes incoming messages from Gemini
-func (g *GeminiRealtime) handleResponses() {
+func (g *GeminiRealtime) handleResponses() error {
 	for {
 
 		g.mu.RLock()
@@ -249,7 +265,7 @@ func (g *GeminiRealtime) handleResponses() {
 		g.mu.RUnlock()
 
 		if !connected {
-			break
+			return fmt.Errorf("gemini connection closed")
 		}
 
 		var response map[string]interface{}
@@ -258,7 +274,7 @@ func (g *GeminiRealtime) handleResponses() {
 			g.mu.Lock()
 			g.connected = false
 			g.mu.Unlock()
-			return
+			return err
 		}
 
 		// Extract audio from serverContent response

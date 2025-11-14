@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"sortedstartup/realtimeservice/dao"
 	"time"
 
@@ -29,8 +28,6 @@ func (s *RealtimeService) Init(config *dao.Config) {
 	slog.Info("RealtimeService: Init")
 }
 
-var OPENAI_API_KEY = os.Getenv("OPENAI_API_KEY")
-
 type PeerConnection struct {
 	browserConnection    *webrtc.PeerConnection      //backend-browser peer connection
 	openaiConnection     *webrtc.PeerConnection      // backend-openai peer connection
@@ -52,7 +49,7 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 	browserToBackendPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		slog.Error("RealtimeService: Offer", "message", "error creating browser to backend PC", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 
 	// create track for ai(openai or gemini) to backend
@@ -62,11 +59,11 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 	)
 	if err != nil {
 		slog.Error("RealtimeService: Offer", "message", "error creating AI to backend track", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 	if _, err := browserToBackendPC.AddTrack(aiBackendTrack); err != nil {
 		slog.Error("RealtimeService: Offer", "message", "error adding AI to backend track", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 
 	// Create user connection early so we can reference it in callbacks
@@ -150,24 +147,30 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 		SDP:  offer,
 	}); err != nil {
 		slog.Error("error setting browserToBackendPC.remote description", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 
 	answerForBrowser, err := browserToBackendPC.CreateAnswer(nil)
 	if err != nil {
 		slog.Error("error creating browserToBackendPC.answer", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 	if err := browserToBackendPC.SetLocalDescription(answerForBrowser); err != nil {
 		slog.Error("error setting browserToBackendPC.local description", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 
 	// Connect to the appropriate AI service
 	if model == "gemini" {
-		go s.connectToGemini(userID)
+		if err := s.connectToGemini(userID); err != nil {
+			slog.Error("Failed to connect to Gemini", "userID", userID, "error", err)
+			return "", fmt.Errorf("failed to connect to Gemini")
+		}
 	} else {
-		go s.connectToOpenai(userID)
+		if err := s.connectToOpenai(userID); err != nil {
+			slog.Error("Failed to connect to OpenAI", "userID", userID, "error", err)
+			return "", fmt.Errorf("failed to connect to OpenAI")
+		}
 	}
 
 	return answerForBrowser.SDP, nil

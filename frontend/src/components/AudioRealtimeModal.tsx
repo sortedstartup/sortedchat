@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Phone, PhoneOff, Volume2, ChevronDown } from "lucide-react";
-import { iceCandidate, offerRequest } from '@/store/realtime';
+import { iceCandidate, offerRequest, $isConnected } from '@/store/realtime';
+import { useStore } from '@nanostores/react';
 
 interface RealtimeAudioModalProps {
   isOpen: boolean;
@@ -17,7 +18,7 @@ interface RealtimeAudioModalProps {
 type Provider = 'openai' | 'gemini';
 
 export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps) {
-  const [isListening, setIsListening] = useState(false);
+  const isConnected = useStore($isConnected);
   const [provider, setProvider] = useState<Provider>('openai');
   const [showDropdown, setShowDropdown] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Select provider and click Connect');
@@ -36,16 +37,15 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
 
       pc.onicecandidate = async (event) => {
         if (event.candidate) {
-          iceCandidate(JSON.stringify( event.candidate.toJSON() ));
+          await iceCandidate(JSON.stringify( event.candidate.toJSON() ));
         }
       };
 
       pc.onconnectionstatechange = () => {
-        setStatusMessage(`Connection: ${pc.connectionState}`);
         if (pc.connectionState === 'connected') {
-          setIsListening(true);
+          $isConnected.set(true);
         } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-          setIsListening(false);
+          $isConnected.set(false);
         }
       };
 
@@ -93,7 +93,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           
           if (message.type === "session.created") {
             setStatusMessage("✅ Connected - Start speaking!");
-            setIsListening(true);
+            $isConnected.set(true);
           }
         } catch (err) {
           console.error("Message handling error:", err);
@@ -107,7 +107,8 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       await pc.setRemoteDescription({ type: "answer", sdp: String(response) } as RTCSessionDescription);
 
     } catch (error) {
-      setStatusMessage(`Connection failed: ${error}`);
+      setStatusMessage(`Connection failed`);
+      $isConnected.set(false);
     }
   };
 
@@ -118,8 +119,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
     pcRef.current = null;
     streamRef.current = null;
 
-  
-    setIsListening(false);
+    $isConnected.set(false);
     setStatusMessage('Select provider and click Connect');
     setInputTokens(0);
     setOutputTokens(0);
@@ -153,7 +153,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
             <div className="relative">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                disabled={isListening}
+                disabled={isConnected}
                 className="w-full p-3 bg-card border border-border rounded-lg flex items-center justify-between hover:border-ring disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-2">
@@ -187,8 +187,8 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           {/* Status */}
           <div className="p-4 rounded-xl border border-border bg-muted">
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'}`} />
-              <span className={`font-medium ${isListening ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>{statusMessage}</span>
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'}`} />
+              <span className={`font-medium ${isConnected ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>{statusMessage}</span>
             </div>
           </div>
 
@@ -203,7 +203,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           )}
 
           {/* Audio Visualizer */}
-          {isListening && (
+          {isConnected && (
             <div className="flex items-center justify-center py-6">
               <div className="flex items-end gap-1 mr-3">
                 {[0, 100, 200, 300, 400].map((delay, i) => (
@@ -223,7 +223,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
 
           {/* Controls */}
           <div className="flex justify-center gap-4 pt-4">
-            {!isListening ? (
+            {!isConnected ? (
               <Button
                 onClick={handleConnection}
                 className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 px-8 py-3 text-white font-medium"
@@ -232,16 +232,14 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                 Connect
               </Button>
             ) : (
-              <>
-                <Button
-                  onClick={handleDisconnect}
-                  variant="destructive"
-                  className="px-8 py-3 font-medium"
-                >
-                  <PhoneOff className="h-4 w-4 mr-2" />
-                  Disconnect
-                </Button>
-              </>
+              <Button
+                onClick={handleDisconnect}
+                variant="destructive"
+                className="px-8 py-3 font-medium"
+              >
+                <PhoneOff className="h-4 w-4 mr-2" />
+                Disconnect
+              </Button>
             )}
           </div>
         </div>

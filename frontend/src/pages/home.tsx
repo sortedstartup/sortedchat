@@ -39,11 +39,11 @@ export function Home() {
           <h2 className="text-2xl font-bold mb-6 text-center">
             How can I help you?
           </h2>
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow">
+          <div className="bg-card p-6 rounded-lg border border-border shadow">
             <form>
               <ChatInput
                 placeholder="Type your message here..."
-                className="min-h-16 border-0 p-4 shadow-none focus-visible:ring-0 bg-gray-50 text-black text-lg font-semibold"
+                className="min-h-16 border-0 p-4 shadow-none focus-visible:ring-0 bg-muted text-foreground text-lg font-semibold"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyDown}

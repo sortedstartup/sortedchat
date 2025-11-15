@@ -139,8 +139,8 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       <DialogContent className="max-w-2xl w-full max-h-[90vh]">
         <DialogHeader className="pb-6">
           <DialogTitle className="flex items-center gap-3 text-lg">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Volume2 className="h-5 w-5 text-blue-600" />
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Volume2 className="h-5 w-5 text-primary" />
             </div>
             Realtime Audio Chat
           </DialogTitle>
@@ -149,32 +149,32 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
         <div className="space-y-8">
           {/* Provider Selection */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">AI Provider</label>
+            <label className="text-sm font-medium text-foreground">AI Provider</label>
             <div className="relative">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 disabled={isListening}
-                className="w-full p-3 bg-white border border-gray-300 rounded-lg flex items-center justify-between hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full p-3 bg-card border border-border rounded-lg flex items-center justify-between hover:border-ring disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${provider === 'openai' ? 'bg-green-500' : 'bg-blue-500'}`} />
-                  <span className="font-medium capitalize">{provider}</span>
+                  <span className="font-medium capitalize text-foreground">{provider}</span>
                 </div>
-                <ChevronDown className="h-4 w-4 text-gray-500" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
               
               {showDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-10">
                   <button
                     onClick={() => { setProvider('openai'); setShowDropdown(false); }}
-                    className="w-full p-3 hover:bg-gray-50 flex items-center gap-2 border-b"
+                    className="w-full p-3 hover:bg-accent text-popover-foreground flex items-center gap-2 border-b border-border"
                   >
                     <div className="w-2 h-2 rounded-full bg-green-500" />
                     <span>OpenAI</span>
                   </button>
                   <button
                     onClick={() => { setProvider('gemini'); setShowDropdown(false); }}
-                    className="w-full p-3 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full p-3 hover:bg-accent text-popover-foreground flex items-center gap-2"
                   >
                     <div className="w-2 h-2 rounded-full bg-blue-500" />
                     <span>Gemini</span>
@@ -185,17 +185,17 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           </div>
 
           {/* Status */}
-          <div className="p-4 rounded-xl border bg-gray-50 border-gray-200">
+          <div className="p-4 rounded-xl border border-border bg-muted">
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-              <span className={`font-medium ${isListening ? 'text-green-600' : 'text-gray-600'}`}>{statusMessage}</span>
+              <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'}`} />
+              <span className={`font-medium ${isListening ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>{statusMessage}</span>
             </div>
           </div>
 
           {/* Token Info */}
           {(inputTokens > 0 || outputTokens > 0) && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex justify-between text-sm text-blue-700 font-mono">
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <div className="flex justify-between text-sm text-primary font-mono">
                 <span>Input: {inputTokens}</span>
                 <span>Output: {outputTokens}</span>
               </div>
@@ -209,7 +209,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                 {[0, 100, 200, 300, 400].map((delay, i) => (
                   <div
                     key={i}
-                    className="w-1 bg-blue-500 rounded-full animate-pulse"
+                    className="w-1 bg-primary rounded-full animate-pulse"
                     style={{ 
                       height: `${[32, 24, 40, 16, 32][i]}px`,
                       animationDelay: `${delay}ms` 
@@ -217,7 +217,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                   />
                 ))}
               </div>
-              <span className="text-blue-600 font-medium">Listening...</span>
+              <span className="text-primary font-medium">Listening...</span>
             </div>
           )}
 
@@ -226,7 +226,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
             {!isListening ? (
               <Button
                 onClick={handleConnection}
-                className="bg-green-600 hover:bg-green-700 px-8 py-3 text-white font-medium"
+                className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 px-8 py-3 text-white font-medium"
               >
                 <Phone className="h-4 w-4 mr-2" />
                 Connect

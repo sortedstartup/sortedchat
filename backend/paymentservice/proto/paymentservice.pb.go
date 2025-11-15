@@ -116,28 +116,25 @@ func (PaymentType) EnumDescriptor() ([]byte, []int) {
 type Interval int32
 
 const (
-	Interval_DAY     Interval = 0
-	Interval_WEEK    Interval = 1
-	Interval_MONTH   Interval = 2
-	Interval_QUARTER Interval = 3
-	Interval_YEAR    Interval = 4
+	Interval_WEEK    Interval = 0
+	Interval_MONTH   Interval = 1
+	Interval_QUARTER Interval = 2 //stripe does not support quarterly, so we use monthly with count 3
+	Interval_YEAR    Interval = 3
 )
 
 // Enum value maps for Interval.
 var (
 	Interval_name = map[int32]string{
-		0: "DAY",
-		1: "WEEK",
-		2: "MONTH",
-		3: "QUARTER",
-		4: "YEAR",
+		0: "WEEK",
+		1: "MONTH",
+		2: "QUARTER",
+		3: "YEAR",
 	}
 	Interval_value = map[string]int32{
-		"DAY":     0,
-		"WEEK":    1,
-		"MONTH":   2,
-		"QUARTER": 3,
-		"YEAR":    4,
+		"WEEK":    0,
+		"MONTH":   1,
+		"QUARTER": 2,
+		"YEAR":    3,
 	}
 )
 
@@ -168,78 +165,6 @@ func (Interval) EnumDescriptor() ([]byte, []int) {
 	return file_paymentservice_proto_rawDescGZIP(), []int{2}
 }
 
-type InferRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *InferRequest) Reset() {
-	*x = InferRequest{}
-	mi := &file_paymentservice_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *InferRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*InferRequest) ProtoMessage() {}
-
-func (x *InferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use InferRequest.ProtoReflect.Descriptor instead.
-func (*InferRequest) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{0}
-}
-
-type InferResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *InferResponse) Reset() {
-	*x = InferResponse{}
-	mi := &file_paymentservice_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *InferResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*InferResponse) ProtoMessage() {}
-
-func (x *InferResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use InferResponse.ProtoReflect.Descriptor instead.
-func (*InferResponse) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{1}
-}
-
 type CreateProductRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Name                 string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -255,7 +180,7 @@ type CreateProductRequest struct {
 
 func (x *CreateProductRequest) Reset() {
 	*x = CreateProductRequest{}
-	mi := &file_paymentservice_proto_msgTypes[2]
+	mi := &file_paymentservice_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -267,7 +192,7 @@ func (x *CreateProductRequest) String() string {
 func (*CreateProductRequest) ProtoMessage() {}
 
 func (x *CreateProductRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[2]
+	mi := &file_paymentservice_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -280,7 +205,7 @@ func (x *CreateProductRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProductRequest.ProtoReflect.Descriptor instead.
 func (*CreateProductRequest) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{2}
+	return file_paymentservice_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *CreateProductRequest) GetName() string {
@@ -329,7 +254,7 @@ func (x *CreateProductRequest) GetInterval() Interval {
 	if x != nil {
 		return x.Interval
 	}
-	return Interval_DAY
+	return Interval_WEEK
 }
 
 type CreateProductResponse struct {
@@ -342,7 +267,7 @@ type CreateProductResponse struct {
 
 func (x *CreateProductResponse) Reset() {
 	*x = CreateProductResponse{}
-	mi := &file_paymentservice_proto_msgTypes[3]
+	mi := &file_paymentservice_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -354,7 +279,7 @@ func (x *CreateProductResponse) String() string {
 func (*CreateProductResponse) ProtoMessage() {}
 
 func (x *CreateProductResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[3]
+	mi := &file_paymentservice_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -367,7 +292,7 @@ func (x *CreateProductResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProductResponse.ProtoReflect.Descriptor instead.
 func (*CreateProductResponse) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{3}
+	return file_paymentservice_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *CreateProductResponse) GetId() string {
@@ -392,7 +317,7 @@ type ListProductsRequest struct {
 
 func (x *ListProductsRequest) Reset() {
 	*x = ListProductsRequest{}
-	mi := &file_paymentservice_proto_msgTypes[4]
+	mi := &file_paymentservice_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -404,7 +329,7 @@ func (x *ListProductsRequest) String() string {
 func (*ListProductsRequest) ProtoMessage() {}
 
 func (x *ListProductsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[4]
+	mi := &file_paymentservice_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -417,7 +342,7 @@ func (x *ListProductsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProductsRequest.ProtoReflect.Descriptor instead.
 func (*ListProductsRequest) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{4}
+	return file_paymentservice_proto_rawDescGZIP(), []int{2}
 }
 
 type ListProductsResponse struct {
@@ -429,7 +354,7 @@ type ListProductsResponse struct {
 
 func (x *ListProductsResponse) Reset() {
 	*x = ListProductsResponse{}
-	mi := &file_paymentservice_proto_msgTypes[5]
+	mi := &file_paymentservice_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -441,7 +366,7 @@ func (x *ListProductsResponse) String() string {
 func (*ListProductsResponse) ProtoMessage() {}
 
 func (x *ListProductsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[5]
+	mi := &file_paymentservice_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -454,7 +379,7 @@ func (x *ListProductsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProductsResponse.ProtoReflect.Descriptor instead.
 func (*ListProductsResponse) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{5}
+	return file_paymentservice_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ListProductsResponse) GetProducts() []*Product {
@@ -476,13 +401,14 @@ type Product struct {
 	IsRecurring          bool                   `protobuf:"varint,8,opt,name=is_recurring,json=isRecurring,proto3" json:"is_recurring,omitempty"`
 	IntervalCount        int64                  `protobuf:"varint,9,opt,name=interval_count,json=intervalCount,proto3" json:"interval_count,omitempty"`
 	IntervalPeriod       string                 `protobuf:"bytes,10,opt,name=interval_period,json=intervalPeriod,proto3" json:"interval_period,omitempty"`
+	HasAccess            bool                   `protobuf:"varint,11,opt,name=has_access,json=hasAccess,proto3" json:"has_access,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
 
 func (x *Product) Reset() {
 	*x = Product{}
-	mi := &file_paymentservice_proto_msgTypes[6]
+	mi := &file_paymentservice_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -494,7 +420,7 @@ func (x *Product) String() string {
 func (*Product) ProtoMessage() {}
 
 func (x *Product) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[6]
+	mi := &file_paymentservice_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -507,7 +433,7 @@ func (x *Product) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Product.ProtoReflect.Descriptor instead.
 func (*Product) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{6}
+	return file_paymentservice_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Product) GetId() string {
@@ -580,6 +506,13 @@ func (x *Product) GetIntervalPeriod() string {
 	return ""
 }
 
+func (x *Product) GetHasAccess() bool {
+	if x != nil {
+		return x.HasAccess
+	}
+	return false
+}
+
 type CreateStripeCheckoutSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProductId     string                 `protobuf:"bytes,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
@@ -589,7 +522,7 @@ type CreateStripeCheckoutSessionRequest struct {
 
 func (x *CreateStripeCheckoutSessionRequest) Reset() {
 	*x = CreateStripeCheckoutSessionRequest{}
-	mi := &file_paymentservice_proto_msgTypes[7]
+	mi := &file_paymentservice_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -601,7 +534,7 @@ func (x *CreateStripeCheckoutSessionRequest) String() string {
 func (*CreateStripeCheckoutSessionRequest) ProtoMessage() {}
 
 func (x *CreateStripeCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[7]
+	mi := &file_paymentservice_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -614,7 +547,7 @@ func (x *CreateStripeCheckoutSessionRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use CreateStripeCheckoutSessionRequest.ProtoReflect.Descriptor instead.
 func (*CreateStripeCheckoutSessionRequest) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{7}
+	return file_paymentservice_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CreateStripeCheckoutSessionRequest) GetProductId() string {
@@ -633,7 +566,7 @@ type CreateStripeCheckoutSessionResponse struct {
 
 func (x *CreateStripeCheckoutSessionResponse) Reset() {
 	*x = CreateStripeCheckoutSessionResponse{}
-	mi := &file_paymentservice_proto_msgTypes[8]
+	mi := &file_paymentservice_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -645,7 +578,7 @@ func (x *CreateStripeCheckoutSessionResponse) String() string {
 func (*CreateStripeCheckoutSessionResponse) ProtoMessage() {}
 
 func (x *CreateStripeCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[8]
+	mi := &file_paymentservice_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -658,7 +591,7 @@ func (x *CreateStripeCheckoutSessionResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use CreateStripeCheckoutSessionResponse.ProtoReflect.Descriptor instead.
 func (*CreateStripeCheckoutSessionResponse) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{8}
+	return file_paymentservice_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateStripeCheckoutSessionResponse) GetSessionUrl() string {
@@ -677,7 +610,7 @@ type CreateRazorpayCheckoutSessionRequest struct {
 
 func (x *CreateRazorpayCheckoutSessionRequest) Reset() {
 	*x = CreateRazorpayCheckoutSessionRequest{}
-	mi := &file_paymentservice_proto_msgTypes[9]
+	mi := &file_paymentservice_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -689,7 +622,7 @@ func (x *CreateRazorpayCheckoutSessionRequest) String() string {
 func (*CreateRazorpayCheckoutSessionRequest) ProtoMessage() {}
 
 func (x *CreateRazorpayCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[9]
+	mi := &file_paymentservice_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -702,7 +635,7 @@ func (x *CreateRazorpayCheckoutSessionRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use CreateRazorpayCheckoutSessionRequest.ProtoReflect.Descriptor instead.
 func (*CreateRazorpayCheckoutSessionRequest) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{9}
+	return file_paymentservice_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateRazorpayCheckoutSessionRequest) GetProductId() string {
@@ -723,7 +656,7 @@ type CreateRazorpayCheckoutSessionResponse struct {
 
 func (x *CreateRazorpayCheckoutSessionResponse) Reset() {
 	*x = CreateRazorpayCheckoutSessionResponse{}
-	mi := &file_paymentservice_proto_msgTypes[10]
+	mi := &file_paymentservice_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -735,7 +668,7 @@ func (x *CreateRazorpayCheckoutSessionResponse) String() string {
 func (*CreateRazorpayCheckoutSessionResponse) ProtoMessage() {}
 
 func (x *CreateRazorpayCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[10]
+	mi := &file_paymentservice_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -748,7 +681,7 @@ func (x *CreateRazorpayCheckoutSessionResponse) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use CreateRazorpayCheckoutSessionResponse.ProtoReflect.Descriptor instead.
 func (*CreateRazorpayCheckoutSessionResponse) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{10}
+	return file_paymentservice_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CreateRazorpayCheckoutSessionResponse) GetOrderId() string {
@@ -781,7 +714,7 @@ type CreateStripeSubscriptionCheckoutSessionRequest struct {
 
 func (x *CreateStripeSubscriptionCheckoutSessionRequest) Reset() {
 	*x = CreateStripeSubscriptionCheckoutSessionRequest{}
-	mi := &file_paymentservice_proto_msgTypes[11]
+	mi := &file_paymentservice_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -793,7 +726,7 @@ func (x *CreateStripeSubscriptionCheckoutSessionRequest) String() string {
 func (*CreateStripeSubscriptionCheckoutSessionRequest) ProtoMessage() {}
 
 func (x *CreateStripeSubscriptionCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[11]
+	mi := &file_paymentservice_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -806,7 +739,7 @@ func (x *CreateStripeSubscriptionCheckoutSessionRequest) ProtoReflect() protoref
 
 // Deprecated: Use CreateStripeSubscriptionCheckoutSessionRequest.ProtoReflect.Descriptor instead.
 func (*CreateStripeSubscriptionCheckoutSessionRequest) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{11}
+	return file_paymentservice_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CreateStripeSubscriptionCheckoutSessionRequest) GetProductId() string {
@@ -825,7 +758,7 @@ type CreateStripeSubscriptionCheckoutSessionResponse struct {
 
 func (x *CreateStripeSubscriptionCheckoutSessionResponse) Reset() {
 	*x = CreateStripeSubscriptionCheckoutSessionResponse{}
-	mi := &file_paymentservice_proto_msgTypes[12]
+	mi := &file_paymentservice_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -837,7 +770,7 @@ func (x *CreateStripeSubscriptionCheckoutSessionResponse) String() string {
 func (*CreateStripeSubscriptionCheckoutSessionResponse) ProtoMessage() {}
 
 func (x *CreateStripeSubscriptionCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[12]
+	mi := &file_paymentservice_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -850,7 +783,7 @@ func (x *CreateStripeSubscriptionCheckoutSessionResponse) ProtoReflect() protore
 
 // Deprecated: Use CreateStripeSubscriptionCheckoutSessionResponse.ProtoReflect.Descriptor instead.
 func (*CreateStripeSubscriptionCheckoutSessionResponse) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{12}
+	return file_paymentservice_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CreateStripeSubscriptionCheckoutSessionResponse) GetSessionUrl() string {
@@ -869,7 +802,7 @@ type CreateRazorpaySubscriptionCheckoutSessionRequest struct {
 
 func (x *CreateRazorpaySubscriptionCheckoutSessionRequest) Reset() {
 	*x = CreateRazorpaySubscriptionCheckoutSessionRequest{}
-	mi := &file_paymentservice_proto_msgTypes[13]
+	mi := &file_paymentservice_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -881,7 +814,7 @@ func (x *CreateRazorpaySubscriptionCheckoutSessionRequest) String() string {
 func (*CreateRazorpaySubscriptionCheckoutSessionRequest) ProtoMessage() {}
 
 func (x *CreateRazorpaySubscriptionCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[13]
+	mi := &file_paymentservice_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -894,7 +827,7 @@ func (x *CreateRazorpaySubscriptionCheckoutSessionRequest) ProtoReflect() protor
 
 // Deprecated: Use CreateRazorpaySubscriptionCheckoutSessionRequest.ProtoReflect.Descriptor instead.
 func (*CreateRazorpaySubscriptionCheckoutSessionRequest) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{13}
+	return file_paymentservice_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *CreateRazorpaySubscriptionCheckoutSessionRequest) GetProductId() string {
@@ -915,7 +848,7 @@ type CreateRazorpaySubscriptionCheckoutSessionResponse struct {
 
 func (x *CreateRazorpaySubscriptionCheckoutSessionResponse) Reset() {
 	*x = CreateRazorpaySubscriptionCheckoutSessionResponse{}
-	mi := &file_paymentservice_proto_msgTypes[14]
+	mi := &file_paymentservice_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -927,7 +860,7 @@ func (x *CreateRazorpaySubscriptionCheckoutSessionResponse) String() string {
 func (*CreateRazorpaySubscriptionCheckoutSessionResponse) ProtoMessage() {}
 
 func (x *CreateRazorpaySubscriptionCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_paymentservice_proto_msgTypes[14]
+	mi := &file_paymentservice_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -940,7 +873,7 @@ func (x *CreateRazorpaySubscriptionCheckoutSessionResponse) ProtoReflect() proto
 
 // Deprecated: Use CreateRazorpaySubscriptionCheckoutSessionResponse.ProtoReflect.Descriptor instead.
 func (*CreateRazorpaySubscriptionCheckoutSessionResponse) Descriptor() ([]byte, []int) {
-	return file_paymentservice_proto_rawDescGZIP(), []int{14}
+	return file_paymentservice_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *CreateRazorpaySubscriptionCheckoutSessionResponse) GetSubscriptionId() string {
@@ -964,14 +897,100 @@ func (x *CreateRazorpaySubscriptionCheckoutSessionResponse) GetCurrency() string
 	return ""
 }
 
+type CheckUserProductAccessRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProductId     string                 `protobuf:"bytes,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckUserProductAccessRequest) Reset() {
+	*x = CheckUserProductAccessRequest{}
+	mi := &file_paymentservice_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckUserProductAccessRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckUserProductAccessRequest) ProtoMessage() {}
+
+func (x *CheckUserProductAccessRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckUserProductAccessRequest.ProtoReflect.Descriptor instead.
+func (*CheckUserProductAccessRequest) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *CheckUserProductAccessRequest) GetProductId() string {
+	if x != nil {
+		return x.ProductId
+	}
+	return ""
+}
+
+type CheckUserProductAccessResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	HasAccess     bool                   `protobuf:"varint,1,opt,name=has_access,json=hasAccess,proto3" json:"has_access,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckUserProductAccessResponse) Reset() {
+	*x = CheckUserProductAccessResponse{}
+	mi := &file_paymentservice_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckUserProductAccessResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckUserProductAccessResponse) ProtoMessage() {}
+
+func (x *CheckUserProductAccessResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_paymentservice_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckUserProductAccessResponse.ProtoReflect.Descriptor instead.
+func (*CheckUserProductAccessResponse) Descriptor() ([]byte, []int) {
+	return file_paymentservice_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *CheckUserProductAccessResponse) GetHasAccess() bool {
+	if x != nil {
+		return x.HasAccess
+	}
+	return false
+}
+
 var File_paymentservice_proto protoreflect.FileDescriptor
 
 const file_paymentservice_proto_rawDesc = "" +
 	"\n" +
 	"\x14paymentservice.proto\x12\n" +
-	"sortedchat\"\x0e\n" +
-	"\fInferRequest\"\x0f\n" +
-	"\rInferResponse\"\xca\x02\n" +
+	"sortedchat\"\xca\x02\n" +
 	"\x14CreateProductRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x125\n" +
@@ -985,7 +1004,7 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\x15\n" +
 	"\x13ListProductsRequest\"G\n" +
 	"\x14ListProductsResponse\x12/\n" +
-	"\bproducts\x18\x01 \x03(\v2\x13.sortedchat.ProductR\bproducts\"\x87\x03\n" +
+	"\bproducts\x18\x01 \x03(\v2\x13.sortedchat.ProductR\bproducts\"\xa6\x03\n" +
 	"\aProduct\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\x11stripe_product_id\x18\x02 \x01(\tR\x0fstripeProductId\x12.\n" +
@@ -997,7 +1016,9 @@ const file_paymentservice_proto_rawDesc = "" +
 	"\fis_recurring\x18\b \x01(\bR\visRecurring\x12%\n" +
 	"\x0einterval_count\x18\t \x01(\x03R\rintervalCount\x12'\n" +
 	"\x0finterval_period\x18\n" +
-	" \x01(\tR\x0eintervalPeriod\"C\n" +
+	" \x01(\tR\x0eintervalPeriod\x12\x1d\n" +
+	"\n" +
+	"has_access\x18\v \x01(\bR\thasAccess\"C\n" +
 	"\"CreateStripeCheckoutSessionRequest\x12\x1d\n" +
 	"\n" +
 	"product_id\x18\x01 \x01(\tR\tproductId\"F\n" +
@@ -1023,27 +1044,32 @@ const file_paymentservice_proto_rawDesc = "" +
 	"1CreateRazorpaySubscriptionCheckoutSessionResponse\x12'\n" +
 	"\x0fsubscription_id\x18\x01 \x01(\tR\x0esubscriptionId\x12\x16\n" +
 	"\x06amount\x18\x02 \x01(\x03R\x06amount\x12\x1a\n" +
-	"\bcurrency\x18\x03 \x01(\tR\bcurrency*\x1c\n" +
+	"\bcurrency\x18\x03 \x01(\tR\bcurrency\">\n" +
+	"\x1dCheckUserProductAccessRequest\x12\x1d\n" +
+	"\n" +
+	"product_id\x18\x01 \x01(\tR\tproductId\"?\n" +
+	"\x1eCheckUserProductAccessResponse\x12\x1d\n" +
+	"\n" +
+	"has_access\x18\x01 \x01(\bR\thasAccess*\x1c\n" +
 	"\bCurrency\x12\a\n" +
 	"\x03USD\x10\x00\x12\a\n" +
 	"\x03INR\x10\x01**\n" +
 	"\vPaymentType\x12\r\n" +
 	"\tRECURRING\x10\x00\x12\f\n" +
-	"\bONE_TIME\x10\x01*?\n" +
-	"\bInterval\x12\a\n" +
-	"\x03DAY\x10\x00\x12\b\n" +
-	"\x04WEEK\x10\x01\x12\t\n" +
-	"\x05MONTH\x10\x02\x12\v\n" +
-	"\aQUARTER\x10\x03\x12\b\n" +
-	"\x04YEAR\x10\x042\xd0\x06\n" +
-	"\x0ePaymentService\x12>\n" +
-	"\x05Infer\x12\x18.sortedchat.InferRequest\x1a\x19.sortedchat.InferResponse0\x01\x12T\n" +
+	"\bONE_TIME\x10\x01*6\n" +
+	"\bInterval\x12\b\n" +
+	"\x04WEEK\x10\x00\x12\t\n" +
+	"\x05MONTH\x10\x01\x12\v\n" +
+	"\aQUARTER\x10\x02\x12\b\n" +
+	"\x04YEAR\x10\x032\x81\a\n" +
+	"\x0ePaymentService\x12T\n" +
 	"\rCreateProduct\x12 .sortedchat.CreateProductRequest\x1a!.sortedchat.CreateProductResponse\x12Q\n" +
 	"\fListProducts\x12\x1f.sortedchat.ListProductsRequest\x1a .sortedchat.ListProductsResponse\x12~\n" +
 	"\x1bCreateStripeCheckoutSession\x12..sortedchat.CreateStripeCheckoutSessionRequest\x1a/.sortedchat.CreateStripeCheckoutSessionResponse\x12\x84\x01\n" +
 	"\x1dCreateRazorpayCheckoutSession\x120.sortedchat.CreateRazorpayCheckoutSessionRequest\x1a1.sortedchat.CreateRazorpayCheckoutSessionResponse\x12\xa2\x01\n" +
 	"'CreateStripeSubscriptionCheckoutSession\x12:.sortedchat.CreateStripeSubscriptionCheckoutSessionRequest\x1a;.sortedchat.CreateStripeSubscriptionCheckoutSessionResponse\x12\xa8\x01\n" +
-	")CreateRazorpaySubscriptionCheckoutSession\x12<.sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest\x1a=.sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponseB$Z\"sortedstartup/paymentservice/protob\x06proto3"
+	")CreateRazorpaySubscriptionCheckoutSession\x12<.sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest\x1a=.sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponse\x12o\n" +
+	"\x16CheckUserProductAccess\x12).sortedchat.CheckUserProductAccessRequest\x1a*.sortedchat.CheckUserProductAccessResponseB$Z\"sortedstartup/paymentservice/protob\x06proto3"
 
 var (
 	file_paymentservice_proto_rawDescOnce sync.Once
@@ -1063,42 +1089,42 @@ var file_paymentservice_proto_goTypes = []any{
 	(Currency)(0),                                             // 0: sortedchat.Currency
 	(PaymentType)(0),                                          // 1: sortedchat.PaymentType
 	(Interval)(0),                                             // 2: sortedchat.Interval
-	(*InferRequest)(nil),                                      // 3: sortedchat.InferRequest
-	(*InferResponse)(nil),                                     // 4: sortedchat.InferResponse
-	(*CreateProductRequest)(nil),                              // 5: sortedchat.CreateProductRequest
-	(*CreateProductResponse)(nil),                             // 6: sortedchat.CreateProductResponse
-	(*ListProductsRequest)(nil),                               // 7: sortedchat.ListProductsRequest
-	(*ListProductsResponse)(nil),                              // 8: sortedchat.ListProductsResponse
-	(*Product)(nil),                                           // 9: sortedchat.Product
-	(*CreateStripeCheckoutSessionRequest)(nil),                // 10: sortedchat.CreateStripeCheckoutSessionRequest
-	(*CreateStripeCheckoutSessionResponse)(nil),               // 11: sortedchat.CreateStripeCheckoutSessionResponse
-	(*CreateRazorpayCheckoutSessionRequest)(nil),              // 12: sortedchat.CreateRazorpayCheckoutSessionRequest
-	(*CreateRazorpayCheckoutSessionResponse)(nil),             // 13: sortedchat.CreateRazorpayCheckoutSessionResponse
-	(*CreateStripeSubscriptionCheckoutSessionRequest)(nil),    // 14: sortedchat.CreateStripeSubscriptionCheckoutSessionRequest
-	(*CreateStripeSubscriptionCheckoutSessionResponse)(nil),   // 15: sortedchat.CreateStripeSubscriptionCheckoutSessionResponse
-	(*CreateRazorpaySubscriptionCheckoutSessionRequest)(nil),  // 16: sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest
-	(*CreateRazorpaySubscriptionCheckoutSessionResponse)(nil), // 17: sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponse
+	(*CreateProductRequest)(nil),                              // 3: sortedchat.CreateProductRequest
+	(*CreateProductResponse)(nil),                             // 4: sortedchat.CreateProductResponse
+	(*ListProductsRequest)(nil),                               // 5: sortedchat.ListProductsRequest
+	(*ListProductsResponse)(nil),                              // 6: sortedchat.ListProductsResponse
+	(*Product)(nil),                                           // 7: sortedchat.Product
+	(*CreateStripeCheckoutSessionRequest)(nil),                // 8: sortedchat.CreateStripeCheckoutSessionRequest
+	(*CreateStripeCheckoutSessionResponse)(nil),               // 9: sortedchat.CreateStripeCheckoutSessionResponse
+	(*CreateRazorpayCheckoutSessionRequest)(nil),              // 10: sortedchat.CreateRazorpayCheckoutSessionRequest
+	(*CreateRazorpayCheckoutSessionResponse)(nil),             // 11: sortedchat.CreateRazorpayCheckoutSessionResponse
+	(*CreateStripeSubscriptionCheckoutSessionRequest)(nil),    // 12: sortedchat.CreateStripeSubscriptionCheckoutSessionRequest
+	(*CreateStripeSubscriptionCheckoutSessionResponse)(nil),   // 13: sortedchat.CreateStripeSubscriptionCheckoutSessionResponse
+	(*CreateRazorpaySubscriptionCheckoutSessionRequest)(nil),  // 14: sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest
+	(*CreateRazorpaySubscriptionCheckoutSessionResponse)(nil), // 15: sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponse
+	(*CheckUserProductAccessRequest)(nil),                     // 16: sortedchat.CheckUserProductAccessRequest
+	(*CheckUserProductAccessResponse)(nil),                    // 17: sortedchat.CheckUserProductAccessResponse
 }
 var file_paymentservice_proto_depIdxs = []int32{
 	0,  // 0: sortedchat.CreateProductRequest.currency:type_name -> sortedchat.Currency
 	1,  // 1: sortedchat.CreateProductRequest.payment_type:type_name -> sortedchat.PaymentType
 	2,  // 2: sortedchat.CreateProductRequest.interval:type_name -> sortedchat.Interval
-	9,  // 3: sortedchat.ListProductsResponse.products:type_name -> sortedchat.Product
+	7,  // 3: sortedchat.ListProductsResponse.products:type_name -> sortedchat.Product
 	0,  // 4: sortedchat.Product.currency:type_name -> sortedchat.Currency
-	3,  // 5: sortedchat.PaymentService.Infer:input_type -> sortedchat.InferRequest
-	5,  // 6: sortedchat.PaymentService.CreateProduct:input_type -> sortedchat.CreateProductRequest
-	7,  // 7: sortedchat.PaymentService.ListProducts:input_type -> sortedchat.ListProductsRequest
-	10, // 8: sortedchat.PaymentService.CreateStripeCheckoutSession:input_type -> sortedchat.CreateStripeCheckoutSessionRequest
-	12, // 9: sortedchat.PaymentService.CreateRazorpayCheckoutSession:input_type -> sortedchat.CreateRazorpayCheckoutSessionRequest
-	14, // 10: sortedchat.PaymentService.CreateStripeSubscriptionCheckoutSession:input_type -> sortedchat.CreateStripeSubscriptionCheckoutSessionRequest
-	16, // 11: sortedchat.PaymentService.CreateRazorpaySubscriptionCheckoutSession:input_type -> sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest
-	4,  // 12: sortedchat.PaymentService.Infer:output_type -> sortedchat.InferResponse
-	6,  // 13: sortedchat.PaymentService.CreateProduct:output_type -> sortedchat.CreateProductResponse
-	8,  // 14: sortedchat.PaymentService.ListProducts:output_type -> sortedchat.ListProductsResponse
-	11, // 15: sortedchat.PaymentService.CreateStripeCheckoutSession:output_type -> sortedchat.CreateStripeCheckoutSessionResponse
-	13, // 16: sortedchat.PaymentService.CreateRazorpayCheckoutSession:output_type -> sortedchat.CreateRazorpayCheckoutSessionResponse
-	15, // 17: sortedchat.PaymentService.CreateStripeSubscriptionCheckoutSession:output_type -> sortedchat.CreateStripeSubscriptionCheckoutSessionResponse
-	17, // 18: sortedchat.PaymentService.CreateRazorpaySubscriptionCheckoutSession:output_type -> sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponse
+	3,  // 5: sortedchat.PaymentService.CreateProduct:input_type -> sortedchat.CreateProductRequest
+	5,  // 6: sortedchat.PaymentService.ListProducts:input_type -> sortedchat.ListProductsRequest
+	8,  // 7: sortedchat.PaymentService.CreateStripeCheckoutSession:input_type -> sortedchat.CreateStripeCheckoutSessionRequest
+	10, // 8: sortedchat.PaymentService.CreateRazorpayCheckoutSession:input_type -> sortedchat.CreateRazorpayCheckoutSessionRequest
+	12, // 9: sortedchat.PaymentService.CreateStripeSubscriptionCheckoutSession:input_type -> sortedchat.CreateStripeSubscriptionCheckoutSessionRequest
+	14, // 10: sortedchat.PaymentService.CreateRazorpaySubscriptionCheckoutSession:input_type -> sortedchat.CreateRazorpaySubscriptionCheckoutSessionRequest
+	16, // 11: sortedchat.PaymentService.CheckUserProductAccess:input_type -> sortedchat.CheckUserProductAccessRequest
+	4,  // 12: sortedchat.PaymentService.CreateProduct:output_type -> sortedchat.CreateProductResponse
+	6,  // 13: sortedchat.PaymentService.ListProducts:output_type -> sortedchat.ListProductsResponse
+	9,  // 14: sortedchat.PaymentService.CreateStripeCheckoutSession:output_type -> sortedchat.CreateStripeCheckoutSessionResponse
+	11, // 15: sortedchat.PaymentService.CreateRazorpayCheckoutSession:output_type -> sortedchat.CreateRazorpayCheckoutSessionResponse
+	13, // 16: sortedchat.PaymentService.CreateStripeSubscriptionCheckoutSession:output_type -> sortedchat.CreateStripeSubscriptionCheckoutSessionResponse
+	15, // 17: sortedchat.PaymentService.CreateRazorpaySubscriptionCheckoutSession:output_type -> sortedchat.CreateRazorpaySubscriptionCheckoutSessionResponse
+	17, // 18: sortedchat.PaymentService.CheckUserProductAccess:output_type -> sortedchat.CheckUserProductAccessResponse
 	12, // [12:19] is the sub-list for method output_type
 	5,  // [5:12] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name

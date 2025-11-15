@@ -19,6 +19,7 @@ type Product struct {
 	IntervalPeriod    sql.NullString `db:"interval_period"`
 	CreatedAt         string         `db:"created_at"`
 	UpdatedAt         string         `db:"updated_at"`
+	HasAccess         bool           `db:"-"` // Not stored in DB, computed field
 }
 
 // GetCurrencyEnum converts the string currency to protobuf Currency enum
@@ -34,18 +35,20 @@ func (p *Product) GetCurrencyEnum() pb.Currency {
 }
 
 type Subscription struct {
-	ID                         string         `db:"id"`
-	UserID                     string         `db:"user_id"`
-	ProductID                  string         `db:"product_id"`
-	Provider                   string         `db:"provider"`
-	ProviderSubscriptionID     string         `db:"provider_subscription_id"`
-	ProviderCustomerID         string         `db:"provider_customer_id"`
-	ProviderSubscriptionStatus string         `db:"provider_subscription_status"`
-	Status                     string         `db:"status"`
-	CurrentPeriodStart         int64          `db:"current_period_start"`
-	CurrentPeriodEnd           int64          `db:"current_period_end"`
-	CancelAtPeriodEnd          bool           `db:"cancel_at_period_end"`
-	CreatedAt                  string         `db:"created_at"`
-	UpdatedAt                  string         `db:"updated_at"`
-	CanceledAt                 sql.NullString `db:"canceled_at"`
+	ID                         string        `db:"id"`
+	EventID                    string        `db:"event_id"`
+	UserID                     string        `db:"user_id"`
+	ProductID                  string        `db:"product_id"`
+	Provider                   string        `db:"provider"`
+	ProviderSubscriptionID     string        `db:"provider_subscription_id"`
+	ProviderCustomerID         string        `db:"provider_customer_id"`
+	ProviderSubscriptionStatus string        `db:"provider_subscription_status"`
+	Status                     string        `db:"status"`
+	CurrentPeriodStart         int64         `db:"current_period_start"`
+	CurrentPeriodEnd           int64         `db:"current_period_end"`
+	CancelAtPeriodEnd          bool          `db:"cancel_at_period_end"`
+	CreatedAt                  string        `db:"created_at"`
+	UpdatedAt                  string        `db:"updated_at"`
+	CanceledAt                 sql.NullInt64 `db:"canceled_at"`
+	IsRecurring                bool          `db:"is_recurring"`
 }

@@ -27,10 +27,6 @@ func NewPaymentService(daoFactory dao.DAOFactory) (*PaymentService, error) {
 	}, nil
 }
 
-func (s *PaymentService) Infer(ctx context.Context, dummy string) error {
-	return s.dao.Infer(dummy)
-}
-
 func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name string, description string, amountInSmallestUnit int64, currency string, isRecurring bool, intervalCount int64, intervalPeriod string) (string, error) {
 	slog.Info("paymentservice:service:CreateProduct", "userID", userID, "name", name, "isRecurring", isRecurring, "intervalCount", intervalCount, "intervalPeriod", intervalPeriod)
 
@@ -41,7 +37,7 @@ func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name 
 		}
 		// Optional: whitelist intervalPeriod values
 		switch intervalPeriod {
-		case "day", "week", "month", "quarter", "year":
+		case "week", "month", "quarter", "year":
 		default:
 			slog.Error("paymentservice:service:CreateProduct", "error", "invalid intervalPeriod for recurring product")
 			return "", fmt.Errorf("invalid intervalPeriod for recurring product: %v", intervalPeriod)
@@ -93,9 +89,9 @@ func (s *PaymentService) CreateProduct(ctx context.Context, userID string, name 
 	return productID, nil
 }
 
-func (s *PaymentService) ListProducts(ctx context.Context) ([]*dao.Product, error) {
-	slog.Info("paymentservice:service:ListProducts")
-	products, err := s.dao.ListProducts()
+func (s *PaymentService) ListProducts(ctx context.Context, userID string) ([]*dao.Product, error) {
+	slog.Info("paymentservice:service:ListProducts", "userID", userID)
+	products, err := s.dao.ListProducts(userID)
 	if err != nil {
 		slog.Error("paymentservice:service:ListProducts", "error", err)
 		return nil, fmt.Errorf("failed to process the request")
@@ -107,8 +103,6 @@ func (s *PaymentService) ListProducts(ctx context.Context) ([]*dao.Product, erro
 // convertIntervalForStripe converts internal interval to Stripe format
 func (s *PaymentService) convertIntervalForStripe(intervalPeriod string) string {
 	switch intervalPeriod {
-	case "day":
-		return "day"
 	case "week":
 		return "week"
 	case "month":
@@ -125,8 +119,6 @@ func (s *PaymentService) convertIntervalForStripe(intervalPeriod string) string 
 // convertIntervalForRazorpay converts internal interval to Razorpay format
 func (s *PaymentService) convertIntervalForRazorpay(intervalPeriod string) string {
 	switch intervalPeriod {
-	case "day":
-		return "daily"
 	case "week":
 		return "weekly"
 	case "month":
@@ -138,4 +130,17 @@ func (s *PaymentService) convertIntervalForRazorpay(intervalPeriod string) strin
 	default:
 		return "monthly" // default to monthly
 	}
+}
+
+func (s *PaymentService) CheckUserProductAccess(ctx context.Context, userID, productID string) (bool, error) {
+	slog.Info("paymentservice:service:CheckUserProductAccess", "userID", userID, "productID", productID)
+
+	hasAccess, err := s.dao.CheckUserProductAccess(userID, productID)
+	if err != nil {
+		slog.Error("paymentservice:service:CheckUserProductAccess", "error", err)
+		return false, err
+	}
+
+	slog.Info("paymentservice:service:CheckUserProductAccess", "result", hasAccess, "userID", userID, "productID", productID)
+	return hasAccess, nil
 }

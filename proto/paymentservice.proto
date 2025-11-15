@@ -15,27 +15,20 @@ enum PaymentType {
 }
 
 enum Interval {
-    DAY = 0;
-    WEEK = 1;
-    MONTH = 2;
-    QUARTER = 3; //stripe does not support quarterly, so we use monthly with count 3
-    YEAR = 4;
+    WEEK = 0;
+    MONTH = 1;
+    QUARTER = 2; //stripe does not support quarterly, so we use monthly with count 3
+    YEAR = 3;
 }
 
 service PaymentService {
-    rpc Infer(InferRequest) returns (stream InferResponse);
     rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
     rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
     rpc CreateStripeCheckoutSession(CreateStripeCheckoutSessionRequest) returns (CreateStripeCheckoutSessionResponse);
     rpc CreateRazorpayCheckoutSession(CreateRazorpayCheckoutSessionRequest) returns (CreateRazorpayCheckoutSessionResponse);
     rpc CreateStripeSubscriptionCheckoutSession(CreateStripeSubscriptionCheckoutSessionRequest) returns (CreateStripeSubscriptionCheckoutSessionResponse);
     rpc CreateRazorpaySubscriptionCheckoutSession(CreateRazorpaySubscriptionCheckoutSessionRequest) returns (CreateRazorpaySubscriptionCheckoutSessionResponse);
-}
-
-message InferRequest {
-}
-
-message InferResponse {
+    rpc CheckUserProductAccess(CheckUserProductAccessRequest) returns (CheckUserProductAccessResponse);
 }
 
 message CreateProductRequest {
@@ -71,6 +64,7 @@ message Product {
     bool is_recurring = 8;
     int64 interval_count = 9;
     string interval_period = 10;
+    bool has_access = 11;
 }
 
 message CreateStripeCheckoutSessionRequest {
@@ -109,3 +103,10 @@ message CreateRazorpaySubscriptionCheckoutSessionResponse {
     string currency = 3;
 }
 
+message CheckUserProductAccessRequest {
+    string product_id = 1;
+}
+
+message CheckUserProductAccessResponse {
+    bool has_access = 1;
+}

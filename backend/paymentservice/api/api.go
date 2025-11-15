@@ -14,7 +14,6 @@ import (
 	"sortedstartup/paymentservice/service"
 
 	"github.com/stripe/stripe-go/v83"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -39,10 +38,6 @@ func NewPaymentServiceAPI(mux *http.ServeMux, daoFactory dao.DAOFactory) *Paymen
 	s.registerRoutes(mux)
 
 	return s
-}
-
-func (s *PaymentServiceAPI) Infer(_ *pb.InferRequest, stream grpc.ServerStreamingServer[pb.InferResponse]) error {
-	return s.service.Infer(stream.Context(), "dummy")
 }
 
 func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreateProductRequest) (*pb.CreateProductResponse, error) {
@@ -79,11 +74,9 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 	// Convert interval enum to string for database storage
 	var intervalPeriod string
 
-	slog.Info("paymentservice:api:CreateProductsanskar", "isRecurring", isRecurring, "interval", req.Interval, "intervalCount", req.IntervalCount, "intervalPeriod", intervalPeriod)
+	slog.Info("paymentservice:api:CreateProduct", "isRecurring", isRecurring, "interval", req.Interval, "intervalCount", req.IntervalCount, "intervalPeriod", intervalPeriod)
 	if isRecurring {
 		switch req.Interval {
-		case pb.Interval_DAY:
-			intervalPeriod = "day"
 		case pb.Interval_WEEK:
 			intervalPeriod = "week"
 		case pb.Interval_MONTH:
@@ -113,8 +106,13 @@ func (s *PaymentServiceAPI) CreateProduct(ctx context.Context, req *pb.CreatePro
 }
 
 func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:ListProducts", "error", err)
+		return nil, err
+	}
 
-	daoProducts, err := s.service.ListProducts(ctx)
+	daoProducts, err := s.service.ListProducts(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +141,7 @@ func (s *PaymentServiceAPI) ListProducts(ctx context.Context, req *pb.ListProduc
 			IsRecurring:          daoProduct.IsRecurring,
 			IntervalCount:        intervalCount,
 			IntervalPeriod:       intervalPeriod,
+			HasAccess:            daoProduct.HasAccess,
 		}
 	}
 
@@ -279,4 +278,26 @@ func (s *PaymentServiceAPI) Init(config *dao.Config) error {
 	}
 
 	return nil
+}
+
+func (s *PaymentServiceAPI) CheckUserProductAccess(ctx context.Context, req *pb.CheckUserProductAccessRequest) (*pb.CheckUserProductAccessResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("paymentservice:api:CheckUserProductAccess", "error", err)
+		return nil, err
+	}
+
+	if strings.TrimSpace(req.ProductId) == "" {
+		return nil, status.Error(codes.InvalidArgument, "Product ID cannot be empty")
+	}
+
+	hasAccess, err := s.service.CheckUserProductAccess(ctx, userID, req.ProductId)
+	if err != nil {
+		slog.Error("paymentservice:api:CheckUserProductAccess", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to check user product access: %v", err)
+	}
+
+	return &pb.CheckUserProductAccessResponse{
+		HasAccess: hasAccess,
+	}, nil
 }

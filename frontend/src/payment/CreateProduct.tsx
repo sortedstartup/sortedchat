@@ -132,7 +132,6 @@ const CreateProduct: React.FC = () => {
                                 onChange={(e) => setInterval(parseInt(e.target.value) as Interval)}
                                 required
                             >
-                                <option value={Interval.DAY}>Daily</option>
                                 <option value={Interval.WEEK}>Weekly</option>
                                 <option value={Interval.MONTH}>Monthly</option>
                                 <option value={Interval.QUARTER}>Quarterly</option>
@@ -143,7 +142,6 @@ const CreateProduct: React.FC = () => {
                         <div className="text-xs text-gray-600">
                             {intervalCount > 1 ? (
                                 <>Billing every {intervalCount} {
-                                    interval === Interval.DAY ? 'days' :
                                     interval === Interval.WEEK ? 'weeks' :
                                     interval === Interval.MONTH ? 'months' :
                                     interval === Interval.QUARTER ? 'quarters' :
@@ -151,7 +149,6 @@ const CreateProduct: React.FC = () => {
                                 }</>
                             ) : (
                                 <>Billing {
-                                    interval === Interval.DAY ? 'daily' :
                                     interval === Interval.WEEK ? 'weekly' :
                                     interval === Interval.MONTH ? 'monthly' :
                                     interval === Interval.QUARTER ? 'quarterly' :

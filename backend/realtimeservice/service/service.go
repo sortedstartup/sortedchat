@@ -186,7 +186,7 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 	}
 
 	// Create Gemini realtime instance
-	geminiRealtime, err := NewGeminiRealtime(userID, userConn.aiBackendTrack, userConn.dataChannelManager)
+	geminiRealtime, err := NewGeminiRealtime(userID, userConn.aiBackendTrack, userConn.dataChannelManager, s)
 	if err != nil {
 		slog.Error("Failed to create Gemini realtime instance", "userID", userID, "error", err)
 		return err
@@ -226,7 +226,7 @@ func (s *RealtimeService) connectToOpenai(userID string) error {
 		return fmt.Errorf("user connection not found")
 	}
 
-	openaiRealtime, err := NewOpenAIRealtime(userID, userConn.aiBackendTrack, userConn.dataChannelManager)
+	openaiRealtime, err := NewOpenAIRealtime(userID, userConn.aiBackendTrack, userConn.dataChannelManager, s)
 	if err != nil {
 		slog.Error("Failed to create OpenAI realtime instance", "userID", userID, "error", err)
 		return err

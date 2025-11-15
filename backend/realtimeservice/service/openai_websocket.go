@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -8,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/rtp"
@@ -30,6 +30,8 @@ type OpenAIRealtime struct {
 	connected          bool
 	mu                 sync.RWMutex
 	dataChannelManager *DataChannelManager
+	cancel             context.CancelFunc
+	service            *RealtimeService
 }
 
 // OpenAI message types based on the actual API response format
@@ -113,7 +115,7 @@ type CachedTokenDetails struct {
 }
 
 // NewOpenAIRealtime creates a new OpenAIRealtime instance
-func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP, dataChannelManager *DataChannelManager) (*OpenAIRealtime, error) {
+func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP, dataChannelManager *DataChannelManager, service *RealtimeService) (*OpenAIRealtime, error) {
 
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
@@ -143,6 +145,7 @@ func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 		sequenceNumber:     1,
 		timestamp:          1,
 		dataChannelManager: dataChannelManager,
+		service:            service,
 	}, nil
 }
 
@@ -192,23 +195,30 @@ func (o *OpenAIRealtime) Connect() error {
 	o.connected = true
 	o.mu.Unlock()
 
-	// Start handling responses in a goroutine with error channel
-	errorChannel := make(chan error, 1)
+	// Create context for this connection
+	ctx, cancel := context.WithCancel(context.Background())
+	o.cancel = cancel // Store cancel function
+
+	// Start handling responses with context
 	go func() {
-		err := o.handleResponses()
-		errorChannel <- err
+		defer cancel() // Always cancel when goroutine exits
+
+		err := o.handleResponses(ctx)
+		if err != nil {
+			slog.Error("handleResponses failed", "userID", o.userID, "error", err)
+		}
 	}()
 
-	// Check for immediate errors (like connection issues)
-	select {
-	case err := <-errorChannel:
-		if err != nil {
-			slog.Error("Failed to handle responses", "userID", o.userID, "error", err)
-			return err
+	// Monitor context
+	go func() {
+		<-ctx.Done() // Wait for context cancellation-blockign
+		slog.Info("Context cancelled - triggering service cleanup", "userID", o.userID)
+
+		// Trigger full service cleanup
+		if o.service != nil {
+			go o.service.Cleanup(o.userID)
 		}
-	case <-time.After(100 * time.Millisecond):
-		// Continue if no immediate error - handleResponses is running in background
-	}
+	}()
 
 	sessionMsg := OpenAIMessage{
 		Type: "session.update",
@@ -318,8 +328,17 @@ func (o *OpenAIRealtime) SendAudio(audioData []byte) {
 }
 
 // handleResponses processes incoming messages from OpenAI
-func (o *OpenAIRealtime) handleResponses() error {
+func (o *OpenAIRealtime) handleResponses(ctx context.Context) error {
 	for {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			slog.Info("handleResponses cancelled by context", "userID", o.userID)
+			return ctx.Err()
+		default:
+			// Continue processing
+		}
+
 		o.mu.RLock()
 		connected := o.connected //connected to OpenAI status
 		o.mu.RUnlock()
@@ -335,7 +354,7 @@ func (o *OpenAIRealtime) handleResponses() error {
 			o.mu.Lock()
 			o.connected = false //set connected to false if connection is closed
 			o.mu.Unlock()
-			return err
+			return err // This will exit function → defer cancel() → context cancelled → cleanup triggered
 		}
 
 		// Handle different event types
@@ -460,7 +479,6 @@ func (o *OpenAIRealtime) handleResponses() error {
 			slog.Debug("Unhandled OpenAI event", "userID", o.userID, "type", eventType)
 		}
 	}
-	// return nil
 }
 
 // sendAudioToClient sends processed audio to the WebRTC outbound track
@@ -536,6 +554,11 @@ func (o *OpenAIRealtime) Close() error {
 	defer o.mu.Unlock()
 
 	o.connected = false
+
+	// Cancel context first to stop all goroutines
+	if o.cancel != nil {
+		o.cancel()
+	}
 
 	if o.ws != nil {
 		err := o.ws.Close()

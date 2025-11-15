@@ -1,13 +1,13 @@
 package service
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"log/slog"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/rtp"
@@ -29,6 +29,8 @@ type GeminiRealtime struct {
 	connected          bool
 	mu                 sync.RWMutex
 	dataChannelManager *DataChannelManager
+	cancel             context.CancelFunc
+	service            *RealtimeService
 }
 
 const opusPayloadType = 111
@@ -59,7 +61,7 @@ type GeminiMediaChunk struct {
 }
 
 // NewGeminiRealtime creates a new GeminiRealtime instance
-func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP, dataChannelManager *DataChannelManager) (*GeminiRealtime, error) {
+func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP, dataChannelManager *DataChannelManager, service *RealtimeService) (*GeminiRealtime, error) {
 	slog.Info("RealtimeService:gemini_websocket:NewGeminiRealtime")
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
@@ -89,6 +91,7 @@ func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 		sequenceNumber:     1,
 		timestamp:          1,
 		dataChannelManager: dataChannelManager,
+		service:            service,
 	}, nil
 }
 
@@ -156,23 +159,30 @@ func (g *GeminiRealtime) Connect() error {
 
 	slog.Info("RealtimeService:gemini_websocket:Connect", "message", "Gemini setup complete", "userID", g.userID)
 
-	// Start handling responses in a goroutine with error channel
-	errorChannel := make(chan error, 1)
+	// Create context for this connection
+	ctx, cancel := context.WithCancel(context.Background())
+	g.cancel = cancel // Store cancel function
+
+	// Start handling responses with context
 	go func() {
-		err := g.handleResponses()
-		errorChannel <- err
+		defer cancel() // Always cancel when goroutine exits
+
+		err := g.handleResponses(ctx)
+		if err != nil {
+			slog.Error("handleResponses failed", "userID", g.userID, "error", err)
+		}
 	}()
 
-	// Check for immediate errors (like connection issues)
-	select {
-	case err := <-errorChannel:
-		if err != nil {
-			slog.Error("Failed to handle responses", "userID", g.userID, "error", err)
-			return err
+	// Monitor context cancellation and trigger service cleanup
+	go func() {
+		<-ctx.Done() // Wait for context cancellation
+		slog.Info("Context cancelled - triggering service cleanup", "userID", g.userID)
+
+		// Trigger full service cleanup
+		if g.service != nil {
+			go g.service.Cleanup(g.userID)
 		}
-	case <-time.After(100 * time.Millisecond):
-		// Continue if no immediate error - handleResponses is running in background
-	}
+	}()
 
 	return nil
 }
@@ -257,8 +267,16 @@ func (g *GeminiRealtime) SendAudio(audioData []byte) {
 }
 
 // handleResponses processes incoming messages from Gemini
-func (g *GeminiRealtime) handleResponses() error {
+func (g *GeminiRealtime) handleResponses(ctx context.Context) error {
 	for {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			slog.Info("handleResponses cancelled by context", "userID", g.userID)
+			return ctx.Err()
+		default:
+			// Continue processing
+		}
 
 		g.mu.RLock()
 		connected := g.connected
@@ -274,7 +292,7 @@ func (g *GeminiRealtime) handleResponses() error {
 			g.mu.Lock()
 			g.connected = false
 			g.mu.Unlock()
-			return err
+			return err // This will exit function → defer cancel() → context cancelled → cleanup triggered
 		}
 
 		// Extract audio from serverContent response
@@ -286,7 +304,7 @@ func (g *GeminiRealtime) handleResponses() error {
 							if inlineData, ok := partMap["inlineData"].(map[string]interface{}); ok {
 								if audioData, ok := inlineData["data"].(string); ok {
 									slog.Info("Received audio from Gemini", "userID", g.userID, "chars", len(audioData))
-									g.sendDataChannelMessage("recieving_audio", "gemini", nil) //custom event
+									g.sendDataChannelMessage("recieving_audio", "gemini", nil)
 									g.sendAudioToClient(audioData)
 								}
 							}
@@ -375,6 +393,11 @@ func (g *GeminiRealtime) Close() error {
 	defer g.mu.Unlock()
 
 	g.connected = false
+
+	// Cancel context first to stop all goroutines
+	if g.cancel != nil {
+		g.cancel()
+	}
 
 	if g.ws != nil {
 		err := g.ws.Close()

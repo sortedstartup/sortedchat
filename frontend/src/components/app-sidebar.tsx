@@ -239,7 +239,8 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                <SidebarMenuItem>
+                {/* Temporarily hiding it for this release only */}
+                {/* <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <button onClick={() => setIsAudioModalOpen(true)}
                     >
@@ -247,7 +248,7 @@ export function AppSidebar() {
                       <span>New Realtime Voice Chat</span>
                     </button>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
+                </SidebarMenuItem> */}
                 
                 <SidebarMenuItem>
                   <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>

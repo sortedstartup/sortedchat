@@ -317,14 +317,15 @@ function Message({
                   )}
                 </Button>
 
-                <Button
+                {/* Temporarily hiding it for this release only */}
+                {/* <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onBranchChat(message.message_id)}
                   className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Branch Chat
-                </Button>
+                </Button> */}
               </div>
 
               <div

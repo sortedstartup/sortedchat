@@ -1,4 +1,6 @@
-import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2, AudioLines } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2,
+  //  AudioLines //temporarily hiding it for this release only
+  } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";

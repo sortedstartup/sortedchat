@@ -181,7 +181,7 @@ function Message({
   message,
   onCopyMessage,
   onViewRAGDetails,
-  onBranchChat,
+  // onBranchChat, //temporarily hiding it for this release only
   isCopied,
   projectId,
   isExpanded,

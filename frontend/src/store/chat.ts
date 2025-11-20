@@ -150,6 +150,8 @@ export const fetchChatMessages = async (chatId: string) => {
 
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
+//key here is message id and value is response summary, only used till we do not reload the page
+//store new chat summaries after page load
 export const $responseSummaries = atom<Record<string, ResponseSummary>>({});
 
 export const $currentUserMessageId = atom<string>("");

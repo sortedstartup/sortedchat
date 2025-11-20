@@ -13,21 +13,16 @@ import { loadUIConfig, type UIConfig } from "./lib/config";
 import { OnboardingWizard } from "./pages/onboard";
 import { GetIsFirstBootStatus } from "./store/setting";
 import React from "react";
-import CreateProduct from "./payment/CreateProduct";
-import ListProducts from "./payment/ListProducts";
-import Success from "./payment/Success";
-import Cancel from "./payment/Cancel";
-
 
 // Protected route wrapper component with onboarding check
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const auth = useStore($auth);
-  
+
   // Redirect to login if not authenticated
   if (!auth.isLoggedIn) {
     return <LoginPage />;
   }
-  
+
   // Only check first boot after authentication
   return <AuthenticatedRoute>{children}</AuthenticatedRoute>;
 }
@@ -36,7 +31,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
   const [isFirstBoot, setIsFirstBoot] = React.useState<boolean | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
-  
+
   React.useEffect(() => {
     const checkFirstBoot = async () => {
       setIsLoading(true);
@@ -44,27 +39,31 @@ function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
         const status = await GetIsFirstBootStatus();
         setIsFirstBoot(status);
       } catch (error) {
-        console.error('Failed to check first boot status:', error);
+        console.error("Failed to check first boot status:", error);
         // On error, assume not first boot to avoid blocking user
         setIsFirstBoot(false);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     checkFirstBoot();
   }, []);
-  
+
   // Show loading state while checking
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
-  
+
   // Show onboarding if it's the first boot
   if (isFirstBoot) {
     return <OnboardingWizard />;
   }
-  
+
   return <>{children}</>;
 }
 
@@ -104,22 +103,6 @@ const router = createBrowserRouter([
       {
         path: "models",
         element: <Models />,
-      },
-      {
-        path: "create-product",
-        element: <CreateProduct />,
-      },
-      {
-        path: "list-products",
-        element: <ListProducts />,
-        },
-      {
-        path: "success",
-        element: <Success />,
-      },
-      {
-        path: "cancel",
-        element: <Cancel />,
       },
       {
         path: "*",

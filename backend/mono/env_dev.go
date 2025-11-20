@@ -1,5 +1,5 @@
-//go:build !prod
-// +build !prod
+//go:build !prod || desktop
+// +build !prod desktop
 
 package main
 

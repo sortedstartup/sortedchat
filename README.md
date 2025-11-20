@@ -549,4 +549,4 @@ docker run -d --name sortedchat_postgres_dev -e POSTGRES_DB=sortedchat_dev -e PO
 # Ollama setup
 ollama serve && ollama pull nomic-embed-text
 ```
-
+ 

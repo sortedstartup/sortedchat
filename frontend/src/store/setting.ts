@@ -13,13 +13,24 @@ import {
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
+import { getUIConfig } from "../lib/config";
 
-// Create settings client with JWT authentication
-const client = new SettingServiceClient(
-  import.meta.env.VITE_API_URL,
-  {},
-  createAuthenticatedClientOptions()
-);
+let _settingClient: SettingServiceClient | undefined;
+
+function getClient(): SettingServiceClient {
+  if (!_settingClient) {
+    const config = getUIConfig();
+    if (!config) {
+      throw new Error("UI config not loaded, cannot initialize chat client.");
+    }
+    _settingClient = new SettingServiceClient(
+      config.API_URL,
+      {},
+      createAuthenticatedClientOptions()
+    );
+  }
+  return _settingClient;
+}
 
 export const $settings = atom<Settings>(new Settings({}));
 
@@ -40,7 +51,7 @@ export const saveSettings = async (formData: Record<string, string>): Promise<st
     const settings = new Settings(formData);
     
     const req = new SetSettingRequest({ settings });
-    const res: SetSettingResponse = await client.SetSetting(req, {});
+    const res: SetSettingResponse = await getClient().SetSetting(req, {});
     
     $settings.set(settings);
     
@@ -117,7 +128,7 @@ export const onboardingActions = {
 const getSetting = async () => {
   try {
     const req = new GetSettingRequest({});
-    const res: GetSettingResponse = await client.GetSetting(req, {});
+    const res: GetSettingResponse = await getClient().GetSetting(req, {});
     if (res.settings) {
       $settings.set(res.settings);
     }

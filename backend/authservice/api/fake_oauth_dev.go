@@ -1,5 +1,5 @@
-//go:build !prod
-// +build !prod
+//go:build !prod || desktop
+// +build !prod desktop
 
 package api
 
@@ -134,7 +134,18 @@ func (f *FakeOAuthProvider) authHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Redirect to callback with fake code
 	callbackURL := redirectURI + "?code=" + fakeCode
-	http.Redirect(w, r, callbackURL, http.StatusFound)
+	// We were send a http redirect, HTTP 302, earlier with statusfound, the browser was able to recognize this
+	// and auto redirect us to the new URL
+	// but in the wails webview app the 302 was shown as a clickable link "Found", on clicking it goes to the app
+	// to fix this issue we are now taking this route of using javascript to redirect
+
+	//http.Redirect(w, r, callbackURL, http.StatusFound)
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+
+	// This injects JS that forces the browser to move
+	html := fmt.Sprintf("<script>window.location.href = '%s';</script>", callbackURL)
+	w.Write([]byte(html))
 }
 
 func (f *FakeOAuthProvider) tokenHandler(w http.ResponseWriter, r *http.Request) {

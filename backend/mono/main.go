@@ -69,6 +69,7 @@ func main() {
 	host := flag.String("host", defaultHost, "Host to bind the server to (default: all interfaces)")
 	grpcPort := flag.String("grpc-port", defaultGrpcPort, "Port for gRPC server")
 	httpPort := flag.String("http-port", defaultHttpPort, "Port for HTTP server")
+	uiConfigPath := flag.String("ui-config-path", "", "Path to UI config file (default: embedded public/config.json)")
 	flag.Parse()
 
 	// Build addresses
@@ -336,6 +337,40 @@ func main() {
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
+	})
+
+	// If uiConfigPath is set, serve that file, else serve embedded one
+	mux.HandleFunc("/config.json", func(w http.ResponseWriter, r *http.Request) {
+		var configContent io.ReadCloser
+		var err error
+
+		if *uiConfigPath != "" {
+			configContent, err = os.Open(*uiConfigPath)
+			if err != nil {
+				slog.Error("Failed to open config file from custom path", "file", *uiConfigPath, "error", err)
+				http.Error(w, "Config file not found", http.StatusNotFound)
+				return
+			}
+		} else {
+			configContent, err = publicFS.Open("config.json")
+			if err != nil {
+				slog.Error("Failed to open config file from embedded FS", "error", err)
+				http.Error(w, "Config file not found", http.StatusNotFound)
+				return
+			}
+		}
+		defer configContent.Close()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+
+		_, err = io.Copy(w, configContent)
+		if err != nil {
+			slog.Error("Failed to serve config file", "error", err)
+			http.Error(w, "Failed to serve config", http.StatusInternalServerError)
+		}
 	})
 
 	mux.HandleFunc("/", httpHandler)

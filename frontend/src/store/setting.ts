@@ -101,7 +101,7 @@ export const onboardingActions = {
   ): Promise<TestConnectionResponse> => {
     try {
       const req = new TestConnectionRequest({ url, connection_type: type });
-      const res = await client.TestConnection(req, {});
+      const res = await getClient().TestConnection(req, {});
       return res;
     } catch (error) {
       console.error("Failed to test connection:", error);

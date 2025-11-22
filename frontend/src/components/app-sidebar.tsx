@@ -1,4 +1,6 @@
-import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2, AudioLines } from "lucide-react";
+import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2,
+  //  AudioLines //temporarily hiding it for this release only
+  } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -239,7 +241,8 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                <SidebarMenuItem>
+                {/* Temporarily hiding it for this release only */}
+                {/* <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <button onClick={() => setIsAudioModalOpen(true)}
                     >
@@ -247,7 +250,7 @@ export function AppSidebar() {
                       <span>New Realtime Voice Chat</span>
                     </button>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
+                </SidebarMenuItem> */}
                 
                 <SidebarMenuItem>
                   <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>

@@ -2,11 +2,11 @@ name: Build UI and Go App
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+-[a-zA-Z0-9]+'
+      - "v[0-9]+.[0-9]+.[0-9]+-[a-zA-Z0-9]+"
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build-frontend:
@@ -19,7 +19,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install pnpm
         run: npm install -g pnpm
@@ -30,7 +30,7 @@ jobs:
 
       - name: Build frontend in standalone mode
         working-directory: frontend
-        run: pnpm run build --mode standalone
+        run: pnpm run build:standalone
 
       - name: Upload frontend build (standalone)
         uses: actions/upload-artifact@v4
@@ -51,7 +51,6 @@ jobs:
           path: frontend/dist/
           if-no-files-found: error
           retention-days: 10
-
 
   build-go:
     name: Build Go backend
@@ -97,7 +96,6 @@ jobs:
           name: frontend-build-standalone
           path: backend/mono/frontend-build-wails/dist
 
-
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
@@ -108,11 +106,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Skip Windows builds (temporary)
+      - name: Install MinGW-w64 for Windows cross-compilation
         if: matrix.os == 'windows'
-        run: |
-          echo "Windows cross-compilation disabled until secure Opus libraries are available"
-          exit 0
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
 
       - name: Restore APT caches
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -122,7 +118,7 @@ jobs:
             /var/cache/apt/archives/*.deb
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-amd64-packages.txt') }}
-          
+
       - name: Install Linux dependencies (AMD64)
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
         run: |
@@ -183,10 +179,10 @@ jobs:
       - name: Setup ARM64 cross-compilation environment
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |
-            sudo apt-get update
+          sudo apt-get update
 
-            # Install ARM64 dependencies from package list
-            sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
+          # Install ARM64 dependencies from package list
+          sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
 
       - name: Install macOS dependencies
         if: matrix.os == 'darwin' && matrix.arch == 'arm64'
@@ -206,28 +202,31 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.3'
+          go-version: "1.24.3"
 
       - name: Build Go backend - desktop app and server
-        if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
+        #if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
         working-directory: backend
         run: |
           export GOOS=${{ matrix.os }}
           export GOARCH=${{ matrix.arch }}
           export CGO_ENABLED=1
-          
+
           # Use custom SQLite headers for all platforms to ensure version consistency
           export CGO_CFLAGS="-I$(pwd)/sqlite3"
 
           export BINARY_NAME_SERVER=sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
           export BINARY_NAME_APP=sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
 
-
-
-
+          # Windows
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe";
+            export BINARY_NAME_APP="$BINARY_NAME_APP.exe";
+            export CC=x86_64-w64-mingw32-gcc
+          fi
 
           # Linux ARM64 - Fix cross-compilation issues
-          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then 
+          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then
             export CC=aarch64-linux-gnu-gcc
             export CXX=aarch64-linux-gnu-g++
             export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
@@ -247,7 +246,7 @@ jobs:
           go build -buildvcs=false -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_APP ./mono
 
       - name: Upload server binary as artifact
-        if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
+        #if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
         uses: actions/upload-artifact@v4
         with:
           name: sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
@@ -255,7 +254,7 @@ jobs:
           retention-days: 10
 
       - name: Upload app binary as artifact
-        if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
+        #if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
         uses: actions/upload-artifact@v4
         with:
           name: sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
@@ -328,13 +327,13 @@ jobs:
         run: |
           cat > Dockerfile << 'EOF'
           FROM ubuntu:24.04
-          
+
           # Declare the TARGETARCH argument (automatically provided by Docker Buildx)
           ARG TARGETARCH
-          
+
           # Install runtime dependencies
           RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-          
+
           # 🔥 ARCHITECTURE SELECTION MAGIC:
           # $TARGETARCH is automatically set by Docker Buildx:
           # - When building linux/amd64: $TARGETARCH = "amd64"
@@ -342,10 +341,10 @@ jobs:
           # This ensures the correct binary is copied for each architecture
           # NOTE: Frontend is already built into the Go binary, no separate copy needed!
           COPY binaries/${TARGETARCH}/sortedchat-server-linux-${TARGETARCH} /usr/local/bin/sortedchat
-          
+
           # Make the binary executable
           RUN chmod +x /usr/local/bin/sortedchat
-          
+
           # Run the application
           CMD ["/usr/local/bin/sortedchat"]
           EOF
@@ -403,31 +402,31 @@ jobs:
           generate_release_notes: true
           body: |
             ## 🐳 Multi-Architecture Docker Image
-            
+
             This release includes a **multi-architecture Docker image** that automatically works on both **AMD64** and **ARM64** platforms!
-            
+
             ### Quick Start
             ```bash
             # Pull this specific version
             docker pull ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
-            
+
             # Run the container
             docker run -p 8080:8080 ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
             ```
-            
+
             ### Available Docker Tags
             - `ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}` - This specific version
             - `ghcr.io/${{ github.repository_owner }}/sortedchat:latest` - Latest stable release (production only)
-            
+
             ### 🎯 How Multi-Arch Works
             - **One tag, multiple architectures**: The same tag works on both Intel/AMD (x64) and ARM (Apple Silicon, Raspberry Pi, etc.)
             - **Automatic selection**: Docker automatically downloads the right architecture for your machine
             - **No platform flags needed**: Just use `docker pull` normally!
-            
+
             ### Platform Support
             - ✅ **linux/amd64** - Intel/AMD 64-bit (most servers, Intel Macs, Windows WSL)
             - ✅ **linux/arm64** - ARM 64-bit (Apple Silicon Macs, AWS Graviton, Raspberry Pi 4+)
-            
+
             ### Verify Your Architecture
             ```bash
             docker run --rm ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }} uname -m

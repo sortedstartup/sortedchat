@@ -7,5 +7,4 @@ use (
 	./realtimeservice
 	./common
 	./mono
-	./paymentservice
 )

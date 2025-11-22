@@ -1,0 +1,7 @@
+{
+  "API_URL": "/hack",
+  "API_UPLOAD_URL": "/hack",
+  "GOOGLE_CLIENT_ID": "fake_client_id",
+  "GOOGLE_OAUTH_URL": "/hack/fakeoauth/oauth2/v2/auth",
+  "GOOGLE_REDIRECT_URL": "/hack/callback"
+}

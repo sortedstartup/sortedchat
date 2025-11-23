@@ -3,8 +3,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"embed"
+	"io"
 	"net/http"
 	"strings"
 
@@ -29,16 +31,24 @@ func (a *App) startup(ctx context.Context) {
 }
 
 type MuxHandler struct {
-	mux *http.ServeMux
+	handler http.Handler
 }
 
 func (h *MuxHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	req.URL.Path = strings.TrimPrefix(req.URL.Path, "/hack")
 
-	h.mux.ServeHTTP(res, req)
+	// Buffer request body for grpc-web to avoid webkit reader conflicts
+	if req.Body != nil {
+		body, err := io.ReadAll(req.Body)
+		if err == nil {
+			req.Body = io.NopCloser(bytes.NewReader(body))
+		}
+	}
+
+	h.handler.ServeHTTP(res, req)
 }
 
-func Wails(mux *http.ServeMux) {
+func Wails(handler http.Handler) {
 
 	app := NewApp()
 
@@ -48,7 +58,7 @@ func Wails(mux *http.ServeMux) {
 		Height: 768,
 		AssetServer: &assetserver.Options{
 			Assets:  assets,
-			Handler: &MuxHandler{mux: mux},
+			Handler: &MuxHandler{handler: handler},
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
@@ -60,6 +70,7 @@ func Wails(mux *http.ServeMux) {
 	if err != nil {
 		println("Error:", err.Error())
 	}
+
 }
 
 // NOOP since wails will block exit of the app unless running

@@ -38,12 +38,13 @@ import {
 } from "@/store/chat";
 import { useNavigate, useParams } from "react-router-dom";
 import { Embedding_Status } from "../../proto/chatservice";
-const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
+import { loadUIConfig } from "@/lib/config";
 
 export function Project() {
   const [message, setMessage] = useState("");
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isDocumentsDialogOpen, setIsDocumentsDialogOpen] = useState(false);
+  const [apiUploadUrl, setApiUploadUrl] = useState("");
   const documents = useStore($documents);
   const projectName = useStore($currentProject);
   const currentProjectId = useStore($currentProjectId);
@@ -55,6 +56,18 @@ export function Project() {
   const navigate = useNavigate();
 
   const { projectId } = useParams();
+
+  useEffect(() => {
+    const fetchUrl = async () => {
+      try {
+        const config = await loadUIConfig();
+        setApiUploadUrl(config.API_UPLOAD_URL);
+      } catch (e) {
+        console.error("Failed to load UI config", e);
+      }
+    };
+    fetchUrl();
+  }, []);
 
   useEffect(() => {
     if (projectId) {
@@ -205,7 +218,7 @@ export function Project() {
                             size="sm"
                             onClick={() => {
                               window.open(
-                                `${API_UPLOAD_URL}/documents/${doc.docs_id}`,
+                                `${apiUploadUrl}/documents/${doc.docs_id}`,
                                 "_blank"
                               );
                             }}
@@ -251,7 +264,7 @@ export function Project() {
                   <DialogTitle>Upload Files or Folder</DialogTitle>
                 </DialogHeader>
                 <FileUploader
-                  uploadUrl={`${API_UPLOAD_URL}/upload`}
+                  uploadUrl={`${apiUploadUrl}/upload`}
                   onFileUpload={(file) => console.log("Uploaded:", file)}
                   onCompleteUpload={handleUploadComplete}
                 />

@@ -375,10 +375,12 @@ func main() {
 
 	mux.HandleFunc("/", httpHandler)
 
+	wrappedHandler := util.EnableCORS(authMiddleware.Middleware(mux))
+
 	// HTTP server with CORS and auth middleware
 	httpServer := &http.Server{
 		Addr:    httpAddr,
-		Handler: util.EnableCORS(authMiddleware.Middleware(mux)),
+		Handler: wrappedHandler,
 	}
 
 	// Run both servers in parallel
@@ -396,7 +398,7 @@ func main() {
 
 	// Start Wails GUI unless --server flag is specified
 	if !*serverOnly {
-		Wails(mux)
+		Wails(wrappedHandler)
 	} else {
 		log.Println("Running in server-only mode")
 		err := <-serverErr

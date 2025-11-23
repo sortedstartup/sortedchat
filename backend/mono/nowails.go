@@ -8,7 +8,7 @@ import (
 )
 
 // Wails is a no-op function when wails build tag is not present
-func Wails(mux *http.ServeMux) {
+func Wails(handler http.Handler) {
 	log.Println("server-only build, Wails is not enabled")
 }
 

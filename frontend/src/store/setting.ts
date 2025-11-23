@@ -42,8 +42,8 @@ export const $onboardingData = atom<{
   OLLAMA_URL: string;
 }>({
   OPENAI_API_KEY: "",
-  OPENAI_API_URL: "",
-  OLLAMA_URL: "http://localhost:11434",
+  OPENAI_API_URL: "https://api.openai.com/v1/chat/completions",
+  OLLAMA_URL: "http://localhost:11434/v1/embeddings",
 });
 
 export const saveSettings = async (

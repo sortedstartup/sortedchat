@@ -3,8 +3,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"embed"
+	"io"
 	"net/http"
 	"strings"
 
@@ -35,6 +37,14 @@ type MuxHandler struct {
 func (h *MuxHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	req.URL.Path = strings.TrimPrefix(req.URL.Path, "/hack")
 
+	// Buffer request body for grpc-web to avoid webkit reader conflicts
+	if req.Body != nil {
+		body, err := io.ReadAll(req.Body)
+		if err == nil {
+			req.Body = io.NopCloser(bytes.NewReader(body))
+		}
+	}
+
 	h.handler.ServeHTTP(res, req)
 }
 
@@ -60,6 +70,7 @@ func Wails(handler http.Handler) {
 	if err != nil {
 		println("Error:", err.Error())
 	}
+
 }
 
 // NOOP since wails will block exit of the app unless running

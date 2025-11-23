@@ -9,17 +9,23 @@ export type UIConfig = {
 let config: UIConfig | null = null;
 
 export async function loadUIConfig(): Promise<UIConfig> {
-  if (config) return config;
-  
+  if (config) {
+    console.log("UI config already loaded", JSON.stringify(config));
+    return config;
+  }
+
   try {
-    const res = await fetch("/config.json");
+    const res = await fetch("/ui-config.json");
     if (!res.ok) {
-      throw new Error(`Failed to load config: ${res.status} ${res.statusText}`);
+      throw new Error(
+        `Failed to load UI config: ${res.status} ${res.statusText}`,
+      );
     }
     config = await res.json();
     if (!config) {
-      throw new Error("Config is null after loading");
+      throw new Error("UI Config is null after loading");
     }
+    console.log("UI config loaded", JSON.stringify(config));
     return config;
   } catch (error) {
     console.error("Failed to load UI config:", error);

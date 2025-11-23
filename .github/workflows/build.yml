@@ -77,7 +77,7 @@ jobs:
             runner: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Ensure public directory exists
         run: |
@@ -96,17 +96,7 @@ jobs:
           name: frontend-build-standalone
           path: backend/mono/frontend-build-wails/dist
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install MinGW-w64 for Windows cross-compilation
+      - name: Skip Windows builds (temporary)
         if: matrix.os == 'windows'
         run: sudo apt-get update && sudo apt-get install -y mingw-w64
 
@@ -118,6 +108,7 @@ jobs:
             /var/cache/apt/archives/*.deb
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-amd64-packages.txt') }}
+
 
       - name: Install Linux dependencies (AMD64)
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -180,7 +171,10 @@ jobs:
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |
           sudo apt-get update
+          sudo apt-get update
 
+          # Install ARM64 dependencies from package list
+          sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
           # Install ARM64 dependencies from package list
           sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
 
@@ -203,6 +197,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.24.3"
+          cache-dependency-path: backend/**/*.go.mod
 
       - name: Build Go backend - desktop app and server
         #if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
@@ -211,6 +206,7 @@ jobs:
           export GOOS=${{ matrix.os }}
           export GOARCH=${{ matrix.arch }}
           export CGO_ENABLED=1
+
 
           # Use custom SQLite headers for all platforms to ensure version consistency
           export CGO_CFLAGS="-I$(pwd)/sqlite3"
@@ -270,7 +266,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Download pre-built Go binaries for both Linux architectures
       # These were built in the previous build-go job with cross-compilation
@@ -328,11 +324,14 @@ jobs:
           cat > Dockerfile << 'EOF'
           FROM ubuntu:24.04
 
+
           # Declare the TARGETARCH argument (automatically provided by Docker Buildx)
           ARG TARGETARCH
 
+
           # Install runtime dependencies
           RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
 
           # 🔥 ARCHITECTURE SELECTION MAGIC:
           # $TARGETARCH is automatically set by Docker Buildx:
@@ -342,8 +341,10 @@ jobs:
           # NOTE: Frontend is already built into the Go binary, no separate copy needed!
           COPY binaries/${TARGETARCH}/sortedchat-server-linux-${TARGETARCH} /usr/local/bin/sortedchat
 
+
           # Make the binary executable
           RUN chmod +x /usr/local/bin/sortedchat
+
 
           # Run the application
           CMD ["/usr/local/bin/sortedchat"]
@@ -376,7 +377,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -403,29 +404,36 @@ jobs:
           body: |
             ## 🐳 Multi-Architecture Docker Image
 
+
             This release includes a **multi-architecture Docker image** that automatically works on both **AMD64** and **ARM64** platforms!
+
 
             ### Quick Start
             ```bash
             # Pull this specific version
             docker pull ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
 
+
             # Run the container
             docker run -p 8080:8080 ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
             ```
 
+
             ### Available Docker Tags
             - `ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}` - This specific version
             - `ghcr.io/${{ github.repository_owner }}/sortedchat:latest` - Latest stable release (production only)
+
 
             ### 🎯 How Multi-Arch Works
             - **One tag, multiple architectures**: The same tag works on both Intel/AMD (x64) and ARM (Apple Silicon, Raspberry Pi, etc.)
             - **Automatic selection**: Docker automatically downloads the right architecture for your machine
             - **No platform flags needed**: Just use `docker pull` normally!
 
+
             ### Platform Support
             - ✅ **linux/amd64** - Intel/AMD 64-bit (most servers, Intel Macs, Windows WSL)
             - ✅ **linux/arm64** - ARM 64-bit (Apple Silicon Macs, AWS Graviton, Raspberry Pi 4+)
+
 
             ### Verify Your Architecture
             ```bash
@@ -436,3 +444,5 @@ jobs:
           prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+

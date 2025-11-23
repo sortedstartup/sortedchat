@@ -29,6 +29,6 @@ if (!config) {
   throw new Error(`Unknown MODE: ${mode}`);
 }
 
-const outputPath = path.join(__dirname, '../frontend/public/config.json');
+const outputPath = path.join(__dirname, '../frontend/public/ui-config.json');
 fs.writeFileSync(outputPath, JSON.stringify(config, null, 2));
-console.log(`config.json generated for mode: ${mode}`);
+console.log(`ui-config.json generated for mode: ${mode}`);

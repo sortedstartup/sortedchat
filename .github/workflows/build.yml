@@ -77,7 +77,7 @@ jobs:
           #   runner: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Ensure public directory exists
         run: |
@@ -102,7 +102,7 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/**/go.mod') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
@@ -269,7 +269,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Download pre-built Go binaries for both Linux architectures
       # These were built in the previous build-go job with cross-compilation
@@ -375,7 +375,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 

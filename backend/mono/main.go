@@ -353,7 +353,6 @@ func main() {
 			}
 		} else {
 			configContent, err = publicFS.Open("ui-config.json")
-			fmt.Println("configContent", configContent)
 			if err != nil {
 				slog.Error("Failed to open config file from embedded FS", "error", err)
 				http.Error(w, "Config file not found", http.StatusNotFound)

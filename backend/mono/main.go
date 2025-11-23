@@ -69,7 +69,7 @@ func main() {
 	host := flag.String("host", defaultHost, "Host to bind the server to (default: all interfaces)")
 	grpcPort := flag.String("grpc-port", defaultGrpcPort, "Port for gRPC server")
 	httpPort := flag.String("http-port", defaultHttpPort, "Port for HTTP server")
-	uiConfigPath := flag.String("ui-config-path", "", "Path to UI config file (default: embedded public/config.json)")
+	uiConfigPath := flag.String("ui-config-path", "", "Path to UI config file (default: embedded public/ui-config.json)")
 	flag.Parse()
 
 	// Build addresses
@@ -340,7 +340,7 @@ func main() {
 	})
 
 	// If uiConfigPath is set, serve that file, else serve embedded one
-	mux.HandleFunc("/config.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/ui-config.json", func(w http.ResponseWriter, r *http.Request) {
 		var configContent io.ReadCloser
 		var err error
 
@@ -352,7 +352,8 @@ func main() {
 				return
 			}
 		} else {
-			configContent, err = publicFS.Open("config.json")
+			configContent, err = publicFS.Open("ui-config.json")
+			fmt.Println("configContent", configContent)
 			if err != nil {
 				slog.Error("Failed to open config file from embedded FS", "error", err)
 				http.Error(w, "Config file not found", http.StatusNotFound)

@@ -38,7 +38,11 @@ import {
 } from "@/store/chat";
 import { useNavigate, useParams } from "react-router-dom";
 import { Embedding_Status } from "../../proto/chatservice";
-const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
+import { loadUIConfig } from "@/lib/config";
+// const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
+//load from config.json
+const API_UPLOAD_URL = (await loadUIConfig()).API_UPLOAD_URL;
+console.log(API_UPLOAD_URL);
 
 export function Project() {
   const [message, setMessage] = useState("");

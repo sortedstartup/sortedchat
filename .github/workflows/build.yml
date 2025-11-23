@@ -72,9 +72,9 @@ jobs:
           - os: darwin
             arch: arm64
             runner: macos-latest
-          # - os: darwin
-          #   arch: amd64
-          #   runner: macos-latest
+          - os: darwin
+            arch: amd64
+            runner: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

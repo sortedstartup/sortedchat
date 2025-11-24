@@ -861,7 +861,8 @@ export const RestoreChat = async (chatId: string) => {
 
 export const RenameItem = async (itemId: string, name: string, itemType: RenameItemRequestItemType) => {
   try {
-    const res = await getClient().RenameChat(RenameChatRequest.fromObject({ chat_id: chatId, name: name }), {});
+    const res = await getClient().RenameItem(RenameItemRequest.fromObject({ item_id: itemId, name: name, item_type: itemType }), {});
+
     
     toast.success(res.message);
 

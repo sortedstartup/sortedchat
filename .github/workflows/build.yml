@@ -234,7 +234,7 @@ jobs:
           fi
 
           go env
-          go build -buildvcs=false -tags "desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_SERVER ./mono
+          go build -buildvcs=false -tags "desktop,sqlite_fts5,webkit2_41,wv2runtime.download,devtools" -ldflags "-w -s" -o $BINARY_NAME_SERVER ./mono
           go build -buildvcs=false -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_APP ./mono
 
       - name: Upload server binary as artifact

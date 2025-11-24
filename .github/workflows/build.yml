@@ -84,17 +84,14 @@ jobs:
           mkdir -p backend/mono/frontend-build-wails/dist
           mkdir -p backend/mono/public
 
-      - name: Download frontend build (production)
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build-production
-          path: backend/mono/public
-
-      - name: Download frontend build (standalone) to Wails directory
+      - name: Download frontend build (standalone)
         uses: actions/download-artifact@v4
         with:
           name: frontend-build-standalone
-          path: backend/mono/frontend-build-wails/dist
+          path: backend/mono/public
+
+      - name: Download frontend build (standalone) to Wails directory
+        run: cp -r backend/mono/public/* backend/mono/frontend-build-wails/dist/
 
       - name: Skip Windows builds (temporary)
         if: matrix.os == 'windows'
@@ -108,7 +105,6 @@ jobs:
             /var/cache/apt/archives/*.deb
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-amd64-packages.txt') }}
-
 
       - name: Install Linux dependencies (AMD64)
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -444,5 +440,3 @@ jobs:
           prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-

@@ -19,6 +19,12 @@ type RealtimeService struct {
 
 func NewRealtimeService(daoFactory dao.DAOFactory, settingsClient proto.SettingServiceClient) *RealtimeService {
 	slog.Info("RealtimeService: NewRealtimeService")
+
+	if settingsClient == nil {
+		slog.Error("RealtimeService: NewRealtimeService", "message", "settingsClient cannot be nil")
+		return nil
+	}
+
 	daoInstance, err := daoFactory.CreateDAO()
 	if err != nil {
 		slog.Error("RealtimeService: NewRealtimeService", "message", "Failed to create DAO", "error", err)
@@ -50,6 +56,15 @@ var userConnections = make(map[string]*PeerConnection)
 
 // offer between browser(client) and backend
 func (s *RealtimeService) Offer(offer string, provider string, model string, userID string) (string, error) {
+
+	// Validate provider
+	if provider != "gemini" && provider != "openai" {
+		return "", fmt.Errorf("unsupported provider: %s", provider)
+	}
+	// Validate model is non-empty
+	if model == "" {
+		return "", fmt.Errorf("model cannot be empty")
+	}
 
 	settings, err := s.settingsClient.GetSetting(context.Background(), &proto.GetSettingRequest{})
 	if err != nil {
@@ -219,7 +234,8 @@ func (s *RealtimeService) connectToGemini(userID string, model string) error {
 	}
 
 	slog.Info("Successfully connected to Gemini", "userID", userID)
-	id, err := s.dao.CreateAudioChat(userID, model, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339)) //check time
+	now := time.Now().Format(time.RFC3339)
+	id, err := s.dao.CreateAudioChat(userID, model, now, now) //check time
 	if err != nil {
 		slog.Error("Failed to create audio chat", "userID", userID, "error", err)
 		return err
@@ -258,7 +274,8 @@ func (s *RealtimeService) connectToOpenai(userID string, model string) error {
 	}
 
 	slog.Info("Successfully connected to OpenAI", "userID", userID)
-	id, err := s.dao.CreateAudioChat(userID, model, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	now := time.Now().Format(time.RFC3339)
+	id, err := s.dao.CreateAudioChat(userID, model, now, now)
 	if err != nil {
 		slog.Error("Failed to create audio chat", "userID", userID, "error", err)
 		return err

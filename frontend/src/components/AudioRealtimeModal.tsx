@@ -73,7 +73,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           session: {
             type: "realtime",
             modalities: ["audio"],
-            voice: provider === 'openai' ? "alloy" : "en-US-Neural2-A",
+            voice: selectedModel?.provider === 'openai' ? "alloy" : "en-US-Neural2-A",
             turn_detection: { type: "server_vad" },
             instructions: "You are helpful. Answer in ENGLISH only."
           }

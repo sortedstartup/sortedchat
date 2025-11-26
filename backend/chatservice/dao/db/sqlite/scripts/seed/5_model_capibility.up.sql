@@ -17,7 +17,7 @@ INSERT INTO model_metadata (id, name, url, provider, input_token_cost, cached_to
   ('gpt-realtime-mini', 'GPT-realtime-mini', 'https://api.openai.com/v1/realtime', 'openai', 10.00, 0.30, 20.00, '{"text":{"input":true,"output":true},"audio":{"input":true,"output":true},"video":{"input":false,"output":false},"image":{"input":true,"output":false},"realtime":true}'),
   ('gpt-4o-realtime', 'GPT-4o-realtime', 'https://api.openai.com/v1/realtime', 'openai', 40.00, 2.50, 80.00, '{"text":{"input":true,"output":true},"audio":{"input":true,"output":true},"video":{"input":false,"output":false},"image":{"input":false,"output":false},"realtime":true}'),
   ('gpt-4o-mini-realtime', 'GPT-4o-mini-realtime', 'https://api.openai.com/v1/realtime', 'openai', 10.00, 0.30, 20.00, '{"text":{"input":true,"output":true},"audio":{"input":true,"output":true},"video":{"input":false,"output":false},"image":{"input":false,"output":false},"realtime":true}'),
-  ('gemini-live-2.5-flash-preview-native-audio-09-2025', 'gemini-2.5-flash-realtime', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'gemini', 3.00, 0.00, 12.00, '{"text":{"input":true,"output":true},"audio":{"input":true,"output":true},"video":{"input":true,"output":false},"image":{"input":true,"output":false},"realtime":true}')
+  ('gemini-live-2.5-flash-preview', 'gemini-live-2.5-flash', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'gemini', 3.00, 0.00, 12.00, '{"text":{"input":true,"output":true},"audio":{"input":true,"output":true},"video":{"input":true,"output":false},"image":{"input":true,"output":false},"realtime":true}')
 
 
 ON CONFLICT(id) DO UPDATE SET

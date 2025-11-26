@@ -249,6 +249,14 @@ func main() {
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 	proto.RegisterSettingServiceServer(internalGrpcServer, settingServiceApi)
 
+	// Run both servers in parallel
+	serverErr := make(chan error)
+
+	go func() {
+		log.Printf("Starting gRPC server on in-memory bufconn")
+		serverErr <- internalGrpcServer.Serve(inProcessListener)
+	}()
+
 	settingsClientConn, err := grpc.Dial(
 		"bufconn",
 		grpc.WithContextDialer(inProcessDialer),
@@ -414,17 +422,9 @@ func main() {
 		Handler: wrappedHandler,
 	}
 
-	// Run both servers in parallel
-	serverErr := make(chan error)
-
 	go func() {
 		log.Printf("Starting gRPC server on %s", grpcAddr)
 		serverErr <- grpcServer.Serve(listener)
-	}()
-
-	go func() {
-		log.Printf("Starting gRPC server on in-memory bufconn")
-		serverErr <- internalGrpcServer.Serve(inProcessListener)
 	}()
 
 	go func() {

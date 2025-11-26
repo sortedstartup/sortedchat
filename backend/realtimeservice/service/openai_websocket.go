@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -114,7 +113,7 @@ type CachedTokenDetails struct {
 // NewOpenAIRealtime creates a new OpenAIRealtime instance
 func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP, dataChannelManager *DataChannelManager) (*OpenAIRealtime, error) {
 
-	apiKey := os.Getenv("OPENAI_API_KEY")
+	apiKey := OPENAI_API_KEY
 	if apiKey == "" {
 		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "OPENAI_API_KEY environment variable is required")
 		return nil, fmt.Errorf("OPENAI_API_KEY environment variable is required")

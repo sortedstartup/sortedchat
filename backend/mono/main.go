@@ -149,6 +149,10 @@ func main() {
 		grpc.StreamInterceptor(authInterceptor.StreamInterceptor()),
 	)
 
+	// Internal gRPC server for in-process calls
+	// Creating a inmemory unauthentication server just for interservice communication when hosted on the SAME sever,
+	// this does not work when services are on multiple server.
+	// at that time we need to make a deision : either pass api level authentication (jwt) to the other service or use mtls or some other microservice communication auth
 	internalGrpcServer := grpc.NewServer()
 
 	// Create HTTP auth middleware
@@ -239,30 +243,30 @@ func main() {
 	chatServiceApi := api.NewChatService(mux, queue, settingsManager, daoFactory)
 	chatServiceApi.Init(config)
 	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
-	proto.RegisterSortedChatServer(internalGrpcServer, chatServiceApi)
 
 	settingServiceApi := api.NewSettingService(queue, daoFactory)
 	settingServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
+	proto.RegisterSettingServiceServer(internalGrpcServer, settingServiceApi)
 
-	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
-	inferenceServiceApi.Init(inferenceConfig)
-	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
-
-	chatClientConn, err := grpc.Dial(
+	settingsClientConn, err := grpc.Dial(
 		"bufconn",
 		grpc.WithContextDialer(inProcessDialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("Failed to create in-memory ChatService client connection: %v", err)
+		log.Fatalf("Failed to create in-memory SettingsService client connection: %v", err)
 	}
-	defer chatClientConn.Close()
+	defer settingsClientConn.Close()
 
-	// Create ChatService client for in-process calls
-	chatClient := proto.NewSortedChatClient(chatClientConn)
+	// Create SettingsService client for in-process calls
+	settingsClient := proto.NewSettingServiceClient(settingsClientConn)
 
-	realtimeServiceApi := realtimeApi.NewRealtimeServiceAPI(realtimeDaoFactory, chatClient)
+	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
+	inferenceServiceApi.Init(inferenceConfig)
+	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
+
+	realtimeServiceApi := realtimeApi.NewRealtimeServiceAPI(realtimeDaoFactory, settingsClient)
 	realtimeServiceApi.Init(realtimeConfig)
 	realtimeProto.RegisterRealtimeServiceServer(grpcServer, realtimeServiceApi)
 

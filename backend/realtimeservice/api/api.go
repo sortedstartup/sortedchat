@@ -19,11 +19,11 @@ type RealtimeServiceAPI struct {
 
 var SQLITE_DB_URL = "db.sqlite"
 
-func NewRealtimeServiceAPI(daoFactory dao.DAOFactory, chatClient proto.SortedChatClient) *RealtimeServiceAPI {
+func NewRealtimeServiceAPI(daoFactory dao.DAOFactory, settingsClient proto.SettingServiceClient) *RealtimeServiceAPI {
 	slog.Info("RealtimeService:NewRealtimeServiceAPI")
 
 	r := &RealtimeServiceAPI{
-		service: service.NewRealtimeService(daoFactory),
+		service: service.NewRealtimeService(daoFactory, settingsClient),
 	}
 
 	return r

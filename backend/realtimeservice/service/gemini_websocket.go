@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log/slog"
-	"os"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -60,7 +59,7 @@ type GeminiMediaChunk struct {
 // NewGeminiRealtime creates a new GeminiRealtime instance
 func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP, dataChannelManager *DataChannelManager) (*GeminiRealtime, error) {
 	slog.Info("RealtimeService:gemini_websocket:NewGeminiRealtime")
-	apiKey := os.Getenv("GEMINI_API_KEY")
+	apiKey := GEMINI_API_KEY
 	if apiKey == "" {
 		slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "message", "GEMINI_API_KEY environment variable is required")
 		return nil, fmt.Errorf("GEMINI_API_KEY environment variable is required")

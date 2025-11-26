@@ -1,10 +1,11 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
+	"sortedstartup/chatservice/proto"
 	"sortedstartup/realtimeservice/dao"
 	"time"
 
@@ -12,24 +13,26 @@ import (
 )
 
 type RealtimeService struct {
-	dao dao.DAO
+	dao            dao.DAO
+	settingsClient proto.SettingServiceClient
 }
 
-func NewRealtimeService(daoFactory dao.DAOFactory) *RealtimeService {
+func NewRealtimeService(daoFactory dao.DAOFactory, settingsClient proto.SettingServiceClient) *RealtimeService {
 	slog.Info("RealtimeService: NewRealtimeService")
 	daoInstance, err := daoFactory.CreateDAO()
 	if err != nil {
 		slog.Error("RealtimeService: NewRealtimeService", "message", "Failed to create DAO", "error", err)
 		return nil
 	}
-	return &RealtimeService{dao: daoInstance}
+	return &RealtimeService{dao: daoInstance, settingsClient: settingsClient}
 }
 
 func (s *RealtimeService) Init(config *dao.Config) {
 	slog.Info("RealtimeService: Init")
 }
 
-var OPENAI_API_KEY = os.Getenv("OPENAI_API_KEY")
+var OPENAI_API_KEY string
+var GEMINI_API_KEY string
 
 type PeerConnection struct {
 	browserConnection    *webrtc.PeerConnection      //backend-browser peer connection
@@ -47,6 +50,16 @@ var userConnections = make(map[string]*PeerConnection)
 
 // offer between browser(client) and backend
 func (s *RealtimeService) Offer(offer string, provider string, model string, userID string) (string, error) {
+
+	settings, err := s.settingsClient.GetSetting(context.Background(), &proto.GetSettingRequest{})
+	if err != nil {
+		slog.Error("RealtimeService: Init", "message", "failed to get setting", "error", err)
+		return "", err
+	}
+
+	OPENAI_API_KEY = settings.Settings.OPENAI_API_KEY
+	GEMINI_API_KEY = settings.Settings.GEMINI_API_KEY
+
 	//Todo: Need to validate provider and model
 	slog.Info("RealtimeService: Offer", "offer", offer, "provider", provider, "model", model, "userID", userID)
 

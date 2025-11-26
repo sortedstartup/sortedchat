@@ -13,16 +13,16 @@ import (
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v3"
-	// "gopkg.in/hraban/opus.v2"
+	"gopkg.in/hraban/opus.v2"
 )
 
 // OpenAIRealtime handles WebSocket communication with OpenAI Realtime API
 type OpenAIRealtime struct {
-	userID string
-	apiKey string
-	ws     *websocket.Conn
-	// opusEncoder        *opus.Encoder
-	// opusDecoder        *opus.Decoder
+	userID             string
+	apiKey             string
+	ws                 *websocket.Conn
+	opusEncoder        *opus.Encoder
+	opusDecoder        *opus.Decoder
 	outboundTrack      *webrtc.TrackLocalStaticRTP
 	sequenceNumber     uint16
 	timestamp          uint32
@@ -121,23 +121,23 @@ func NewOpenAIRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 	}
 
 	// // Initialize Opus encoder/decoder for 24kHz (OpenAI requirement)
-	// opusEncoder, err := opus.NewEncoder(48000, 1, opus.AppVoIP)
-	// if err != nil {
-	// 	slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "failed to create Opus encoder", "error", err)
-	// 	return nil, fmt.Errorf("failed to create Opus encoder: %v", err)
-	// }
+	opusEncoder, err := opus.NewEncoder(48000, 1, opus.AppVoIP)
+	if err != nil {
+		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "failed to create Opus encoder", "error", err)
+		return nil, fmt.Errorf("failed to create Opus encoder: %v", err)
+	}
 
-	// opusDecoder, err := opus.NewDecoder(48000, 1)
-	// if err != nil {
-	// 	slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "failed to create Opus decoder", "error", err)
-	// 	return nil, fmt.Errorf("failed to create Opus decoder: %v", err)
-	// }
+	opusDecoder, err := opus.NewDecoder(48000, 1)
+	if err != nil {
+		slog.Error("RealtimeService:openai_websocket:NewOpenAIRealtime", "message", "failed to create Opus decoder", "error", err)
+		return nil, fmt.Errorf("failed to create Opus decoder: %v", err)
+	}
 
 	return &OpenAIRealtime{
-		userID: userID,
-		apiKey: apiKey,
-		// opusEncoder:        opusEncoder,
-		// opusDecoder:        opusDecoder,
+		userID:             userID,
+		apiKey:             apiKey,
+		opusEncoder:        opusEncoder,
+		opusDecoder:        opusDecoder,
 		outboundTrack:      outboundTrack,
 		sequenceNumber:     1,
 		timestamp:          1,
@@ -257,12 +257,11 @@ func (o *OpenAIRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		}
 		// Decode Opus to PCM 20ms at 48kHz
 		pcmData := make([]int16, 960) // 20ms at 48kHz
-		n := 10
-		// n, err := o.opusDecoder.Decode(opusData, pcmData)
-		// if err != nil {
-		// 	slog.Error("RealtimeService:openai_websocket:HandleAudioTrack", "message", "failed to decode Opus data", "userID", o.userID, "error", err)
-		// 	continue
-		// }
+		n, err := o.opusDecoder.Decode(opusData, pcmData)
+		if err != nil {
+			slog.Error("RealtimeService:openai_websocket:HandleAudioTrack", "message", "failed to decode Opus data", "userID", o.userID, "error", err)
+			continue
+		}
 
 		// Accumulate PCM data
 		pcmBuffer = append(pcmBuffer, pcmData[:n]...)
@@ -492,12 +491,11 @@ func (o *OpenAIRealtime) sendAudioToClient(base64Audio string) {
 
 		// Encode to Opus
 		opusData := make([]byte, 4800)
-		n := 10
-		// n, err := o.opusEncoder.Encode(frame, opusData)
-		// if err != nil {
-		// 	slog.Error("Opus encoding error", "userID", o.userID, "error", err)
-		// 	continue
-		// }
+		n, err := o.opusEncoder.Encode(frame, opusData)
+		if err != nil {
+			slog.Error("Opus encoding error", "userID", o.userID, "error", err)
+			continue
+		}
 
 		// Create RTP packet with proper timing
 		rtpPacket := &rtp.Packet{

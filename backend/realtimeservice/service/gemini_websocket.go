@@ -12,15 +12,16 @@ import (
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v3"
+	"gopkg.in/hraban/opus.v2"
 )
 
 // GeminiRealtime handles WebSocket communication with Gemini Live API
 type GeminiRealtime struct {
-	userID string
-	apiKey string
-	ws     *websocket.Conn
-	// opusEncoder        *opus.Encoder
-	// opusDecoder        *opus.Decoder
+	userID             string
+	apiKey             string
+	ws                 *websocket.Conn
+	opusEncoder        *opus.Encoder
+	opusDecoder        *opus.Decoder
 	outboundTrack      *webrtc.TrackLocalStaticRTP
 	sequenceNumber     uint16
 	timestamp          uint32
@@ -66,23 +67,23 @@ func NewGeminiRealtime(userID string, outboundTrack *webrtc.TrackLocalStaticRTP,
 	}
 
 	// // Initialize Opus encoder/decoder
-	// opusEncoder, err := opus.NewEncoder(48000, 1, opus.AppVoIP)
-	// if err != nil {
-	// 	slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "message", "failed to create Opus encoder", "error", err)
-	// 	return nil, fmt.Errorf("failed to create Opus encoder: %v", err)
-	// }
+	opusEncoder, err := opus.NewEncoder(48000, 1, opus.AppVoIP)
+	if err != nil {
+		slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "message", "failed to create Opus encoder", "error", err)
+		return nil, fmt.Errorf("failed to create Opus encoder: %v", err)
+	}
 
-	// opusDecoder, err := opus.NewDecoder(48000, 1)
-	// if err != nil {
-	// 	slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "message", "failed to create Opus decoder", "error", err)
-	// 	return nil, fmt.Errorf("failed to create Opus decoder: %v", err)
-	// }
+	opusDecoder, err := opus.NewDecoder(48000, 1)
+	if err != nil {
+		slog.Error("RealtimeService:gemini_websocket:NewGeminiRealtime", "message", "failed to create Opus decoder", "error", err)
+		return nil, fmt.Errorf("failed to create Opus decoder: %v", err)
+	}
 
 	return &GeminiRealtime{
-		userID: userID,
-		apiKey: apiKey,
-		// opusEncoder:        opusEncoder,
-		// opusDecoder:        opusDecoder,
+		userID:             userID,
+		apiKey:             apiKey,
+		opusEncoder:        opusEncoder,
+		opusDecoder:        opusDecoder,
 		outboundTrack:      outboundTrack,
 		sequenceNumber:     1,
 		timestamp:          1,
@@ -187,12 +188,11 @@ func (g *GeminiRealtime) HandleAudioTrack(track *webrtc.TrackRemote) {
 		}
 		// Decode Opus to PCM
 		pcmData := make([]int16, 960) // 20ms at 48kHz
-		n := 10
-		// n, err := g.opusDecoder.Decode(opusData, pcmData)
-		// if err != nil {
-		// 	slog.Error("RealtimeService:gemini_websocket:HandleAudioTrack", "message", "failed to decode Opus data", "userID", g.userID, "error", err)
-		// 	continue
-		// }
+		n, err := g.opusDecoder.Decode(opusData, pcmData)
+		if err != nil {
+			slog.Error("RealtimeService:gemini_websocket:HandleAudioTrack", "message", "failed to decode Opus data", "userID", g.userID, "error", err)
+			continue
+		}
 
 		// Accumulate PCM data
 		pcmBuffer = append(pcmBuffer, pcmData[:n]...)
@@ -330,12 +330,11 @@ func (g *GeminiRealtime) sendAudioToClient(base64Audio string) {
 
 		// Encode to Opus
 		opusData := make([]byte, 4000)
-		n := 10
-		// n, err := g.opusEncoder.Encode(frame, opusData)
-		// if err != nil {
-		// 	slog.Error("Opus encoding error", "userID", g.userID, "error", err)
-		// 	continue
-		// }
+		n, err := g.opusEncoder.Encode(frame, opusData)
+		if err != nil {
+			slog.Error("Opus encoding error", "userID", g.userID, "error", err)
+			continue
+		}
 
 		// Create RTP packet with proper timing
 		rtpPacket := &rtp.Packet{

@@ -47,6 +47,7 @@ var userConnections = make(map[string]*PeerConnection)
 
 // offer between browser(client) and backend
 func (s *RealtimeService) Offer(offer string, provider string, model string, userID string) (string, error) {
+	//Todo: Need to validate provider and model
 	slog.Info("RealtimeService: Offer", "offer", offer, "provider", provider, "model", model, "userID", userID)
 
 	browserToBackendPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
@@ -205,7 +206,7 @@ func (s *RealtimeService) connectToGemini(userID string, model string) error {
 	}
 
 	slog.Info("Successfully connected to Gemini", "userID", userID)
-	id, err := s.dao.CreateAudioChat(userID, "gemini", time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339)) //check time
+	id, err := s.dao.CreateAudioChat(userID, model, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339)) //check time
 	if err != nil {
 		slog.Error("Failed to create audio chat", "userID", userID, "error", err)
 		return err
@@ -244,7 +245,7 @@ func (s *RealtimeService) connectToOpenai(userID string, model string) error {
 	}
 
 	slog.Info("Successfully connected to OpenAI", "userID", userID)
-	id, err := s.dao.CreateAudioChat(userID, "openai", time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	id, err := s.dao.CreateAudioChat(userID, model, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
 	if err != nil {
 		slog.Error("Failed to create audio chat", "userID", userID, "error", err)
 		return err

@@ -60,7 +60,7 @@ func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*
 		return nil, err
 	}
 
-	offer, err := s.service.Offer(req.Offer, req.Model, userID)
+	offer, err := s.service.Offer(req.Offer, req.Provider, req.Model, userID)
 	if err != nil {
 		slog.Error("RealtimeService:api:Offer", "message", "failed to offer", "error", err)
 		return nil, fmt.Errorf("failed to offer")

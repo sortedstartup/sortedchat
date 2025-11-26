@@ -13,6 +13,7 @@ message OfferRequest {
   // this is the browsers SDP, created in browser using pc.createOffer()
   string offer = 1;
   string model = 2;
+  string provider = 3;
 
   // we should look at project level real time call support
   //string project_id = 3;

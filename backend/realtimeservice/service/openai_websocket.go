@@ -168,11 +168,11 @@ func (o *OpenAIRealtime) sendDataChannelMessage(messageType string, model string
 }
 
 // Connect establishes WebSocket connection to OpenAI Realtime API
-func (o *OpenAIRealtime) Connect() error {
+func (o *OpenAIRealtime) Connect(model string) error {
 	slog.Info("Connecting to OpenAI Realtime API", "userID", o.userID)
 
 	// Use the correct URL format
-	wsURL := "wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview"
+	wsURL := "wss://api.openai.com/v1/realtime?model=" + model
 
 	headers := make(map[string][]string)
 	headers["Authorization"] = []string{"Bearer " + o.apiKey}
@@ -183,6 +183,11 @@ func (o *OpenAIRealtime) Connect() error {
 	if err != nil {
 		slog.Error("Failed to connect to OpenAI", "userID", o.userID, "error", err)
 		return err
+	}
+
+	if o.ws == nil {
+		slog.Error("Failed to connect to OpenAI", "userID", o.userID)
+		return fmt.Errorf("failed to connect to OpenAI")
 	}
 
 	slog.Info("Successfully connected to OpenAI", "userID", o.userID)

@@ -112,7 +112,7 @@ func (g *GeminiRealtime) sendDataChannelMessage(messageType string, model string
 }
 
 // Connect establishes WebSocket connection to Gemini Live API
-func (g *GeminiRealtime) Connect() error {
+func (g *GeminiRealtime) Connect(model string) error {
 	slog.Info("RealtimeService:gemini_websocket:Connect")
 	slog.Info("Connecting to Gemini Live API", "userID", g.userID)
 
@@ -130,7 +130,7 @@ func (g *GeminiRealtime) Connect() error {
 	// Send setup message
 	setupMsg := GeminiMessage{
 		Setup: &GeminiSetup{
-			Model: "models/gemini-live-2.5-flash-preview",
+			Model: "models/" + model,
 			GenerationConfig: &GeminiGenerationConfig{
 				ResponseModalities: []string{"AUDIO"},
 			},

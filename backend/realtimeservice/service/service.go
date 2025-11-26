@@ -46,8 +46,8 @@ type PeerConnection struct {
 var userConnections = make(map[string]*PeerConnection)
 
 // offer between browser(client) and backend
-func (s *RealtimeService) Offer(offer string, model string, userID string) (string, error) {
-	slog.Info("RealtimeService: Offer", "offer", offer, "model", model, "userID", userID)
+func (s *RealtimeService) Offer(offer string, provider string, model string, userID string) (string, error) {
+	slog.Info("RealtimeService: Offer", "offer", offer, "provider", provider, "model", model, "userID", userID)
 
 	browserToBackendPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
@@ -98,7 +98,7 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 				return
 			}
 
-			if model == "gemini" {
+			if provider == "gemini" {
 				// Handle audio through Gemini(gemini websocket realtime)
 				if userConn.geminiRealtime != nil {
 
@@ -164,17 +164,17 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 	}
 
 	// Connect to the appropriate AI service
-	if model == "gemini" {
-		go s.connectToGemini(userID)
+	if provider == "gemini" {
+		go s.connectToGemini(userID, model)
 	} else {
-		go s.connectToOpenai(userID)
+		go s.connectToOpenai(userID, model)
 	}
 
 	return answerForBrowser.SDP, nil
 }
 
 // connectToGemini establishes connection to Gemini Live API
-func (s *RealtimeService) connectToGemini(userID string) error {
+func (s *RealtimeService) connectToGemini(userID string, model string) error {
 
 	userConn := userConnections[userID]
 	if userConn == nil {
@@ -193,7 +193,7 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 	userConn.geminiRealtime = geminiRealtime
 
 	// Connect to Gemini
-	if err := geminiRealtime.Connect(); err != nil {
+	if err := geminiRealtime.Connect(model); err != nil {
 		slog.Error("Failed to connect to Gemini", "userID", userID, "error", err)
 		return err
 	}
@@ -215,7 +215,8 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 	return nil
 }
 
-func (s *RealtimeService) connectToOpenai(userID string) error {
+func (s *RealtimeService) connectToOpenai(userID string, model string) error {
+	slog.Info("RealtimeService: connectToOpenai", "userID", userID, "model", model)
 
 	userConn := userConnections[userID]
 	if userConn == nil {
@@ -231,7 +232,7 @@ func (s *RealtimeService) connectToOpenai(userID string) error {
 
 	userConn.openaiRealtime = openaiRealtime
 
-	if err := openaiRealtime.Connect(); err != nil {
+	if err := openaiRealtime.Connect(model); err != nil {
 		slog.Error("Failed to connect to OpenAI", "userID", userID, "error", err)
 		return err
 	}

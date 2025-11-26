@@ -43,7 +43,7 @@ import type { ClientReadableStream } from "grpc-web";
 
 let _chatClient: SortedChatClient | undefined;
 
-function getClient(): SortedChatClient {
+export function getChatClient(): SortedChatClient {
   if (!_chatClient) {
     const config = getUIConfig();
     if (!config) {
@@ -101,7 +101,7 @@ export const fetchChatMessages = async (chatId: string) => {
   });
 
   try {
-    const res = await getClient().GetHistory(
+    const res = await getChatClient().GetHistory(
       GetHistoryRequest.fromObject({ chatId }),
       {}
     );
@@ -177,7 +177,7 @@ export const createNewChat = async (projectId?: string) => {
     requestObj.project_id = projectId;
   }
   
-  const response = await getClient().CreateChat(
+  const response = await getChatClient().CreateChat(
     CreateChatRequest.fromObject(requestObj),
     {}
   );
@@ -192,7 +192,7 @@ export const getChatList = (projectId?: string, softDeleted?: boolean) => {
 
   const requestObj = GetChatListRequest.fromObject({ project_id: projectId, soft_deleted: softDeleted });
 
-  getClient().GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
+  getChatClient().GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
     if (softDeleted) {
       $trashChatList.set(value.chats);  
     } else {
@@ -320,7 +320,7 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
   }
 
   // grpc call
-   stream = getClient().Chat(
+   stream = getChatClient().Chat(
     ChatRequest.fromObject({
       text: msg, // Keep for backward compatibility
       contents: contents, // New multi-modal content
@@ -469,7 +469,7 @@ export const $chatName = atom<string>("");
 export const generateChatName = async (msg: string) => {
   try{
     // grpc call
-    const response = await getClient().GenerateChatName(
+    const response = await getChatClient().GenerateChatName(
       GenerateChatNameRequest.fromObject({
         message: msg,
         chat_id: $currentChatId.get(),
@@ -507,7 +507,7 @@ export const $selectedModel = atom<string>("gpt-5-nano");
 
 export const fetchAvailableModels = async () => {
   try {
-    const response = await getClient().ListModel(ListModelsRequest.fromObject({}), {});
+    const response = await getChatClient().ListModel(ListModelsRequest.fromObject({}), {});
     $availableModels.set(response.models);
   } catch (err) {
     console.error("Failed to fetch models:", err);
@@ -534,7 +534,7 @@ $searchText.listen((newValue, oldValue) => {
 
 export const getSearchResults = async () => {
   try {
-    const response = await getClient().SearchChat(
+    const response = await getChatClient().SearchChat(
       ChatSearchRequest.fromObject({
         query: $searchText.get(),
       }),
@@ -556,7 +556,7 @@ export const createProject = async (
   description: string,
 ) => {
   try {
-    const response = await getClient().CreateProject(
+    const response = await getChatClient().CreateProject(
       CreateProjectRequest.fromObject({
         name: name,
         description: description,
@@ -577,7 +577,7 @@ export const createProject = async (
 
 export const getProjectList = async () => {
   try {
-    const response = await getClient().GetProjects(
+    const response = await getChatClient().GetProjects(
       GetProjectsRequest.fromObject({}),
       {}
     );
@@ -606,7 +606,7 @@ export const $documents = atom<Document[]>([]);
 
 export async function fetchDocuments(projectId: string) {
   try {
-    const res = await getClient().ListDocuments(
+    const res = await getChatClient().ListDocuments(
       ListDocumentsRequest.fromObject({ project_id: projectId }),
       {}
     );
@@ -620,7 +620,7 @@ export async function fetchDocuments(projectId: string) {
 
 export async function deleteDocument(projectId: string, docId: string) {
   try {
-    const res = await getClient().DeleteDocument(
+    const res = await getChatClient().DeleteDocument(
       DeleteDocumentRequest.fromObject({
         project_id: projectId,
         doc_id: docId,
@@ -678,7 +678,7 @@ $documents.listen((documents) => {
 
 export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<String> => {
   try {
-    const response = await getClient().SubmitGenerateEmbeddingsJob(
+    const response = await getChatClient().SubmitGenerateEmbeddingsJob(
       GenerateEmbeddingRequest.fromObject({
         project_id: projectId,
       }),
@@ -719,7 +719,7 @@ export async function BranchChat(branch_from_message_id: string) {
       return;
     }
 
-    const res = await getClient().BranchAChat(BranchAChatRequest.fromObject({
+    const res = await getChatClient().BranchAChat(BranchAChatRequest.fromObject({
       source_chat_id: currentChatId,
       branch_from_message_id: branch_from_message_id,
       branch_name: ""
@@ -744,7 +744,7 @@ export const $listChatBranch = atom<ChatInfo[]>([]);
 
 export async function ListChatBranch (chatId: string) {
   try {
-    const res = await getClient().ListChatBranch(ListChatBranchRequest.fromObject({
+    const res = await getChatClient().ListChatBranch(ListChatBranchRequest.fromObject({
       chat_id: chatId,
     }),{});
     $listChatBranch.set(res.branch_chat_list);
@@ -804,7 +804,7 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
       docId: docId || "", // Optional filter by specific document
     });
 
-    const response = await getClient().GetRAGDocumentReference(request, {});
+    const response = await getChatClient().GetRAGDocumentReference(request, {});
     
     $ragDocumentDetails.set({
       data: response.reference || null,
@@ -830,7 +830,7 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
 
 export const DeleteChat = async (chatId: string, operation: DeleteChatRequestOperation) => {
   try {
-    const res = await getClient().DeleteChat(DeleteChatRequest.fromObject({ chat_id: chatId, operation: operation }), {});
+    const res = await getChatClient().DeleteChat(DeleteChatRequest.fromObject({ chat_id: chatId, operation: operation }), {});
     toast.success(res.message);
 
 
@@ -850,7 +850,7 @@ export const DeleteChat = async (chatId: string, operation: DeleteChatRequestOpe
 
 export const RestoreChat = async (chatId: string) => {
   try {
-    const res = await getClient().RestoreChat(RestoreChatRequest.fromObject({ chat_id: chatId }), {});
+    const res = await getChatClient().RestoreChat(RestoreChatRequest.fromObject({ chat_id: chatId }), {});
     toast.success(res.message);
     getChatList(undefined, true);
   } catch (error) {
@@ -861,7 +861,7 @@ export const RestoreChat = async (chatId: string) => {
 
 export const RenameItem = async (itemId: string, name: string, itemType: RenameItemRequestItemType) => {
   try {
-    const res = await getClient().RenameItem(RenameItemRequest.fromObject({ item_id: itemId, name: name, item_type: itemType }), {});
+    const res = await getChatClient().RenameItem(RenameItemRequest.fromObject({ item_id: itemId, name: name, item_type: itemType }), {});
 
     
     toast.success(res.message);

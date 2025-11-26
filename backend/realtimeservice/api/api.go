@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"sortedstartup/chatservice/proto"
 	"sortedstartup/common/auth"
 	"sortedstartup/realtimeservice/dao"
 	pb "sortedstartup/realtimeservice/proto"
@@ -18,7 +19,7 @@ type RealtimeServiceAPI struct {
 
 var SQLITE_DB_URL = "db.sqlite"
 
-func NewRealtimeServiceAPI(daoFactory dao.DAOFactory) *RealtimeServiceAPI {
+func NewRealtimeServiceAPI(daoFactory dao.DAOFactory, chatClient proto.SortedChatClient) *RealtimeServiceAPI {
 	slog.Info("RealtimeService:NewRealtimeServiceAPI")
 
 	r := &RealtimeServiceAPI{

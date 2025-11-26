@@ -32,7 +32,9 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure" // Needed for bufconn client
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/test/bufconn" // New Import for in-memory client
 
 	authApi "sortedstartup/authservice/api"
 	authDao "sortedstartup/authservice/dao"
@@ -53,10 +55,17 @@ const (
 	defaultGrpcPort = "8000"
 	defaultHttpPort = "8080"
 	defaultHost     = ""
+	bufSize         = 1024 * 1024 // Buffer size for bufconn
 )
 
 //go:embed public
 var staticUIFS embed.FS
+
+func newBufDialer(lis *bufconn.Listener) func(context.Context, string) (net.Conn, error) {
+	return func(context.Context, string) (net.Conn, error) {
+		return lis.Dial()
+	}
+}
 
 func main() {
 	ctx := context.Background()
@@ -85,9 +94,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen on %s: %v", grpcAddr, err)
 	}
+	log.Printf("Main gRPC server listening on TCP: %s", grpcAddr)
+	inProcessListener := bufconn.Listen(bufSize)
+	inProcessDialer := newBufDialer(inProcessListener)
+	log.Println("Created in-process bufconn listener for client communication")
 
 	if os.Getenv("OTEL_EXPORTER_OTLP_HEADERS") != "" && os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
-
 		res, err := newResource()
 		if err != nil {
 			log.Fatalf("Failed to create OTel resource: %v", err)
@@ -111,9 +123,8 @@ func main() {
 	// Adding Interceptors
 	// Create JWT validator
 	jwtSecret := os.Getenv("APP_JWT_SECRET")
-	issuer := os.Getenv("APP_ISSUER") // Should match your auth service issuer
+	issuer := os.Getenv("APP_ISSUER")
 
-	// Use build tag specific defaults
 	defaultJwtSecret, defaultIssuer := getJWTDefaults()
 	if jwtSecret == "" {
 		jwtSecret = defaultJwtSecret
@@ -137,6 +148,8 @@ func main() {
 		grpc.UnaryInterceptor(authInterceptor.UnaryInterceptor()),
 		grpc.StreamInterceptor(authInterceptor.StreamInterceptor()),
 	)
+
+	internalGrpcServer := grpc.NewServer()
 
 	// Create HTTP auth middleware
 	authMiddleware := auth.NewHTTPAuthMiddleware(validator, false) // requireAuth = false for flexibility
@@ -226,6 +239,7 @@ func main() {
 	chatServiceApi := api.NewChatService(mux, queue, settingsManager, daoFactory)
 	chatServiceApi.Init(config)
 	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
+	proto.RegisterSortedChatServer(internalGrpcServer, chatServiceApi)
 
 	settingServiceApi := api.NewSettingService(queue, daoFactory)
 	settingServiceApi.Init()
@@ -235,7 +249,20 @@ func main() {
 	inferenceServiceApi.Init(inferenceConfig)
 	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 
-	realtimeServiceApi := realtimeApi.NewRealtimeServiceAPI(realtimeDaoFactory)
+	chatClientConn, err := grpc.Dial(
+		"bufconn",
+		grpc.WithContextDialer(inProcessDialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to create in-memory ChatService client connection: %v", err)
+	}
+	defer chatClientConn.Close()
+
+	// Create ChatService client for in-process calls
+	chatClient := proto.NewSortedChatClient(chatClientConn)
+
+	realtimeServiceApi := realtimeApi.NewRealtimeServiceAPI(realtimeDaoFactory, chatClient)
 	realtimeServiceApi.Init(realtimeConfig)
 	realtimeProto.RegisterRealtimeServiceServer(grpcServer, realtimeServiceApi)
 
@@ -389,6 +416,11 @@ func main() {
 	go func() {
 		log.Printf("Starting gRPC server on %s", grpcAddr)
 		serverErr <- grpcServer.Serve(listener)
+	}()
+
+	go func() {
+		log.Printf("Starting gRPC server on in-memory bufconn")
+		serverErr <- internalGrpcServer.Serve(inProcessListener)
 	}()
 
 	go func() {

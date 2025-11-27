@@ -49,6 +49,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           setIsConnecting(false);
           setStatusMessage('');
         } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+          handleDisconnect();
           $isConnected.set(false);
           setIsConnecting(false);
           setStatusMessage('Connection failed');
@@ -96,7 +97,12 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
             console.log("OpenAI:output_details", message.data);
             if (message.data.audio_tokens) setOutputTokens(prev => prev + message.data.audio_tokens);
           }
-          
+          if (message.type === "Connection_closed") {
+            handleDisconnect();
+            $isConnected.set(false);
+            setIsConnecting(false);
+            setStatusMessage('Connection closed');
+          }
         } catch (err) {
           console.error("Message handling error:", err);
         }

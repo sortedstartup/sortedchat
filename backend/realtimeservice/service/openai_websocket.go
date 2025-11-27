@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 	"gopkg.in/hraban/opus.v2"
 )
 
@@ -216,7 +216,7 @@ func (o *OpenAIRealtime) Connect() error {
 
 		// Trigger full service cleanup
 		if o.service != nil {
-			go o.service.Cleanup(o.userID)
+			o.service.Cleanup(o.userID)
 		}
 	}()
 

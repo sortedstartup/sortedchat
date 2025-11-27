@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 	"gopkg.in/hraban/opus.v2"
 )
 
@@ -180,7 +180,7 @@ func (g *GeminiRealtime) Connect() error {
 
 		// Trigger full service cleanup
 		if g.service != nil {
-			go g.service.Cleanup(g.userID)
+			g.service.Cleanup(g.userID)
 		}
 	}()
 

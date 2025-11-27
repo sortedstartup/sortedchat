@@ -7,7 +7,7 @@ import (
 	"sortedstartup/realtimeservice/dao"
 	"time"
 
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 )
 
 type RealtimeService struct {
@@ -262,6 +262,12 @@ func (s *RealtimeService) Cleanup(userID string) error {
 	if userConn == nil {
 		slog.Error("User connection not found for cleanup", "userID", userID)
 		return nil
+	}
+
+	//send closing message to browser using data channel
+	if userConn.dataChannelManager != nil {
+		slog.Info("Sending Connection_closed message to browser", "userID", userID)
+		userConn.dataChannelManager.sendMessageWithData("Connection_closed", "", nil)
 	}
 
 	// Close AI connections

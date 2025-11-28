@@ -838,6 +838,7 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			if err := json.Unmarshal([]byte(m.ContentImage), &imageContents); err == nil {
 				fullContents = append(fullContents, imageContents...)
 			} else {
+				slog.Error("service:GetHistory", "message", "Failed to parse image content JSON", "error", err, "messageId", m.Id)
 			}
 		}
 

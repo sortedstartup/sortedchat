@@ -1,11 +1,31 @@
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { IceCandidateRequest, OfferRequest, RealtimeServiceClient } from "../../proto/realtimeservice";
-import { toast } from "sonner";
-import { atom } from "nanostores";
+import { getUIConfig } from "../lib/config";
 
-const client = new RealtimeServiceClient(import.meta.env.VITE_API_URL, {}, createAuthenticatedClientOptions());
+import { atom } from "nanostores";
+import { toast } from "sonner";
+
+
+let _realtimeClient: RealtimeServiceClient | undefined;
 
 export const $isConnected = atom<boolean>(false);
+
+
+function getClient(): RealtimeServiceClient {
+  if (!_realtimeClient) {
+    const config = getUIConfig();
+    if (!config) {
+      throw new Error("UI config not loaded, cannot initialize chat client.");
+    }
+    _realtimeClient = new RealtimeServiceClient(
+      config.API_URL,
+      {},
+      createAuthenticatedClientOptions()
+    );
+  }
+  return _realtimeClient;
+}
+
 
 export const offerRequest = async (offer: string, model: string) => {
     const req = new OfferRequest({
@@ -13,8 +33,7 @@ export const offerRequest = async (offer: string, model: string) => {
         model: model,
     });
     try {
-        const res = await client.Offer(req, {});
-        console.log("offerRequest response", res);
+        const res = await getClient().Offer(req, {});
         const offer = res.offer;
 
         if (offer) {
@@ -42,7 +61,7 @@ export const iceCandidate = async (candidate: string) => {
         candidate: candidate,
     });
     try {
-        const res = await client.IceCandidate(req, {});
+        const res = await getClient().IceCandidate(req, {});
         if (res.message) {
             // toast.success("ICE candidate sent successfully");
             return res;

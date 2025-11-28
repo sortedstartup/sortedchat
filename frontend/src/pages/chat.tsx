@@ -44,6 +44,8 @@ import {
   $chatProgress,
   stream,
   $isStreaming,
+  $currentProject,
+  $currentProjectId,
 } from "@/store/chat";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
 import {
@@ -181,7 +183,7 @@ function Message({
   message,
   onCopyMessage,
   onViewRAGDetails,
-  onBranchChat,
+  // onBranchChat, //temporarily hiding it for this release only
   isCopied,
   projectId,
   isExpanded,
@@ -317,14 +319,15 @@ function Message({
                   )}
                 </Button>
 
-                <Button
+                {/* Temporarily hiding it for this release only */}
+                {/* <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onBranchChat(message.message_id)}
                   className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Branch Chat
-                </Button>
+                </Button> */}
               </div>
 
               <div
@@ -717,6 +720,7 @@ export function Chat() {
   const responseSummaries = useStore($responseSummaries);
   const currentAssistantMessageId = useStore($currentAssistantMessageId);
   const chatProgress = useStore($chatProgress);
+  const currentProject = useStore($currentProject);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -742,7 +746,9 @@ export function Chat() {
   }, [chatId, navigate]);
 
   useEffect(() => {
-    if (!projectId) {
+    if (projectId) {
+      $currentProjectId.set(projectId);
+    } else {
       setRagEnabledForProject(false);
     }
   }, [projectId]);
@@ -822,6 +828,16 @@ export function Chat() {
 
   return (
     <div className="flex flex-col h-full w-full">
+      {projectId && currentProject && (
+      <div className="p-4 border-b border-gray-200 flex-shrink-0 bg-white">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+            <FileText className="size-5 text-orange-500" />
+          </div>
+          <h1 className="text-xl font-bold">{currentProject}</h1>
+        </div>
+      </div>
+    )}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto min-h-0">
         <div className={`mx-auto w-full transition-all ${isExpanded ? "max-w-7xl" : "max-w-4xl"}`}>
           {loading ? (

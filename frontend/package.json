@@ -4,8 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "prebuild": "MODE=prod node generate-config.js",
+    "prebuild:local": "MODE=dev node generate-config.js",
+    "prebuild:standalone": "MODE=dev node generate-config.js",
+    "predev": "MODE=dev node generate-config.js",
+    "dev": "pnpm run predev && vite",
+    "build": "pnpm run prebuild && vite build",
+    "build:local": "pnpm run prebuild:local && vite build",
+    "build:standalone": "pnpm run prebuild:standalone && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

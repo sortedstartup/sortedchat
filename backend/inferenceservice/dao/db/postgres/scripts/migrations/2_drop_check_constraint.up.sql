@@ -1,0 +1,2 @@
+ALTER TABLE inferenceservice_models_metadata
+DROP CONSTRAINT IF EXISTS inferenceservice_models_metadata_status_check;

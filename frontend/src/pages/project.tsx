@@ -6,6 +6,7 @@ import {
   Eye,
   MessageSquare,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
@@ -30,30 +31,50 @@ import {
   SubmitGenerateEmbeddingsJob,
   $isErrorDocs,
   $isPolling,
+  $ragEnabled, // Add RAG enabled store
+  toggleRagEnabled, // Add toggle function
+  setRagEnabledForProject, // Add set function
+  deleteDocument,
 } from "@/store/chat";
 import { useNavigate, useParams } from "react-router-dom";
 import { Embedding_Status } from "../../proto/chatservice";
-const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL;
+import { loadUIConfig } from "@/lib/config";
 
 export function Project() {
   const [message, setMessage] = useState("");
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isDocumentsDialogOpen, setIsDocumentsDialogOpen] = useState(false);
+  const [apiUploadUrl, setApiUploadUrl] = useState("");
   const documents = useStore($documents);
   const projectName = useStore($currentProject);
   const currentProjectId = useStore($currentProjectId);
   const chatsList = useStore($projectChatList);
   const isErrorDocs = useStore($isErrorDocs);
   const isPolling = useStore($isPolling);
+  const ragEnabled = useStore($ragEnabled); // Add RAG enabled state
 
   const navigate = useNavigate();
 
   const { projectId } = useParams();
 
   useEffect(() => {
+    const fetchUrl = async () => {
+      try {
+        const config = await loadUIConfig();
+        setApiUploadUrl(config.API_UPLOAD_URL);
+      } catch (e) {
+        console.error("Failed to load UI config", e);
+      }
+    };
+    fetchUrl();
+  }, []);
+
+  useEffect(() => {
     if (projectId) {
       $currentProjectId.set(projectId);
       fetchDocuments(projectId);
+     
+      setRagEnabledForProject(true);
     }
   }, [projectId]);
 
@@ -88,6 +109,14 @@ export function Project() {
 
   const handleDocumentsDialogClose = (open: boolean) => {
     setIsDocumentsDialogOpen(open);
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    try {
+      await deleteDocument(currentProjectId.toString(), docId);
+    } catch (error) {
+      console.error("Error deleting document:", error);
+    }
   };
 
   const handleRetryEmbedding = async () => {
@@ -165,15 +194,7 @@ export function Project() {
                         key={doc.id || index}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                       >
-                        <div
-                          className="flex items-center gap-3 flex-1 cursor-pointer"
-                          onClick={() =>
-                            window.open(
-                              `${API_UPLOAD_URL}/documents/${doc.docs_id}`,
-                              "_blank"
-                            )
-                          }
-                        >
+                        <div className="flex items-center gap-3 flex-1 cursor-pointer">
                           <FileText className="size-5 text-orange-500" />
                           <div className="flex flex-col items-start">
                             <span className="font-medium">{doc.file_name}</span>
@@ -192,8 +213,27 @@ export function Project() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              window.open(
+                                `${apiUploadUrl}/documents/${doc.docs_id}`,
+                                "_blank"
+                              );
+                            }}
+                          >
                             <Eye className="size-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              handleDeleteDocument(doc.docs_id);
+                            }}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="size-4" />
                           </Button>
                         </div>
                       </div>
@@ -224,7 +264,7 @@ export function Project() {
                   <DialogTitle>Upload Files or Folder</DialogTitle>
                 </DialogHeader>
                 <FileUploader
-                  uploadUrl={`${API_UPLOAD_URL}/upload`}
+                  uploadUrl={`${apiUploadUrl}/upload`}
                   onFileUpload={(file) => console.log("Uploaded:", file)}
                   onCompleteUpload={handleUploadComplete}
                 />
@@ -233,7 +273,7 @@ export function Project() {
           </div>
 
           <div className="w-full max-w-lg">
-            <h3 className="text-lg font-semibold mb-3 text-gray-800">
+            <h3 className="text-lg font-semibold mb-3 text-foreground">
               Project Chats
             </h3>
             <div className="space-y-2 max-h-64 overflow-auto">
@@ -241,35 +281,48 @@ export function Project() {
                 chatsList.map((chat: any) => (
                   <div
                     key={chat.chatId}
-                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors text-left"
+                    className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-accent cursor-pointer transition-colors text-left"
                     onClick={() => {
                       navigate(`/project/${projectId}/chat/${chat.chatId}`);
                     }}
                   >
-                    <MessageSquare className="size-5 text-orange-500 flex-shrink-0" />
+                    <MessageSquare className="size-5 text-primary flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
+                      <p className="font-medium text-foreground truncate">
                         {chat.name}
                       </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <MessageSquare className="size-12 mx-auto mb-3 text-gray-300" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <MessageSquare className="size-12 mx-auto mb-3 text-muted-foreground/50" />
                   <p>No chats yet</p>
                 </div>
               )}
             </div>
-          </div>
+        </div>
         </div>
       </div>
 
-      <div className="bg-white p-4 border-t border-gray-200 flex-shrink-0">
-        <div className="relative rounded-lg border border-gray-200 bg-gray-50 focus-within:ring-1 focus-within:ring-orange-500 p-1">
+      <div className="bg-card p-4 border-t border-border flex-shrink-0">
+        {/* RAG Toggle for Project Chats */}
+        <div className="flex items-center mb-2 px-1">
+          <label className="flex items-center space-x-2 text-sm text-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={ragEnabled}
+              onChange={toggleRagEnabled}
+              className="rounded border-input text-primary focus:ring-ring"
+            />
+            <span>Enable RAG (Retrieval-Augmented Generation)</span>
+          </label>
+        </div>
+        
+        <div className="relative rounded-lg border border-border bg-muted focus-within:ring-1 focus-within:ring-ring p-1">
           <ChatInput
             placeholder="Type your message here..."
-            className="min-h-12 border-0 p-3 shadow-none focus-visible:ring-0 bg-gray-50 text-black resize-none"
+            className="min-h-12 border-0 p-3 shadow-none focus-visible:ring-0 bg-transparent text-foreground resize-none"
             value={message}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
               setMessage(e.target.value)

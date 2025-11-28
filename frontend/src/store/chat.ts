@@ -21,10 +21,42 @@ import {
   GenerateChatNameRequest,
   BranchAChatRequest,
   ListChatBranchRequest,
+  RAGDocumentReference as DocumentReference,
+  ProjectContext, // Alias for backward compatibility
+  RAGDocumentReferenceRequest,
+  RAGDocumentReference,
+  DeleteDocumentRequest,
+  ResponseSummary,
+  DeleteChatRequest,
+  DeleteChatRequestOperation,
+  RestoreChatRequest,
+  RenameItemRequest,
+  RenameItemRequestItemType,
+  ChatProgress,
+  MessageContent,
+  ImageUrl,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
+import { createAuthenticatedClientOptions } from "../lib/auth";
+import { getUIConfig } from "../lib/config";
+import type { ClientReadableStream } from "grpc-web";
 
-var chat = new SortedChatClient(import.meta.env.VITE_API_URL);
+let _chatClient: SortedChatClient | undefined;
+
+function getClient(): SortedChatClient {
+  if (!_chatClient) {
+    const config = getUIConfig();
+    if (!config) {
+      throw new Error("UI config not loaded, cannot initialize chat client.");
+    }
+    _chatClient = new SortedChatClient(
+      config.API_URL,
+      {},
+      createAuthenticatedClientOptions()
+    );
+  }
+  return _chatClient;
+}
 
 // --- stores ---
 export const $chatList = atom<ChatInfo[]>([]);
@@ -41,6 +73,24 @@ export const $currentChatMessages = atom<{
   error: null,
 });
 
+// Add new stores for document references
+export const $currentDocumentReferences = atom<DocumentReference[]>([]);
+export const $showDocumentReferences = atom<boolean>(false);
+
+// Add RAG enabled store
+export const $ragEnabled = atom<boolean>(true);
+
+// Store for detailed RAG document references
+export const $ragDocumentDetails = atom<{
+  data: RAGDocumentReference | null;
+  loading: boolean;
+  error: string | null;
+}>({
+  data: null,
+  loading: false,
+  error: null,
+});
+
 export const fetchChatMessages = async (chatId: string) => {
   if (!chatId) return;
 
@@ -51,7 +101,7 @@ export const fetchChatMessages = async (chatId: string) => {
   });
 
   try {
-    const res = await chat.GetHistory(
+    const res = await getClient().GetHistory(
       GetHistoryRequest.fromObject({ chatId }),
       {}
     );
@@ -61,6 +111,33 @@ export const fetchChatMessages = async (chatId: string) => {
       loading: false,
       error: null,
     });
+
+    // Extract document references from chat history
+    const allReferences: DocumentReference[] = [];
+    if (res.history) {
+      res.history.forEach(message => {
+        if (message.references && message.references.length > 0) {
+          allReferences.push(...message.references);
+        }
+      });
+    }
+
+    if (res.chat_metadata) {
+      $chatMetadata.set(res.chat_metadata);
+    } else {
+      $chatMetadata.set(null);
+    }
+
+    
+    // Set document references if any exist
+    if (allReferences.length > 0) {
+      $currentDocumentReferences.set(allReferences);
+      $showDocumentReferences.set(true);
+    } else {
+      $currentDocumentReferences.set([]);
+      $showDocumentReferences.set(false);
+    }
+
   } catch (error) {
     console.error("Failed to fetch chat messages:", error);
     $currentChatMessages.set({
@@ -71,21 +148,14 @@ export const fetchChatMessages = async (chatId: string) => {
   }
 };
 
-// Auto-fetch when chat ID changes
-$currentChatId.listen((newChatId) => {
-  if (newChatId) {
-    fetchChatMessages(newChatId);
-  } else {
-    $currentChatMessages.set({
-      data: undefined,
-      loading: false,
-      error: null,
-    });
-  }
-});
-
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
+//key here is message id and value is response summary, only used till we do not reload the page
+//store new chat summaries after page load
+export const $responseSummaries = atom<Record<string, ResponseSummary>>({});
+
+export const $currentUserMessageId = atom<string>("");
+export const $currentAssistantMessageId = atom<string | null>(null);
 
 const addMessageToHistory = (message: ChatMessage) => {
   const currentState = $currentChatMessages.get();
@@ -107,42 +177,71 @@ export const createNewChat = async (projectId?: string) => {
     requestObj.project_id = projectId;
   }
   
-  const response = await chat.CreateChat(
+  const response = await getClient().CreateChat(
     CreateChatRequest.fromObject(requestObj),
     {}
   );
-  getChatList(projectId);
+  getChatList(projectId, false);
   return response.chat_id;
 };
 
+export const $projectChatList = atom<ChatInfo[]>([]);
+export const $trashChatList = atom<ChatInfo[]>([]);
 
-export const $projectChatList = atom<ChatInfo[]>([]);   
-export const getChatList = (projectId?: string) => {
-  const requestObj: GetChatListRequest = projectId
-    ? GetChatListRequest.fromObject({ project_id: projectId })
-    : new GetChatListRequest();
+export const getChatList = (projectId?: string, softDeleted?: boolean) => {
 
-  chat.GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
-    (projectId ? $projectChatList : $chatList).set(value.chats);
+  const requestObj = GetChatListRequest.fromObject({ project_id: projectId, soft_deleted: softDeleted });
+
+  getClient().GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
+    if (softDeleted) {
+      $trashChatList.set(value.chats);  
+    } else {
+      (projectId ? $projectChatList : $chatList).set(value.chats);
+    }
   });
 };
+
 
 const isFirstMessageInChat = (): boolean => {
   const currentState = $currentChatMessages.get();
   return !currentState.data || currentState.data.length === 0;
 };
 
+export const $chatMetadata = atom<ChatInfo | null>(null);
+export const $chatProgress = atom<ChatProgress | null>(null);
 
+export let stream: ClientReadableStream<ChatResponse> | null = null;
+export let $isStreaming = atom<boolean>(false);
 
-export const doChat = (msg: string,projectId: string | undefined) => {
+// Helper function to convert File to base64
+async function imageToBase64(file: File): Promise<string> {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error(`Unsupported image type: ${file.type}. Allowed types: ${allowedTypes.join(', ')}`);
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      resolve(base64);  // Already in format: data:image/jpeg;base64,/9j/4AAQ...
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+export const doChat = async (msg: string, projectId: string | undefined, images?: File[], imageDetail: string = "auto") => {
   $currentChatMessage.set(msg);
   $streamingMessage.set("");
+  $currentUserMessageId.set("");
+  $currentAssistantMessageId.set(null);
 
   const isFirstMessage = isFirstMessageInChat();
   const isNewlyBranched = $isNewlyBranched.get();
 
   let assistantResponse = "";
   let messageId = "";
+  let currentChatReferences: any[] = []; // Track references for this specific chat
 
   if (isFirstMessage || isNewlyBranched) {
       generateChatName(msg);
@@ -151,14 +250,86 @@ export const doChat = (msg: string,projectId: string | undefined) => {
       }
     }
 
+  // Get RAG enabled state - use stored value for project chats, false for regular chats
+  const ragEnabled = projectId ? $ragEnabled.get() : false;
+  
+  // Clear document references if RAG is disabled
+  if (!ragEnabled) {
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
+  }
+
+  // Build multi-modal content
+  const contents: MessageContent[] = [];
+  
+  // Add text content if provided
+  if (msg.trim()) {
+    contents.push(
+      MessageContent.fromObject({
+        type: "text",
+        text: msg
+      })
+    );
+  }
+  
+  // Add image contents if provided
+  if (images && images.length > 0) {
+    // Check model capabilities before processing images
+
+    const MAX_IMAGES = 10; // Align with backend limit
+    if (images.length > MAX_IMAGES) {
+      toast.error(`Maximum ${MAX_IMAGES} images allowed per message.`);
+      return;
+    }
+    
+    // Enforce total size limit (e.g., 20MB total)
+    const MAX_TOTAL_SIZE = 20 * 1024 * 1024; // 20MB
+    const totalSize = images.reduce((sum, img) => sum + img.size, 0);
+    if (totalSize > MAX_TOTAL_SIZE) {
+      toast.error(`Total image size must not exceed ${MAX_TOTAL_SIZE / (1024 * 1024)}MB.`);
+      return;
+    }
+
+
+    const selectedModel = $selectedModel.get();
+    const modelInfo = $availableModels.get().find(m => m.id === selectedModel);
+    
+    if (!modelInfo?.capabilities?.image?.input) {
+      toast.error("Selected model does not support image input. Please choose a vision-capable model.");
+      return;
+    }
+    
+    for (const image of images) {
+      try {
+        const base64 = await imageToBase64(image);
+        contents.push(
+          MessageContent.fromObject({
+            type: "image_url",
+            image_url: ImageUrl.fromObject({
+              url: base64,
+              detail: imageDetail
+            })
+          })
+        );
+      } catch (error) {
+        console.error("Failed to encode image:", error);
+        toast.error("Failed to process image. Please try again.");
+        return;
+      }
+    }
+  }
 
   // grpc call
-  const stream = chat.Chat(
+   stream = getClient().Chat(
     ChatRequest.fromObject({
-      text: msg,
+      text: msg, // Keep for backward compatibility
+      contents: contents, // New multi-modal content
       chatId: $currentChatId.get(),
       model: $selectedModel.get(),
-      project_id: projectId || "",
+      project_context: ProjectContext.fromObject({
+        project_id: projectId || "",
+        rag_enabled: ragEnabled,
+      }),
     }),
     {}
   );
@@ -167,41 +338,138 @@ export const doChat = (msg: string,projectId: string | undefined) => {
     if (res.has_text) {
       assistantResponse += res.text;
       $streamingMessage.set(assistantResponse);
+      $isStreaming.set(true);
+    } else if (res.has_request_message_id) {
+      $currentUserMessageId.set(res.request_message_id); //(user) message id is set in the store
     } else if (res.has_summary) {
       messageId = res.summary.message_id;
-      console.log('Received message ID:', messageId);
+      const currentSummaries = $responseSummaries.get();
+      $responseSummaries.set({
+        ...currentSummaries,
+        [res.summary.message_id]: res.summary,
+      });
+      $currentAssistantMessageId.set(messageId);
+
+
+    } else if (res.has_document_reference && ragEnabled) {
+      // Only process document references if RAG is enabled
+      const docRefList = res.document_reference;
+      
+      if (docRefList.summary) {
+        for (const summary of docRefList.summary) {
+          
+          const docRef = {
+            doc_id: summary.doc_id,
+            file_name: summary.file_name,
+            Chunks: Array(summary.chunkCount).fill({}) // Create array with chunk count
+          };
+          
+          currentChatReferences.push(docRef);
+        }
+      }
+      
+      // Update the store for real-time display
+      $currentDocumentReferences.set([...currentChatReferences]);
+      $showDocumentReferences.set(true);
+      
+    }else if (res.has_chat_metadata) {
+      $chatMetadata.set(res.chat_metadata);
+    } else if (res.has_progress) {
+      $chatProgress.set(res.progress);
     }
-  });
+  } );
 
   stream.on("end", () => {
     const userMessage = ChatMessage.fromObject({
       role: "user",
       content: msg,
+      contents: contents.length > 0 ? contents : undefined, // Add multi-modal content
+      rag_enabled: ragEnabled, // Set the rag_enabled field based on the current state
     });
+    
     const assistantMessage = ChatMessage.fromObject({
       role: "assistant",
       content: assistantResponse,
       message_id: messageId,
+      references: ragEnabled ? currentChatReferences : [], // Only add references if RAG is enabled
+      rag_enabled: ragEnabled, // Set the rag_enabled field based on the current state
     });
 
     addMessageToHistory(userMessage);
     addMessageToHistory(assistantMessage);
 
+    $isStreaming.set(false);
+
     $streamingMessage.set("");
     $currentChatMessage.set("");
+
+    $chatProgress.set(null);
+
+    
+    // Clear document references if RAG is disabled
+    if (!ragEnabled) {
+      $currentDocumentReferences.set([]);
+      $showDocumentReferences.set(false);
+    }
+    
+    // Reset RAG to enabled for project chats after message completion
+    if (projectId) {
+      $ragEnabled.set(true);
+    }
+    
   });
 
   stream.on("error", (err: Error) => {
     console.error("Stream error:", err);
     $streamingMessage.set("");
-    $currentChatMessage.set("");
+    toast.error("An error occurred while receiving the response. Please try again.");  
+    $chatProgress.set(null);    
+    $isStreaming.set(false);
+    
+    // Reset RAG to enabled for project chats even on error
+    if (projectId) {
+      $ragEnabled.set(true);
+    }
   });
 };
+
+// Add helper functions to control document references visibility
+export const hideDocumentReferences = () => {
+  $showDocumentReferences.set(false);
+};
+
+export const showDocumentReferencesPanel = () => {
+  $showDocumentReferences.set(true);
+};
+
+// Add function to toggle RAG enabled state
+export const toggleRagEnabled = () => {
+  const currentState = $ragEnabled.get();
+  $ragEnabled.set(!currentState);
+  
+  // Clear document references if RAG is being disabled
+  if (currentState) {
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
+  }
+};
+
+// Add function to set RAG enabled state for project chats
+export const setRagEnabledForProject = (enabled: boolean) => {
+  $ragEnabled.set(enabled);
+  
+  // Clear document references if RAG is being disabled
+  if (!enabled) {
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
+  }
+};
+
 export const $chatName = atom<string>("");
 export const generateChatName = async (msg: string) => {
   try{
     // grpc call
-    const response = await chat.GenerateChatName(
+    const response = await getClient().GenerateChatName(
       GenerateChatNameRequest.fromObject({
         message: msg,
         chat_id: $currentChatId.get(),
@@ -225,11 +493,6 @@ $chatName.listen(() => {
   }
 });
 
-$currentChatId.listen((_newValue, _oldValue) => {
-  $streamingMessage.set("");
-  $currentChatMessage.set("");
-});
-
 // load chat history of first use
 onMount($chatList, () => {
   getChatList();
@@ -240,11 +503,11 @@ onMount($chatList, () => {
 });
 
 export const $availableModels = atom<ModelListInfo[]>([]);
-export const $selectedModel = atom<string>("gpt-4.1");
+export const $selectedModel = atom<string>("gpt-5-nano");
 
 export const fetchAvailableModels = async () => {
   try {
-    const response = await chat.ListModel(ListModelsRequest.fromObject({}), {});
+    const response = await getClient().ListModel(ListModelsRequest.fromObject({}), {});
     $availableModels.set(response.models);
   } catch (err) {
     console.error("Failed to fetch models:", err);
@@ -257,7 +520,7 @@ onMount($availableModels, () => {
 
 // -- search --
 export const $searchResults = atom<SearchResult[]>([]);
-export const $searchText = atom<string>("elon");
+export const $searchText = atom<string>("");
 
 $searchText.listen((newValue, oldValue) => {
    if (newValue !== oldValue) {
@@ -271,7 +534,7 @@ $searchText.listen((newValue, oldValue) => {
 
 export const getSearchResults = async () => {
   try {
-    const response = await chat.SearchChat(
+    const response = await getClient().SearchChat(
       ChatSearchRequest.fromObject({
         query: $searchText.get(),
       }),
@@ -282,9 +545,8 @@ export const getSearchResults = async () => {
     console.error("failed", err);
   }
 };
-// -- search --
-// -- Project --
 
+// -- Project --
 export const $currentProject = atom<string>("");
 export const $projectList = atom<Project[]>([]);
 export const $currentProjectId = atom<string>("");
@@ -294,7 +556,7 @@ export const createProject = async (
   description: string,
 ) => {
   try {
-    const response = await chat.CreateProject(
+    const response = await getClient().CreateProject(
       CreateProjectRequest.fromObject({
         name: name,
         description: description,
@@ -303,15 +565,19 @@ export const createProject = async (
       {}
     );
     $currentProjectId.set(response.project_id);
+    toast.success(response.message);
     await getProjectList();
+    return response.project_id;
   } catch (error) {
     console.error("failed", error);
+    toast.error("Failed to create project: " + (error as Error).message);
+    throw error;
   }
 };
 
 export const getProjectList = async () => {
   try {
-    const response = await chat.GetProjects(
+    const response = await getClient().GetProjects(
       GetProjectsRequest.fromObject({}),
       {}
     );
@@ -336,12 +602,11 @@ onMount($projectList, () => {
   };
 });
 
-
 export const $documents = atom<Document[]>([]);
 
 export async function fetchDocuments(projectId: string) {
   try {
-    const res = await chat.ListDocuments(
+    const res = await getClient().ListDocuments(
       ListDocumentsRequest.fromObject({ project_id: projectId }),
       {}
     );
@@ -352,6 +617,30 @@ export async function fetchDocuments(projectId: string) {
     $documents.set([]);
   }
 }
+
+export async function deleteDocument(projectId: string, docId: string) {
+  try {
+    const res = await getClient().DeleteDocument(
+      DeleteDocumentRequest.fromObject({
+        project_id: projectId,
+        doc_id: docId,
+      }),
+      {}
+    );
+    
+    toast.success(res.message);
+    
+    // Refresh the documents list
+    await fetchDocuments(projectId);
+    
+    return res.message;
+  } catch (error) {
+    console.error("Failed to delete document:", error);
+    toast.error("Failed to delete document: " + (error as Error).message);
+    throw error;
+  }
+}
+
 $currentProjectId.listen((projectId) => {
   if (typeof projectId === "string" && projectId != "") {
     fetchDocuments(projectId);
@@ -366,13 +655,15 @@ $documents.listen((projectId) => {
 
 $currentProjectId.listen((newProjectId) => {
   if (newProjectId) {
-    getChatList(newProjectId);
+    getChatList(newProjectId, false);
   } else {
     $chatList.set([]);
   }
 });
+
 export const $isErrorDocs = atom<boolean>(false);
 export const $isPolling = atom<boolean>(false);
+
 $documents.listen((documents) => {
   const hasErrorDocs = documents.some(doc => doc.embedding_status === 2);
   $isErrorDocs.set(hasErrorDocs);
@@ -385,10 +676,9 @@ $documents.listen((documents) => {
   }
 });
 
-
 export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<String> => {
   try {
-    const response = await chat.SubmitGenerateEmbeddingsJob(
+    const response = await getClient().SubmitGenerateEmbeddingsJob(
       GenerateEmbeddingRequest.fromObject({
         project_id: projectId,
       }),
@@ -418,7 +708,7 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
   }
 }
 
-export const $isNewlyBranched = atom<boolean>(false); //will change this logic 
+export const $isNewlyBranched = atom<boolean>(false);
 
 export async function BranchChat(branch_from_message_id: string) {
   try {
@@ -429,13 +719,12 @@ export async function BranchChat(branch_from_message_id: string) {
       return;
     }
 
-    const res = await chat.BranchAChat(BranchAChatRequest.fromObject({
+    const res = await getClient().BranchAChat(BranchAChatRequest.fromObject({
       source_chat_id: currentChatId,
       branch_from_message_id: branch_from_message_id,
       branch_name: ""
     }), {});
 
-    
     if (res.new_chat_id) {
       toast.success("Chat branched successfully!");
       console.log('Setting isNewlyBranched to true for chat:', res.new_chat_id);
@@ -455,10 +744,9 @@ export const $listChatBranch = atom<ChatInfo[]>([]);
 
 export async function ListChatBranch (chatId: string) {
   try {
-    const res = await chat.ListChatBranch(ListChatBranchRequest.fromObject({
+    const res = await getClient().ListChatBranch(ListChatBranchRequest.fromObject({
       chat_id: chatId,
     }),{});
-    console.log('response from branch chat list', res.branch_chat_list)
     $listChatBranch.set(res.branch_chat_list);
   } catch (error) {
     console.error('Failed to fetch branch chat list:', error);
@@ -467,9 +755,152 @@ export async function ListChatBranch (chatId: string) {
 }
 
 $currentChatId.listen((newChatId) => {
+  $streamingMessage.set("");
+  $currentChatMessage.set("");
+  $responseSummaries.set({});
+  $currentUserMessageId.set("");
+  $currentAssistantMessageId.set(null);
+  $chatMetadata.set(null);
+
+  // fetch branch chat list
   if (newChatId) {
     ListChatBranch(newChatId);
   } else {
     $listChatBranch.set([]);
   }
+
+  // fetch chat messages
+  if (newChatId) {
+    fetchChatMessages(newChatId);
+  } else {
+    $currentChatMessages.set({
+      data: undefined,
+      loading: false,
+      error: null,
+    });
+    // Clear document references when no chat is selected
+    $currentDocumentReferences.set([]);
+    $showDocumentReferences.set(false);
+  }
 });
+
+// Function to fetch detailed RAG document references for a message
+export const fetchRAGDocumentReference = async (messageId: string, projectId: string, docId?: string) => {
+  if (!messageId) {
+    console.error("Message ID is required to fetch RAG document references");
+    return;
+  }
+
+  $ragDocumentDetails.set({
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  try {
+    const request = RAGDocumentReferenceRequest.fromObject({
+      message_id: messageId,
+      project_id: projectId,
+      docId: docId || "", // Optional filter by specific document
+    });
+
+    const response = await getClient().GetRAGDocumentReference(request, {});
+    
+    $ragDocumentDetails.set({
+      data: response.reference || null,
+      loading: false,
+      error: null,
+    });
+
+    return response.reference;
+  } catch (error) {
+    console.error('Failed to fetch RAG document reference:', error);
+    const errorMessage = (error as Error).message || 'Failed to fetch document reference';
+    
+    $ragDocumentDetails.set({
+      data: null,
+      loading: false,
+      error: errorMessage,
+    });
+
+    toast.error(`Failed to fetch document details: ${errorMessage}`);
+    throw error;
+  }
+};
+
+export const DeleteChat = async (chatId: string, operation: DeleteChatRequestOperation) => {
+  try {
+    const res = await getClient().DeleteChat(DeleteChatRequest.fromObject({ chat_id: chatId, operation: operation }), {});
+    toast.success(res.message);
+
+
+    if (operation === DeleteChatRequestOperation.SOFT_DELETE) {
+      getChatList(undefined, false);
+    }
+    else {
+      getChatList(undefined, true);
+    }
+
+    
+  } catch (error) {
+    console.error('Failed to Delete chat:', error);
+    toast.error(`Failed to Delete chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+export const RestoreChat = async (chatId: string) => {
+  try {
+    const res = await getClient().RestoreChat(RestoreChatRequest.fromObject({ chat_id: chatId }), {});
+    toast.success(res.message);
+    getChatList(undefined, true);
+  } catch (error) {
+    console.error('Failed to Restore chat:', error);
+    toast.error(`Failed to Restore chat: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+export const RenameItem = async (itemId: string, name: string, itemType: RenameItemRequestItemType) => {
+  try {
+    const res = await getClient().RenameItem(RenameItemRequest.fromObject({ item_id: itemId, name: name, item_type: itemType }), {});
+
+    
+    toast.success(res.message);
+
+    if (itemType === RenameItemRequestItemType.CHAT) {
+      const chatList = $chatList.get();
+      chatList.forEach((chatItem: ChatInfo) => {
+        if (chatItem.chatId === itemId) {
+          chatItem.name = name;
+        }
+      });
+      $chatList.set(chatList);
+    } else if (itemType === RenameItemRequestItemType.PROJECT) {
+      const projectList = $projectList.get();
+      projectList.forEach((project: Project) => {
+        if (project.id === itemId) {
+          project.name = name;
+        }
+      });
+      $projectList.set(projectList);
+      
+      // Update current project name if it's the one being renamed
+      const currentProjectId = $currentProjectId.get();
+      if (currentProjectId === itemId) {
+        $currentProject.set(name);
+      }
+    }
+    
+  } catch (error) {
+    console.error('Failed to rename item:', error);
+    toast.error(`Failed to rename item: ${(error as Error).message || 'Unknown error'}`);
+  }
+}
+
+// Keep the old RenameChat function for backward compatibility
+export const RenameChat = async (chatId: string, name: string) => {
+  return RenameItem(chatId, name, RenameItemRequestItemType.CHAT);
+}
+
+export const RenameProject = async (projectId: string, name: string) => {
+  return RenameItem(projectId, name, RenameItemRequestItemType.PROJECT);
+}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"sortedstartup/chatservice/settings"
 	"strings"
@@ -24,8 +25,10 @@ func NewPipeline(ex Extractor, ch Chunker, em Embedder) RAGIndexingPipeline {
 
 // RunWithChunks returns both chunks and embeddings, and allows passing metadata
 func (p *defaultPipeline) RunWithChunks(ctx context.Context, r io.Reader, mime string, metadata map[string]string) (RagIndexingPipelineResult, error) {
+	slog.Info("rag_indexing_impl:RunWithChunks", "mime", mime, "metadata", metadata)
 	data, err := io.ReadAll(r)
 	if err != nil {
+		slog.Error("rag_indexing_impl:RunWithChunks", "step", "failed to read all", "error", err, "mime", mime, "metadata", metadata)
 		return RagIndexingPipelineResult{}, err
 	}
 	doc := Document{
@@ -36,10 +39,12 @@ func (p *defaultPipeline) RunWithChunks(ctx context.Context, r io.Reader, mime s
 	}
 	chunks, err := p.ch.Chunk(ctx, doc)
 	if err != nil {
+		slog.Error("rag_indexing_impl:RunWithChunks", "step", "failed to chunk", "error", err, "mime", mime, "metadata", metadata)
 		return RagIndexingPipelineResult{}, err
 	}
 	embs, err := p.em.Embed(ctx, chunks)
 	if err != nil {
+		slog.Error("rag_indexing_impl:RunWithChunks", "step", "failed to embed", "error", err, "mime", mime, "metadata", metadata)
 		return RagIndexingPipelineResult{}, err
 	}
 	return RagIndexingPipelineResult{Chunks: chunks, Embeddings: embs}, nil
@@ -55,8 +60,10 @@ type TikaExtractor struct{ Endpoint string }
 type TextExtractor struct{}
 
 func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (Document, error) {
+	slog.Info("rag_indexing_impl:Extract", "mime", mime)
 	data, err := io.ReadAll(r)
 	if err != nil {
+		slog.Error("rag_indexing_impl:Extract", "step", "failed to read all", "error", err, "mime", mime)
 		return Document{}, err
 	}
 
@@ -75,6 +82,7 @@ func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (
 type EqualSizeChunker struct{ ChunkSize int }
 
 func (e *EqualSizeChunker) Chunk(ctx context.Context, doc Document) ([]Chunk, error) {
+	slog.Info("rag_indexing_impl:Chunk", "doc", doc)
 	text := doc.Text
 	wordsArr := strings.Fields(text)
 	chunkSize := e.ChunkSize
@@ -130,6 +138,7 @@ type OLLamaEmbedder struct {
 }
 
 func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding, error) {
+	slog.Info("rag_indexing_impl:Embed", "chunks", chunks)
 
 	var embeddings []Embedding
 
@@ -140,11 +149,13 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		}
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to marshal request body", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
 		ollama_url := e.SettingsManager.GetSettings().OllamaURL
 		req, err := http.NewRequestWithContext(ctx, "POST", ollama_url, bytes.NewBuffer(bodyBytes))
 		if err != nil {
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to create request", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/json")
@@ -152,6 +163,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to do request", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
 
@@ -162,6 +174,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
 			resp.Body.Close()
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to decode response", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
 		resp.Body.Close()

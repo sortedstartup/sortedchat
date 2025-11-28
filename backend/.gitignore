@@ -3,4 +3,7 @@
 **/*.db
 __debug*
 /db.sqlite
+/db.sqlite-shm
+/db.sqlite-wal
 **/filestore/**
+/mono/frontend-build-wails/dist

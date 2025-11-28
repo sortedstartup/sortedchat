@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { File, Folder, RotateCcw } from "lucide-react";
+import { getJWTToken } from "@/lib/auth";
+import * as pdfjsLib from "pdfjs-dist";
+import PdfWorker from "pdfjs-dist/build/pdf.worker?worker";
+
+if (typeof window !== "undefined" && !pdfjsLib.GlobalWorkerOptions.workerPort) {
+  pdfjsLib.GlobalWorkerOptions.workerPort = new PdfWorker();
+}
 
 export type FileItem = {
   id: string;
@@ -42,13 +49,24 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
   const uploadFile = async (fileItem: FileItem): Promise<FileItem> => {
     updateStatus(fileItem.id, "uploading");
-    
+
     const formData = new FormData();
     formData.append("file", fileItem.file, fileItem.path);
     formData.append("project_id", currentProjectId.toString());
 
+    // Prepare headers with JWT token
+    const headers: Record<string, string> = {};
+    const token = getJWTToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+      console.debug('Added JWT token to file upload request');
+    } else {
+      console.debug('No JWT token available for file upload request');
+    }
+
       const res = await fetch(uploadUrl, {
         method: "POST",
+        headers,
         body: formData,
       });
 
@@ -68,20 +86,67 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         onFileUpload?.(updated);
         return updated;
       }
-    
   };
 
-  const addFiles = (files: FileList) => {
-    const newItems: FileItem[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      newItems.push({
-        id: crypto.randomUUID(),
-        file: f,
-        path: (f as any).webkitRelativePath || f.name,
-        status: "uploading",
-      });
+  const processFileForUpload = async (file: File, path: string): Promise<FileItem> => {
+    const baseFileItem: FileItem = {
+      id: crypto.randomUUID(),
+      file: file,
+      path: path,
+      status: "uploading",
+    };
+
+    if (file.type === "text/plain") {
+      return baseFileItem;
     }
+
+    if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+
+        const chunks: string[] = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = (content.items as any[])
+            .map((item) => (typeof item === "object" && "str" in item ? (item as any).str : ""))
+            .join(" ");
+          chunks.push(pageText, "\n\n");
+        }
+
+        const textBlob = new Blob([chunks.join("")], { type: "text/plain" });
+        const fileName = file.name.replace(/\.pdf$/i, ".txt");
+        
+        const textFile = Object.assign(textBlob, {
+          name: fileName,
+        }) as File;
+
+        return {
+          ...baseFileItem,
+          file: textFile,
+          path: path.replace(/\.pdf$/i, ".txt"),
+        };
+      } catch (error) {
+        console.error("PDF extraction failed:", error);
+        return {
+          ...baseFileItem,
+          status: "failed",
+          error: "PDF text extraction failed",
+        };
+      }
+    }
+    return baseFileItem;
+  };
+
+  const addFiles = async (files: FileList) => {
+    const newItems = await Promise.all(
+      Array.from(files).map(f => {
+        const path = (f as any).webkitRelativePath || f.name;
+        return processFileForUpload(f, path);
+      })
+    );
 
     const updatedList = [...fileList, ...newItems];
     setFileList(updatedList);
@@ -91,9 +156,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    addFiles(e.target.files);
+    await addFiles(e.target.files);
     e.target.value = "";
   };
 

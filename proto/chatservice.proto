@@ -14,6 +14,9 @@ service SortedChat {
     rpc ListModel(ListModelsRequest) returns (ListModelsResponse);
     rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
 
+    rpc GetRAGDocumentReference (RAGDocumentReferenceRequest) returns (RAGDocumentReferenceResponse);
+    rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse);
+
     rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
     rpc GetProjects(GetProjectsRequest) returns (GetProjectsResponse);
     rpc ListDocuments(ListDocumentsRequest) returns(ListDocumentsResponse);
@@ -21,11 +24,84 @@ service SortedChat {
 
     rpc BranchAChat(BranchAChatRequest) returns (BranchAChatResponse);
     rpc ListChatBranch(ListChatBranchRequest) returns (ListChatBranchResponse);
+    rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse);
+    rpc RestoreChat(RestoreChatRequest) returns (RestoreChatResponse);
+    rpc RenameItem(RenameItemRequest) returns (RenameItemResponse);
+}
+
+message RenameItemRequest {
+  string item_id = 1;
+  string name = 2;
+  ItemType item_type = 3;
+  
+  enum ItemType {
+    CHAT = 0;
+    PROJECT = 1;
+  }
+}
+message RenameItemResponse {
+  string message = 1;
+}
+
+message RestoreChatRequest {
+  string chat_id = 1;
+}
+message RestoreChatResponse {
+  string message = 1;
+}
+
+message DeleteChatRequest {
+  string chat_id = 1;
+  Operation operation = 2;
+  enum Operation {
+    DELETE = 0;
+    SOFT_DELETE = 1;
+  } 
+}
+message DeleteChatResponse {
+  string message = 1;
+}
+
+message DeleteDocumentRequest {
+  string project_id = 1;
+  string doc_id = 2;
+}
+
+message DeleteDocumentResponse {
+  string message = 1;
+}
+
+message RAGDocumentReferenceRequest{
+  string message_id = 1;
+  string project_id = 2;
+  string docId = 3;  
+}
+
+message RAGDocumentReferenceResponse {
+  RAGDocumentReference reference = 1;
 }
 
 service SettingService {
     rpc GetSetting(GetSettingRequest) returns (GetSettingResponse);
     rpc SetSetting(SetSettingRequest) returns (SetSettingResponse);
+    rpc IsFirstBoot(IsFirstBootRequest) returns (IsFirstBootResponse);
+    rpc TestConnection(TestConnectionRequest) returns (TestConnectionResponse);  
+
+}
+
+enum ConnectionType {
+    OLLAMA = 0;
+    OPENAI = 1;
+}
+
+message TestConnectionRequest {
+    string url = 1;
+    ConnectionType connection_type = 2;
+}
+
+message TestConnectionResponse {
+    bool success = 1;
+    string message = 2;
 }
 
 message Settings {
@@ -48,6 +124,13 @@ message SetSettingResponse {
     string message = 1;
 }
 
+message IsFirstBootRequest {}
+
+message IsFirstBootResponse {
+    bool is_first_boot = 1;
+}
+
+
 
 message CreateChatRequest {
   string name = 1;
@@ -59,22 +142,96 @@ message CreateChatResponse {
   string chat_id = 2;
 }
 
+message ProjectContext {
+  string project_id = 1;
+  bool rag_enabled = 2;
+}
+
+// Add new message types for multi-modal content
+// MessageContent follows OpenAI Vision API format directly
+message MessageContent {
+  string type = 1;        // "text" or "image_url"
+  
+  // For text content (when type = "text")
+  string text = 2;
+  
+  // For image content (when type = "image_url")
+  ImageUrl image_url = 3;
+}
+
+message ImageUrl {
+  string url = 1;      // data:image/jpeg;base64,... or URL
+  string detail = 2;   // "low" | "high" | "auto" (OpenAI vision param)
+                       // "auto": high for images >512x512, low otherwise
+                       // "low": fixed token cost (fast, less detail)
+                       // "high": tile-based calculation (slower, more detail)
+}
+
 message ChatRequest {
-    string text = 1;
+    string text = 1;                      // DEPRECATED: kept for backward compatibility
     string chatId = 2;
     string model = 3;
-    string project_id = 4;
+    ProjectContext project_context = 4;
+    repeated MessageContent contents = 5;  // New: support multiple content pieces
 }
 
 message ChatResponse {
   oneof response {
     string text = 1;
-    MessageSummary summary = 2;
+    // was introduced to send assistant message id, because it is generated server side
+    // sending one of the multiple oneof's help us do all of this in one streaming API call
+    ResponseSummary summary = 2;
+    // message id of user message(question to llm)
+    string request_message_id = 3;
+    RAGDocumentReferenceSummaryList document_reference = 4; 
+    ChatInfo chat_metadata = 5;
+    ChatProgress progress = 6;
   }
 }
 
-message MessageSummary {
+message ChatProgress {
+  enum State {
+    SENDING_REQUEST_TO_LLM = 0;
+    REQUEST_SENT_TO_LLM = 1;
+    FIRST_RESPONSE_RECEIVED = 2;
+    FIRST_TOKEN_RECEIVED = 3;
+    TOKENS_STREAMING = 4;
+    TOKENS_STOPPED = 5;
+  }
+
+  State state = 1;
+  string message = 2;
+}
+
+// TODO: reasonable limits from server side, limit to 10 (constant in server side) docs
+message RAGDocumentReferenceSummaryList {
+  repeated Summary summary = 1;
+  message Summary {
+    string doc_id = 1;
+    string file_name = 2;
+    int32 chunkCount = 3;
+  }
+}
+
+message RAGDocumentReference {
+  string doc_id = 1;
+  string file_name = 2;
+  repeated Chunk Chunks  = 3;
+  message Chunk  {
+    string chunk_text = 3;
+    int32 start_byte = 4;
+    int32 end_byte = 5;
+    float simillarity = 6; 
+  }
+}
+
+message ResponseSummary {
   string message_id = 1;
+  string model = 2;
+  int32 input_tokens = 3;
+  int32 output_tokens = 4;
+  int32 cached_tokens = 5;
+  float cost = 6;
 }
 
 message GetHistoryRequest {
@@ -83,25 +240,41 @@ message GetHistoryRequest {
 
 message GetHistoryResponse {
   repeated ChatMessage history = 1;
+  ChatInfo chat_metadata = 2;
 }
 
 message ChatMessage {
   string role = 1;
-  string content = 2;
+  string content = 2;              // Keep for text-only (backward compat)
   string message_id = 3;
+  repeated RAGDocumentReference references = 4;
+  bool rag_enabled = 5;
+  string model = 6;
+  int32 input_tokens = 7;
+  int32 output_tokens = 8;
+  int32 cached_tokens = 9;
+  float cost = 10;
+  repeated MessageContent contents = 11;  // New: multi-modal content
 }
 
 message GetChatListRequest {
   string project_id = 1;
+  bool soft_deleted = 2; 
+  //later we create a filter object because we might have to add more filters
 }
 
 message GetChatListResponse {
   repeated ChatInfo chats = 1;
 }
 
+//total chat cost/token
 message ChatInfo {
   string chatId = 1;
   string name = 2;
+  float cost = 3;
+  int32 input_token_count = 4;
+  int32 output_token_count = 5;
+  int32 cached_token_count = 6;
 }
 
 message ModelListInfo {
@@ -111,6 +284,20 @@ message ModelListInfo {
   string url = 4;
   float input_token_cost = 5;
   float output_token_cost = 6;
+  ModelCapabilities capabilities = 7;
+}
+
+message ModelCapabilities {
+  Capability text = 1;
+  Capability audio = 2;
+  Capability video = 3;
+  Capability image = 4;
+  bool realtime = 5;
+}
+
+message Capability {
+  bool input = 1;
+  bool output = 2;
 }
 
 message ListModelsRequest {}

@@ -2,14 +2,17 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"flag"
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"sortedstartup/chat/mono/util"
@@ -21,8 +24,29 @@ import (
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/joho/godotenv"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/log/global"
+	otellog "go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	authApi "sortedstartup/authservice/api"
+	authDao "sortedstartup/authservice/dao"
+	authService "sortedstartup/authservice/service"
+	auth "sortedstartup/common/auth"
+
+	inferenceApi "sortedstartup/inferenceservice/api"
+	inferenceDao "sortedstartup/inferenceservice/dao"
+	infereceProto "sortedstartup/inferenceservice/proto"
+
+	realtimeApi "sortedstartup/realtimeservice/api"
+	realtimeDao "sortedstartup/realtimeservice/dao"
+
+	realtimeProto "sortedstartup/realtimeservice/proto"
 )
 
 const (
@@ -35,11 +59,17 @@ const (
 var staticUIFS embed.FS
 
 func main() {
+	ctx := context.Background()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	slog.SetDefault(logger)
+
 	// Parse command line flags
 	serverOnly := flag.Bool("server", false, "Start only the server without Wails GUI")
 	host := flag.String("host", defaultHost, "Host to bind the server to (default: all interfaces)")
 	grpcPort := flag.String("grpc-port", defaultGrpcPort, "Port for gRPC server")
 	httpPort := flag.String("http-port", defaultHttpPort, "Port for HTTP server")
+	uiConfigPath := flag.String("ui-config-path", "", "Path to UI config file (default: embedded public/ui-config.json)")
 	flag.Parse()
 
 	// Build addresses
@@ -56,12 +86,85 @@ func main() {
 		log.Fatalf("Failed to listen on %s: %v", grpcAddr, err)
 	}
 
-	grpcServer := grpc.NewServer()
+	if os.Getenv("OTEL_EXPORTER_OTLP_HEADERS") != "" && os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
+
+		res, err := newResource()
+		if err != nil {
+			log.Fatalf("Failed to create OTel resource: %v", err)
+		}
+
+		loggerProvider, err := newLoggerProvider(ctx, res)
+		if err != nil {
+			log.Fatalf("Failed to create OTel logger provider: %v", err)
+		}
+		defer func() {
+			if err := loggerProvider.Shutdown(ctx); err != nil {
+				fmt.Println("OTel logger shutdown error:", err)
+			}
+		}()
+		global.SetLoggerProvider(loggerProvider)
+
+		otelLogger := otelslog.NewLogger("my-app")
+		slog.SetDefault(otelLogger)
+	}
+
+	// Adding Interceptors
+	// Create JWT validator
+	jwtSecret := os.Getenv("APP_JWT_SECRET")
+	issuer := os.Getenv("APP_ISSUER") // Should match your auth service issuer
+
+	// Use build tag specific defaults
+	defaultJwtSecret, defaultIssuer := getJWTDefaults()
+	if jwtSecret == "" {
+		jwtSecret = defaultJwtSecret
+	}
+
+	if issuer == "" {
+		issuer = defaultIssuer
+	}
+
+	validator := auth.NewJWTValidator([]byte(jwtSecret), issuer)
+
+	// Create gRPC auth interceptor
+	authInterceptor := auth.NewGRPCAuthInterceptor(validator, true) // requireAuth = true
+
+	// Skip authentication for certain gRPC methods
+	authInterceptor.SkipMethods([]string{
+		"/grpc.health.v1.Health/Check",
+	})
+
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(authInterceptor.UnaryInterceptor()),
+		grpc.StreamInterceptor(authInterceptor.StreamInterceptor()),
+	)
+
+	// Create HTTP auth middleware
+	authMiddleware := auth.NewHTTPAuthMiddleware(validator, false) // requireAuth = false for flexibility
+
+	// Skip authentication for certain paths
+	authMiddleware.SkipPaths([]string{
+		"/health",
+		"/login",
+		"/auth/callback",
+		"/",
+		"/index.html",
+		"/webhook",
+	})
+
+	// Skip authentication for path prefixes
+	authMiddleware.SkipPrefixes([]string{
+		"/public/",
+		"/auth/",
+		"/static/",
+		"/assets/",
+	})
+
 	mux := http.NewServeMux()
 
 	// Load configuration
 	config, err := dao.LoadConfig()
 	if err != nil {
+		slog.Error("Failed to load configuration", "error", err)
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
@@ -74,10 +177,45 @@ func main() {
 	// Create DAO factory
 	daoFactory, err := dao.NewDAOFactory(config)
 	if err != nil {
+		slog.Error("Failed to create DAO factory", "error", err)
 		log.Fatalf("Failed to create DAO factory: %v", err)
 	}
 	defer func() {
 		if err := daoFactory.Close(); err != nil {
+			log.Printf("Error closing DAO factory: %v", err)
+		}
+	}()
+
+	//inference service
+	inferenceConfig, err := inferenceDao.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	inferenceDaoFactory, err := inferenceDao.NewDAOFactory(inferenceConfig)
+	if err != nil {
+		log.Fatalf("Failed to create DAO factory: %v", err)
+	}
+	defer func() {
+		if err := inferenceDaoFactory.Close(); err != nil {
+			slog.Error("Error closing DAO factory", "error", err)
+			log.Printf("Error closing DAO factory: %v", err)
+		}
+	}()
+
+	//realtime service
+	realtimeConfig, err := realtimeDao.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	realtimeDaoFactory, err := realtimeDao.NewDAOFactory(realtimeConfig)
+	if err != nil {
+		log.Fatalf("Failed to create DAO factory: %v", err)
+	}
+	defer func() {
+		if err := realtimeDaoFactory.Close(); err != nil {
+			slog.Error("Error closing DAO factory", "error", err)
 			log.Printf("Error closing DAO factory: %v", err)
 		}
 	}()
@@ -93,6 +231,38 @@ func main() {
 	settingServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 
+	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
+	inferenceServiceApi.Init(inferenceConfig)
+	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
+
+	realtimeServiceApi := realtimeApi.NewRealtimeServiceAPI(realtimeDaoFactory)
+	realtimeServiceApi.Init(realtimeConfig)
+	realtimeProto.RegisterRealtimeServiceServer(grpcServer, realtimeServiceApi)
+
+	authConfig, err := authDao.LoadConfig()
+	if err != nil {
+		slog.Error("Failed to load configuration", "error", err)
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	authDaoFactory, err := authDao.NewDAOFactory(authConfig)
+	if err != nil {
+		slog.Error("Failed to create user service DAO", "error", err)
+		log.Fatalf("Failed to create user service DAO: %v", err)
+	}
+
+	userServiceDao, err := authDaoFactory.CreateDAO()
+	if err != nil {
+		slog.Error("Failed to create user service DAO", "error", err)
+		log.Fatalf("Failed to create user service DAO: %v", err)
+	}
+
+	userService := authService.NewUserService(userServiceDao)
+	userService.Init(authConfig)
+	authService := authService.NewAuthService(userService)
+	authServiceApi := authApi.NewAuthServiceAPI(mux, authService)
+	authServiceApi.Init()
+
 	// Enable reflection, TODO: may be remove in production ?
 	reflection.Register(grpcServer)
 
@@ -102,6 +272,7 @@ func main() {
 	// serve static UI
 	publicFS, err := fs.Sub(staticUIFS, "public")
 	if err != nil {
+		slog.Error("Failed to create sub FS", "error", err)
 		log.Fatalf("Failed to create sub FS: %v", err)
 	}
 	staticUI := http.FileServer(http.FS(publicFS))
@@ -127,6 +298,7 @@ func main() {
 			// File doesn't exist, serve index.html for SPA routing
 			indexFile, indexErr := publicFS.Open("index.html")
 			if indexErr != nil {
+				slog.Error("index.html not found", "error", indexErr)
 				http.Error(w, "index.html not found", http.StatusNotFound)
 				return
 			}
@@ -143,6 +315,7 @@ func main() {
 			// Read the index.html content
 			content, readErr := io.ReadAll(indexFile)
 			if readErr != nil {
+				slog.Error("failed to read index.html", "error", readErr)
 				http.Error(w, "failed to read index.html", http.StatusInternalServerError)
 				return
 			}
@@ -159,12 +332,55 @@ func main() {
 		// File exists, serve it normally
 		staticUI.ServeHTTP(w, r)
 	}
+
+	// Add health endpoint (public, no auth required)
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
+	// If uiConfigPath is set, serve that file, else serve embedded one
+	mux.HandleFunc("/ui-config.json", func(w http.ResponseWriter, r *http.Request) {
+		var configContent io.ReadCloser
+		var err error
+
+		if *uiConfigPath != "" {
+			configContent, err = os.Open(*uiConfigPath)
+			if err != nil {
+				slog.Error("Failed to open config file from custom path", "file", *uiConfigPath, "error", err)
+				http.Error(w, "Config file not found", http.StatusNotFound)
+				return
+			}
+		} else {
+			configContent, err = publicFS.Open("ui-config.json")
+			if err != nil {
+				slog.Error("Failed to open config file from embedded FS", "error", err)
+				http.Error(w, "Config file not found", http.StatusNotFound)
+				return
+			}
+		}
+		defer configContent.Close()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+
+		_, err = io.Copy(w, configContent)
+		if err != nil {
+			slog.Error("Failed to serve config file", "error", err)
+			http.Error(w, "Failed to serve config", http.StatusInternalServerError)
+		}
+	})
+
 	mux.HandleFunc("/", httpHandler)
 
-	// HTTP server with CORS
+	wrappedHandler := util.EnableCORS(authMiddleware.Middleware(mux))
+
+	// HTTP server with CORS and auth middleware
 	httpServer := &http.Server{
 		Addr:    httpAddr,
-		Handler: util.EnableCORS(mux),
+		Handler: wrappedHandler,
 	}
 
 	// Run both servers in parallel
@@ -182,14 +398,36 @@ func main() {
 
 	// Start Wails GUI unless --server flag is specified
 	if !*serverOnly {
-		Wails(mux)
+		Wails(wrappedHandler)
 	} else {
 		log.Println("Running in server-only mode")
 		err := <-serverErr
 		if err != nil {
+			slog.Error("Server error", "error", err)
 			log.Fatalf("Server error: %v", err)
 		}
 	}
 
 	WaitForServerError(serverErr)
+}
+
+func newResource() (*resource.Resource, error) {
+	return resource.Merge(resource.Default(),
+		resource.NewWithAttributes(semconv.SchemaURL,
+			semconv.ServiceName("SortedChat"),
+		),
+	)
+}
+
+func newLoggerProvider(ctx context.Context, res *resource.Resource) (*otellog.LoggerProvider, error) {
+	exporter, err := otlploghttp.New(ctx) //exporter
+	if err != nil {
+		return nil, err
+	}
+	processor := otellog.NewBatchProcessor(exporter)
+	provider := otellog.NewLoggerProvider(
+		otellog.WithResource(res),
+		otellog.WithProcessor(processor),
+	)
+	return provider, nil
 }

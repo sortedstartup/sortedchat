@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package sortedchat;
+
+option go_package = "sortedstartup/inferenceservice/proto";
+
+// Download status enum
+enum DownloadStatus {
+  NONE = 0;         // For non-downloadable models
+  PENDING = 1;      // Ready to download
+  DOWNLOADING = 2;  // Currently downloading
+  COMPLETED = 3;    // Download completed
+  FAILED = 4;       // Download failed
+  CANCELLING = 5;    // Download cancelled
+}
+
+service InferenceService {
+  rpc DownloadModel(DownloadModelRequest) returns (DownloadModelResponse);
+  rpc GetLLMModels(GetLLMModelsRequest) returns (stream GetLLMModelsResponse);
+  rpc CancelDownload(CancelDownloadRequest) returns (CancelDownloadResponse);
+  rpc DeleteModel(DeleteModelRequest) returns (DeleteModelResponse);
+}
+
+message DownloadProgress {
+  int64 file_size = 1;         // Total file size in bytes
+  DownloadStatus status = 2;   // Download status
+  int32 progress = 3;          // Progress percentage (0-100)
+  int64 speed = 4;             // Download speed in kilobytes per second
+}
+
+message Model {
+  string id = 1;
+  string name = 2;
+  string url = 3;
+  string provider = 4;
+  double input_token_cost = 5;
+  double output_token_cost = 6;
+  DownloadProgress progress = 7;
+  bool is_downloaded = 8;
+  bool is_downloadable = 9;
+  DownloadStatus status = 10;
+  string filestore_id = 11;  // File path for downloadable models, null for non-downloadable
+}
+  
+message DownloadModelRequest {
+  string model_name = 1;
+}
+
+message DownloadModelResponse {
+  string message = 1;
+}
+
+message GetLLMModelsRequest {
+}
+
+message GetLLMModelsResponse {
+  repeated Model models = 1;
+}
+
+message CancelDownloadRequest {
+  string model_name = 1;
+}
+
+message CancelDownloadResponse {
+  string message = 1;
+}
+
+message DeleteModelRequest {
+  string model_name = 1;
+}
+
+message DeleteModelResponse {
+  string message = 1;
+}

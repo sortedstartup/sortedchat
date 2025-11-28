@@ -1,9 +1,33 @@
 package dao
 
+import (
+	"encoding/json"
+	"fmt"
+	proto "sortedstartup/chatservice/proto"
+	"strings"
+)
+
 type ChatMessageRow struct {
-	Role    string `db:"role" json:"role"`
-	Content string `db:"content" json:"content"`
-	Id      string `db:"id" json:"id"`
+	Role               string  `db:"role" json:"role"`
+	Content            string  `db:"content" json:"content"`
+	ContentImage       string  `db:"content_image" json:"content_image"`
+	Id                 string  `db:"id" json:"id"`
+	DocumentReferences string  `db:"document_references" json:"document_references"`
+	RagEnabled         bool    `db:"rag_enabled" json:"rag_enabled"`
+	Model              string  `db:"model" json:"model"`
+	InputTokenCount    int     `db:"input_token_count" json:"input_token_count"`
+	OutputTokenCount   int     `db:"output_token_count" json:"output_token_count"`
+	CachedTokenCount   int     `db:"cached_token_count" json:"cached_token_count"`
+	Cost               float64 `db:"cost" json:"cost"`
+}
+
+type MessageSummary struct {
+	MessageId        string  `db:"message_id" json:"message_id"`
+	Model            string  `db:"model" json:"model"`
+	InputTokenCount  int     `db:"input_token_count" json:"input_token_count"`
+	OutputTokenCount int     `db:"output_token_count" json:"output_token_count"`
+	CachedTokenCount int     `db:"cached_token_count" json:"cached_token_count"`
+	Cost             float64 `db:"cost" json:"cost"`
 }
 
 type ProjectRow struct {
@@ -28,9 +52,76 @@ type DocumentListRow struct {
 }
 
 type RAGChunkRow struct {
-	ID        string `db:"id"`
-	ProjectID string `db:"project_id"`
-	DocsID    string `db:"docs_id"`
-	StartByte int    `db:"start_byte"`
-	EndByte   int    `db:"end_byte"`
+	ID         string  `db:"id"`
+	ProjectID  string  `db:"project_id"`
+	DocsID     string  `db:"docs_id"`
+	StartByte  int     `db:"start_byte"`
+	EndByte    int     `db:"end_byte"`
+	Source     *string `db:"source"`
+	Similarity float64 `db:"similarity"`
+}
+
+type ChatInfoRow struct {
+	Id               string  `db:"chat_id"`
+	Name             string  `db:"name"`
+	Cost             float64 `db:"cost"`
+	InputTokenCount  int     `db:"input_token_count"`
+	OutputTokenCount int     `db:"output_token_count"`
+	CachedTokenCount int     `db:"cached_token_count"`
+}
+
+type Models struct {
+	ID              string  `db:"id"`
+	Name            string  `db:"name"`
+	Provider        string  `db:"provider"`
+	URL             string  `db:"url"`
+	InputTokenCost  float32 `db:"input_token_cost"`
+	OutputTokenCost float32 `db:"output_token_cost"`
+	Capabilities    string  `db:"capabilities"` // JSON string from SQLite
+}
+
+// Intermediate struct for JSON parsing
+type CapabilitiesJSON struct {
+	Text     CapabilityJSON `json:"text"`
+	Audio    CapabilityJSON `json:"audio"`
+	Video    CapabilityJSON `json:"video"`
+	Image    CapabilityJSON `json:"image"`
+	Realtime bool           `json:"realtime"`
+}
+
+type CapabilityJSON struct {
+	Input  bool `json:"input"`
+	Output bool `json:"output"`
+}
+
+type dbSettings struct {
+	Name     string `db:"name"`
+	Settings string `db:"settings"`
+}
+
+func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {
+	if strings.TrimSpace(capabilitiesJSON) == "" {
+		return &proto.ModelCapabilities{}, nil
+	}
+	var caps CapabilitiesJSON
+	dec := json.NewDecoder(strings.NewReader(capabilitiesJSON))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&caps); err != nil {
+		return nil, fmt.Errorf("parse capabilities: %w", err)
+	}
+
+	toProto := func(c CapabilityJSON) *proto.Capability {
+		if !c.Input && !c.Output {
+			return nil
+		}
+		return &proto.Capability{Input: c.Input, Output: c.Output}
+	}
+
+	return &proto.ModelCapabilities{
+		Text:     toProto(caps.Text),
+		Audio:    toProto(caps.Audio),
+		Video:    toProto(caps.Video),
+		Image:    toProto(caps.Image),
+		Realtime: caps.Realtime,
+	}, nil
 }

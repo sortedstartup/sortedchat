@@ -66,7 +66,6 @@ CREATE TABLE IF NOT EXISTS rag_chunks (
     id TEXT PRIMARY KEY NOT NULL,
     project_id TEXT NOT NULL,
     docs_id TEXT NOT NULL,
-    source TEXT,
     start_byte INTEGER,
     end_byte INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

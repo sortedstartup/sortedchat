@@ -2,11 +2,11 @@ name: Build UI and Go App
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+-[a-zA-Z0-9]+'
+      - "v[0-9]+.[0-9]+.[0-9]+-[a-zA-Z0-9]+"
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build-frontend:
@@ -14,12 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install pnpm
         run: npm install -g pnpm
@@ -30,12 +30,24 @@ jobs:
 
       - name: Build frontend in standalone mode
         working-directory: frontend
-        run: pnpm run build --mode standalone
+        run: pnpm run build:standalone
 
-      - name: Upload frontend build
+      - name: Upload frontend build (standalone)
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-build
+          name: frontend-build-standalone
+          path: frontend/dist/
+          if-no-files-found: error
+          retention-days: 10
+
+      - name: Build frontend in production mode
+        working-directory: frontend
+        run: pnpm run build --mode production
+
+      - name: Upload frontend build (production)
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-production
           path: frontend/dist/
           if-no-files-found: error
           retention-days: 10
@@ -65,36 +77,26 @@ jobs:
             runner: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download frontend build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: backend/mono/public
-
-      - name: Download frontend build to Wails directory
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: backend/mono/frontend-build-wails/dist
+        uses: actions/checkout@v5
 
       - name: Ensure public directory exists
         run: |
           mkdir -p backend/mono/frontend-build-wails/dist
           mkdir -p backend/mono/public
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
+      - name: Download frontend build (production)
+        uses: actions/download-artifact@v4
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          name: frontend-build-production
+          path: backend/mono/public
 
-      - name: Install MinGW-w64 for Windows cross-compilation
+      - name: Download frontend build (standalone) to Wails directory
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build-standalone
+          path: backend/mono/frontend-build-wails/dist
+
+      - name: Skip Windows builds (temporary)
         if: matrix.os == 'windows'
         run: sudo apt-get update && sudo apt-get install -y mingw-w64
 
@@ -106,7 +108,8 @@ jobs:
             /var/cache/apt/archives/*.deb
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-amd64-packages.txt') }}
-          
+
+
       - name: Install Linux dependencies (AMD64)
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
         run: |
@@ -121,55 +124,90 @@ jobs:
             /var/cache/apt/archives/*.deb
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-arm64-packages.txt') }}
-            
-      - name: Setup ARM64 cross-compilation environment
+
+        # --- APT pinning: arm64 -> ports.ubuntu.com, amd64 -> normal mirrors ---
+      - name: Pin apt architectures (cleanly)
         if: matrix.os == 'linux' && matrix.arch == 'arm64'
         run: |
           set -euo pipefail
-
           sudo dpkg --add-architecture arm64
 
-          # 0) Disable everything we don't control (safe even if empty)
-          sudo mkdir -p /etc/apt/disabled
-          sudo mv /etc/apt/sources.list.d/* /etc/apt/disabled/ 2>/dev/null || true
-          [ -f /etc/apt/sources.sources ] && sudo mv /etc/apt/sources.sources /etc/apt/disabled/ || true
-
-          # 1) Replace /etc/apt/sources.list with clean amd64-only Ubuntu mirrors
-          sudo tee /etc/apt/sources.list >/dev/null <<'EOF'
-          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
-          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
-          deb [arch=amd64] http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
-          deb [arch=amd64] http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+          # arm64 from ports
+          sudo tee /etc/apt/sources.list.d/ubuntu-arm64.sources >/dev/null <<'EOF'
+          Types: deb
+          URIs: http://ports.ubuntu.com/ubuntu-ports
+          Suites: noble noble-updates noble-backports noble-security
+          Components: main restricted universe multiverse
+          Architectures: arm64
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
           EOF
 
-          # 2) Add arm64-only Ubuntu Ports
-          sudo tee /etc/apt/sources.list.d/arm64-ports.list >/dev/null <<'EOF'
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-backports main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse
+          # amd64 from standard mirrors
+          sudo tee /etc/apt/sources.list.d/ubuntu-amd64.sources >/dev/null <<'EOF'
+          Types: deb
+          URIs: http://azure.archive.ubuntu.com/ubuntu
+          Suites: noble noble-updates noble-backports
+          Components: main restricted universe multiverse
+          Architectures: amd64
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
           EOF
 
-          # 3) refresh indexes
+          sudo tee /etc/apt/sources.list.d/ubuntu-amd64-security.sources >/dev/null <<'EOF'
+          Types: deb
+          URIs: http://security.ubuntu.com/ubuntu
+          Suites: noble-security
+          Components: main restricted universe multiverse
+          Architectures: amd64
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          EOF
+
+          # Disable default Ubuntu sources that still query all architectures
+          sudo mv /etc/apt/sources.list /etc/apt/sources.list.disabled 2>/dev/null || true
+          [ -f /etc/apt/sources.list.d/ubuntu.sources ] && sudo mv /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.disabled || true
+
+          sudo apt-get update -o Acquire::Retries=3
+
+      - name: Setup ARM64 cross-compilation environment
+        if: matrix.os == 'linux' && matrix.arch == 'arm64'
+        run: |
+          sudo apt-get update
           sudo apt-get update
 
-          
-          # Install cross-compiler and build tools
+          # Install ARM64 dependencies from package list
           sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
-          
+          # Install ARM64 dependencies from package list
+          sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
+
+      - name: Install macOS dependencies
+        if: matrix.os == 'darwin' && matrix.arch == 'arm64'
+        run: |
+          # Only build for native ARM64 architecture on macOS for now
+          # Cross-compilation to x86_64 requires external downloads which are security risks
+          brew update
+          brew install opus opusfile pkg-config
+
+      - name: Skip macOS x86_64 builds (temporary)
+        if: matrix.os == 'darwin' && matrix.arch == 'amd64'
+        run: |
+          echo "macOS x86_64 cross-compilation disabled due to architecture complexity"
+          echo "Use native x86_64 runners or disable this combination until resolved"
+          exit 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.3'
+          go-version: "1.24.3"
+          cache-dependency-path: backend/**/*.go.mod
 
       - name: Build Go backend - desktop app and server
+        #if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
         working-directory: backend
         run: |
           export GOOS=${{ matrix.os }}
           export GOARCH=${{ matrix.arch }}
           export CGO_ENABLED=1
-          
+
+
           # Use custom SQLite headers for all platforms to ensure version consistency
           export CGO_CFLAGS="-I$(pwd)/sqlite3"
 
@@ -177,14 +215,14 @@ jobs:
           export BINARY_NAME_APP=sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
 
           # Windows
-          if [ "${{ matrix.os }}" = "windows" ]; then 
+          if [ "${{ matrix.os }}" = "windows" ]; then
             export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe";
             export BINARY_NAME_APP="$BINARY_NAME_APP.exe";
             export CC=x86_64-w64-mingw32-gcc
           fi
 
           # Linux ARM64 - Fix cross-compilation issues
-          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then 
+          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then
             export CC=aarch64-linux-gnu-gcc
             export CXX=aarch64-linux-gnu-g++
             export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
@@ -200,10 +238,11 @@ jobs:
           fi
 
           go env
-          go build -buildvcs=false -tags "desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_SERVER ./mono
-          go build -buildvcs=false -tags "wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_APP ./mono
+          go build -buildvcs=false -tags "prod,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_SERVER ./mono
+          go build -buildvcs=false -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_APP ./mono
 
       - name: Upload server binary as artifact
+        #if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
         uses: actions/upload-artifact@v4
         with:
           name: sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
@@ -211,6 +250,7 @@ jobs:
           retention-days: 10
 
       - name: Upload app binary as artifact
+        #if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
         uses: actions/upload-artifact@v4
         with:
           name: sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
@@ -226,7 +266,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Download pre-built Go binaries for both Linux architectures
       # These were built in the previous build-go job with cross-compilation
@@ -283,13 +323,16 @@ jobs:
         run: |
           cat > Dockerfile << 'EOF'
           FROM ubuntu:24.04
-          
+
+
           # Declare the TARGETARCH argument (automatically provided by Docker Buildx)
           ARG TARGETARCH
-          
+
+
           # Install runtime dependencies
           RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-          
+
+
           # 🔥 ARCHITECTURE SELECTION MAGIC:
           # $TARGETARCH is automatically set by Docker Buildx:
           # - When building linux/amd64: $TARGETARCH = "amd64"
@@ -297,10 +340,12 @@ jobs:
           # This ensures the correct binary is copied for each architecture
           # NOTE: Frontend is already built into the Go binary, no separate copy needed!
           COPY binaries/${TARGETARCH}/sortedchat-server-linux-${TARGETARCH} /usr/local/bin/sortedchat
-          
+
+
           # Make the binary executable
           RUN chmod +x /usr/local/bin/sortedchat
-          
+
+
           # Run the application
           CMD ["/usr/local/bin/sortedchat"]
           EOF
@@ -332,7 +377,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -358,31 +403,38 @@ jobs:
           generate_release_notes: true
           body: |
             ## 🐳 Multi-Architecture Docker Image
-            
+
+
             This release includes a **multi-architecture Docker image** that automatically works on both **AMD64** and **ARM64** platforms!
-            
+
+
             ### Quick Start
             ```bash
             # Pull this specific version
             docker pull ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
-            
+
+
             # Run the container
             docker run -p 8080:8080 ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}
             ```
-            
+
+
             ### Available Docker Tags
             - `ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }}` - This specific version
             - `ghcr.io/${{ github.repository_owner }}/sortedchat:latest` - Latest stable release (production only)
-            
+
+
             ### 🎯 How Multi-Arch Works
             - **One tag, multiple architectures**: The same tag works on both Intel/AMD (x64) and ARM (Apple Silicon, Raspberry Pi, etc.)
             - **Automatic selection**: Docker automatically downloads the right architecture for your machine
             - **No platform flags needed**: Just use `docker pull` normally!
-            
+
+
             ### Platform Support
             - ✅ **linux/amd64** - Intel/AMD 64-bit (most servers, Intel Macs, Windows WSL)
             - ✅ **linux/arm64** - ARM 64-bit (Apple Silicon Macs, AWS Graviton, Raspberry Pi 4+)
-            
+
+
             ### Verify Your Architecture
             ```bash
             docker run --rm ghcr.io/${{ github.repository_owner }}/sortedchat:${{ github.ref_name }} uname -m
@@ -392,3 +444,5 @@ jobs:
           prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+

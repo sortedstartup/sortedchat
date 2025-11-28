@@ -1,0 +1,1 @@
+ALTER TABLE model_metadata ADD COLUMN capabilities TEXT NOT NULL DEFAULT '{}';

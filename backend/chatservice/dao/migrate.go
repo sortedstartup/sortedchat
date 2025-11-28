@@ -90,8 +90,16 @@ func MigrateDB_UsingConnection_Postgres(sqlDB *sql.DB, files embed.FS, directory
 	return nil
 }
 
+func MigrateDB_UsingConnectionDefaults(sqlDB *sql.DB) error {
+	return MigrateDB_UsingConnection_SQLite(sqlDB, sqliteMigrationFiles, "db/sqlite/scripts/migrations", MIGRATION_TABLE)
+}
+
+func SeedDB_UsingConnectionDefaults(sqlDB *sql.DB) error {
+	return MigrateDB_UsingConnection_SQLite(sqlDB, sqliteSeedFiles, "db/sqlite/scripts/seed", SEED_MIGRATION_TABLE)
+}
+
 func MigrateSQLite(dbURL string) error {
-	slog.Info("Migrating SQLite database", "dbURL", dbURL)
+	slog.Info("ChatService: Migrating SQLite database", "dbURL", dbURL)
 	sqlite_vec.Auto()
 	sqlDB, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
@@ -104,7 +112,7 @@ func MigrateSQLite(dbURL string) error {
 }
 
 func SeedSqlite(dbURL string) error {
-	slog.Info("Seeding SQLite database", "dbURL", dbURL)
+	slog.Info("ChatService: Seeding SQLite database", "dbURL", dbURL)
 	sqlite_vec.Auto()
 	sqlDB, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
@@ -117,7 +125,7 @@ func SeedSqlite(dbURL string) error {
 }
 
 func MigratePostgres(dbURL string) error {
-	slog.Info("Connecting to PostgreSQL database")
+	slog.Info("ChatService: Connecting to PostgreSQL database")
 	sqlDB, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		slog.Error("error", "err", err)
@@ -129,7 +137,7 @@ func MigratePostgres(dbURL string) error {
 }
 
 func SeedPostgres(dbURL string) error {
-	slog.Info("Seeding PostgreSQL database", "dbURL", dbURL)
+	slog.Info("ChatService: Seeding PostgreSQL database", "dbURL", dbURL)
 	sqlDB, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		slog.Error("error", "err", err)

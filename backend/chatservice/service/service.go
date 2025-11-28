@@ -837,16 +837,13 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			var imageContents []*pb.MessageContent
 			if err := json.Unmarshal([]byte(m.ContentImage), &imageContents); err == nil {
 				fullContents = append(fullContents, imageContents...)
-				slog.Info("service:GetHistory", "message", "Successfully parsed image content", "messageId", m.Id, "imageContentsCount", len(imageContents))
 			} else {
-				slog.Error("service:GetHistory", "message", "Failed to parse image content JSON", "error", err, "messageId", m.Id)
 			}
 		}
 
 		// Set the reconstructed contents
 		if len(fullContents) > 0 {
 			pbMessage.Contents = fullContents
-			slog.Info("service:GetHistory", "message", "Successfully reconstructed message content", "messageId", m.Id, "totalContentsCount", len(fullContents))
 		}
 
 		if m.DocumentReferences != "" {
@@ -1196,7 +1193,6 @@ func (s *ChatService) BranchAChat(ctx context.Context, userID string, sourceChat
 }
 
 func (s *ChatService) ListChatBranch(ctx context.Context, userID string, chatId string) ([]dao.ChatInfoRow, error) {
-	slog.Info("service:ListChatBranch", "userID", userID, "chatId", chatId)
 	if chatId == "" {
 		slog.Error("service:ListChatBranch", "message", "chat id is required", "userID", userID, "chatId", chatId)
 		return nil, fmt.Errorf("Chat Id is required")

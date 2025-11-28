@@ -132,7 +132,7 @@ func (s *InferenceService) DownloadModel(ctx context.Context, userID string, mod
 }
 
 func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID string, modelName string, url string) error {
-	slog.Info("inferenceservice:service:downloadModelFromURL")
+	slog.Info("inferenceservice:service:downloadModelFromURL", "modelID", modelID, "modelName", modelName, "url", url)
 	// Update status to downloading
 	downloadingProgress := &dao.DownloadProgress{
 		FileSize: 0,
@@ -141,6 +141,7 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 		Speed:    0,
 	}
 	s.dao.UpdateModelProgress(modelID, downloadingProgress)
+	slog.Info("inferenceservice:service:downloadModelFromURL", "message", "Updated model progress to downloading", "modelID", modelID, "modelName", modelName, "url", url)
 
 	// Create HTTP client
 	client := &http.Client{}
@@ -221,7 +222,7 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 		Speed:    0,
 	}
 	s.dao.UpdateModelProgress(modelID, completedProgress)
-
+	slog.Info("inferenceservice:service:downloadModelFromURL", "message", "Updated model progress to completed", "modelID", modelID, "modelName", modelName, "url", url)
 	return nil
 }
 
@@ -445,7 +446,7 @@ func (s *InferenceService) DeleteModel(ctx context.Context, userID string, model
 
 // deleteFilestoreObject safely deletes a file from the filestore and logs any errors
 func (s *InferenceService) deleteFilestoreObject(filePath string) error {
-	slog.Info("inferenceservice:service:deleteFilestoreObject")
+	slog.Info("inferenceservice:service:deleteFilestoreObject", "filePath", filePath)
 	if filePath == "" {
 
 		return nil // Nothing to delete

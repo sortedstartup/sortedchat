@@ -56,7 +56,7 @@ type Config struct {
 
 // LoadConfig loads configuration from environment variables with defaults
 func LoadConfig() (*Config, error) {
-	slog.Info("config:LoadConfig")
+	slog.Debug("config:LoadConfig")
 	k := koanf.New(".")
 
 	// Default configuration
@@ -111,6 +111,7 @@ func LoadConfig() (*Config, error) {
 		"postgres_port", config.Database.Postgres.Port,
 	)
 
+	slog.Info("Configuration loaded from environment variables for chatservice", "config", config)
 	return &config, nil
 }
 

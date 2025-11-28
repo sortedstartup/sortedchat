@@ -56,6 +56,7 @@ type Config struct {
 
 // LoadConfig loads configuration from environment variables with defaults
 func LoadConfig() (*Config, error) {
+	slog.Debug("authservice:dao:LoadConfig")
 	k := koanf.New(".")
 
 	// Default configuration
@@ -106,7 +107,7 @@ func LoadConfig() (*Config, error) {
 		"postgres_host", config.Database.Postgres.Host,
 		"postgres_port", config.Database.Postgres.Port,
 	)
-
+	slog.Info("Configuration loaded from environment variables for authservice", "config", config)
 	return &config, nil
 }
 

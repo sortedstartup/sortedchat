@@ -42,7 +42,7 @@ type AuthService struct {
 }
 
 func NewAuthService(userService *UserService) *AuthService {
-	slog.Info("authservice:service:NewAuthService")
+	slog.Debug("authservice:service:NewAuthService")
 	return &AuthService{
 		userService: userService,
 		// Lazy initialization - all other fields will be set in initialize()
@@ -52,7 +52,7 @@ func NewAuthService(userService *UserService) *AuthService {
 // initialize performs the actual initialization of the AuthService
 // This method is called only once when OAuthCallbackHandler is first invoked
 func (s *AuthService) initialize() {
-	slog.Info("authservice:service:initialize")
+	slog.Debug("authservice:service:initialize")
 	ctx := context.Background()
 	defaults := getDefaults()
 
@@ -64,7 +64,7 @@ func (s *AuthService) initialize() {
 	redirectURL := getEnvOrDefault("GOOGLE_REDIRECT_URL", defaults["GOOGLE_REDIRECT_URL"])
 
 	//using these env variables to start
-	slog.Info("AuthService:service:initialize", "step", "initializing", "issuer", issuer, "clientID", clientID, "clientSecret", "[HIDDEN]", "redirectURL", redirectURL)
+	slog.Debug("AuthService:service:initialize", "step", "initializing", "issuer", issuer, "clientID", clientID, "clientSecret", "[HIDDEN]", "redirectURL", redirectURL)
 	var err error
 	provider, err := oidc.NewProvider(ctx, issuer)
 	if err != nil {
@@ -333,10 +333,12 @@ type UserService struct {
 }
 
 func NewUserService(dao dao.UserDAO) *UserService {
+	slog.Debug("authservice:service:NewUserService")
 	return &UserService{dao: dao}
 }
 
 func (u *UserService) Init(config *dao.Config) {
+	slog.Debug("authservice:service:Init")
 	switch config.Database.Type {
 	case dao.DatabaseTypeSQLite:
 		slog.Info("UserService: Running SQLite migrations")

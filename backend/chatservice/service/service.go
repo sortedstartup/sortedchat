@@ -904,7 +904,6 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 }
 
 func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID string, soft_deleted bool) ([]*pb.ChatInfo, error) {
-	slog.Info("service:GetChatList", "projectID", projectID, "userID", userID)
 	chats, err := s.dao.GetChatList(userID, projectID, soft_deleted)
 	if err != nil {
 		slog.Error("service:GetChatList", "message", "failed to get chat metadata", "error", err, "userID", userID, "projectID", projectID)
@@ -914,7 +913,6 @@ func (s *ChatService) GetChatList(ctx context.Context, userID string, projectID 
 }
 
 func (s *ChatService) CreateChat(ctx context.Context, userID string, name string, projectID string) (string, error) {
-	slog.Info("service:CreateChat", "projectID", projectID, "userID", userID)
 	chatId := uuid.New().String()
 
 	err := s.dao.CreateChat(userID, chatId, name, projectID)
@@ -927,7 +925,6 @@ func (s *ChatService) CreateChat(ctx context.Context, userID string, name string
 }
 
 func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error) {
-	slog.Info("service:ListModel")
 	models, err := s.dao.GetModels()
 	if err != nil {
 		slog.Error("service:ListModel", "message", "failed to fetch models", "error", err)
@@ -962,7 +959,6 @@ func (s *ChatService) SearchChat(ctx context.Context, userID string, query strin
 }
 
 func (s *ChatService) CreateProject(ctx context.Context, userID string, name string, description string, additionalData string) (string, error) {
-	slog.Info("service:CreateProject", "userID", userID, "name", name)
 	id := uuid.New().String()
 
 	if name == "" {
@@ -990,7 +986,6 @@ func (s *ChatService) CreateProject(ctx context.Context, userID string, name str
 }
 
 func (s *ChatService) GetProjects(ctx context.Context, userID string) ([]dao.ProjectRow, error) {
-	slog.Info("service:GetProjects", "userID", userID)
 	projects, err := s.dao.GetProjects(userID)
 	if err != nil {
 		slog.Error("service:GetProjects", "error", "failed to fetch project list", "error", err, "userID", userID)
@@ -1001,7 +996,6 @@ func (s *ChatService) GetProjects(ctx context.Context, userID string) ([]dao.Pro
 }
 
 func (s *ChatService) ListDocuments(ctx context.Context, userID string, projectID string) ([]dao.DocumentListRow, error) {
-	slog.Info("service:ListDocuments", "userID", userID, "projectID", projectID)
 	docs, err := s.dao.FilesList(userID, projectID)
 	if err != nil {
 		slog.Error("service:ListDocuments", "message", "failed to fetch documents", "error", err, "userID", userID, "projectID", projectID)
@@ -1012,7 +1006,6 @@ func (s *ChatService) ListDocuments(ctx context.Context, userID string, projectI
 }
 
 func (s *ChatService) UploadFile(ctx context.Context, userID string, projectID string, file multipart.File, header *multipart.FileHeader, maxFileSize int64, maxProjectSize int64) (string, error) {
-	slog.Info("service:UploadFile", "userID", userID, "projectID", projectID)
 	if projectID == "" {
 		slog.Error("service:UploadFile", "message", "project_id is required", "userID", userID, "projectID", projectID)
 		return "", fmt.Errorf("project_id is required")
@@ -1225,7 +1218,7 @@ func (s *ChatService) ListChatBranch(ctx context.Context, userID string, chatId 
 }
 
 func (s *ChatService) EmbeddingSubscriber() {
-	slog.Info("service:EmbeddingSubscriber")
+	slog.Debug("service:EmbeddingSubscriber")
 	go func() {
 		sub, err := s.queue.Subscribe(context.Background(), events.GENERATE_EMBEDDINGS)
 		if err != nil {
@@ -1654,7 +1647,7 @@ func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error 
 }
 
 func (s *ChatService) Init(config *dao.Config) *sql.DB {
-
+	slog.Debug("service:Init", "config", config)
 	//for sqlite we pass db connnection to migrate and seed functions
 	//for postgres we pass dsn(URL) to migrate and seed functions
 	switch config.Database.Type {

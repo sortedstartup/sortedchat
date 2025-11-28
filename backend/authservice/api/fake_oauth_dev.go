@@ -49,7 +49,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 
 // Init initializes the auth service API with fake OAuth provider for development
 func (a *AuthServiceAPI) Init() {
-	slog.Info("authservice:fake_oauth_dev:Init")
+	slog.Debug("authservice:fake_oauth_dev:Init")
 	// Initialize core functionality
 	a.initCore()
 
@@ -60,6 +60,7 @@ func (a *AuthServiceAPI) Init() {
 	}
 
 	// Register fake OAuth provider under /fakeoauth
+	slog.Info("authservice:fake_oauth_dev:Init", "step", "Registered fake OAuth provider under /fakeoauth")
 	globalFakeOAuthProvider.RegisterRoutes(a.mux, "/fakeoauth")
 }
 

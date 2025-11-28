@@ -19,12 +19,12 @@ type RealtimeServiceAPI struct {
 var SQLITE_DB_URL = "db.sqlite"
 
 func NewRealtimeServiceAPI(daoFactory dao.DAOFactory) *RealtimeServiceAPI {
-	slog.Info("RealtimeService:NewRealtimeServiceAPI")
 
 	r := &RealtimeServiceAPI{
 		service: service.NewRealtimeService(daoFactory),
 	}
 
+	slog.Info("RealtimeServiceAPI initialized")
 	return r
 }
 
@@ -52,7 +52,6 @@ func (s *RealtimeServiceAPI) Init(config *dao.Config) {
 }
 
 func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*pb.OfferResponse, error) {
-	slog.Info("RealtimeService:api:Offer")
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("RealtimeService:api:Offer", "message", "failed to get user ID from context", "error", err)
@@ -64,6 +63,7 @@ func (s *RealtimeServiceAPI) Offer(ctx context.Context, req *pb.OfferRequest) (*
 		slog.Error("RealtimeService:api:Offer", "message", "failed to offer", "error", err)
 		return nil, fmt.Errorf("failed to offer")
 	}
+	slog.Info("RealtimeService:api:Offer created successfully")
 	return &pb.OfferResponse{
 		Offer: offer,
 	}, nil
@@ -80,6 +80,7 @@ func (s *RealtimeServiceAPI) IceCandidate(ctx context.Context, req *pb.IceCandid
 		slog.Error("RealtimeService:api:IceCandidate", "message", "failed to add ICE candidate", "error", err)
 		return nil, fmt.Errorf("failed to add ICE candidate")
 	}
+	slog.Info("RealtimeService:api:IceCandidate", "message", "ICE candidate added successfully")
 	return &pb.IceCandidateResponse{
 		Message: message,
 	}, nil

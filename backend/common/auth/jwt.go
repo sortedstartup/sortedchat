@@ -28,7 +28,7 @@ type JWTValidator struct {
 
 // NewJWTValidator creates a new JWT validator
 func NewJWTValidator(secret []byte, issuer string) *JWTValidator {
-	slog.Info("common:auth:jwt:NewJWTValidator")
+	slog.Debug("common:auth:jwt:NewJWTValidator")
 	return &JWTValidator{
 		secret:    secret,
 		issuer:    issuer,
@@ -38,7 +38,7 @@ func NewJWTValidator(secret []byte, issuer string) *JWTValidator {
 
 // ValidateToken validates a JWT token and returns user claims
 func (v *JWTValidator) ValidateToken(tokenString string) (*UserClaims, error) {
-	slog.Info("common:auth:jwt:ValidateToken")
+	slog.Debug("common:auth:jwt:ValidateToken")
 	// Remove "Bearer " prefix if present
 	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 	tokenString = strings.TrimSpace(tokenString)
@@ -50,7 +50,7 @@ func (v *JWTValidator) ValidateToken(tokenString string) (*UserClaims, error) {
 
 	// Parse and validate the token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		slog.Info("common:auth:jwt:ValidateToken")
+		slog.Debug("common:auth:jwt:ValidateToken")
 		// Validate the signing method
 		if token.Method.Alg() != v.algorithm {
 			slog.Error("common:auth:jwt:ValidateToken", "error", "unexpected signing method", "method", token.Method.Alg())
@@ -131,7 +131,7 @@ const (
 
 // AddUserToContext adds user claims to the context
 func AddUserToContext(ctx context.Context, claims *UserClaims) context.Context {
-	slog.Info("common:jwt:AddUserToContext")
+	slog.Debug("common:jwt:AddUserToContext")
 	ctx = context.WithValue(ctx, UserClaimsKey, claims)
 	ctx = context.WithValue(ctx, UserIDKey, claims.UserID)
 	ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
@@ -141,20 +141,20 @@ func AddUserToContext(ctx context.Context, claims *UserClaims) context.Context {
 
 // GetUserFromContext extracts user claims from context
 func GetUserFromContext(ctx context.Context) (*UserClaims, bool) {
-	slog.Info("common:jwt:GetUserFromContext")
+	slog.Debug("common:jwt:GetUserFromContext")
 	claims, ok := ctx.Value(UserClaimsKey).(*UserClaims)
 	return claims, ok
 }
 
 // GetUserIDFromContext extracts user ID from context
 func GetUserIDFromContext(ctx context.Context) (string, bool) {
-	slog.Info("common:jwt:GetUserIDFromContext")
+	slog.Debug("common:jwt:GetUserIDFromContext")
 	userID, ok := ctx.Value(UserIDKey).(string)
 	return userID, ok
 }
 
 func GetUserIDFromContext_WithError(ctx context.Context) (string, error) {
-	slog.Info("common:jwt:GetUserIDFromContext_WithError")
+	slog.Debug("common:jwt:GetUserIDFromContext_WithError")
 	userID, ok := GetUserIDFromContext(ctx)
 	if !ok {
 		slog.Error("common:jwt:GetUserIDFromContext_WithError", "error", "user ID not found")
@@ -165,21 +165,21 @@ func GetUserIDFromContext_WithError(ctx context.Context) (string, error) {
 
 // GetUserEmailFromContext extracts user email from context
 func GetUserEmailFromContext(ctx context.Context) (string, bool) {
-	slog.Info("common:jwt:GetUserEmailFromContext")
+	slog.Debug("common:jwt:GetUserEmailFromContext")
 	email, ok := ctx.Value(UserEmailKey).(string)
 	return email, ok
 }
 
 // GetUserRolesFromContext extracts user roles from context
 func GetUserRolesFromContext(ctx context.Context) ([]string, bool) {
-	slog.Info("common:jwt:GetUserRolesFromContext")
+	slog.Debug("common:jwt:GetUserRolesFromContext")
 	roles, ok := ctx.Value(UserRolesKey).([]string)
 	return roles, ok
 }
 
 // HasRole checks if user has a specific role
 func HasRole(ctx context.Context, role string) bool {
-	slog.Info("common:jwt:HasRole", "role", role)
+	slog.Debug("common:jwt:HasRole", "role", role)
 	roles, ok := GetUserRolesFromContext(ctx)
 	if !ok {
 		slog.Error("common:jwt:HasRole", "error", "user roles not found")

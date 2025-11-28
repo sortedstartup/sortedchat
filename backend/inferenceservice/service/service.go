@@ -141,7 +141,6 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 		Speed:    0,
 	}
 	s.dao.UpdateModelProgress(modelID, downloadingProgress)
-	slog.Info("inferenceservice:service:downloadModelFromURL", "message", "Updated model progress to downloading", "modelID", modelID, "modelName", modelName, "url", url)
 
 	// Create HTTP client
 	client := &http.Client{}

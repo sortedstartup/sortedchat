@@ -255,6 +255,13 @@ jobs:
           # Default Server Flags (Base)
           # We define the specific library list here
           LIBS="-lopusfile -lopus -logg -lm"
+          
+          # Base Build Tags
+          export TAGS="prod,wails,desktop,sqlite_fts5,production,devtools"
+          
+          # Initialize LDFLAGS
+          export SERVER_LDFLAGS=""
+          export APP_LDFLAGS=""
 
           # 2. OS Specific Logic
           if [ "${{ matrix.os }}" = "windows" ]; then
@@ -268,6 +275,8 @@ jobs:
             # Windows (MinGW) supports static linking
             # We add -static to force all libs (including MinGW runtime) into the binary
             export SERVER_LDFLAGS="-extldflags \"-static $LIBS\""
+            export APP_LDFLAGS="-extldflags \"-static $LIBS\""
+            export TAGS="$TAGS,wv2runtime.download"
           fi
 
           if [ "${{ matrix.os }}" = "linux" ]; then
@@ -278,8 +287,11 @@ jobs:
                export CGO_CFLAGS="$CGO_CFLAGS -I/usr/include/aarch64-linux-gnu"
                export CGO_LDFLAGS="-L/usr/lib/aarch64-linux-gnu"
             fi
-            # Linux: Full static linking
+            # Linux: Full static linking for Server
             export SERVER_LDFLAGS="-extldflags \"-static $LIBS\""
+            # Linux App: Static link opus/ogg, Dynamic link system libs (GTK, WebKit, Math)
+            export APP_LDFLAGS="-extldflags \"-Wl,-Bstatic -lopusfile -lopus -logg -Wl,-Bdynamic -lm\""
+            export TAGS="$TAGS,webkit2_41"
           fi
 
           if [ "${{ matrix.os }}" = "darwin" ]; then
@@ -290,6 +302,7 @@ jobs:
             # macOS binaries link against system frameworks (CoreFoundation, etc) which are dynamic.
             # We just pass the libs. The linker will find the .dylib or .a files in the system paths.
             export SERVER_LDFLAGS="-extldflags \"$LIBS\""
+            export APP_LDFLAGS="-extldflags \"$LIBS\""
           fi
 
           # 3. Debug Output
@@ -298,8 +311,8 @@ jobs:
 
           # 4. Build Desktop App (Wails/GUI)
           go build -buildvcs=false \
-            -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" \
-            -ldflags "-w -s $SERVER_LDFLAGS" \
+            -tags "$TAGS" \
+            -ldflags "-w -s $APP_LDFLAGS" \
             -o $BINARY_NAME_APP ./mono
 
           # 5. Build Server (Headless/CLI)

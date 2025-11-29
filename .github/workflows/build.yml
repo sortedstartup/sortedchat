@@ -218,19 +218,12 @@ jobs:
           sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
 
       - name: Install macOS dependencies
-        if: matrix.os == 'darwin' && matrix.arch == 'arm64'
+        if: matrix.os == 'darwin'
         run: |
           # Only build for native ARM64 architecture on macOS for now
           # Cross-compilation to x86_64 requires external downloads which are security risks
           brew update
           brew install pkg-config opus opusfile libogg
-
-      - name: Skip macOS x86_64 builds (temporary)
-        if: matrix.os == 'darwin' && matrix.arch == 'amd64'
-        run: |
-          echo "macOS x86_64 cross-compilation disabled due to architecture complexity"
-          echo "Use native x86_64 runners or disable this combination until resolved"
-          exit 0
 
       - name: Set up Go
         uses: actions/setup-go@v5

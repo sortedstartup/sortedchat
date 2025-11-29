@@ -261,6 +261,9 @@ jobs:
             export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe"
             export BINARY_NAME_APP="$BINARY_NAME_APP.exe"
             export CC=x86_64-w64-mingw32-gcc
+            
+            # Point pkg-config to our cross-compiled libraries
+            export PKG_CONFIG_PATH=${{ github.workspace }}/windows-deps/lib/pkgconfig
 
             # Windows (MinGW) supports static linking
             # We add -static to force all libs (including MinGW runtime) into the binary

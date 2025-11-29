@@ -293,16 +293,37 @@ jobs:
             export CGO_LDFLAGS="-L$BREW_PREFIX/lib -mmacosx-version-min=11.0 -framework UniformTypeIdentifiers"
 
             # ---------------------------------------------------------
-            # MACOS STATIC LINKING FIX
+            # MACOS STATIC LINKING FIX (PKG-CONFIG OVERRIDE)
             # ---------------------------------------------------------
-            # We explicitly define the paths to the .a files. 
-            # This forces the linker to embed these libraries directly 
-            # while leaving system frameworks (Cocoa, WebKit) dynamic.
-            STATIC_LIBS="$BREW_PREFIX/lib/libopusfile.a $BREW_PREFIX/lib/libopus.a $BREW_PREFIX/lib/libogg.a"
+            # The Go library uses pkg-config which normally returns -lopus etc.
+            # This causes the linker to prefer the dylib if available.
+            # We must intercept pkg-config to force it to return the .a file path.
             
-            # Note: We do NOT use -static here. We just pass the .a files + -lm
-            export SERVER_LDFLAGS="-extldflags \"$STATIC_LIBS -lm\""
-            export APP_LDFLAGS="-extldflags \"$STATIC_LIBS -lm\""
+            # 1. Create a local pkgconfig directory
+            mkdir -p $(pwd)/static-pkgconfig
+            export PKG_CONFIG_PATH=$(pwd)/static-pkgconfig
+
+            # 2. Copy and modify .pc files for Ogg, Opus, Opusfile
+            for lib in ogg opus opusfile; do
+              # Copy original .pc file
+              cp "$BREW_PREFIX/lib/pkgconfig/$lib.pc" "static-pkgconfig/$lib.pc"
+              
+              # Replace "-l$lib" with the absolute path to the static library
+              # Example: "-lopus" -> "/opt/homebrew/lib/libopus.a"
+              sed -i '' "s|-l$lib|$BREW_PREFIX/lib/lib$lib.a|g" "static-pkgconfig/$lib.pc"
+              
+              # Remove any other dynamic linking flags if present (optional safety)
+              # sed -i '' "s|-L$BREW_PREFIX/lib||g" "static-pkgconfig/$lib.pc"
+            done
+
+            echo ">>> Modified .pc files for static linking:"
+            cat static-pkgconfig/*.pc
+
+            # 3. Standard Flags
+            # We don't need manual STATIC_LIBS anymore because pkg-config 
+            # will now tell CGO to use the .a files directly.
+            export SERVER_LDFLAGS="-extldflags \"-lm\""
+            export APP_LDFLAGS="-extldflags \"-lm\""
           fi
 
           # 3. Debug Output

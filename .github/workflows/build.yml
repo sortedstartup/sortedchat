@@ -101,6 +101,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y mingw-w64 make autoconf libtool pkg-config
 
       - name: Build Windows Dependencies (Ogg, Opus, Opusfile)
+        if: matrix.os == 'windows'
         run: |
           # 1. Setup a directory to install the Windows libs
           DEPS_DIR=$(pwd)/windows-deps

@@ -286,14 +286,23 @@ jobs:
           fi
 
           if [ "${{ matrix.os }}" = "darwin" ]; then
-            export CGO_CFLAGS="$CGO_CFLAGS -I/opt/homebrew/include -mmacosx-version-min=11.0"
-            export CGO_LDFLAGS="-L/opt/homebrew/lib -mmacosx-version-min=11.0 -framework UniformTypeIdentifiers"
+            # Get Homebrew Prefix (Handles /opt/homebrew vs /usr/local automatically)
+            BREW_PREFIX=$(brew --prefix)
+            
+            export CGO_CFLAGS="$CGO_CFLAGS -I$BREW_PREFIX/include -mmacosx-version-min=11.0"
+            export CGO_LDFLAGS="-L$BREW_PREFIX/lib -mmacosx-version-min=11.0 -framework UniformTypeIdentifiers"
 
-            # Mac: REMOVE -static.
-            # macOS binaries link against system frameworks (CoreFoundation, etc) which are dynamic.
-            # We just pass the libs. The linker will find the .dylib or .a files in the system paths.
-            export SERVER_LDFLAGS="-extldflags \"$LIBS\""
-            export APP_LDFLAGS="-extldflags \"$LIBS\""
+            # ---------------------------------------------------------
+            # MACOS STATIC LINKING FIX
+            # ---------------------------------------------------------
+            # We explicitly define the paths to the .a files. 
+            # This forces the linker to embed these libraries directly 
+            # while leaving system frameworks (Cocoa, WebKit) dynamic.
+            STATIC_LIBS="$BREW_PREFIX/lib/libopusfile.a $BREW_PREFIX/lib/libopus.a $BREW_PREFIX/lib/libogg.a"
+            
+            # Note: We do NOT use -static here. We just pass the .a files + -lm
+            export SERVER_LDFLAGS="-extldflags \"$STATIC_LIBS -lm\""
+            export APP_LDFLAGS="-extldflags \"$STATIC_LIBS -lm\""
           fi
 
           # 3. Debug Output

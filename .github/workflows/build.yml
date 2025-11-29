@@ -299,7 +299,7 @@ jobs:
           # 4. Build Desktop App (Wails/GUI)
           go build -buildvcs=false \
             -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" \
-            -ldflags "-w -s" \
+            -ldflags "-w -s $SERVER_LDFLAGS" \
             -o $BINARY_NAME_APP ./mono
 
           # 5. Build Server (Headless/CLI)

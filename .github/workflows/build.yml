@@ -312,8 +312,10 @@ jobs:
               # Example: "-lopus" -> "/opt/homebrew/lib/libopus.a"
               sed -i '' "s|-l$lib|$BREW_PREFIX/lib/lib$lib.a|g" "static-pkgconfig/$lib.pc"
               
-              # Remove any other dynamic linking flags if present (optional safety)
-              # sed -i '' "s|-L$BREW_PREFIX/lib||g" "static-pkgconfig/$lib.pc"
+              # Promote Requires.private to Requires
+              # This ensures that dependencies (like ogg for opusfile) are included
+              # even when pkg-config is not called with --static (which CGO doesn't do by default).
+              sed -i '' 's|Requires.private|Requires|g' "static-pkgconfig/$lib.pc"
             done
 
             echo ">>> Modified .pc files for static linking:"

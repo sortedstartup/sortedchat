@@ -134,7 +134,7 @@ jobs:
           curl -L -O https://downloads.xiph.org/releases/opus/opusfile-0.12.tar.gz
           tar xf opusfile-0.12.tar.gz
           cd opusfile-0.12
-          ./configure $CFG
+          ./configure $CFG --disable-http
           make -j$(nproc) && make install
           cd ..
 

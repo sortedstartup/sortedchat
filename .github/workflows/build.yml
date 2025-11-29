@@ -280,8 +280,8 @@ jobs:
           fi
 
           if [ "${{ matrix.os }}" = "darwin" ]; then
-            export CGO_CFLAGS="$CGO_CFLAGS -mmacosx-version-min=11.0"
-            export CGO_LDFLAGS="-mmacosx-version-min=11.0 -framework UniformTypeIdentifiers"
+            export CGO_CFLAGS="$CGO_CFLAGS -I/opt/homebrew/include -mmacosx-version-min=11.0"
+            export CGO_LDFLAGS="-L/opt/homebrew/lib -mmacosx-version-min=11.0 -framework UniformTypeIdentifiers"
 
             # Mac: REMOVE -static.
             # macOS binaries link against system frameworks (CoreFoundation, etc) which are dynamic.

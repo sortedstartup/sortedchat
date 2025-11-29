@@ -100,6 +100,25 @@ jobs:
         if: matrix.os == 'windows'
         run: sudo apt-get update && sudo apt-get install -y mingw-w64
 
+      # 1. Download and Build Opus for Windows MANUALLY
+      - name: Build Opus for Windows
+        if: matrix.os == 'windows'
+        run: |
+          wget https://downloads.xiph.org/releases/opus/opus-1.3.1.tar.gz
+          tar xzvf opus-1.3.1.tar.gz
+          cd opus-1.3.1
+          ./configure --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static
+          make -j$(nproc)
+          sudo make install
+
+      # 2. Download and Build Opusfile for Windows MANUALLY
+      - name: Build Opusfile for Windows
+        if: matrix.os == 'windows'
+        run: |
+          # (You would need to do the same steps as above for opusfile)
+          # Note: Opusfile depends on libogg, so you must build libogg FIRST too.
+          echo "This is why Method 1 is better."
+
       - name: Restore APT caches
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
         uses: actions/cache@v4
@@ -108,7 +127,6 @@ jobs:
             /var/cache/apt/archives/*.deb
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-amd64-packages.txt') }}
-
 
       - name: Install Linux dependencies (AMD64)
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -207,39 +225,66 @@ jobs:
           export GOARCH=${{ matrix.arch }}
           export CGO_ENABLED=1
 
-
-          # Use custom SQLite headers for all platforms to ensure version consistency
+          # 1. Common Setup
           export CGO_CFLAGS="-I$(pwd)/sqlite3"
 
           export BINARY_NAME_SERVER=sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
           export BINARY_NAME_APP=sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
 
-          # Windows
+          # Default Server Flags (Base)
+          # We define the specific library list here
+          LIBS="-lopusfile -lopus -logg -lm"
+
+          # 2. OS Specific Logic
           if [ "${{ matrix.os }}" = "windows" ]; then
-            export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe";
-            export BINARY_NAME_APP="$BINARY_NAME_APP.exe";
+            export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe"
+            export BINARY_NAME_APP="$BINARY_NAME_APP.exe"
             export CC=x86_64-w64-mingw32-gcc
+
+            # Windows (MinGW) supports static linking
+            # We add -static to force all libs (including MinGW runtime) into the binary
+            export SERVER_LDFLAGS="-extldflags \"-static $LIBS\""
           fi
 
-          # Linux ARM64 - Fix cross-compilation issues
-          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then
-            export CC=aarch64-linux-gnu-gcc
-            export CXX=aarch64-linux-gnu-g++
-            export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-            export CGO_CFLAGS="$CGO_CFLAGS -I/usr/include/aarch64-linux-gnu"
-            export CGO_LDFLAGS="-L/usr/lib/aarch64-linux-gnu"
+          if [ "${{ matrix.os }}" = "linux" ]; then
+            if [ "${{ matrix.arch }}" = "arm64" ]; then
+               export CC=aarch64-linux-gnu-gcc
+               export CXX=aarch64-linux-gnu-g++
+               export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+               export CGO_CFLAGS="$CGO_CFLAGS -I/usr/include/aarch64-linux-gnu"
+               export CGO_LDFLAGS="-L/usr/lib/aarch64-linux-gnu"
+            fi
+            # Linux: Full static linking
+            export SERVER_LDFLAGS="-extldflags \"-static $LIBS\""
           fi
 
-          # macOS builds don't need special CC settings
           if [ "${{ matrix.os }}" = "darwin" ]; then
-            export CGO_ENABLED=1
             export CGO_CFLAGS="$CGO_CFLAGS -mmacosx-version-min=11.0"
             export CGO_LDFLAGS="-mmacosx-version-min=11.0 -framework UniformTypeIdentifiers"
+
+            # Mac: REMOVE -static.
+            # macOS binaries link against system frameworks (CoreFoundation, etc) which are dynamic.
+            # We just pass the libs. The linker will find the .dylib or .a files in the system paths.
+            export SERVER_LDFLAGS="-extldflags \"$LIBS\""
           fi
 
+          # 3. Debug Output
+          echo "Building for $GOOS/$GOARCH..."
           go env
-          go build -buildvcs=false -tags "prod,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_SERVER ./mono
-          go build -buildvcs=false -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_APP ./mono
+
+          # 4. Build Desktop App (Wails/GUI)
+          go build -buildvcs=false \
+            -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" \
+            -ldflags "-w -s" \
+            -o $BINARY_NAME_APP ./mono
+
+          # 5. Build Server (Headless/CLI)
+          # Note: We override CGO_CFLAGS locally here to omit the SQLite extension for the server only
+          CGO_CFLAGS="-I$(pwd)/sqlite3 -DSQLITE_OMIT_LOAD_EXTENSION" \
+          go build \
+            -tags "sqlite_fts5 netgo osusergo sqlite_omit_load_extension" \
+            -ldflags "$SERVER_LDFLAGS" \
+            -o $BINARY_NAME_SERVER ./mono/
 
       - name: Upload server binary as artifact
         #if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
@@ -444,5 +489,3 @@ jobs:
           prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-

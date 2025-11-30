@@ -8,6 +8,7 @@ require (
 	github.com/pion/webrtc/v3 v3.3.6
 	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.9
+	gopkg.in/hraban/opus.v2 v2.0.0-20230925203106-0188a62cb302
 )
 
 require (

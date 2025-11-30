@@ -62,7 +62,23 @@ export function StepApi() {
               type="password"
               placeholder="sk-..."
               value={data.OPENAI_API_KEY}
-              onChange={(e) => onboardingActions.setApiKey(e.target.value)}
+              onChange={(e) => onboardingActions.setOpenaiApiKey(e.target.value)}
+              className={validationError ? 'border-red-500' : ''}
+            />
+            {validationError && (
+              <p className="text-sm text-red-600 mt-1">{validationError}</p>
+            )}
+          </div>
+
+
+          <div>
+            <Label htmlFor="api-key">Gemini API Key (optional)</Label>
+            <Input
+              id="api-key"
+              type="password"
+              placeholder="sk-..."
+              value={data.GEMINI_API_KEY}
+              onChange={(e) => onboardingActions.setGeminiApiKey(e.target.value)}
               className={validationError ? 'border-red-500' : ''}
             />
             {validationError && (

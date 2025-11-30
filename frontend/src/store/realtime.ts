@@ -1,6 +1,9 @@
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { IceCandidateRequest, OfferRequest, RealtimeServiceClient } from "../../proto/realtimeservice";
 import { getUIConfig } from "../lib/config";
+import { ListModelsRequest, ModelListInfo } from "../../proto/chatservice";
+import { getChatClient } from "./chat";
+import { atom } from "nanostores";
 
 
 let _realtimeClient: RealtimeServiceClient | undefined;
@@ -20,10 +23,13 @@ function getClient(): RealtimeServiceClient {
   return _realtimeClient;
 }
 
+export const $realtimeModelList = atom<ModelListInfo[]>([]);
 
-export const offerRequest = async (offer: string, model: string) => {
+export const offerRequest = async (offer: string, provider: string, model: string) => {
+  console.log("offerRequest", offer, provider, model);
     const req = new OfferRequest({
         offer: offer,
+        provider: provider,
         model: model,
     });
     try {
@@ -49,3 +55,24 @@ export const iceCandidate = async (candidate: string) => {
         throw error;
     }
 }
+
+export const listModels = async () => {
+    const req = new ListModelsRequest({});
+    try {
+        const res = await getChatClient().ListModel(req, {});
+        console.log("listModels", res);
+        
+        // Filter models where realtime is true and set realtimeModelList
+        if (res.models) {
+            const realtimeModels = res.models.filter(
+                (model) => model.capabilities?.realtime === true
+            );
+            $realtimeModelList.set(realtimeModels);
+        }
+        
+        return res;
+    } catch (error) {
+        console.error("Failed to list models:", error);
+        throw error;
+    }
+};

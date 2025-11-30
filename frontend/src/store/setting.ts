@@ -39,9 +39,11 @@ export const $onboardingStep = atom<number>(0);
 export const $onboardingData = atom<{
   OPENAI_API_KEY: string;
   OPENAI_API_URL: string;
+  GEMINI_API_KEY: string;
   OLLAMA_URL: string;
 }>({
   OPENAI_API_KEY: "",
+  GEMINI_API_KEY: "",
   OPENAI_API_URL: "https://api.openai.com/v1/chat/completions",
   OLLAMA_URL: "http://localhost:11434/v1/embeddings",
 });
@@ -66,9 +68,14 @@ export const saveSettings = async (
 
 // Onboarding actions
 export const onboardingActions = {
-  setApiKey: (key: string) => {
+  setOpenaiApiKey: (key: string) => {
     const data = $onboardingData.get();
     $onboardingData.set({ ...data, OPENAI_API_KEY: key });
+  },
+
+  setGeminiApiKey: (key: string) => {
+    const data = $onboardingData.get();
+    $onboardingData.set({ ...data, GEMINI_API_KEY: key });
   },
 
   setApiUrl: (url: string) => {

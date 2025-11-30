@@ -54,7 +54,7 @@ func (dcm *DataChannelManager) setupDataChannel() {
 
 		switch message.Type {
 		case "switch_model":
-			dcm.handleSwitchModel(message.Model)
+			// dcm.handleSwitchModel(message.Model)
 		default:
 			slog.Warn("Unknown message type", "userID", dcm.userID, "type", message.Type)
 		}
@@ -81,7 +81,7 @@ func (dcm *DataChannelManager) handleDisconnect() {
 }
 
 // handleSwitchModel handles model switching
-func (dcm *DataChannelManager) handleSwitchModel(model string) {
+func (dcm *DataChannelManager) handleSwitchModel(provider string, model string) {
 	if model == "" {
 		slog.Error("Model parameter missing", "userID", dcm.userID)
 		dcm.sendMessageWithData("error", "model parameter required", nil)
@@ -116,9 +116,9 @@ func (dcm *DataChannelManager) handleSwitchModel(model string) {
 	go func() {
 		var err error
 		if model == "gemini" {
-			err = dcm.service.connectToGemini(dcm.userID)
+			// err = dcm.service.connectToGemini(dcm.userID)
 		} else {
-			err = dcm.service.connectToOpenai(dcm.userID)
+			// err = dcm.service.connectToOpenai(dcm.userID)
 		}
 
 		if err != nil {

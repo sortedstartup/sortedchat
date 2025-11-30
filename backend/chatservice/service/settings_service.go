@@ -100,6 +100,9 @@ func (s *SettingService) saveSettings(settingsProto *pb.Settings, completeOnboar
 	if incoming.OpenAIAPIKey == "" {
 		incoming.OpenAIAPIKey = existing.OpenAIAPIKey
 	}
+	if incoming.GeminiAPIKey == "" {
+		incoming.GeminiAPIKey = existing.GeminiAPIKey
+	}
 	if incoming.OpenAIAPIURL == "" {
 		incoming.OpenAIAPIURL = existing.OpenAIAPIURL
 	}

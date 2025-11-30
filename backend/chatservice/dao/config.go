@@ -111,7 +111,7 @@ func LoadConfig() (*Config, error) {
 		"postgres_port", config.Database.Postgres.Port,
 	)
 
-	slog.Info("Configuration loaded from environment variables for chatservice", "config", config)
+slog.Info("Configuration loaded from environment variables for chatservice", "database_type", config.Database.Type, "postgres_host", config.Database.Postgres.Host, "postgres_port", config.Database.Postgres.Port)
 	return &config, nil
 }
 

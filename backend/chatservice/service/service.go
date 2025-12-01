@@ -400,51 +400,34 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 
 		data := strings.TrimPrefix(line, "data: ")
-
 		if data == "[DONE]" {
 			break
 		}
 
-		var chunk map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
-			slog.Error("service:Chat", "message", "failed to parse chunk", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
+		var streamResp ChatCompletionStreamResponse
+		if err := json.Unmarshal([]byte(data), &streamResp); err != nil {
+			slog.Error("service:Chat", "message", "failed to unmarshal stream response", "error", err, "line", line)
 			continue
 		}
 
-		if usage, ok := chunk["usage"].(map[string]interface{}); ok {
-			if promptTokens, ok := usage["prompt_tokens"].(float64); ok {
-				inputTokens = int(promptTokens)
-			}
-			if completionTokens, ok := usage["completion_tokens"].(float64); ok {
-				outputTokens = int(completionTokens)
-			}
-			if promptTokensDetails, ok := usage["prompt_tokens_details"].(map[string]interface{}); ok {
-				if cachedTokensVal, ok := promptTokensDetails["cached_tokens"].(float64); ok {
-					cachedTokens = int(cachedTokensVal)
-				}
-			}
-		}
-
-		choices, ok := chunk["choices"].([]interface{})
-		if !ok || len(choices) == 0 {
-			continue
-		}
-
-		choice, ok := choices[0].(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		if delta, ok := choice["delta"].(map[string]interface{}); ok {
-			if content, ok := delta["content"].(string); ok && content != "" {
+		if len(streamResp.Choices) > 0 {
+			content := streamResp.Choices[0].Delta.Content
+			if content != "" {
 				fullResponse.WriteString(content)
-				if err := stream(&pb.ChatResponse{Response: &pb.ChatResponse_Text{Text: content}}); err != nil {
-					// If streaming fails, save partial response before returning error
-					slog.Error("service:Chat", "message", "failed to send stream response", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
+				if err := stream(&pb.ChatResponse{
+					Response: &pb.ChatResponse_Text{Text: content},
+				}); err != nil {
+					slog.Error("service:Chat", "message", "failed to send chunk", "error", err, "chatId", chatId, "userID", userID)
 					savePartialResponse()
-					return fmt.Errorf("failed to send stream response, please try again")
+					return fmt.Errorf("error while processing request, please try again")
 				}
 			}
+		}
+
+		if streamResp.Usage != nil {
+			inputTokens = streamResp.Usage.PromptTokens
+			outputTokens = streamResp.Usage.CompletionTokens
+			cachedTokens = streamResp.Usage.PromptTokensDetails.CachedTokens
 		}
 	}
 	if err := scanner.Err(); err != nil {

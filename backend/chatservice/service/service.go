@@ -25,6 +25,7 @@ import (
 	"sortedstartup/chatservice/rag"
 	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/store"
+	"sortedstartup/chatservice/types"
 
 	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
@@ -337,7 +338,103 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
-	resp, err := s.llmClient.Call(ctx, model, history, req, userMessage, enhancedPrompt)
+	// STEP 7: Prepare request for LLM Client
+	// Convert history to types.Message
+	var messages []types.Message
+	for _, msg := range history {
+		var content interface{}
+		var parts []types.ContentPart
+
+		// 1. Text Content
+		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
+			var textContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.Content), &textContents); err == nil {
+				for _, tc := range textContents {
+					part := types.ContentPart{Type: tc.Type, Text: tc.Text}
+					if tc.Type == "image_url" && tc.ImageUrl != nil {
+						part.ImageURL = &types.ImageURL{URL: tc.ImageUrl.Url}
+					}
+					parts = append(parts, part)
+				}
+			}
+		} else if msg.Content != "" {
+			parts = append(parts, types.ContentPart{Type: "text", Text: msg.Content})
+		}
+
+		// 2. Image Content
+		if msg.ContentImage != "" {
+			var imageContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.ContentImage), &imageContents); err == nil {
+				for _, ic := range imageContents {
+					part := types.ContentPart{Type: ic.Type}
+					if ic.ImageUrl != nil {
+						part.ImageURL = &types.ImageURL{URL: ic.ImageUrl.Url}
+					}
+					parts = append(parts, part)
+				}
+			}
+		}
+
+		if len(parts) == 1 && parts[0].Type == "text" {
+			content = parts[0].Text
+		} else if len(parts) > 0 {
+			content = parts
+		} else {
+			continue
+		}
+
+		messages = append(messages, types.Message{
+			Role:    msg.Role,
+			Content: content,
+		})
+	}
+
+	// Add current user message
+	var currentMessageContent interface{}
+	if enhancedPrompt != "" && len(req.GetContents()) == 0 {
+		currentMessageContent = enhancedPrompt
+	} else if enhancedPrompt != "" && len(req.GetContents()) > 0 {
+		var parts []types.ContentPart
+		parts = append(parts, types.ContentPart{Type: "text", Text: enhancedPrompt})
+		for _, content := range req.GetContents() {
+			if content.Type == "image_url" {
+				part := types.ContentPart{Type: "image_url"}
+				if content.ImageUrl != nil {
+					part.ImageURL = &types.ImageURL{URL: content.ImageUrl.Url}
+				}
+				parts = append(parts, part)
+			}
+		}
+		currentMessageContent = parts
+	} else if len(req.GetContents()) > 0 {
+		var parts []types.ContentPart
+		for _, content := range req.GetContents() {
+			part := types.ContentPart{Type: content.Type, Text: content.Text}
+			if content.Type == "image_url" && content.ImageUrl != nil {
+				part.ImageURL = &types.ImageURL{URL: content.ImageUrl.Url}
+			}
+			parts = append(parts, part)
+		}
+		currentMessageContent = parts
+	} else {
+		currentMessageContent = userMessage
+	}
+
+	messages = append(messages, types.Message{
+		Role:    "user",
+		Content: currentMessageContent,
+	})
+
+	llmReq := types.ChatCompletionRequest{
+		Model:    model,
+		Messages: messages,
+		Stream:   true,
+		StreamOptions: &types.StreamOptions{
+			IncludeUsage: true,
+		},
+	}
+
+	resp, err := s.llmClient.Call(ctx, llmReq)
 	if err != nil {
 		slog.Error("service:Chat", "message", "LLM request failed", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("LLM request failed, please try again")
@@ -404,7 +501,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			break
 		}
 
-		var streamResp ChatCompletionStreamResponse
+		var streamResp types.ChatCompletionStreamResponse
 		if err := json.Unmarshal([]byte(data), &streamResp); err != nil {
 			slog.Error("service:Chat", "message", "failed to unmarshal stream response", "error", err, "line", line)
 			continue

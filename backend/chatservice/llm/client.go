@@ -11,9 +11,8 @@ import (
 	"strings"
 	"text/template"
 
-	"sortedstartup/chatservice/dao"
-	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/settings"
+	"sortedstartup/chatservice/types"
 )
 
 type Client struct {
@@ -28,8 +27,8 @@ func NewClient(settingsManager *settings.SettingsManager) *Client {
 	}
 }
 
-func (c *Client) Call(ctx context.Context, model string, history []dao.ChatMessageRow, req *pb.ChatRequest, userMessage string, enhancedPrompt string) (*http.Response, error) {
-	jsonData, err := c.generateRequestBody(model, history, req, userMessage, enhancedPrompt)
+func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest) (*http.Response, error) {
+	jsonData, err := c.generateRequestBody(req)
 	if err != nil {
 		slog.Error("llm:Call", "error", err)
 		return nil, fmt.Errorf("failed to generate request body: %v", err)
@@ -37,6 +36,8 @@ func (c *Client) Call(ctx context.Context, model string, history []dao.ChatMessa
 
 	var url string
 	var apiKey string
+
+	model := req.Model
 
 	if strings.HasPrefix(model, "gemini") {
 		url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
@@ -61,115 +62,21 @@ func (c *Client) Call(ctx context.Context, model string, history []dao.ChatMessa
 	return c.httpClient.Do(httpReq)
 }
 
-func (c *Client) generateRequestBody(model string, history []dao.ChatMessageRow, req *pb.ChatRequest, userMessage string, enhancedPrompt string) ([]byte, error) {
-	// Convert history to CustomChatRequest format
-	var customMessages []Message
-	for _, msg := range history {
-		var content interface{}
-
-		// Let's simplify the reconstruction logic to match the new structs
-		var parts []ContentPart
-
-		// 1. Text Content (from content column)
-		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
-			var textContents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(msg.Content), &textContents); err == nil {
-				for _, tc := range textContents {
-					part := ContentPart{Type: tc.Type, Text: tc.Text}
-					if tc.Type == "image_url" && tc.ImageUrl != nil {
-						part.ImageURL = &ImageURL{URL: tc.ImageUrl.Url}
-					}
-					parts = append(parts, part)
-				}
-			}
-		} else if msg.Content != "" {
-			parts = append(parts, ContentPart{Type: "text", Text: msg.Content})
-		}
-
-		// 2. Image Content (from content_image column)
-		if msg.ContentImage != "" {
-			var imageContents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(msg.ContentImage), &imageContents); err == nil {
-				for _, ic := range imageContents {
-					part := ContentPart{Type: ic.Type}
-					if ic.ImageUrl != nil {
-						part.ImageURL = &ImageURL{URL: ic.ImageUrl.Url}
-					}
-					parts = append(parts, part)
-				}
-			}
-		}
-
-		// Determine final Content format
-		if len(parts) == 1 && parts[0].Type == "text" {
-			content = parts[0].Text
-		} else if len(parts) > 0 {
-			content = parts
-		} else {
-			continue // Skip empty messages
-		}
-
-		customMessages = append(customMessages, Message{
-			Role:    msg.Role,
-			Content: content,
-		})
-	}
-
-	// Add current user message
-	var currentMessageContent interface{}
-	if enhancedPrompt != "" && len(req.GetContents()) == 0 {
-		// Text-only with RAG
-		currentMessageContent = enhancedPrompt
-	} else if enhancedPrompt != "" && len(req.GetContents()) > 0 {
-		// Multi-modal with RAG
-		var parts []ContentPart
-		parts = append(parts, ContentPart{Type: "text", Text: enhancedPrompt})
-		for _, content := range req.GetContents() {
-			if content.Type == "image_url" {
-				part := ContentPart{Type: "image_url"}
-				if content.ImageUrl != nil {
-					part.ImageURL = &ImageURL{URL: content.ImageUrl.Url}
-				}
-				parts = append(parts, part)
-			}
-		}
-		currentMessageContent = parts
-	} else if len(req.GetContents()) > 0 {
-		// Multi-modal without RAG
-		var parts []ContentPart
-		for _, content := range req.GetContents() {
-			part := ContentPart{Type: content.Type, Text: content.Text}
-			if content.Type == "image_url" && content.ImageUrl != nil {
-				part.ImageURL = &ImageURL{URL: content.ImageUrl.Url}
-			}
-			parts = append(parts, part)
-		}
-		currentMessageContent = parts
-	} else {
-		// Plain text
-		currentMessageContent = userMessage
-	}
-
-	customMessages = append(customMessages, Message{
-		Role:    "user",
-		Content: currentMessageContent,
-	})
-
-	// Create CustomChatRequest
-	customReq := CustomChatRequest{
-		ModelName: model,
-		Messages:  customMessages,
-		Stream:    true,
-		StreamOptions: &StreamOptions{
-			IncludeUsage: true,
-		},
+func (c *Client) generateRequestBody(req types.ChatCompletionRequest) ([]byte, error) {
+	// Convert ChatCompletionRequest to CustomChatRequest
+	// The structure is very similar, mainly mapping Model -> ModelName
+	customReq := types.CustomChatRequest{
+		ModelName:     req.Model,
+		Messages:      req.Messages,
+		Stream:        req.Stream,
+		StreamOptions: req.StreamOptions,
 	}
 
 	templateFile := "chatservice/llm/templates/openai.txt"
-	if strings.HasPrefix(model, "gemini") {
+	if strings.HasPrefix(req.Model, "gemini") {
 		templateFile = "chatservice/llm/templates/gemini.txt"
 	}
-	if strings.HasPrefix(model, "claude") {
+	if strings.HasPrefix(req.Model, "claude") {
 		templateFile = "chatservice/llm/templates/claude.txt"
 	}
 

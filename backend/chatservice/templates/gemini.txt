@@ -1,0 +1,18 @@
+{
+  "model": "{{.ModelName}}",
+  "stream": {{.Stream}},
+  {{if .StreamOptions}}
+  "stream_options": {
+    "include_usage": {{.StreamOptions.IncludeUsage}}
+  },
+  {{end}}
+  "messages": [
+    {{range $index, $element := .Messages}}
+    {{if $index}},{{end}}
+    {
+      "role": "{{$element.Role}}",
+      "content": {{$element.Content | toJson}}
+    }
+    {{end}}
+  ]
+}

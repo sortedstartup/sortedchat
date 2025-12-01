@@ -15,8 +15,10 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 	"time"
 
 	"sortedstartup/chatservice/dao"
@@ -336,110 +338,14 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
-	// Build OpenAI messages array
-	var openAIMessages []interface{}
-	for _, msg := range history {
-		// Reconstruct full message content from separated text and image content
-		var fullContents []*pb.MessageContent
-
-		// Parse text content from content column
-		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
-			var textContents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(msg.Content), &textContents); err == nil {
-				fullContents = append(fullContents, textContents...)
-			}
-		} else if msg.Content != "" {
-			// Legacy text-only message
-			fullContents = append(fullContents, &pb.MessageContent{
-				Type: "text",
-				Text: msg.Content,
-			})
-		}
-
-		// Parse image content from content_image column
-		if msg.ContentImage != "" {
-			var imageContents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(msg.ContentImage), &imageContents); err == nil {
-				fullContents = append(fullContents, imageContents...)
-			}
-		}
-
-		// Add to OpenAI messages
-		if len(fullContents) > 1 || (len(fullContents) == 1 && fullContents[0].Type == "image_url") {
-			// Multi-modal message - use content array
-			openAIMessages = append(openAIMessages, map[string]interface{}{
-				"role":    msg.Role,
-				"content": fullContents,
-			})
-		} else if len(fullContents) == 1 && fullContents[0].Type == "text" {
-			// Single text message - use string content for simplicity
-			openAIMessages = append(openAIMessages, map[string]interface{}{
-				"role":    msg.Role,
-				"content": fullContents[0].Text,
-			})
-		}
-	}
-
-	// Add current user message (use RAG-enhanced prompt if available)
-	if enhancedPrompt != "" && len(req.GetContents()) == 0 {
-		// Text-only message with RAG enhancement
-		slog.Info("service:Chat", "message", "Using RAG-enhanced prompt for OpenAI", "chatId", chatId, "userID", userID, "projectID", projectID)
-		openAIMessages = append(openAIMessages, map[string]interface{}{
-			"role":    "user",
-			"content": enhancedPrompt,
-		})
-	} else if enhancedPrompt != "" && len(req.GetContents()) > 0 {
-		// Multi-modal message with RAG enhancement - replace text content with enhanced prompt
-		slog.Info("service:Chat", "message", "Using RAG-enhanced prompt for multi-modal message", "chatId", chatId, "userID", userID, "projectID", projectID)
-		var enhancedContents []*pb.MessageContent
-
-		// Add enhanced text content
-		enhancedContents = append(enhancedContents, &pb.MessageContent{
-			Type: "text",
-			Text: enhancedPrompt,
-		})
-
-		// Add original image content
-		for _, content := range req.GetContents() {
-			if content.Type == "image_url" {
-				enhancedContents = append(enhancedContents, content)
-			}
-		}
-
-		openAIMessages = append(openAIMessages, map[string]interface{}{
-			"role":    "user",
-			"content": enhancedContents,
-		})
-	} else if len(req.GetContents()) > 0 {
-		// Multi-modal content without RAG - use original contents
-		openAIMessages = append(openAIMessages, map[string]interface{}{
-			"role":    "user",
-			"content": req.GetContents(),
-		})
-	} else {
-		// Plain text message without RAG - use original user message
-		openAIMessages = append(openAIMessages, map[string]interface{}{
-			"role":    "user",
-			"content": userMessage,
-		})
-	}
-
-	requestBody := map[string]interface{}{
-		"model":    model,
-		"messages": openAIMessages,
-		"stream":   true,
-		"stream_options": map[string]interface{}{
-			"include_usage": true,
-		},
-	}
-
-	jsonData, err := json.Marshal(requestBody)
+	jsonData, err := s.generateRequestBody(model, history, req, userMessage, enhancedPrompt)
 	if err != nil {
-		slog.Error("service:Chat", "message", "failed to marshal request", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
-		return fmt.Errorf("error while processing request, please try again")
+		slog.Error("service:Chat", "message", "failed to generate request body", "error", err, "chatId", chatId, "userID", userID)
+		return fmt.Errorf("failed to process request")
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
+
 	if err != nil {
 		slog.Error("service:Chat", "message", "failed to create request", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to create request, please try again")
@@ -1687,4 +1593,140 @@ func (s *ChatService) Init(config *dao.Config) *sql.DB {
 		log.Fatalf("ChatService: Unsupported database type: %s", config.Database.Type)
 	}
 	return nil
+}
+
+func (s *ChatService) generateRequestBody(model string, history []dao.ChatMessageRow, req *pb.ChatRequest, userMessage string, enhancedPrompt string) ([]byte, error) {
+	// Convert history to CustomChatRequest format
+	var customMessages []Message
+	for _, msg := range history {
+		var content interface{}
+
+		// Let's simplify the reconstruction logic to match the new structs
+		var parts []ContentPart
+
+		// 1. Text Content (from content column)
+		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
+			var textContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.Content), &textContents); err == nil {
+				for _, tc := range textContents {
+					part := ContentPart{Type: tc.Type, Text: tc.Text}
+					if tc.Type == "image_url" && tc.ImageUrl != nil {
+						part.ImageURL = &ImageURL{URL: tc.ImageUrl.Url}
+					}
+					parts = append(parts, part)
+				}
+			}
+		} else if msg.Content != "" {
+			parts = append(parts, ContentPart{Type: "text", Text: msg.Content})
+		}
+
+		// 2. Image Content (from content_image column)
+		if msg.ContentImage != "" {
+			var imageContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.ContentImage), &imageContents); err == nil {
+				for _, ic := range imageContents {
+					part := ContentPart{Type: ic.Type}
+					if ic.ImageUrl != nil {
+						part.ImageURL = &ImageURL{URL: ic.ImageUrl.Url}
+					}
+					parts = append(parts, part)
+				}
+			}
+		}
+
+		// Determine final Content format
+		if len(parts) == 1 && parts[0].Type == "text" {
+			content = parts[0].Text
+		} else if len(parts) > 0 {
+			content = parts
+		} else {
+			continue // Skip empty messages
+		}
+
+		customMessages = append(customMessages, Message{
+			Role:    msg.Role,
+			Content: content,
+		})
+	}
+
+	// Add current user message
+	var currentMessageContent interface{}
+	if enhancedPrompt != "" && len(req.GetContents()) == 0 {
+		// Text-only with RAG
+		currentMessageContent = enhancedPrompt
+	} else if enhancedPrompt != "" && len(req.GetContents()) > 0 {
+		// Multi-modal with RAG
+		var parts []ContentPart
+		parts = append(parts, ContentPart{Type: "text", Text: enhancedPrompt})
+		for _, content := range req.GetContents() {
+			if content.Type == "image_url" {
+				part := ContentPart{Type: "image_url"}
+				if content.ImageUrl != nil {
+					part.ImageURL = &ImageURL{URL: content.ImageUrl.Url}
+				}
+				parts = append(parts, part)
+			}
+		}
+		currentMessageContent = parts
+	} else if len(req.GetContents()) > 0 {
+		// Multi-modal without RAG
+		var parts []ContentPart
+		for _, content := range req.GetContents() {
+			part := ContentPart{Type: content.Type, Text: content.Text}
+			if content.Type == "image_url" && content.ImageUrl != nil {
+				part.ImageURL = &ImageURL{URL: content.ImageUrl.Url}
+			}
+			parts = append(parts, part)
+		}
+		currentMessageContent = parts
+	} else {
+		// Plain text
+		currentMessageContent = userMessage
+	}
+
+	customMessages = append(customMessages, Message{
+		Role:    "user",
+		Content: currentMessageContent,
+	})
+
+	// Create CustomChatRequest
+	customReq := CustomChatRequest{
+		ModelName: model,
+		Messages:  customMessages,
+		Stream:    true,
+		StreamOptions: &StreamOptions{
+			IncludeUsage: true,
+		},
+	}
+
+	templateFile := "chatservice/templates/openai.txt"
+	// Future: switch based on model name
+	if strings.HasPrefix(model, "gemini") {
+		fmt.Print("reading gemini templates")
+		templateFile = "chatservice/templates/gemini.txt"
+	}
+	if strings.HasPrefix(model, "claude") {
+		fmt.Println("reading claude templates")
+		templateFile = "chatservice/templates/claude.txt"
+	}
+
+	// Parse and execute template
+	funcMap := template.FuncMap{
+		"toJson": func(v interface{}) (string, error) {
+			b, err := json.Marshal(v)
+			return string(b), err
+		},
+	}
+
+	tmpl, err := template.New(filepath.Base(templateFile)).Funcs(funcMap).ParseFiles(templateFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template: %v", err)
+	}
+
+	var bodyBuffer bytes.Buffer
+	if err := tmpl.Execute(&bodyBuffer, customReq); err != nil {
+		return nil, fmt.Errorf("failed to execute template: %v", err)
+	}
+
+	return bodyBuffer.Bytes(), nil
 }

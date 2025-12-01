@@ -38,13 +38,13 @@ export const $settings = atom<Settings>(new Settings({}));
 export const $onboardingStep = atom<number>(0);
 export const $onboardingData = atom<{
   OPENAI_API_KEY: string;
-  OPENAI_API_URL: string;
+  CLAUDE_API_KEY: string;
   GEMINI_API_KEY: string;
   OLLAMA_URL: string;
 }>({
   OPENAI_API_KEY: "",
   GEMINI_API_KEY: "",
-  OPENAI_API_URL: "https://api.openai.com/v1/chat/completions",
+  CLAUDE_API_KEY: "",
   OLLAMA_URL: "http://localhost:11434/v1/embeddings",
 });
 
@@ -78,9 +78,9 @@ export const onboardingActions = {
     $onboardingData.set({ ...data, GEMINI_API_KEY: key });
   },
 
-  setApiUrl: (url: string) => {
+  setClaudeApiKey: (key: string) => {
     const data = $onboardingData.get();
-    $onboardingData.set({ ...data, OPENAI_API_URL: url });
+    $onboardingData.set({ ...data, CLAUDE_API_KEY: key });
   },
 
   setOllamaUrl: (url: string) => {
@@ -161,5 +161,5 @@ export const GetIsFirstBootStatus = async (): Promise<boolean> => {
 
 onMount($settings, () => {
   getSetting();
-  return () => {};
+  return () => { };
 });

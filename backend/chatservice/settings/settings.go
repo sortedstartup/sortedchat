@@ -21,22 +21,22 @@ var SQLITE_DB_URL = "db.sqlite"
 type Settings struct {
 	OpenAIAPIKey string `koanf:"openai_api_key" json:"openai_api_key"`
 	GeminiAPIKey string `koanf:"gemini_api_key" json:"gemini_api_key"`
-	OpenAIAPIURL string `koanf:"openai_api_url" json:"openai_api_url"`
+	ClaudeAPIKey string `koanf:"claude_api_key" json:"claude_api_key"`
 	OllamaURL    string `koanf:"ollama_url" json:"ollama_url"`
 }
 
 var DefaultSettings = &Settings{
 	OpenAIAPIKey: "",
-	OpenAIAPIURL: "https://api.openai.com/v1/chat/completions",
 	GeminiAPIKey: "",
+	ClaudeAPIKey: "",
 	OllamaURL:    "",
 }
 
 func (s *Settings) ToProto() *proto.Settings {
 	return &proto.Settings{
 		OPENAI_API_KEY: s.OpenAIAPIKey,
-		OPENAI_API_URL: s.OpenAIAPIURL,
 		GEMINI_API_KEY: s.GeminiAPIKey,
+		CLAUDE_API_KEY: s.ClaudeAPIKey,
 		OLLAMA_URL:     s.OllamaURL,
 	}
 }
@@ -44,8 +44,8 @@ func (s *Settings) ToProto() *proto.Settings {
 func FromProto(protoSettings *proto.Settings) *Settings {
 	return &Settings{
 		OpenAIAPIKey: protoSettings.OPENAI_API_KEY,
-		OpenAIAPIURL: protoSettings.OPENAI_API_URL,
 		GeminiAPIKey: protoSettings.GEMINI_API_KEY,
+		ClaudeAPIKey: protoSettings.CLAUDE_API_KEY,
 		OllamaURL:    protoSettings.OLLAMA_URL,
 	}
 }
@@ -94,8 +94,8 @@ func (cm *SettingsManager) LoadSettingsFromProto(protoSettings *proto.Settings) 
 
 	cm.settings = &Settings{
 		OpenAIAPIKey: protoSettings.OPENAI_API_KEY,
-		OpenAIAPIURL: protoSettings.OPENAI_API_URL,
 		GeminiAPIKey: protoSettings.GEMINI_API_KEY,
+		ClaudeAPIKey: protoSettings.CLAUDE_API_KEY,
 		OllamaURL:    protoSettings.OLLAMA_URL,
 	}
 

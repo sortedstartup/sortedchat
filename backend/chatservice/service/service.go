@@ -13,16 +13,13 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
-	"net/http/httptrace"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
-	"text/template"
-	"time"
 
 	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
+	"sortedstartup/chatservice/llm"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
 	"sortedstartup/chatservice/rag"
@@ -56,6 +53,7 @@ type ChatService struct {
 	pipeline           rag.RAGIndexingPipeline
 	embeddingsProvider rag.Embedder
 	settingsManager    *settings.SettingsManager
+	llmClient          *llm.Client
 }
 
 type GenerateEmbeddingMessage struct {
@@ -115,6 +113,7 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 		pipeline:           pipeline,
 		embeddingsProvider: embeddingsProvider,
 		settingsManager:    settingsManager,
+		llmClient:          llm.NewClient(settingsManager),
 	}, nil
 }
 
@@ -338,53 +337,10 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
-	jsonData, err := s.generateRequestBody(model, history, req, userMessage, enhancedPrompt)
+	resp, err := s.llmClient.Call(ctx, model, history, req, userMessage, enhancedPrompt)
 	if err != nil {
-		slog.Error("service:Chat", "message", "failed to generate request body", "error", err, "chatId", chatId, "userID", userID)
-		return fmt.Errorf("failed to process request")
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
-
-	if err != nil {
-		slog.Error("service:Chat", "message", "failed to create request", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
-		return fmt.Errorf("failed to create request, please try again")
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
-
-	// UI can show request sent, useful because sometimes there is a delay from the API server
-	stream(&pb.ChatResponse{
-		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_SENDING_REQUEST_TO_LLM, Message: "Request sent"}},
-	})
-
-	// This is awesome!, in go I was easily able to find out exactly when the request was sent
-	trace := &httptrace.ClientTrace{
-		WroteRequest: func(info httptrace.WroteRequestInfo) {
-			if err := stream(&pb.ChatResponse{
-				Response: &pb.ChatResponse_Progress{
-					Progress: &pb.ChatProgress{State: pb.ChatProgress_REQUEST_SENT_TO_LLM, Message: ""}},
-			}); err != nil {
-				slog.Error("service:Chat", "message", "failed to send progress (sent)", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
-			}
-		},
-		GotFirstResponseByte: func() {
-			if err := stream(&pb.ChatResponse{
-				Response: &pb.ChatResponse_Progress{
-					Progress: &pb.ChatProgress{State: pb.ChatProgress_FIRST_RESPONSE_RECEIVED, Message: ""}},
-			}); err != nil {
-				slog.Error("service:Chat", "message", "failed to send progress (first byte)", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
-			}
-
-		},
-	}
-
-	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), trace))
-	client := &http.Client{Timeout: 60 * time.Second}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		slog.Error("service:Chat", "message", "OpenAI request failed", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
-		return fmt.Errorf("OpenAI request failed, please try again")
+		slog.Error("service:Chat", "message", "LLM request failed", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
+		return fmt.Errorf("LLM request failed, please try again")
 	}
 	defer resp.Body.Close()
 
@@ -638,7 +594,7 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 		return "", fmt.Errorf("error while processing request, please try again")
 	}
 
-	httpReq, err := http.NewRequest("POST", s.settingsManager.GetSettings().OpenAIAPIURL, bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
 	if err != nil {
 		slog.Error("service:GenerateChatName", "message", "failed to create request", "error", err, "chatId", chatId, "userID", userID)
 		return "", fmt.Errorf("failed to create request, please try again")
@@ -1593,140 +1549,4 @@ func (s *ChatService) Init(config *dao.Config) *sql.DB {
 		log.Fatalf("ChatService: Unsupported database type: %s", config.Database.Type)
 	}
 	return nil
-}
-
-func (s *ChatService) generateRequestBody(model string, history []dao.ChatMessageRow, req *pb.ChatRequest, userMessage string, enhancedPrompt string) ([]byte, error) {
-	// Convert history to CustomChatRequest format
-	var customMessages []Message
-	for _, msg := range history {
-		var content interface{}
-
-		// Let's simplify the reconstruction logic to match the new structs
-		var parts []ContentPart
-
-		// 1. Text Content (from content column)
-		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
-			var textContents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(msg.Content), &textContents); err == nil {
-				for _, tc := range textContents {
-					part := ContentPart{Type: tc.Type, Text: tc.Text}
-					if tc.Type == "image_url" && tc.ImageUrl != nil {
-						part.ImageURL = &ImageURL{URL: tc.ImageUrl.Url}
-					}
-					parts = append(parts, part)
-				}
-			}
-		} else if msg.Content != "" {
-			parts = append(parts, ContentPart{Type: "text", Text: msg.Content})
-		}
-
-		// 2. Image Content (from content_image column)
-		if msg.ContentImage != "" {
-			var imageContents []*pb.MessageContent
-			if err := json.Unmarshal([]byte(msg.ContentImage), &imageContents); err == nil {
-				for _, ic := range imageContents {
-					part := ContentPart{Type: ic.Type}
-					if ic.ImageUrl != nil {
-						part.ImageURL = &ImageURL{URL: ic.ImageUrl.Url}
-					}
-					parts = append(parts, part)
-				}
-			}
-		}
-
-		// Determine final Content format
-		if len(parts) == 1 && parts[0].Type == "text" {
-			content = parts[0].Text
-		} else if len(parts) > 0 {
-			content = parts
-		} else {
-			continue // Skip empty messages
-		}
-
-		customMessages = append(customMessages, Message{
-			Role:    msg.Role,
-			Content: content,
-		})
-	}
-
-	// Add current user message
-	var currentMessageContent interface{}
-	if enhancedPrompt != "" && len(req.GetContents()) == 0 {
-		// Text-only with RAG
-		currentMessageContent = enhancedPrompt
-	} else if enhancedPrompt != "" && len(req.GetContents()) > 0 {
-		// Multi-modal with RAG
-		var parts []ContentPart
-		parts = append(parts, ContentPart{Type: "text", Text: enhancedPrompt})
-		for _, content := range req.GetContents() {
-			if content.Type == "image_url" {
-				part := ContentPart{Type: "image_url"}
-				if content.ImageUrl != nil {
-					part.ImageURL = &ImageURL{URL: content.ImageUrl.Url}
-				}
-				parts = append(parts, part)
-			}
-		}
-		currentMessageContent = parts
-	} else if len(req.GetContents()) > 0 {
-		// Multi-modal without RAG
-		var parts []ContentPart
-		for _, content := range req.GetContents() {
-			part := ContentPart{Type: content.Type, Text: content.Text}
-			if content.Type == "image_url" && content.ImageUrl != nil {
-				part.ImageURL = &ImageURL{URL: content.ImageUrl.Url}
-			}
-			parts = append(parts, part)
-		}
-		currentMessageContent = parts
-	} else {
-		// Plain text
-		currentMessageContent = userMessage
-	}
-
-	customMessages = append(customMessages, Message{
-		Role:    "user",
-		Content: currentMessageContent,
-	})
-
-	// Create CustomChatRequest
-	customReq := CustomChatRequest{
-		ModelName: model,
-		Messages:  customMessages,
-		Stream:    true,
-		StreamOptions: &StreamOptions{
-			IncludeUsage: true,
-		},
-	}
-
-	templateFile := "chatservice/templates/openai.txt"
-	// Future: switch based on model name
-	if strings.HasPrefix(model, "gemini") {
-		fmt.Print("reading gemini templates")
-		templateFile = "chatservice/templates/gemini.txt"
-	}
-	if strings.HasPrefix(model, "claude") {
-		fmt.Println("reading claude templates")
-		templateFile = "chatservice/templates/claude.txt"
-	}
-
-	// Parse and execute template
-	funcMap := template.FuncMap{
-		"toJson": func(v interface{}) (string, error) {
-			b, err := json.Marshal(v)
-			return string(b), err
-		},
-	}
-
-	tmpl, err := template.New(filepath.Base(templateFile)).Funcs(funcMap).ParseFiles(templateFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse template: %v", err)
-	}
-
-	var bodyBuffer bytes.Buffer
-	if err := tmpl.Execute(&bodyBuffer, customReq); err != nil {
-		return nil, fmt.Errorf("failed to execute template: %v", err)
-	}
-
-	return bodyBuffer.Bytes(), nil
 }

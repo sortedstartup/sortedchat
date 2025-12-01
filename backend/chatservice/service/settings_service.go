@@ -107,8 +107,8 @@ func (s *SettingService) saveSettings(settingsProto *pb.Settings, completeOnboar
 	if incoming.GeminiAPIKey == "" {
 		incoming.GeminiAPIKey = existing.GeminiAPIKey
 	}
-	if incoming.OpenAIAPIURL == "" {
-		incoming.OpenAIAPIURL = existing.OpenAIAPIURL
+	if incoming.ClaudeAPIKey == "" {
+		incoming.ClaudeAPIKey = existing.ClaudeAPIKey
 	}
 	if incoming.OllamaURL == "" {
 		incoming.OllamaURL = existing.OllamaURL

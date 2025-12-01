@@ -1020,7 +1020,7 @@ export class Settings extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         OPENAI_API_KEY?: string;
-        OPENAI_API_URL?: string;
+        CLAUDE_API_KEY?: string;
         GEMINI_API_KEY?: string;
         OLLAMA_URL?: string;
     }) {
@@ -1030,8 +1030,8 @@ export class Settings extends pb_1.Message {
             if ("OPENAI_API_KEY" in data && data.OPENAI_API_KEY != undefined) {
                 this.OPENAI_API_KEY = data.OPENAI_API_KEY;
             }
-            if ("OPENAI_API_URL" in data && data.OPENAI_API_URL != undefined) {
-                this.OPENAI_API_URL = data.OPENAI_API_URL;
+            if ("CLAUDE_API_KEY" in data && data.CLAUDE_API_KEY != undefined) {
+                this.CLAUDE_API_KEY = data.CLAUDE_API_KEY;
             }
             if ("GEMINI_API_KEY" in data && data.GEMINI_API_KEY != undefined) {
                 this.GEMINI_API_KEY = data.GEMINI_API_KEY;
@@ -1047,10 +1047,10 @@ export class Settings extends pb_1.Message {
     set OPENAI_API_KEY(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
-    get OPENAI_API_URL() {
+    get CLAUDE_API_KEY() {
         return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
     }
-    set OPENAI_API_URL(value: string) {
+    set CLAUDE_API_KEY(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
     get GEMINI_API_KEY() {
@@ -1067,7 +1067,7 @@ export class Settings extends pb_1.Message {
     }
     static fromObject(data: {
         OPENAI_API_KEY?: string;
-        OPENAI_API_URL?: string;
+        CLAUDE_API_KEY?: string;
         GEMINI_API_KEY?: string;
         OLLAMA_URL?: string;
     }): Settings {
@@ -1075,8 +1075,8 @@ export class Settings extends pb_1.Message {
         if (data.OPENAI_API_KEY != null) {
             message.OPENAI_API_KEY = data.OPENAI_API_KEY;
         }
-        if (data.OPENAI_API_URL != null) {
-            message.OPENAI_API_URL = data.OPENAI_API_URL;
+        if (data.CLAUDE_API_KEY != null) {
+            message.CLAUDE_API_KEY = data.CLAUDE_API_KEY;
         }
         if (data.GEMINI_API_KEY != null) {
             message.GEMINI_API_KEY = data.GEMINI_API_KEY;
@@ -1089,15 +1089,15 @@ export class Settings extends pb_1.Message {
     toObject() {
         const data: {
             OPENAI_API_KEY?: string;
-            OPENAI_API_URL?: string;
+            CLAUDE_API_KEY?: string;
             GEMINI_API_KEY?: string;
             OLLAMA_URL?: string;
         } = {};
         if (this.OPENAI_API_KEY != null) {
             data.OPENAI_API_KEY = this.OPENAI_API_KEY;
         }
-        if (this.OPENAI_API_URL != null) {
-            data.OPENAI_API_URL = this.OPENAI_API_URL;
+        if (this.CLAUDE_API_KEY != null) {
+            data.CLAUDE_API_KEY = this.CLAUDE_API_KEY;
         }
         if (this.GEMINI_API_KEY != null) {
             data.GEMINI_API_KEY = this.GEMINI_API_KEY;
@@ -1113,8 +1113,8 @@ export class Settings extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.OPENAI_API_KEY.length)
             writer.writeString(1, this.OPENAI_API_KEY);
-        if (this.OPENAI_API_URL.length)
-            writer.writeString(2, this.OPENAI_API_URL);
+        if (this.CLAUDE_API_KEY.length)
+            writer.writeString(2, this.CLAUDE_API_KEY);
         if (this.GEMINI_API_KEY.length)
             writer.writeString(3, this.GEMINI_API_KEY);
         if (this.OLLAMA_URL.length)
@@ -1132,7 +1132,7 @@ export class Settings extends pb_1.Message {
                     message.OPENAI_API_KEY = reader.readString();
                     break;
                 case 2:
-                    message.OPENAI_API_URL = reader.readString();
+                    message.CLAUDE_API_KEY = reader.readString();
                     break;
                 case 3:
                     message.GEMINI_API_KEY = reader.readString();

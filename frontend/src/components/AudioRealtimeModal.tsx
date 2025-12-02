@@ -124,24 +124,30 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       await pc.setRemoteDescription({ type: "answer", sdp: String(response) } as RTCSessionDescription);
 
     } catch (error) {
+      console.error("handleConnection error", error);
       setIsConnecting(false);
-      setStatusMessage(`Connection failed. Verify your API keys.`);
+      setStatusMessage(`Connection failed. Verify your API keys`);
       $isConnected.set(false);
     }
   };
 
   const handleDisconnect = () => {
-    pcRef.current?.close();
-    streamRef.current?.getTracks().forEach(track => track.stop());
-    
-    pcRef.current = null;
-    streamRef.current = null;
+    try {
+      pcRef.current?.close();
+      streamRef.current?.getTracks().forEach(track => track.stop());
+      
+      pcRef.current = null;
+      streamRef.current = null;
 
-    $isConnected.set(false);
-    setIsConnecting(false);
-    setStatusMessage('Select provider and click Connect');
-    setInputTokens(0);
-    setOutputTokens(0);
+      $isConnected.set(false);
+      setIsConnecting(false);
+      setStatusMessage('Select provider and click Connect');
+      setInputTokens(0);
+      setOutputTokens(0);
+    }
+    catch (error) {
+      console.error("handleDisconnect error", error);
+    }
   };
 
   const handleClose = () => {

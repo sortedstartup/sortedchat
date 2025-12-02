@@ -1,32 +1,45 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sortedstartup/chatservice/proto"
 	"sortedstartup/realtimeservice/dao"
+	"sync"
 	"time"
 
 	"github.com/pion/webrtc/v4"
 )
 
 type RealtimeService struct {
-	dao dao.DAO
+	dao            dao.DAO
+	settingsClient proto.SettingServiceClient
 }
 
-func NewRealtimeService(daoFactory dao.DAOFactory) *RealtimeService {
+func NewRealtimeService(daoFactory dao.DAOFactory, settingsClient proto.SettingServiceClient) *RealtimeService {
 	slog.Info("RealtimeService: NewRealtimeService")
+
+	if settingsClient == nil {
+		slog.Error("RealtimeService: NewRealtimeService", "message", "settingsClient cannot be nil")
+		return nil
+	}
+
 	daoInstance, err := daoFactory.CreateDAO()
 	if err != nil {
 		slog.Error("RealtimeService: NewRealtimeService", "message", "Failed to create DAO", "error", err)
 		return nil
 	}
-	return &RealtimeService{dao: daoInstance}
+	return &RealtimeService{dao: daoInstance, settingsClient: settingsClient}
 }
 
 func (s *RealtimeService) Init(config *dao.Config) {
 	slog.Info("RealtimeService: Init")
 }
+
+var OPENAI_API_KEY string
+var GEMINI_API_KEY string
 
 type PeerConnection struct {
 	browserConnection    *webrtc.PeerConnection      //backend-browser peer connection
@@ -39,12 +52,30 @@ type PeerConnection struct {
 	audioChatDbID        string                      //audio chat database id
 }
 
-// map of userID -> PeerConnection
-var userConnections = make(map[string]*PeerConnection)
+var (
+	userConnections      = make(map[string]*PeerConnection)
+	userConnectionsMutex sync.RWMutex
+)
 
-// offer between browser(client) and backend
-func (s *RealtimeService) Offer(offer string, model string, userID string) (string, error) {
-	slog.Info("RealtimeService: Offer", "offer", offer, "model", model, "userID", userID)
+func (s *RealtimeService) Offer(offer string, provider string, model string, userID string) (string, error) {
+
+	if provider != "gemini" && provider != "openai" {
+		return "", fmt.Errorf("unsupported provider: %s", provider)
+	}
+	if model == "" {
+		return "", fmt.Errorf("model cannot be empty")
+	}
+
+	settings, err := s.settingsClient.GetSetting(context.Background(), &proto.GetSettingRequest{})
+	if err != nil {
+		slog.Error("RealtimeService: Init", "message", "failed to get setting", "error", err)
+		return "", err
+	}
+
+	OPENAI_API_KEY = settings.Settings.OPENAI_API_KEY
+	GEMINI_API_KEY = settings.Settings.GEMINI_API_KEY
+
+	slog.Info("RealtimeService: Offer", "offer", offer, "provider", provider, "model", model, "userID", userID)
 
 	browserToBackendPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
@@ -52,7 +83,6 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 		return "", fmt.Errorf("failed to connect")
 	}
 
-	// create track for ai(openai or gemini) to backend
 	aiBackendTrack, err := webrtc.NewTrackLocalStaticRTP(
 		webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 48000, Channels: 2},
 		"ai-backend-track", "pion-ai",
@@ -66,7 +96,8 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 		return "", fmt.Errorf("failed to connect")
 	}
 
-	// Create user connection early so we can reference it in callbacks
+	// Check for existing connection and cleanup if needed
+	userConnectionsMutex.Lock()
 	existingUserConn := userConnections[userID]
 	if existingUserConn != nil {
 		s.Cleanup(userID)
@@ -79,60 +110,54 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 		aiBackendTrack:       aiBackendTrack,
 		dataChannelManager:   nil,
 	}
+	userConnectionsMutex.Unlock()
 
-	// OnTrack handler (when browser sends audio)
+	// OnTrack handler
 	browserToBackendPC.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-
 		slog.Info("Received track from browser", "trackID", track.ID(), "kind", track.Kind(), "userID", userID, "model", model)
 
 		if track.Kind() == webrtc.RTPCodecTypeAudio {
-
 			slog.Info("Audio track received from browser", "userID", userID, "SSRC", track.SSRC(), "model", model)
 
+			userConnectionsMutex.RLock()
 			userConn := userConnections[userID]
+			userConnectionsMutex.RUnlock()
+
 			if userConn == nil {
 				slog.Error("User connection not found", "userID", userID)
 				return
 			}
 
-			if model == "gemini" {
-				// Handle audio through Gemini(gemini websocket realtime)
+			if provider == "gemini" {
 				if userConn.geminiRealtime != nil {
-
 					slog.Info("Handling audio track with Gemini", "userID", userID)
-
 					go userConn.geminiRealtime.HandleAudioTrack(track)
-
 				}
 			} else {
-				// Handle audio through OpenAI(openai websocket realtime)
 				slog.Info("Copying audio track from browser to OpenAI", "userID", userID)
-
 				if userConn.openaiRealtime != nil {
-
 					slog.Info("Handling audio track with OpenAI", "userID", userID)
-
 					go userConn.openaiRealtime.HandleAudioTrack(track)
 				}
 			}
 		}
 	})
 
-	// Handle data channel creation(between backend and browser)
+	// Handle data channel creation
 	browserToBackendPC.OnDataChannel(func(dc *webrtc.DataChannel) {
-
 		slog.Info("Data channel created", "userID", userID)
 
+		userConnectionsMutex.RLock()
 		userConn := userConnections[userID]
+		userConnectionsMutex.RUnlock()
+
 		if userConn == nil {
 			slog.Error("User connection not found when setting up data channel", "userID", userID)
 			return
 		}
 
-		// Create and assign the data channel manager
 		userConn.dataChannelManager = NewDataChannelManager(userID, dc, s)
 
-		// If OpenAI realtime is already created, set the data channel manager
 		if userConn.openaiRealtime != nil {
 			userConn.openaiRealtime.SetDataChannelManager(userConn.dataChannelManager)
 		}
@@ -160,26 +185,20 @@ func (s *RealtimeService) Offer(offer string, model string, userID string) (stri
 		return "", fmt.Errorf("failed to connect")
 	}
 
-	// Connect to the appropriate AI service
-	if model == "gemini" {
-		if err := s.connectToGemini(userID); err != nil {
-			slog.Error("Failed to connect to Gemini", "userID", userID, "error", err)
-			return "", fmt.Errorf("failed to connect to Gemini")
-		}
+	if provider == "gemini" {
+		go s.connectToGemini(userID, model)
 	} else {
-		if err := s.connectToOpenai(userID); err != nil {
-			slog.Error("Failed to connect to OpenAI", "userID", userID, "error", err)
-			return "", fmt.Errorf("failed to connect to OpenAI")
-		}
+		go s.connectToOpenai(userID, model)
 	}
 
 	return answerForBrowser.SDP, nil
 }
 
-// connectToGemini establishes connection to Gemini Live API
-func (s *RealtimeService) connectToGemini(userID string) error {
-
+func (s *RealtimeService) connectToGemini(userID string, model string) error {
+	userConnectionsMutex.RLock()
 	userConn := userConnections[userID]
+	userConnectionsMutex.RUnlock()
+
 	if userConn == nil {
 		slog.Error("User connection not found for Gemini setup", "userID", userID)
 		return fmt.Errorf("user connection not found")
@@ -192,11 +211,9 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 		return err
 	}
 
-	// Store the Gemini instance
 	userConn.geminiRealtime = geminiRealtime
 
-	// Connect to Gemini
-	if err := geminiRealtime.Connect(); err != nil {
+	if err := geminiRealtime.Connect(model); err != nil {
 		slog.Error("Failed to connect to Gemini", "userID", userID, "error", err)
 		return err
 	}
@@ -208,7 +225,8 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 	}
 
 	slog.Info("Successfully connected to Gemini", "userID", userID)
-	id, err := s.dao.CreateAudioChat(userID, "gemini", time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339)) //check time
+	now := time.Now().Format(time.RFC3339)
+	id, err := s.dao.CreateAudioChat(userID, model, now, now) //check time
 	if err != nil {
 		slog.Error("Failed to create audio chat", "userID", userID, "error", err)
 		return err
@@ -218,9 +236,13 @@ func (s *RealtimeService) connectToGemini(userID string) error {
 	return nil
 }
 
-func (s *RealtimeService) connectToOpenai(userID string) error {
+func (s *RealtimeService) connectToOpenai(userID string, model string) error {
+	slog.Info("RealtimeService: connectToOpenai", "userID", userID, "model", model)
 
+	userConnectionsMutex.RLock()
 	userConn := userConnections[userID]
+	userConnectionsMutex.RUnlock()
+
 	if userConn == nil {
 		slog.Error("User connection not found for OpenAI setup", "userID", userID)
 		return fmt.Errorf("user connection not found")
@@ -234,7 +256,7 @@ func (s *RealtimeService) connectToOpenai(userID string) error {
 
 	userConn.openaiRealtime = openaiRealtime
 
-	if err := openaiRealtime.Connect(); err != nil {
+	if err := openaiRealtime.Connect(model); err != nil {
 		slog.Error("Failed to connect to OpenAI", "userID", userID, "error", err)
 		return err
 	}
@@ -246,7 +268,8 @@ func (s *RealtimeService) connectToOpenai(userID string) error {
 	}
 
 	slog.Info("Successfully connected to OpenAI", "userID", userID)
-	id, err := s.dao.CreateAudioChat(userID, "openai", time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	now := time.Now().Format(time.RFC3339)
+	id, err := s.dao.CreateAudioChat(userID, model, now, now)
 	if err != nil {
 		slog.Error("Failed to create audio chat", "userID", userID, "error", err)
 		return err
@@ -258,8 +281,11 @@ func (s *RealtimeService) connectToOpenai(userID string) error {
 
 func (s *RealtimeService) Cleanup(userID string) error {
 	slog.Info("Cleaning up user connection", "userID", userID)
+
+	userConnectionsMutex.Lock()
 	userConn := userConnections[userID]
 	if userConn == nil {
+		userConnectionsMutex.Unlock()
 		slog.Error("User connection not found for cleanup", "userID", userID)
 		return nil
 	}
@@ -269,6 +295,8 @@ func (s *RealtimeService) Cleanup(userID string) error {
 		slog.Info("Sending Connection_closed message to browser", "userID", userID)
 		userConn.dataChannelManager.sendMessageWithData("Connection_closed", "", nil)
 	}
+	delete(userConnections, userID)
+	userConnectionsMutex.Unlock()
 
 	// Close AI connections
 	if userConn.geminiRealtime != nil {
@@ -278,12 +306,10 @@ func (s *RealtimeService) Cleanup(userID string) error {
 		userConn.openaiRealtime.Close()
 	}
 
-	// Close data channel manager
 	if userConn.dataChannelManager != nil {
 		userConn.dataChannelManager.Close()
 	}
 
-	// Close WebRTC connection
 	if userConn.browserConnection != nil {
 		userConn.browserConnection.Close()
 	}
@@ -300,20 +326,20 @@ func (s *RealtimeService) Cleanup(userID string) error {
 }
 
 func (s *RealtimeService) IceCandidate(candidate string, userID string) (string, error) {
-	// First check if the user connection exists
+	userConnectionsMutex.RLock()
 	userConn := userConnections[userID]
+	userConnectionsMutex.RUnlock()
+
 	if userConn == nil {
 		slog.Error("user connection not found", "userID", userID)
 		return "", fmt.Errorf("user connection not found for userID: %s", userID)
 	}
 
-	// Then check if the browser connection exists
 	if userConn.browserConnection == nil {
 		slog.Error("browser peer connection not initialized", "userID", userID)
 		return "", fmt.Errorf("browser peer connection not initialized for userID: %s", userID)
 	}
 
-	// Check if remote description is set
 	if userConn.browserConnection.RemoteDescription() == nil {
 		slog.Error("remote description not set, cannot add ICE candidate", "userID", userID)
 		return "", fmt.Errorf("remote description not set, cannot add ICE candidate for userID: %s", userID)
@@ -325,7 +351,6 @@ func (s *RealtimeService) IceCandidate(candidate string, userID string) (string,
 		return "", err
 	}
 
-	// Add ICE candidate
 	if err := userConn.browserConnection.AddICECandidate(iceCandidateInit); err != nil {
 		slog.Error("error adding ICE candidate", "userID", userID, "error", err)
 		return "", err

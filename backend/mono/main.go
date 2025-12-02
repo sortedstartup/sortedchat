@@ -32,7 +32,9 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure" // Needed for bufconn client
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/test/bufconn" // New Import for in-memory client
 
 	authApi "sortedstartup/authservice/api"
 	authDao "sortedstartup/authservice/dao"
@@ -53,10 +55,17 @@ const (
 	defaultGrpcPort = "8000"
 	defaultHttpPort = "8080"
 	defaultHost     = ""
+	bufSize         = 1024 * 1024 // Buffer size for bufconn
 )
 
 //go:embed public
 var staticUIFS embed.FS
+
+func newBufDialer(lis *bufconn.Listener) func(context.Context, string) (net.Conn, error) {
+	return func(context.Context, string) (net.Conn, error) {
+		return lis.Dial()
+	}
+}
 
 func main() {
 	ctx := context.Background()
@@ -85,9 +94,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen on %s: %v", grpcAddr, err)
 	}
+	log.Printf("Main gRPC server listening on TCP: %s", grpcAddr)
+	inProcessListener := bufconn.Listen(bufSize)
+	inProcessDialer := newBufDialer(inProcessListener)
+	log.Println("Created in-process bufconn listener for client communication")
 
 	if os.Getenv("OTEL_EXPORTER_OTLP_HEADERS") != "" && os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
-
 		res, err := newResource()
 		if err != nil {
 			log.Fatalf("Failed to create OTel resource: %v", err)
@@ -111,9 +123,8 @@ func main() {
 	// Adding Interceptors
 	// Create JWT validator
 	jwtSecret := os.Getenv("APP_JWT_SECRET")
-	issuer := os.Getenv("APP_ISSUER") // Should match your auth service issuer
+	issuer := os.Getenv("APP_ISSUER")
 
-	// Use build tag specific defaults
 	defaultJwtSecret, defaultIssuer := getJWTDefaults()
 	if jwtSecret == "" {
 		jwtSecret = defaultJwtSecret
@@ -137,6 +148,12 @@ func main() {
 		grpc.UnaryInterceptor(authInterceptor.UnaryInterceptor()),
 		grpc.StreamInterceptor(authInterceptor.StreamInterceptor()),
 	)
+
+	// Internal gRPC server for in-process calls
+	// Creating a inmemory unauthentication server just for interservice communication when hosted on the SAME sever,
+	// this does not work when services are on multiple server.
+	// at that time we need to make a deision : either pass api level authentication (jwt) to the other service or use mtls or some other microservice communication auth
+	internalGrpcServer := grpc.NewServer()
 
 	// Create HTTP auth middleware
 	authMiddleware := auth.NewHTTPAuthMiddleware(validator, false) // requireAuth = false for flexibility
@@ -230,12 +247,34 @@ func main() {
 	settingServiceApi := api.NewSettingService(queue, daoFactory)
 	settingServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
+	proto.RegisterSettingServiceServer(internalGrpcServer, settingServiceApi)
+
+	// Run both servers in parallel
+	serverErr := make(chan error)
+
+	go func() {
+		log.Printf("Starting gRPC server on in-memory bufconn")
+		serverErr <- internalGrpcServer.Serve(inProcessListener)
+	}()
+
+	settingsClientConn, err := grpc.Dial(
+		"bufconn",
+		grpc.WithContextDialer(inProcessDialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to create in-memory SettingsService client connection: %v", err)
+	}
+	defer settingsClientConn.Close()
+
+	// Create SettingsService client for in-process calls
+	settingsClient := proto.NewSettingServiceClient(settingsClientConn)
 
 	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
 	inferenceServiceApi.Init(inferenceConfig)
 	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 
-	realtimeServiceApi := realtimeApi.NewRealtimeServiceAPI(realtimeDaoFactory)
+	realtimeServiceApi := realtimeApi.NewRealtimeServiceAPI(realtimeDaoFactory, settingsClient)
 	realtimeServiceApi.Init(realtimeConfig)
 	realtimeProto.RegisterRealtimeServiceServer(grpcServer, realtimeServiceApi)
 
@@ -382,9 +421,6 @@ func main() {
 		Addr:    httpAddr,
 		Handler: wrappedHandler,
 	}
-
-	// Run both servers in parallel
-	serverErr := make(chan error)
 
 	go func() {
 		log.Printf("Starting gRPC server on %s", grpcAddr)

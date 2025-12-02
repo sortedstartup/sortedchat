@@ -7,19 +7,19 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Phone, PhoneOff, Volume2, ChevronDown } from "lucide-react";
-import { iceCandidate, offerRequest, $isConnected } from '@/store/realtime';
+import { iceCandidate, listModels, offerRequest, $isConnected, $realtimeModelList } from '@/store/realtime';
 import { useStore } from '@nanostores/react';
+import { ModelListInfo } from '../../proto/chatservice';
 
 interface RealtimeAudioModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type Provider = 'openai' | 'gemini';
-
 export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps) {
+  const realtimeModelList = useStore($realtimeModelList);
   const isConnected = useStore($isConnected);
-  const [provider, setProvider] = useState<Provider>('openai');
+  const [selectedModel, setSelectedModel] = useState<ModelListInfo | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Select provider and click Connect');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -30,6 +30,11 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
   const streamRef = useRef<MediaStream | null>(null);
 
   const handleConnection = async () => {
+    if (!selectedModel) {
+      setStatusMessage('Please select a model first');
+      return;
+    }
+    
     try {
       setIsConnecting(true);
       setStatusMessage('Connecting...');
@@ -74,7 +79,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
           session: {
             type: "realtime",
             modalities: ["audio"],
-            voice: provider === 'openai' ? "alloy" : "en-US-Neural2-A",
+            voice: selectedModel?.provider === 'openai' ? "alloy" : "en-US-Neural2-A",
             turn_detection: { type: "server_vad" },
             instructions: "You are helpful. Answer in ENGLISH only."
           }
@@ -111,7 +116,11 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const response = await offerRequest(String(offer.sdp), provider);
+      if (!selectedModel) {
+        throw new Error("No model selected");
+      }
+
+      const response = await offerRequest(String(offer.sdp),selectedModel.provider, selectedModel.id);
       await pc.setRemoteDescription({ type: "answer", sdp: String(response) } as RTCSessionDescription);
 
     } catch (error) {
@@ -141,8 +150,15 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
   };
 
   useEffect(() => {
+    listModels();
     return handleDisconnect;
   }, []);
+
+  useEffect(() => {
+    if (realtimeModelList.length > 0 && !selectedModel) {
+      setSelectedModel(realtimeModelList[0]);
+    }
+  }, [realtimeModelList, selectedModel]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -167,28 +183,32 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                 className="w-full p-3 bg-card border border-border rounded-lg flex items-center justify-between hover:border-ring disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${provider === 'openai' ? 'bg-green-500' : 'bg-blue-500'}`} />
-                  <span className="font-medium capitalize text-foreground">{provider}</span>
+                  <div className={`w-2 h-2 rounded-full ${selectedModel?.provider === 'openai' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                  <span className="font-medium text-foreground">
+                    {selectedModel ? selectedModel.label || selectedModel.id : 'Select a model'}
+                  </span>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
               
               {showDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-10">
-                  <button
-                    onClick={() => { setProvider('openai'); setShowDropdown(false); }}
-                    className="w-full p-3 hover:bg-accent text-popover-foreground flex items-center gap-2 border-b border-border"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span>OpenAI</span>
-                  </button>
-                  <button
-                    onClick={() => { setProvider('gemini'); setShowDropdown(false); }}
-                    className="w-full p-3 hover:bg-accent text-popover-foreground flex items-center gap-2"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span>Gemini</span>
-                  </button>
+                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                  {realtimeModelList.length === 0 ? (
+                    <div className="p-3 text-muted-foreground text-sm text-center">
+                      No realtime models available
+                    </div>
+                  ) : (
+                    realtimeModelList.map((model, index) => (
+                      <button
+                        key={model.id}
+                        onClick={() => { setSelectedModel(model); setShowDropdown(false); }}
+                        className={`w-full p-3 hover:bg-accent text-popover-foreground flex items-center gap-2 ${index < realtimeModelList.length - 1 ? 'border-b border-border' : ''}`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${model.provider === 'openai' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                        <span>{model.label}</span>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -238,7 +258,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
             {!isConnected ? (
               <Button
                 onClick={handleConnection}
-                disabled={isConnecting}
+                disabled={!selectedModel}
                 className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 px-8 py-3 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Phone className="h-4 w-4 mr-2" />

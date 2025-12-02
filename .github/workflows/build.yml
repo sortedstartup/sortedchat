@@ -72,9 +72,7 @@ jobs:
           - os: darwin
             arch: arm64
             runner: macos-latest
-          - os: darwin
-            arch: amd64
-            runner: macos-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -96,9 +94,49 @@ jobs:
           name: frontend-build-standalone
           path: backend/mono/frontend-build-wails/dist
 
-      - name: Skip Windows builds (temporary)
+      - name: Install MinGW Toolchain
         if: matrix.os == 'windows'
-        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64 make autoconf libtool pkg-config
+
+      - name: Build Windows Dependencies (Ogg, Opus, Opusfile)
+        if: matrix.os == 'windows'
+        run: |
+          # 1. Setup a directory to install the Windows libs
+          DEPS_DIR=$(pwd)/windows-deps
+          mkdir -p $DEPS_DIR
+
+          # Common Flags for Cross-Compiling to Windows
+          # We disable shared libs to ensure we get static .a files
+          CFG="--host=x86_64-w64-mingw32 --prefix=$DEPS_DIR --disable-shared --enable-static"
+
+          echo ">>> Building LibOgg..."
+          curl -L -O https://downloads.xiph.org/releases/ogg/libogg-1.3.5.tar.gz
+          tar xf libogg-1.3.5.tar.gz
+          cd libogg-1.3.5
+          ./configure $CFG
+          make -j$(nproc) && make install
+          cd ..
+
+          echo ">>> Building LibOpus..."
+          curl -L -O https://downloads.xiph.org/releases/opus/opus-1.4.tar.gz
+          tar xf opus-1.4.tar.gz
+          cd opus-1.4
+          ./configure $CFG
+          make -j$(nproc) && make install
+          cd ..
+
+          echo ">>> Building OpusFile..."
+          # Note: We must tell configure where to find the Ogg/Opus we just built!
+          export PKG_CONFIG_PATH=$DEPS_DIR/lib/pkgconfig
+
+          curl -L -O https://downloads.xiph.org/releases/opus/opusfile-0.12.tar.gz
+          tar xf opusfile-0.12.tar.gz
+          cd opusfile-0.12
+          ./configure $CFG --disable-http
+          make -j$(nproc) && make install
+          cd ..
+
+          echo "Dependencies built in $DEPS_DIR"
 
       - name: Restore APT caches
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -108,7 +146,6 @@ jobs:
             /var/cache/apt/archives/*.deb
             /var/lib/apt/lists/*
           key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/apt-amd64-packages.txt') }}
-
 
       - name: Install Linux dependencies (AMD64)
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
@@ -179,19 +216,12 @@ jobs:
           sudo apt-get install -y $(cat .github/workflows/apt-arm64-packages.txt)
 
       - name: Install macOS dependencies
-        if: matrix.os == 'darwin' && matrix.arch == 'arm64'
+        if: matrix.os == 'darwin'
         run: |
           # Only build for native ARM64 architecture on macOS for now
           # Cross-compilation to x86_64 requires external downloads which are security risks
           brew update
-          brew install opus opusfile pkg-config
-
-      - name: Skip macOS x86_64 builds (temporary)
-        if: matrix.os == 'darwin' && matrix.arch == 'amd64'
-        run: |
-          echo "macOS x86_64 cross-compilation disabled due to architecture complexity"
-          echo "Use native x86_64 runners or disable this combination until resolved"
-          exit 0
+          brew install pkg-config opus opusfile libogg
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -207,39 +237,114 @@ jobs:
           export GOARCH=${{ matrix.arch }}
           export CGO_ENABLED=1
 
-
-          # Use custom SQLite headers for all platforms to ensure version consistency
+          # 1. Common Setup
           export CGO_CFLAGS="-I$(pwd)/sqlite3"
 
           export BINARY_NAME_SERVER=sortedchat-server-${{ matrix.os }}-${{ matrix.arch }}
           export BINARY_NAME_APP=sortedchat-app-${{ matrix.os }}-${{ matrix.arch }}
 
-          # Windows
+          # Default Server Flags (Base)
+          # We define the specific library list here
+          LIBS="-lopusfile -lopus -logg -lm"
+          
+          # Base Build Tags
+          export TAGS="prod,wails,desktop,sqlite_fts5,production,devtools"
+          
+          # Initialize LDFLAGS
+          export SERVER_LDFLAGS=""
+          export APP_LDFLAGS=""
+
+          # 2. OS Specific Logic
           if [ "${{ matrix.os }}" = "windows" ]; then
-            export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe";
-            export BINARY_NAME_APP="$BINARY_NAME_APP.exe";
+            export BINARY_NAME_SERVER="$BINARY_NAME_SERVER.exe"
+            export BINARY_NAME_APP="$BINARY_NAME_APP.exe"
             export CC=x86_64-w64-mingw32-gcc
+            
+            # Point pkg-config to our cross-compiled libraries
+            export PKG_CONFIG_PATH=${{ github.workspace }}/windows-deps/lib/pkgconfig
+
+            # Windows (MinGW) supports static linking
+            # We add -static to force all libs (including MinGW runtime) into the binary
+            export SERVER_LDFLAGS="-extldflags \"-static $LIBS\""
+            export APP_LDFLAGS="-extldflags \"-static $LIBS\""
+            export TAGS="$TAGS,wv2runtime.download"
           fi
 
-          # Linux ARM64 - Fix cross-compilation issues
-          if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then
-            export CC=aarch64-linux-gnu-gcc
-            export CXX=aarch64-linux-gnu-g++
-            export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-            export CGO_CFLAGS="$CGO_CFLAGS -I/usr/include/aarch64-linux-gnu"
-            export CGO_LDFLAGS="-L/usr/lib/aarch64-linux-gnu"
+          if [ "${{ matrix.os }}" = "linux" ]; then
+            if [ "${{ matrix.arch }}" = "arm64" ]; then
+               export CC=aarch64-linux-gnu-gcc
+               export CXX=aarch64-linux-gnu-g++
+               export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+               export CGO_CFLAGS="$CGO_CFLAGS -I/usr/include/aarch64-linux-gnu"
+               export CGO_LDFLAGS="-L/usr/lib/aarch64-linux-gnu"
+            fi
+            # Linux: Full static linking for Server
+            export SERVER_LDFLAGS="-extldflags \"-static $LIBS\""
+            # Linux App: Static link opus/ogg, Dynamic link system libs (GTK, WebKit, Math)
+            export APP_LDFLAGS="-extldflags \"-Wl,-Bstatic -lopusfile -lopus -logg -Wl,-Bdynamic -lm\""
+            export TAGS="$TAGS,webkit2_41"
           fi
 
-          # macOS builds don't need special CC settings
           if [ "${{ matrix.os }}" = "darwin" ]; then
-            export CGO_ENABLED=1
-            export CGO_CFLAGS="$CGO_CFLAGS -mmacosx-version-min=11.0"
-            export CGO_LDFLAGS="-mmacosx-version-min=11.0 -framework UniformTypeIdentifiers"
+            # Get Homebrew Prefix (Handles /opt/homebrew vs /usr/local automatically)
+            BREW_PREFIX=$(brew --prefix)
+            
+            export CGO_CFLAGS="$CGO_CFLAGS -I$BREW_PREFIX/include -mmacosx-version-min=11.0"
+            export CGO_LDFLAGS="-L$BREW_PREFIX/lib -mmacosx-version-min=11.0 -framework UniformTypeIdentifiers"
+
+            # ---------------------------------------------------------
+            # MACOS STATIC LINKING FIX (PKG-CONFIG OVERRIDE)
+            # ---------------------------------------------------------
+            # The Go library uses pkg-config which normally returns -lopus etc.
+            # This causes the linker to prefer the dylib if available.
+            # We must intercept pkg-config to force it to return the .a file path.
+            
+            # 1. Create a local pkgconfig directory
+            mkdir -p $(pwd)/static-pkgconfig
+            export PKG_CONFIG_PATH=$(pwd)/static-pkgconfig
+
+            # 2. Copy and modify .pc files for Ogg, Opus, Opusfile
+            for lib in ogg opus opusfile; do
+              # Copy original .pc file
+              cp "$BREW_PREFIX/lib/pkgconfig/$lib.pc" "static-pkgconfig/$lib.pc"
+              
+              # Replace "-l$lib" with the absolute path to the static library
+              # Example: "-lopus" -> "/opt/homebrew/lib/libopus.a"
+              sed -i '' "s|-l$lib|$BREW_PREFIX/lib/lib$lib.a|g" "static-pkgconfig/$lib.pc"
+              
+              # Promote Requires.private to Requires
+              # This ensures that dependencies (like ogg for opusfile) are included
+              # even when pkg-config is not called with --static (which CGO doesn't do by default).
+              sed -i '' 's|Requires.private|Requires|g' "static-pkgconfig/$lib.pc"
+            done
+
+            echo ">>> Modified .pc files for static linking:"
+            cat static-pkgconfig/*.pc
+
+            # 3. Standard Flags
+            # We don't need manual STATIC_LIBS anymore because pkg-config 
+            # will now tell CGO to use the .a files directly.
+            export SERVER_LDFLAGS="-extldflags \"-lm\""
+            export APP_LDFLAGS="-extldflags \"-lm\""
           fi
 
+          # 3. Debug Output
+          echo "Building for $GOOS/$GOARCH..."
           go env
-          go build -buildvcs=false -tags "prod,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_SERVER ./mono
-          go build -buildvcs=false -tags "prod,wails,desktop,sqlite_fts5,webkit2_41,wv2runtime.download,production,devtools" -ldflags "-w -s" -o $BINARY_NAME_APP ./mono
+
+          # 4. Build Desktop App (Wails/GUI)
+          go build -buildvcs=false \
+            -tags "$TAGS" \
+            -ldflags "-w -s $APP_LDFLAGS" \
+            -o $BINARY_NAME_APP ./mono
+
+          # 5. Build Server (Headless/CLI)
+          # Note: We override CGO_CFLAGS locally here to omit the SQLite extension for the server only
+          CGO_CFLAGS="-I$(pwd)/sqlite3 -DSQLITE_OMIT_LOAD_EXTENSION" \
+          go build \
+            -tags "sqlite_fts5 netgo osusergo sqlite_omit_load_extension" \
+            -ldflags "$SERVER_LDFLAGS" \
+            -o $BINARY_NAME_SERVER ./mono/
 
       - name: Upload server binary as artifact
         #if: matrix.os != 'windows' && !(matrix.os == 'darwin' && matrix.arch == 'amd64')
@@ -444,5 +549,3 @@ jobs:
           prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-

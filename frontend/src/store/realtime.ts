@@ -5,7 +5,6 @@ import { ListModelsRequest, ModelListInfo } from "../../proto/chatservice";
 import { getChatClient } from "./chat";
 import { atom } from "nanostores";
 
-import { atom } from "nanostores";
 import { toast } from "sonner";
 
 

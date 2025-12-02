@@ -5,8 +5,13 @@ import { ListModelsRequest, ModelListInfo } from "../../proto/chatservice";
 import { getChatClient } from "./chat";
 import { atom } from "nanostores";
 
+import { toast } from "sonner";
+
 
 let _realtimeClient: RealtimeServiceClient | undefined;
+
+export const $isConnected = atom<boolean>(false);
+
 
 function getClient(): RealtimeServiceClient {
   if (!_realtimeClient) {
@@ -34,10 +39,24 @@ export const offerRequest = async (offer: string, provider: string, model: strin
     });
     try {
         const res = await getClient().Offer(req, {});
-        console.log("offerRequest", res);
-        return res;
+        const offer = res.offer;
+
+        if (offer) {
+            console.log(offer);
+            $isConnected.set(true);
+            toast.success("Offer request sent successfully");
+            return offer; // still returns SDP string for existing callers
+        }
+
+        // No offer in a successful response: treat as an error
+        throw new Error("Failed to send offer request");
     } catch (error) {
-        console.error("Failed to send offer request:", error);
+        $isConnected.set(false);
+        toast.error(
+            error instanceof Error && error.message
+                ? error.message
+                : "Failed to send offer request"
+        );
         throw error;
     }
 }
@@ -48,10 +67,15 @@ export const iceCandidate = async (candidate: string) => {
     });
     try {
         const res = await getClient().IceCandidate(req, {});
-        console.log("iceCandidate", res);
-        return res;
+        if (res.message) {
+            // toast.success("ICE candidate sent successfully");
+            return res;
+        } else {
+            // toast.error("Failed to send ICE candidate");
+            throw new Error("Failed to send ICE candidate");
+        }
     } catch (error) {
-        console.error("Failed to send ICE candidate:", error);
+        // toast.error("Failed to send ICE candidate");
         throw error;
     }
 }

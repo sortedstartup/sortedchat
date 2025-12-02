@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 )
 
 // DataChannelManager handles WebRTC data channel communication

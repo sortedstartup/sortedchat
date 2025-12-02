@@ -21,7 +21,7 @@ type GRPCAuthInterceptor struct {
 
 // NewGRPCAuthInterceptor creates a new gRPC auth interceptor
 func NewGRPCAuthInterceptor(validator *JWTValidator, requireAuth bool) *GRPCAuthInterceptor {
-	slog.Info("common:grpc_interceptor:NewGRPCAuthInterceptor")
+	slog.Debug("common:grpc_interceptor:NewGRPCAuthInterceptor")
 	return &GRPCAuthInterceptor{
 		validator:   validator,
 		skipMethods: make(map[string]bool),
@@ -31,13 +31,13 @@ func NewGRPCAuthInterceptor(validator *JWTValidator, requireAuth bool) *GRPCAuth
 
 // SkipMethod adds a method to skip authentication (e.g., "/health/check", "/auth/login")
 func (i *GRPCAuthInterceptor) SkipMethod(method string) {
-	slog.Info("common:grpc_interceptor:SkipMethod", "method", method)
+	slog.Debug("common:grpc_interceptor:SkipMethod", "method", method)
 	i.skipMethods[method] = true
 }
 
 // SkipMethods adds multiple methods to skip authentication
 func (i *GRPCAuthInterceptor) SkipMethods(methods []string) {
-	slog.Info("common:grpc_interceptor:SkipMethods", "methods", methods)
+	slog.Debug("common:grpc_interceptor:SkipMethods", "methods", methods)
 	for _, method := range methods {
 		i.skipMethods[method] = true
 	}
@@ -45,14 +45,14 @@ func (i *GRPCAuthInterceptor) SkipMethods(methods []string) {
 
 // UnaryInterceptor returns a gRPC unary server interceptor for JWT authentication
 func (i *GRPCAuthInterceptor) UnaryInterceptor() grpc.UnaryServerInterceptor {
-	slog.Info("common:grpc_interceptor:UnaryInterceptor")
+	slog.Debug("common:grpc_interceptor:UnaryInterceptor")
 	return func(
 		ctx context.Context,
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		slog.Info("common:grpc_interceptor:UnaryInterceptor", "method", info.FullMethod)
+		slog.Debug("common:grpc_interceptor:UnaryInterceptor", "method", info.FullMethod)
 		// Check if this method should skip authentication
 		if i.skipMethods[info.FullMethod] {
 			return handler(ctx, req)
@@ -79,7 +79,7 @@ func (i *GRPCAuthInterceptor) UnaryInterceptor() grpc.UnaryServerInterceptor {
 			// If auth is not required, continue without user context
 			return handler(ctx, req)
 		}
-		slog.Info("common:grpc_interceptor:UnaryInterceptor", "method", info.FullMethod, "claims", claims)
+		slog.Debug("common:grpc_interceptor:UnaryInterceptor", "method", info.FullMethod, "claims", claims)
 
 		// Add user information to context
 		ctx = AddUserToContext(ctx, claims)
@@ -90,14 +90,14 @@ func (i *GRPCAuthInterceptor) UnaryInterceptor() grpc.UnaryServerInterceptor {
 
 // StreamInterceptor returns a gRPC stream server interceptor for JWT authentication
 func (i *GRPCAuthInterceptor) StreamInterceptor() grpc.StreamServerInterceptor {
-	slog.Info("common:grpc_interceptor:StreamInterceptor")
+	slog.Debug("common:grpc_interceptor:StreamInterceptor")
 	return func(
 		srv interface{},
 		ss grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-		slog.Info("common:grpc_interceptor:StreamInterceptor", "method", info.FullMethod)
+		slog.Debug("common:grpc_interceptor:StreamInterceptor", "method", info.FullMethod)
 		// Check if this method should skip authentication
 		if i.skipMethods[info.FullMethod] {
 			return handler(srv, ss)
@@ -127,7 +127,7 @@ func (i *GRPCAuthInterceptor) StreamInterceptor() grpc.StreamServerInterceptor {
 
 		// Create a new context with user information
 		ctx := AddUserToContext(ss.Context(), claims)
-		slog.Info("common:grpc_interceptor:StreamInterceptor", "method", info.FullMethod, "claims", claims)
+		slog.Debug("common:grpc_interceptor:StreamInterceptor", "method", info.FullMethod, "claims", claims)
 
 		// Create a wrapped stream with the new context
 		wrappedStream := &contextServerStream{
@@ -141,7 +141,7 @@ func (i *GRPCAuthInterceptor) StreamInterceptor() grpc.StreamServerInterceptor {
 
 // extractTokenFromMetadata extracts JWT token from gRPC metadata
 func (i *GRPCAuthInterceptor) extractTokenFromMetadata(ctx context.Context) (string, error) {
-	slog.Info("common:grpc_interceptor:extractTokenFromMetadata")
+	slog.Debug("common:grpc_interceptor:extractTokenFromMetadata")
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		slog.Error("common:grpc_interceptor:extractTokenFromMetadata", "error", "no metadata found")
@@ -188,14 +188,14 @@ func (s *contextServerStream) Context() context.Context {
 
 // RequireRole creates a gRPC interceptor that requires specific roles
 func RequireRole(roles ...string) grpc.UnaryServerInterceptor {
-	slog.Info("common:grpc_interceptor:RequireRole", "roles", roles)
+	slog.Debug("common:grpc_interceptor:RequireRole", "roles", roles)
 	return func(
 		ctx context.Context,
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		slog.Info("common:grpc_interceptor:RequireRole", "method", info.FullMethod)
+		slog.Debug("common:grpc_interceptor:RequireRole", "method", info.FullMethod)
 		userRoles, ok := GetUserRolesFromContext(ctx)
 		if !ok {
 			slog.Error("common:grpc_interceptor:RequireRole", "method", info.FullMethod, "error", "user not authenticated")

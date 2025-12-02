@@ -40,6 +40,7 @@ type InMemoryQueue struct {
 
 // NewInMemoryQueue creates a new in-memory queue
 func NewInMemoryQueue() *InMemoryQueue {
+	slog.Debug("queue:NewInMemoryQueue")
 	return &InMemoryQueue{
 		subscribers: make(map[string][]chan Message),
 	}
@@ -47,7 +48,7 @@ func NewInMemoryQueue() *InMemoryQueue {
 
 // Publish sends a message to all subscribers of the subject
 func (q *InMemoryQueue) Publish(ctx context.Context, subject string, data []byte) error {
-	slog.Info("queue:Publish", "subject", subject)
+	slog.Debug("queue:Publish", "subject", subject)
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -80,6 +81,7 @@ func (q *InMemoryQueue) Publish(ctx context.Context, subject string, data []byte
 		}
 	}
 
+	slog.Info("queue:Publish", "message published", msg)
 	return nil
 }
 

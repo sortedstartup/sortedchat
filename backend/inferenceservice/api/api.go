@@ -19,17 +19,18 @@ type InferenceServiceAPI struct {
 var SQLITE_DB_URL = "db.sqlite"
 
 func NewInferenceServiceAPI(daoFactory dao.DAOFactory) *InferenceServiceAPI {
-	slog.Info("inferenceservice:api:NewInferenceServiceAPI")
+	slog.Debug("inferenceservice:api:NewInferenceServiceAPI")
 
 	s := &InferenceServiceAPI{
 		service: service.NewInferenceService(daoFactory),
 	}
 
+	slog.Info("InferenceServiceAPI initialized")
 	return s
 }
 
 func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.DownloadModelRequest) (*pb.DownloadModelResponse, error) {
-	slog.Info("inferenceservice:api:DownloadModel")
+	slog.Debug("inferenceservice:api:DownloadModel")
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("inferenceservice:api:DownloadModel", "error", err)
@@ -41,15 +42,16 @@ func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.Downloa
 		return nil, fmt.Errorf("failed to download model")
 	}
 
+	slog.Info("inferenceservice:api:DownloadModel", "message", "Download started successfully")
 	return &pb.DownloadModelResponse{
 		Message: "Download started successfully",
 	}, nil
 }
 
 func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream pb.InferenceService_GetLLMModelsServer) error {
-	slog.Info("inferenceservice:api:GetLLMModels")
+	slog.Info("inferenceservice:api:GetLLMModels", "message", "Getting LLM models")
 	return s.service.GetLLMModels(stream.Context(), func(models []*dao.ModelMetadata) error {
-		slog.Info("inferenceservice:api:GetLLMModels", "message", "Getting LLM models")
+		slog.Info("inferenceservice:api:GetLLMModels", "message", "Getting LLM models", "models", models)
 		// Convert DAO models to protobuf models
 		pbModels := make([]*pb.Model, len(models))
 		for i, model := range models {
@@ -107,7 +109,7 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 }
 
 func (s *InferenceServiceAPI) CancelDownload(ctx context.Context, req *pb.CancelDownloadRequest) (*pb.CancelDownloadResponse, error) {
-	slog.Info("inferenceservice:api:CancelDownload")
+	slog.Info("inferenceservice:api:CancelDownload", "modelName", req.GetModelName())
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("inferenceservice:api:CancelDownload", "message", "failed to get user ID", "error", err)
@@ -119,13 +121,14 @@ func (s *InferenceServiceAPI) CancelDownload(ctx context.Context, req *pb.Cancel
 		return nil, fmt.Errorf("failed to cancel download")
 	}
 
+	slog.Info("inferenceservice:api:CancelDownload", "message", "Download cancelled successfully")
 	return &pb.CancelDownloadResponse{
 		Message: "Download cancelled successfully",
 	}, nil
 }
 
 func (s *InferenceServiceAPI) DeleteModel(ctx context.Context, req *pb.DeleteModelRequest) (*pb.DeleteModelResponse, error) {
-	slog.Info("inferenceservice:api:DeleteModel")
+	slog.Info("inferenceservice:api:DeleteModel", "modelName", req.GetModelName())
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("inferenceservice:api:DeleteModel", "message", "failed to get user ID", "error", err)
@@ -137,13 +140,14 @@ func (s *InferenceServiceAPI) DeleteModel(ctx context.Context, req *pb.DeleteMod
 		return nil, fmt.Errorf("failed to delete model")
 	}
 
+	slog.Info("inferenceservice:api:DeleteModel", "message", "Model deleted successfully")
 	return &pb.DeleteModelResponse{
 		Message: "Model deleted successfully",
 	}, nil
 }
 
 func (s *InferenceServiceAPI) Init(config *dao.Config) {
-	slog.Info("inferenceservice:api:Init")
+	slog.Debug("inferenceservice:api:Init")
 	switch config.Database.Type {
 	case dao.DatabaseTypeSQLite:
 		slog.Info("InferenceService: Running SQLite migrations")

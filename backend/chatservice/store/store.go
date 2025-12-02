@@ -93,7 +93,7 @@ func (d *DiskObjectStore) GetObject(ctx context.Context, objectID string) (strin
 }
 
 func (d *DiskObjectStore) DeleteObject(ctx context.Context, objectID string) error {
-	slog.Info("store:DeleteObject", "objectID", objectID)
+	slog.Info("store:DeleteObject", "message", "Deleting object", "objectID", objectID)
 	objectPath := filepath.Join(d.basePath, "objects", objectID)
 	return os.Remove(objectPath)
 }

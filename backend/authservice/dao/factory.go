@@ -26,6 +26,7 @@ type PostgresDAOFactory struct {
 
 // NewDAOFactory creates the appropriate DAO factory based on configuration
 func NewDAOFactory(config *Config) (DAOFactory, error) {
+	slog.Debug("authservice:dao:NewDAOFactory")
 	if config == nil {
 		return nil, fmt.Errorf("config cannot be nil")
 	}
@@ -58,7 +59,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 			return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 		}
 
-		slog.Info("PostgreSQL connection pool created successfully",
+		slog.Info("PostgreSQL connection pool created successfully for authservice",
 			"host", config.Database.Postgres.Host,
 			"port", config.Database.Postgres.Port,
 			"database", config.Database.Postgres.Database,

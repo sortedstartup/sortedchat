@@ -52,9 +52,9 @@ func (m *HTTPAuthMiddleware) SkipPrefixes(prefixes []string) {
 
 // Middleware returns an HTTP middleware function for JWT authentication
 func (m *HTTPAuthMiddleware) Middleware(next http.Handler) http.Handler {
-	slog.Info("common:http_middleware:Middleware")
+	slog.Debug("common:http_middleware:Middleware")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("common:http_middleware:Middleware", "path", r.URL.Path)
+		slog.Debug("common:http_middleware:Middleware", "path", r.URL.Path)
 		// Check if this path should skip authentication
 		if m.shouldSkipAuth(r.URL.Path) {
 			next.ServeHTTP(w, r)
@@ -86,7 +86,7 @@ func (m *HTTPAuthMiddleware) Middleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		slog.Info("common:http_middleware:Middleware", "path", r.URL.Path, "claims", claims)
+		slog.Debug("common:http_middleware:Middleware", "path", r.URL.Path, "claims", claims)
 		// Add user information to request context
 		ctx := AddUserToContext(r.Context(), claims)
 		r = r.WithContext(ctx)
@@ -97,16 +97,16 @@ func (m *HTTPAuthMiddleware) Middleware(next http.Handler) http.Handler {
 
 // MiddlewareFunc returns an HTTP middleware function (alternative signature)
 func (m *HTTPAuthMiddleware) MiddlewareFunc(next http.HandlerFunc) http.HandlerFunc {
-	slog.Info("common:http_middleware:MiddlewareFunc")
+	slog.Debug("common:http_middleware:MiddlewareFunc")
 	return func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("common:http_middleware:MiddlewareFunc", "path", r.URL.Path)
+		slog.Debug("common:http_middleware:MiddlewareFunc", "path", r.URL.Path)
 		m.Middleware(next).ServeHTTP(w, r)
 	}
 }
 
 // shouldSkipAuth checks if authentication should be skipped for the given path
 func (m *HTTPAuthMiddleware) shouldSkipAuth(path string) bool {
-	slog.Info("common:http_middleware:shouldSkipAuth", "path", path)
+	slog.Debug("common:http_middleware:shouldSkipAuth", "path", path)
 	// Check exact path matches
 	if m.skipPaths[path] {
 		return true
@@ -124,14 +124,14 @@ func (m *HTTPAuthMiddleware) shouldSkipAuth(path string) bool {
 
 // extractTokenFromRequest extracts JWT token from HTTP request
 func (m *HTTPAuthMiddleware) extractTokenFromRequest(r *http.Request) (string, error) {
-	slog.Info("common:http_middleware:extractTokenFromRequest")
+	slog.Debug("common:http_middleware:extractTokenFromRequest")
 	// Try Authorization header first
 	authHeader := r.Header.Get("Authorization")
 	if authHeader != "" {
 		if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
 			return strings.TrimPrefix(authHeader, "Bearer "), nil
 		}
-		slog.Info("common:http_middleware:extractTokenFromRequest", "authHeader", authHeader)
+		slog.Debug("common:http_middleware:extractTokenFromRequest", "authHeader", authHeader)
 		return authHeader, nil
 	}
 
@@ -165,10 +165,10 @@ func (m *HTTPAuthMiddleware) extractTokenFromRequest(r *http.Request) (string, e
 
 // RequireRoleMiddleware creates HTTP middleware that requires specific roles
 func RequireRoleMiddleware(roles ...string) func(http.Handler) http.Handler {
-	slog.Info("common:http_middleware:RequireRoleMiddleware", "roles", roles)
+	slog.Debug("common:http_middleware:RequireRoleMiddleware", "roles", roles)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			slog.Info("common:http_middleware:RequireRoleMiddleware", "path", r.URL.Path)
+			slog.Debug("common:http_middleware:RequireRoleMiddleware", "path", r.URL.Path)
 			userRoles, ok := GetUserRolesFromContext(r.Context())
 			if !ok {
 				slog.Error("common:http_middleware:RequireRoleMiddleware", "path", r.URL.Path, "error", "user not authenticated")
@@ -203,10 +203,10 @@ func RequireRoleMiddleware(roles ...string) func(http.Handler) http.Handler {
 
 // RequireRoleFunc creates HTTP middleware function that requires specific roles
 func RequireRoleFunc(roles ...string) func(http.HandlerFunc) http.HandlerFunc {
-	slog.Info("common:http_middleware:RequireRoleFunc", "roles", roles)
+	slog.Debug("common:http_middleware:RequireRoleFunc", "roles", roles)
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			slog.Info("common:http_middleware:RequireRoleFunc", "path", r.URL.Path)
+			slog.Debug("common:http_middleware:RequireRoleFunc", "path", r.URL.Path)
 			userRoles, ok := GetUserRolesFromContext(r.Context())
 			if !ok {
 				slog.Error("common:http_middleware:RequireRoleFunc", "path", r.URL.Path, "error", "user not authenticated")

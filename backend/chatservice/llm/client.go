@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/types"
@@ -23,7 +24,7 @@ type Client struct {
 func NewClient(settingsManager *settings.SettingsManager) *Client {
 	return &Client{
 		settingsManager: settingsManager,
-		httpClient:      &http.Client{},
+		httpClient:      &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
@@ -40,13 +41,13 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest) (*ht
 	model := req.Model
 
 	if strings.HasPrefix(model, "gemini") {
-		url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+		url = c.settingsManager.GetSettings().GeminiAPIUrl
 		apiKey = c.settingsManager.GetSettings().GeminiAPIKey
 	} else if strings.HasPrefix(model, "claude") {
-		url = "https://api.anthropic.com/v1/chat/completions"
+		url = c.settingsManager.GetSettings().ClaudeAPIUrl
 		apiKey = c.settingsManager.GetSettings().ClaudeAPIKey
 	} else {
-		url = "https://api.openai.com/v1/chat/completions"
+		url = c.settingsManager.GetSettings().OpenaiAPIUrl
 		apiKey = c.settingsManager.GetSettings().OpenAIAPIKey
 	}
 

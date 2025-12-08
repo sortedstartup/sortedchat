@@ -22,6 +22,9 @@ type Settings struct {
 	OpenAIAPIKey string `koanf:"openai_api_key" json:"openai_api_key"`
 	GeminiAPIKey string `koanf:"gemini_api_key" json:"gemini_api_key"`
 	ClaudeAPIKey string `koanf:"claude_api_key" json:"claude_api_key"`
+	ClaudeAPIUrl string `koanf:"claude_api_url" json:"claude_api_url"`
+	GeminiAPIUrl string `koanf:"gemini_api_url" json:"gemini_api_url"`
+	OpenaiAPIUrl string `koanf:"openai_api_url" json:"openai_api_url"`
 	OllamaURL    string `koanf:"ollama_url" json:"ollama_url"`
 }
 
@@ -29,6 +32,9 @@ var DefaultSettings = &Settings{
 	OpenAIAPIKey: "",
 	GeminiAPIKey: "",
 	ClaudeAPIKey: "",
+	ClaudeAPIUrl: "",
+	GeminiAPIUrl: "",
+	OpenaiAPIUrl: "",
 	OllamaURL:    "",
 }
 
@@ -37,6 +43,9 @@ func (s *Settings) ToProto() *proto.Settings {
 		OPENAI_API_KEY: s.OpenAIAPIKey,
 		GEMINI_API_KEY: s.GeminiAPIKey,
 		CLAUDE_API_KEY: s.ClaudeAPIKey,
+		CLAUDE_API_URL: s.ClaudeAPIUrl,
+		GEMINI_API_URL: s.GeminiAPIUrl,
+		OPENAI_API_URL: s.OpenaiAPIUrl,
 		OLLAMA_URL:     s.OllamaURL,
 	}
 }
@@ -46,6 +55,9 @@ func FromProto(protoSettings *proto.Settings) *Settings {
 		OpenAIAPIKey: protoSettings.OPENAI_API_KEY,
 		GeminiAPIKey: protoSettings.GEMINI_API_KEY,
 		ClaudeAPIKey: protoSettings.CLAUDE_API_KEY,
+		ClaudeAPIUrl: protoSettings.CLAUDE_API_URL,
+		GeminiAPIUrl: protoSettings.GEMINI_API_URL,
+		OpenaiAPIUrl: protoSettings.OPENAI_API_URL,
 		OllamaURL:    protoSettings.OLLAMA_URL,
 	}
 }
@@ -96,6 +108,9 @@ func (cm *SettingsManager) LoadSettingsFromProto(protoSettings *proto.Settings) 
 		OpenAIAPIKey: protoSettings.OPENAI_API_KEY,
 		GeminiAPIKey: protoSettings.GEMINI_API_KEY,
 		ClaudeAPIKey: protoSettings.CLAUDE_API_KEY,
+		ClaudeAPIUrl: protoSettings.CLAUDE_API_URL,
+		GeminiAPIUrl: protoSettings.GEMINI_API_URL,
+		OpenaiAPIUrl: protoSettings.OPENAI_API_URL,
 		OllamaURL:    protoSettings.OLLAMA_URL,
 	}
 

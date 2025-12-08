@@ -40,11 +40,17 @@ export const $onboardingData = atom<{
   OPENAI_API_KEY: string;
   CLAUDE_API_KEY: string;
   GEMINI_API_KEY: string;
+  CLAUDE_API_URL: string;
+  OPENAI_API_URL: string;
+  GEMINI_API_URL: string;
   OLLAMA_URL: string;
 }>({
   OPENAI_API_KEY: "",
   GEMINI_API_KEY: "",
   CLAUDE_API_KEY: "",
+  CLAUDE_API_URL: "https://api.anthropic.com/v1/chat/completions",
+  OPENAI_API_URL: "https://api.openai.com/v1/chat/completions",
+  GEMINI_API_URL: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
   OLLAMA_URL: "http://localhost:11434/v1/embeddings",
 });
 
@@ -81,6 +87,21 @@ export const onboardingActions = {
   setClaudeApiKey: (key: string) => {
     const data = $onboardingData.get();
     $onboardingData.set({ ...data, CLAUDE_API_KEY: key });
+  },
+
+  setClaudeApiUrl: (url: string) => {
+    const data = $onboardingData.get();
+    $onboardingData.set({ ...data, CLAUDE_API_URL: url });
+  },
+
+  setOpenaiApiUrl: (url: string) => {
+    const data = $onboardingData.get();
+    $onboardingData.set({ ...data, OPENAI_API_URL: url });
+  },
+
+  setGeminiApiUrl: (url: string) => {
+    const data = $onboardingData.get();
+    $onboardingData.set({ ...data, GEMINI_API_URL: url });
   },
 
   setOllamaUrl: (url: string) => {

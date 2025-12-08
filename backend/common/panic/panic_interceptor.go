@@ -3,7 +3,7 @@ package panic
 import (
 	"context"
 	"log/slog"
-	"runtime"
+	"runtime/debug"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -35,12 +35,9 @@ func StreamInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func panicRecoveryHandler(p interface{}, info string) error {
-	stack := make([]byte, 4096)
-	length := runtime.Stack(stack, false)
-	slog.Error("panic recovered in stream RPC",
+func panicRecoveryHandler(p interface{}, info string) {
+	slog.Error("panic recovered in gRPC handler",
 		"method", info,
 		"panic", p,
-		"stack", string(stack[:length]))
-	return status.Errorf(codes.Internal, "internal server error")
+		"stack", string(debug.Stack()))
 }

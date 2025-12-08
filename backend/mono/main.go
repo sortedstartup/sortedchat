@@ -161,8 +161,8 @@ func main() {
 	// this does not work when services are on multiple server.
 	// at that time we need to make a deision : either pass api level authentication (jwt) to the other service or use mtls or some other microservice communication auth
 	internalGrpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(panicInterceptor.UnaryInterceptor()),
-		grpc.StreamInterceptor(panicInterceptor.StreamInterceptor()),
+		grpc.ChainUnaryInterceptor(panicInterceptor.UnaryInterceptor()),
+		grpc.ChainStreamInterceptor(panicInterceptor.StreamInterceptor()),
 	)
 
 	// Create HTTP auth middleware

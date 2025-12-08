@@ -22,22 +22,23 @@ type SettingServiceAPI struct {
 }
 
 func NewSettingService(queue queue.Queue, daoFactory db.DAOFactory) *SettingServiceAPI {
-	slog.Info("api:NewSettingService")
+	slog.Debug("api:NewSettingService")
 	settingService := service.NewSettingService(queue, daoFactory)
 	if settingService == nil {
 		slog.Error("api:NewSettingService", "error", "failed to create setting service")
 		return nil
 	}
+	slog.Info("SettingServiceAPI initialized")
 	return &SettingServiceAPI{service: settingService}
 }
 
 func (s *SettingServiceAPI) Init() {
-	slog.Info("api:Init", "settingService", s.service)
+	slog.Debug("api:Init", "settingService", s.service)
 	s.service.Init()
 }
 
 func (s *SettingServiceAPI) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
-	slog.Info("api:GetSetting", "settingService", s.service)
+	slog.Debug("api:GetSetting", "settingService", s.service)
 	settings, err := s.service.GetSetting(ctx)
 	if err != nil {
 		slog.Error("api:GetSetting", "failed to get settings", "error", err)
@@ -62,7 +63,7 @@ func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRe
 }
 
 func (s *SettingServiceAPI) IsFirstBoot(ctx context.Context, req *pb.IsFirstBootRequest) (*pb.IsFirstBootResponse, error) {
-	slog.Info("api:IsFirstBoot")
+	slog.Debug("api:IsFirstBoot")
 	isFirstBoot, err := s.service.IsFirstBoot()
 	if err != nil {
 		slog.Error("api:IsFirstBoot", "message", "failed to check first boot", "error", err)
@@ -75,7 +76,7 @@ func (s *SettingServiceAPI) IsFirstBoot(ctx context.Context, req *pb.IsFirstBoot
 }
 
 func (s *SettingServiceAPI) TestConnection(ctx context.Context, req *pb.TestConnectionRequest) (*pb.TestConnectionResponse, error) {
-	slog.Info("api:TestConnection", "url", req.Url, "type", req.ConnectionType)
+	slog.Debug("api:TestConnection", "url", req.Url, "type", req.ConnectionType)
 
 	response, err := s.service.TestConnection(ctx, req)
 	if err != nil {
@@ -92,7 +93,7 @@ type ChatServiceAPI struct {
 }
 
 func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory db.DAOFactory) *ChatServiceAPI {
-	slog.Info("api:NewChatService")
+	slog.Debug("api:NewChatService")
 	settingsManager.LoadSettingsFromDB()
 
 	chatService, err := service.NewChatService(queue, settingsManager, daoFactory)
@@ -107,7 +108,6 @@ func NewChatService(mux *http.ServeMux, queue queue.Queue, settingsManager *sett
 
 	s.registerRoutes(mux)
 	chatService.EmbeddingSubscriber()
-
 	return s
 }
 
@@ -123,7 +123,6 @@ func (s *ChatServiceAPI) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingSe
 }
 
 func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateChatNameRequest) (*pb.GenerateChatNameResponse, error) {
-	slog.Info("api:GenerateChatName", "request", req)
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("api:GenerateChatName", "message", "failed to get user ID from context", "error", err)
@@ -135,13 +134,13 @@ func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateC
 		return nil, fmt.Errorf("failed to generate chat name")
 	}
 
+	slog.Info("api:GenerateChatName", "chatName generated successfully", chatName)
 	return &pb.GenerateChatNameResponse{
 		ChatName: chatName,
 	}, nil
 }
 
 func (s *ChatServiceAPI) GetHistory(ctx context.Context, req *pb.GetHistoryRequest) (*pb.GetHistoryResponse, error) {
-	slog.Info("api:GetHistory", "request", req)
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("api:GetHistory", "message", "failed to get user ID from context", "error", err)

@@ -70,7 +70,7 @@ func newBufDialer(lis *bufconn.Listener) func(context.Context, string) (net.Conn
 func main() {
 	ctx := context.Background()
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
 
 	// Parse command line flags

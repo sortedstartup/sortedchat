@@ -72,6 +72,7 @@ type SettingsManager struct {
 }
 
 func NewSettingsManager(queue queue.Queue, daoFactory dao.DAOFactory) *SettingsManager {
+	slog.Debug("settings:NewSettingsManager")
 	settingsDAO, err := daoFactory.CreateSettingsDAO()
 	if err != nil {
 		log.Fatalf("Failed to create settings DAO: %v", err)
@@ -84,6 +85,7 @@ func NewSettingsManager(queue queue.Queue, daoFactory dao.DAOFactory) *SettingsM
 	}
 
 	cm.StartSettingsChangedSubscriber()
+	slog.Info("settings:NewSettingsManager", "settingsManager", cm)
 	return cm
 }
 

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 )
 
 type RealtimeService struct {
@@ -80,7 +80,7 @@ func (s *RealtimeService) Offer(offer string, provider string, model string, use
 	browserToBackendPC, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		slog.Error("RealtimeService: Offer", "message", "error creating browser to backend PC", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 
 	aiBackendTrack, err := webrtc.NewTrackLocalStaticRTP(
@@ -89,11 +89,11 @@ func (s *RealtimeService) Offer(offer string, provider string, model string, use
 	)
 	if err != nil {
 		slog.Error("RealtimeService: Offer", "message", "error creating AI to backend track", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 	if _, err := browserToBackendPC.AddTrack(aiBackendTrack); err != nil {
 		slog.Error("RealtimeService: Offer", "message", "error adding AI to backend track", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 
 	// Check for existing connection and cleanup if needed
@@ -172,17 +172,17 @@ func (s *RealtimeService) Offer(offer string, provider string, model string, use
 		SDP:  offer,
 	}); err != nil {
 		slog.Error("error setting browserToBackendPC.remote description", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 
 	answerForBrowser, err := browserToBackendPC.CreateAnswer(nil)
 	if err != nil {
 		slog.Error("error creating browserToBackendPC.answer", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 	if err := browserToBackendPC.SetLocalDescription(answerForBrowser); err != nil {
 		slog.Error("error setting browserToBackendPC.local description", "userID", userID, "error", err)
-		return "", err
+		return "", fmt.Errorf("failed to connect")
 	}
 
 	if provider == "gemini" {
@@ -204,7 +204,8 @@ func (s *RealtimeService) connectToGemini(userID string, model string) error {
 		return fmt.Errorf("user connection not found")
 	}
 
-	geminiRealtime, err := NewGeminiRealtime(userID, userConn.aiBackendTrack, userConn.dataChannelManager)
+	// Create Gemini realtime instance
+	geminiRealtime, err := NewGeminiRealtime(userID, userConn.aiBackendTrack, userConn.dataChannelManager, s)
 	if err != nil {
 		slog.Error("Failed to create Gemini realtime instance", "userID", userID, "error", err)
 		return err
@@ -247,7 +248,7 @@ func (s *RealtimeService) connectToOpenai(userID string, model string) error {
 		return fmt.Errorf("user connection not found")
 	}
 
-	openaiRealtime, err := NewOpenAIRealtime(userID, userConn.aiBackendTrack, userConn.dataChannelManager)
+	openaiRealtime, err := NewOpenAIRealtime(userID, userConn.aiBackendTrack, userConn.dataChannelManager, s)
 	if err != nil {
 		slog.Error("Failed to create OpenAI realtime instance", "userID", userID, "error", err)
 		return err
@@ -287,6 +288,12 @@ func (s *RealtimeService) Cleanup(userID string) error {
 		userConnectionsMutex.Unlock()
 		slog.Error("User connection not found for cleanup", "userID", userID)
 		return nil
+	}
+
+	//send closing message to browser using data channel
+	if userConn.dataChannelManager != nil {
+		slog.Info("Sending Connection_closed message to browser", "userID", userID)
+		userConn.dataChannelManager.sendMessageWithData("Connection_closed", "", nil)
 	}
 	delete(userConnections, userID)
 	userConnectionsMutex.Unlock()

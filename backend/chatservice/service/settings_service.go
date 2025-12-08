@@ -25,7 +25,7 @@ type SettingService struct {
 }
 
 func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingService {
-	slog.Info("settings_service:NewSettingService")
+	slog.Debug("settings_service:NewSettingService")
 	settingsDAO, err := daoFactory.CreateSettingsDAO()
 	if err != nil {
 		slog.Error("settings_service:NewSettingService, failed to create settings DAO", "error", err)
@@ -35,7 +35,6 @@ func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingSer
 }
 
 func (s *SettingService) Init() {
-	slog.Info("settings_service:Init", "settingService", s)
 	// since right now the Setting is in chatservice so chatservice handles migrations
 	isFirstBoot, err := s.IsFirstBoot()
 	if err != nil {
@@ -53,7 +52,6 @@ func (s *SettingService) Init() {
 }
 
 func (s *SettingService) FirstBootComplete() {
-	slog.Info("settings_service:FirstBootComplete", "settingService", s)
 	err := s.dao.SetSettingValue("is_first_boot", "1")
 	if err != nil {
 		slog.Error("settings_service:FirstBootComplete", "message", "failed to set is_first_boot setting", "error", err)
@@ -61,7 +59,6 @@ func (s *SettingService) FirstBootComplete() {
 }
 
 func (s *SettingService) GetSetting(ctx context.Context) (*pb.Settings, error) {
-	slog.Info("settings_service:GetSetting", "settingService", s)
 	settingsString, err := s.dao.GetSettingValue("settings")
 	if err != nil {
 		slog.Error("settings_service:GetSetting", "step", "failed to get settings", "error", err)
@@ -82,7 +79,6 @@ func (s *SettingService) GetSetting(ctx context.Context) (*pb.Settings, error) {
 // saveSettings is the internal implementation for saving settings
 // If completeOnboarding is true, sets is_first_boot = 1
 func (s *SettingService) saveSettings(settingsProto *pb.Settings, completeOnboarding bool) error {
-	slog.Info("settings_service:saveSettings", "settingService", s, "completeOnboarding", completeOnboarding)
 	// Load existing settings from DB to support merge behavior
 	existingSettingsStr, err := s.dao.GetSettingValue("settings")
 	if err != nil {
@@ -188,7 +184,6 @@ func (s *SettingService) IsFirstBoot() (bool, error) {
 }
 
 func (s *SettingService) TestConnection(ctx context.Context, req *pb.TestConnectionRequest) (*pb.TestConnectionResponse, error) {
-	slog.Info("settings_service:TestConnection", "url", req.Url, "type", req.ConnectionType)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	var resp *http.Response

@@ -33,10 +33,10 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 
 	switch config.Database.Type {
 	case DatabaseTypeSQLite:
-		slog.Info("Creating SQLite DAO factory", "url", config.Database.SQLite.URL)
+		slog.Debug("Creating SQLite DAO factory", "url", config.Database.SQLite.URL)
 		return &SQLiteDAOFactory{config: config}, nil
 	case DatabaseTypePostgres:
-		slog.Info("Creating PostgreSQL DAO factory",
+		slog.Debug("Creating PostgreSQL DAO factory",
 			"host", config.Database.Postgres.Host,
 			"port", config.Database.Postgres.Port,
 			"database", config.Database.Postgres.Database)
@@ -45,6 +45,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 		dsn := config.Database.Postgres.GetPostgresDSN()
 		db, err := sqlx.Open("postgres", dsn)
 		if err != nil {
+			slog.Error("Failed to open PostgreSQL connection", "error", err)
 			return nil, fmt.Errorf("failed to open PostgreSQL connection: %w", err)
 		}
 
@@ -70,6 +71,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 			db:     db,
 		}, nil
 	default:
+		slog.Error("Unsupported database type", "database_type", config.Database.Type)
 		return nil, fmt.Errorf("unsupported database type: %s", config.Database.Type)
 	}
 }

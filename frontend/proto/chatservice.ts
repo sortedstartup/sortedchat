@@ -1020,12 +1020,12 @@ export class Settings extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         OPENAI_API_KEY?: string;
-        CLAUDE_API_KEY?: string;
-        GEMINI_API_KEY?: string;
-        GEMINI_API_URL?: string;
-        CLAUDE_API_URL?: string;
         OPENAI_API_URL?: string;
+        GEMINI_API_KEY?: string;
         OLLAMA_URL?: string;
+        CLAUDE_API_URL?: string;
+        CLAUDE_API_KEY?: string;
+        GEMINI_API_URL?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -1033,23 +1033,23 @@ export class Settings extends pb_1.Message {
             if ("OPENAI_API_KEY" in data && data.OPENAI_API_KEY != undefined) {
                 this.OPENAI_API_KEY = data.OPENAI_API_KEY;
             }
-            if ("CLAUDE_API_KEY" in data && data.CLAUDE_API_KEY != undefined) {
-                this.CLAUDE_API_KEY = data.CLAUDE_API_KEY;
+            if ("OPENAI_API_URL" in data && data.OPENAI_API_URL != undefined) {
+                this.OPENAI_API_URL = data.OPENAI_API_URL;
             }
             if ("GEMINI_API_KEY" in data && data.GEMINI_API_KEY != undefined) {
                 this.GEMINI_API_KEY = data.GEMINI_API_KEY;
             }
-            if ("GEMINI_API_URL" in data && data.GEMINI_API_URL != undefined) {
-                this.GEMINI_API_URL = data.GEMINI_API_URL;
+            if ("OLLAMA_URL" in data && data.OLLAMA_URL != undefined) {
+                this.OLLAMA_URL = data.OLLAMA_URL;
             }
             if ("CLAUDE_API_URL" in data && data.CLAUDE_API_URL != undefined) {
                 this.CLAUDE_API_URL = data.CLAUDE_API_URL;
             }
-            if ("OPENAI_API_URL" in data && data.OPENAI_API_URL != undefined) {
-                this.OPENAI_API_URL = data.OPENAI_API_URL;
+            if ("CLAUDE_API_KEY" in data && data.CLAUDE_API_KEY != undefined) {
+                this.CLAUDE_API_KEY = data.CLAUDE_API_KEY;
             }
-            if ("OLLAMA_URL" in data && data.OLLAMA_URL != undefined) {
-                this.OLLAMA_URL = data.OLLAMA_URL;
+            if ("GEMINI_API_URL" in data && data.GEMINI_API_URL != undefined) {
+                this.GEMINI_API_URL = data.GEMINI_API_URL;
             }
         }
     }
@@ -1059,10 +1059,10 @@ export class Settings extends pb_1.Message {
     set OPENAI_API_KEY(value: string) {
         pb_1.Message.setField(this, 1, value);
     }
-    get CLAUDE_API_KEY() {
+    get OPENAI_API_URL() {
         return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
     }
-    set CLAUDE_API_KEY(value: string) {
+    set OPENAI_API_URL(value: string) {
         pb_1.Message.setField(this, 2, value);
     }
     get GEMINI_API_KEY() {
@@ -1071,10 +1071,10 @@ export class Settings extends pb_1.Message {
     set GEMINI_API_KEY(value: string) {
         pb_1.Message.setField(this, 3, value);
     }
-    get GEMINI_API_URL() {
+    get OLLAMA_URL() {
         return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
     }
-    set GEMINI_API_URL(value: string) {
+    set OLLAMA_URL(value: string) {
         pb_1.Message.setField(this, 4, value);
     }
     get CLAUDE_API_URL() {
@@ -1083,81 +1083,81 @@ export class Settings extends pb_1.Message {
     set CLAUDE_API_URL(value: string) {
         pb_1.Message.setField(this, 5, value);
     }
-    get OPENAI_API_URL() {
+    get CLAUDE_API_KEY() {
         return pb_1.Message.getFieldWithDefault(this, 6, "") as string;
     }
-    set OPENAI_API_URL(value: string) {
+    set CLAUDE_API_KEY(value: string) {
         pb_1.Message.setField(this, 6, value);
     }
-    get OLLAMA_URL() {
+    get GEMINI_API_URL() {
         return pb_1.Message.getFieldWithDefault(this, 7, "") as string;
     }
-    set OLLAMA_URL(value: string) {
+    set GEMINI_API_URL(value: string) {
         pb_1.Message.setField(this, 7, value);
     }
     static fromObject(data: {
         OPENAI_API_KEY?: string;
-        CLAUDE_API_KEY?: string;
-        GEMINI_API_KEY?: string;
-        GEMINI_API_URL?: string;
-        CLAUDE_API_URL?: string;
         OPENAI_API_URL?: string;
+        GEMINI_API_KEY?: string;
         OLLAMA_URL?: string;
+        CLAUDE_API_URL?: string;
+        CLAUDE_API_KEY?: string;
+        GEMINI_API_URL?: string;
     }): Settings {
         const message = new Settings({});
         if (data.OPENAI_API_KEY != null) {
             message.OPENAI_API_KEY = data.OPENAI_API_KEY;
         }
-        if (data.CLAUDE_API_KEY != null) {
-            message.CLAUDE_API_KEY = data.CLAUDE_API_KEY;
+        if (data.OPENAI_API_URL != null) {
+            message.OPENAI_API_URL = data.OPENAI_API_URL;
         }
         if (data.GEMINI_API_KEY != null) {
             message.GEMINI_API_KEY = data.GEMINI_API_KEY;
         }
-        if (data.GEMINI_API_URL != null) {
-            message.GEMINI_API_URL = data.GEMINI_API_URL;
+        if (data.OLLAMA_URL != null) {
+            message.OLLAMA_URL = data.OLLAMA_URL;
         }
         if (data.CLAUDE_API_URL != null) {
             message.CLAUDE_API_URL = data.CLAUDE_API_URL;
         }
-        if (data.OPENAI_API_URL != null) {
-            message.OPENAI_API_URL = data.OPENAI_API_URL;
+        if (data.CLAUDE_API_KEY != null) {
+            message.CLAUDE_API_KEY = data.CLAUDE_API_KEY;
         }
-        if (data.OLLAMA_URL != null) {
-            message.OLLAMA_URL = data.OLLAMA_URL;
+        if (data.GEMINI_API_URL != null) {
+            message.GEMINI_API_URL = data.GEMINI_API_URL;
         }
         return message;
     }
     toObject() {
         const data: {
             OPENAI_API_KEY?: string;
-            CLAUDE_API_KEY?: string;
-            GEMINI_API_KEY?: string;
-            GEMINI_API_URL?: string;
-            CLAUDE_API_URL?: string;
             OPENAI_API_URL?: string;
+            GEMINI_API_KEY?: string;
             OLLAMA_URL?: string;
+            CLAUDE_API_URL?: string;
+            CLAUDE_API_KEY?: string;
+            GEMINI_API_URL?: string;
         } = {};
         if (this.OPENAI_API_KEY != null) {
             data.OPENAI_API_KEY = this.OPENAI_API_KEY;
         }
-        if (this.CLAUDE_API_KEY != null) {
-            data.CLAUDE_API_KEY = this.CLAUDE_API_KEY;
+        if (this.OPENAI_API_URL != null) {
+            data.OPENAI_API_URL = this.OPENAI_API_URL;
         }
         if (this.GEMINI_API_KEY != null) {
             data.GEMINI_API_KEY = this.GEMINI_API_KEY;
         }
-        if (this.GEMINI_API_URL != null) {
-            data.GEMINI_API_URL = this.GEMINI_API_URL;
+        if (this.OLLAMA_URL != null) {
+            data.OLLAMA_URL = this.OLLAMA_URL;
         }
         if (this.CLAUDE_API_URL != null) {
             data.CLAUDE_API_URL = this.CLAUDE_API_URL;
         }
-        if (this.OPENAI_API_URL != null) {
-            data.OPENAI_API_URL = this.OPENAI_API_URL;
+        if (this.CLAUDE_API_KEY != null) {
+            data.CLAUDE_API_KEY = this.CLAUDE_API_KEY;
         }
-        if (this.OLLAMA_URL != null) {
-            data.OLLAMA_URL = this.OLLAMA_URL;
+        if (this.GEMINI_API_URL != null) {
+            data.GEMINI_API_URL = this.GEMINI_API_URL;
         }
         return data;
     }
@@ -1167,18 +1167,18 @@ export class Settings extends pb_1.Message {
         const writer = w || new pb_1.BinaryWriter();
         if (this.OPENAI_API_KEY.length)
             writer.writeString(1, this.OPENAI_API_KEY);
-        if (this.CLAUDE_API_KEY.length)
-            writer.writeString(2, this.CLAUDE_API_KEY);
+        if (this.OPENAI_API_URL.length)
+            writer.writeString(2, this.OPENAI_API_URL);
         if (this.GEMINI_API_KEY.length)
             writer.writeString(3, this.GEMINI_API_KEY);
-        if (this.GEMINI_API_URL.length)
-            writer.writeString(4, this.GEMINI_API_URL);
+        if (this.OLLAMA_URL.length)
+            writer.writeString(4, this.OLLAMA_URL);
         if (this.CLAUDE_API_URL.length)
             writer.writeString(5, this.CLAUDE_API_URL);
-        if (this.OPENAI_API_URL.length)
-            writer.writeString(6, this.OPENAI_API_URL);
-        if (this.OLLAMA_URL.length)
-            writer.writeString(7, this.OLLAMA_URL);
+        if (this.CLAUDE_API_KEY.length)
+            writer.writeString(6, this.CLAUDE_API_KEY);
+        if (this.GEMINI_API_URL.length)
+            writer.writeString(7, this.GEMINI_API_URL);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1192,22 +1192,22 @@ export class Settings extends pb_1.Message {
                     message.OPENAI_API_KEY = reader.readString();
                     break;
                 case 2:
-                    message.CLAUDE_API_KEY = reader.readString();
+                    message.OPENAI_API_URL = reader.readString();
                     break;
                 case 3:
                     message.GEMINI_API_KEY = reader.readString();
                     break;
                 case 4:
-                    message.GEMINI_API_URL = reader.readString();
+                    message.OLLAMA_URL = reader.readString();
                     break;
                 case 5:
                     message.CLAUDE_API_URL = reader.readString();
                     break;
                 case 6:
-                    message.OPENAI_API_URL = reader.readString();
+                    message.CLAUDE_API_KEY = reader.readString();
                     break;
                 case 7:
-                    message.OLLAMA_URL = reader.readString();
+                    message.GEMINI_API_URL = reader.readString();
                     break;
                 default: reader.skipField();
             }

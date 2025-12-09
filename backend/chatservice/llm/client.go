@@ -77,6 +77,9 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest) (*ht
 		url = c.settingsManager.GetSettings().OpenaiAPIUrl
 		apiKey = c.settingsManager.GetSettings().OpenAIAPIKey
 	}
+	if apiKey == "" {
+		return nil, fmt.Errorf("API key not configured for model: %s", model)
+	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {

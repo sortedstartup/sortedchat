@@ -434,12 +434,20 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		},
 	}
 
+	stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_SENDING_REQUEST_TO_LLM, Message: "Sending request to LLM"}},
+	})
+
 	resp, err := s.llmClient.Call(ctx, llmReq)
 	if err != nil {
 		slog.Error("service:Chat", "message", "LLM request failed", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("LLM request failed, please try again")
 	}
 	defer resp.Body.Close()
+
+	stream(&pb.ChatResponse{
+		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_REQUEST_SENT_TO_LLM, Message: "Request sent"}},
+	})
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -674,7 +682,7 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 		return "", fmt.Errorf("error while processing request, please try again")
 	}
 
-	httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequest("POST", s.settingsManager.GetSettings().OpenaiAPIUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		slog.Error("service:GenerateChatName", "message", "failed to create request", "error", err, "chatId", chatId, "userID", userID)
 		return "", fmt.Errorf("failed to create request, please try again")

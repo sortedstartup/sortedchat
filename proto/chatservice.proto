@@ -109,6 +109,9 @@ message Settings {
    string OPENAI_API_URL = 2;
    string GEMINI_API_KEY = 3;
    string OLLAMA_URL = 4;
+   string CLAUDE_API_URL = 5;
+   string CLAUDE_API_KEY = 6;
+   string GEMINI_API_URL = 7;
 }
 
 message GetSettingRequest {}

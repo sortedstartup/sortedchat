@@ -1,0 +1,128 @@
+package llm
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"text/template"
+	"time"
+
+	"sortedstartup/chatservice/settings"
+	"sortedstartup/chatservice/types"
+)
+
+type Client struct {
+	settingsManager *settings.SettingsManager
+	httpClient      *http.Client
+	templates       map[string]*template.Template
+}
+
+func NewClient(settingsManager *settings.SettingsManager) *Client {
+	// Parse templates once during initialization
+	funcMap := template.FuncMap{
+		"toJson": func(v interface{}) (string, error) {
+			b, err := json.Marshal(v)
+			return string(b), err
+		},
+	}
+
+	templates := make(map[string]*template.Template)
+	templateFiles := map[string]string{
+		"openai": "chatservice/llm/templates/openai.txt",
+		"gemini": "chatservice/llm/templates/gemini.txt",
+		"claude": "chatservice/llm/templates/claude.txt",
+	}
+
+	for provider, templateFile := range templateFiles {
+		tmpl, err := template.New(filepath.Base(templateFile)).Funcs(funcMap).ParseFiles(templateFile)
+		if err != nil {
+			slog.Error("llm:NewClient", "provider", provider, "error", err)
+			// Continue with other templates even if one fails
+			continue
+		}
+		templates[provider] = tmpl
+	}
+
+	return &Client{
+		settingsManager: settingsManager,
+		httpClient:      &http.Client{Timeout: 60 * time.Second},
+		templates:       templates,
+	}
+}
+
+func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest) (*http.Response, error) {
+	jsonData, err := c.generateRequestBody(req)
+	if err != nil {
+		slog.Error("llm:Call", "error", err)
+		return nil, fmt.Errorf("failed to generate request body: %v", err)
+	}
+
+	var url string
+	var apiKey string
+
+	model := req.Model
+
+	if strings.HasPrefix(model, "gemini") {
+		url = c.settingsManager.GetSettings().GeminiAPIUrl
+		apiKey = c.settingsManager.GetSettings().GeminiAPIKey
+	} else if strings.HasPrefix(model, "claude") {
+		url = c.settingsManager.GetSettings().ClaudeAPIUrl
+		apiKey = c.settingsManager.GetSettings().ClaudeAPIKey
+	} else {
+		url = c.settingsManager.GetSettings().OpenaiAPIUrl
+		apiKey = c.settingsManager.GetSettings().OpenAIAPIKey
+	}
+	if apiKey == "" {
+		return nil, fmt.Errorf("API key not configured for model: %s", model)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		slog.Error("llm:Call", "error", err)
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	return c.httpClient.Do(httpReq)
+}
+
+func (c *Client) generateRequestBody(req types.ChatCompletionRequest) ([]byte, error) {
+	// Convert ChatCompletionRequest to CustomChatRequest
+	// The structure is very similar, mainly mapping Model -> ModelName
+	customReq := types.CustomChatRequest{
+		ModelName:     req.Model,
+		Messages:      req.Messages,
+		Stream:        req.Stream,
+		StreamOptions: req.StreamOptions,
+	}
+
+	// Determine which template to use based on model prefix
+	var provider string
+	if strings.HasPrefix(req.Model, "gemini") {
+		provider = "gemini"
+	} else if strings.HasPrefix(req.Model, "claude") {
+		provider = "claude"
+	} else {
+		provider = "openai"
+	}
+
+	// Get the cached template
+	tmpl, ok := c.templates[provider]
+	if !ok {
+		return nil, fmt.Errorf("template not found for provider: %s", provider)
+	}
+
+	var bodyBuffer bytes.Buffer
+	if err := tmpl.Execute(&bodyBuffer, customReq); err != nil {
+		return nil, fmt.Errorf("failed to execute template: %v", err)
+	}
+
+	return bodyBuffer.Bytes(), nil
+}

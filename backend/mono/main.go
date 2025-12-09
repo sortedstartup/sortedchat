@@ -40,6 +40,7 @@ import (
 	authDao "sortedstartup/authservice/dao"
 	authService "sortedstartup/authservice/service"
 	auth "sortedstartup/common/auth"
+	panicInterceptor "sortedstartup/common/panic"
 
 	inferenceApi "sortedstartup/inferenceservice/api"
 	inferenceDao "sortedstartup/inferenceservice/dao"
@@ -145,15 +146,24 @@ func main() {
 	})
 
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(authInterceptor.UnaryInterceptor()),
-		grpc.StreamInterceptor(authInterceptor.StreamInterceptor()),
+		grpc.ChainUnaryInterceptor(
+			panicInterceptor.UnaryInterceptor(),
+			authInterceptor.UnaryInterceptor(),
+		),
+		grpc.ChainStreamInterceptor(
+			panicInterceptor.StreamInterceptor(),
+			authInterceptor.StreamInterceptor(),
+		),
 	)
 
 	// Internal gRPC server for in-process calls
 	// Creating a inmemory unauthentication server just for interservice communication when hosted on the SAME sever,
 	// this does not work when services are on multiple server.
 	// at that time we need to make a deision : either pass api level authentication (jwt) to the other service or use mtls or some other microservice communication auth
-	internalGrpcServer := grpc.NewServer()
+	internalGrpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(panicInterceptor.UnaryInterceptor()),
+		grpc.ChainStreamInterceptor(panicInterceptor.StreamInterceptor()),
+	)
 
 	// Create HTTP auth middleware
 	authMiddleware := auth.NewHTTPAuthMiddleware(validator, false) // requireAuth = false for flexibility

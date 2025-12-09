@@ -58,7 +58,6 @@ export function StepApi() {
 
           <div className='p-2'>
             <Label htmlFor="api-key" className='p-2'>Claude API Key (optional)</Label>
-            {/* <div className="flex gap-2"> */}
             <Input
               id="api-key"
               type="password"
@@ -100,7 +99,6 @@ export function StepApi() {
               className={validationError ? 'border-red-500' : ''}
             />
           </div>
-          {/* </div> */}
         </div>
       </div>
 

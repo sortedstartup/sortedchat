@@ -2,7 +2,6 @@ package service
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/base64"
@@ -639,12 +638,7 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 		return "", fmt.Errorf("model is required")
 	}
 
-	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
-	if apiKey == "" {
-		slog.Error("service:GenerateChatName", "message", "OpenAI API key not set", "chatId", chatId, "userID", userID)
-		return "", fmt.Errorf("OpenAI API key not set")
-	}
-
+	// Check if chat name already exists
 	name, err := s.dao.GetChatName(userID, chatId)
 	if err != nil {
 		slog.Error("service:GenerateChatName", "message", "failed to get chat name", "error", err, "chatId", chatId, "userID", userID)
@@ -656,6 +650,7 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 		return "", fmt.Errorf("Chat name already exists")
 	}
 
+	// Truncate message if too long
 	words := strings.Fields(message)
 	if len(words) > MAX_MESSAGE_LENGTH {
 		start := strings.Join(words[:START_MESSAGE_LENGTH], " ")
@@ -665,42 +660,30 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 
 	prompt := "Based on the given user message give me a most appropriate chat name of 1-5 word length: " + message
 
-	requestBody := map[string]interface{}{
-		"model": model,
-		"messages": []map[string]string{
+	// Prepare LLM request
+	llmReq := types.ChatCompletionRequest{
+		Model: model,
+		Messages: []types.Message{
 			{
-				"role":    "user",
-				"content": prompt,
+				Role:    "user",
+				Content: prompt,
 			},
 		},
-		"stream": false,
+		Stream: false,
 	}
 
-	jsonData, err := json.Marshal(requestBody)
+	// Call LLM using the client
+	resp, err := s.llmClient.Call(ctx, llmReq)
 	if err != nil {
-		slog.Error("service:GenerateChatName", "message", "failed to marshal request", "error", err, "chatId", chatId, "userID", userID)
-		return "", fmt.Errorf("error while processing request, please try again")
-	}
-
-	httpReq, err := http.NewRequest("POST", s.settingsManager.GetSettings().OpenaiAPIUrl, bytes.NewBuffer(jsonData))
-	if err != nil {
-		slog.Error("service:GenerateChatName", "message", "failed to create request", "error", err, "chatId", chatId, "userID", userID)
-		return "", fmt.Errorf("failed to create request, please try again")
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
-
-	resp, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		slog.Error("service:GenerateChatName", "message", "OpenAI request failed", "error", err, "chatId", chatId, "userID", userID)
-		return "", fmt.Errorf("OpenAI request failed, please try again")
+		slog.Error("service:GenerateChatName", "message", "LLM request failed", "error", err, "chatId", chatId, "userID", userID)
+		return "", fmt.Errorf("LLM request failed, please try again")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		slog.Error("service:GenerateChatName", "message", "OpenAI API error", "status", resp.StatusCode, "body", string(body), "chatId", chatId, "userID", userID)
-		return "", fmt.Errorf("OpenAI API error, please try again")
+		slog.Error("service:GenerateChatName", "message", "LLM API error", "status", resp.StatusCode, "body", string(body), "chatId", chatId, "userID", userID)
+		return "", fmt.Errorf("LLM API error, please try again")
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
@@ -709,7 +692,7 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 		return "", fmt.Errorf("error while processing request, please try again")
 	}
 
-	var openAIResp struct {
+	var llmResp struct {
 		Choices []struct {
 			Message struct {
 				Content string `json:"content"`
@@ -717,17 +700,17 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 		} `json:"choices"`
 	}
 
-	if err := json.Unmarshal(respBody, &openAIResp); err != nil {
-		slog.Error("service:GenerateChatName", "message", "failed to parse OpenAI response", "error", err, "chatId", chatId, "userID", userID)
+	if err := json.Unmarshal(respBody, &llmResp); err != nil {
+		slog.Error("service:GenerateChatName", "message", "failed to parse LLM response", "error", err, "chatId", chatId, "userID", userID)
 		return "", fmt.Errorf("error while processing request, please try again")
 	}
 
-	if len(openAIResp.Choices) == 0 {
-		slog.Error("service:GenerateChatName", "message", "no choices returned from OpenAI", "chatId", chatId, "userID", userID)
-		return "", fmt.Errorf("no choices returned from OpenAI, please try again")
+	if len(llmResp.Choices) == 0 {
+		slog.Error("service:GenerateChatName", "message", "no choices returned from LLM", "chatId", chatId, "userID", userID)
+		return "", fmt.Errorf("no choices returned from LLM, please try again")
 	}
 
-	chatName := openAIResp.Choices[0].Message.Content
+	chatName := llmResp.Choices[0].Message.Content
 
 	if err := s.dao.SaveChatName(userID, chatId, chatName); err != nil {
 		slog.Error("service:GenerateChatName", "message", "failed to save chat name", "error", err, "chatId", chatId, "userID", userID)

@@ -73,6 +73,10 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest) (*ht
 	} else if strings.HasPrefix(model, "claude") {
 		url = c.settingsManager.GetSettings().ClaudeAPIUrl
 		apiKey = c.settingsManager.GetSettings().ClaudeAPIKey
+	} else if strings.HasPrefix(model, "llama") {
+		//TODO: should not be hard coded
+		url = "http://localhost:8081/v1/chat/completions"
+		apiKey = "x"
 	} else {
 		url = c.settingsManager.GetSettings().OpenaiAPIUrl
 		apiKey = c.settingsManager.GetSettings().OpenAIAPIKey

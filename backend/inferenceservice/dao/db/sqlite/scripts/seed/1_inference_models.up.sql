@@ -12,4 +12,7 @@ INSERT INTO inferenceservice_models_metadata (id, name, url, provider, input_tok
    ('claude-3.7-sonnet', 'claude-3.7-sonnet', 'https://api.anthropic.com/v1/messages', 'claude', 0.01, 0.01,'',FALSE,FALSE,0,NULL),
    ('claude-4-sonnet', 'claude-4-sonnet', 'https://api.anthropic.com/v1/messages', 'claude', 0.01, 0.01,'',FALSE,FALSE,0,NULL),
    ('tinyLLama-1.1B-Chat-v1.0-GGUF', 'tinyLLama-1.1B-Chat-v1.0-GGUF','https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q8_0.gguf?download=true', 'TheBloke', 0.01, 0.01,'',FALSE,TRUE,0,NULL),
-   ('SmolLM-135M-GGUF', 'SmolLM-135M-GGUF','https://huggingface.co/QuantFactory/SmolLM-135M-GGUF/resolve/main/SmolLM-135M.Q8_0.gguf?download=true', 'QuantFactory', 0.01, 0.01,'',FALSE,TRUE,0,NULL);
+   ('SmolLM-135M-GGUF', 'SmolLM-135M-GGUF','https://huggingface.co/QuantFactory/SmolLM-135M-GGUF/resolve/main/SmolLM-135M.Q8_0.gguf?download=true', 'QuantFactory', 0.01, 0.01,'',FALSE,TRUE,0,NULL),
+   ('gemma-3-270m-it-GGUF', 'gemma-3-270m-it-GGUF','https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q8_0.gguf?download=true', 'unsloth', 0.01, 0.01,'',FALSE,TRUE,0,NULL)
+   ;
+

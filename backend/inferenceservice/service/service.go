@@ -1,16 +1,24 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
+	"sortedstartup/chatservice/queue"
 	"sortedstartup/inferenceservice/dao"
+	"sortedstartup/inferenceservice/llama"
+	"strings"
 	"sync"
 	"time"
 )
@@ -21,9 +29,11 @@ type InferenceService struct {
 	dao                dao.DAO
 	downloadingCancels map[string]context.CancelFunc
 	mu                 sync.Mutex
+	queue              queue.Queue
+	proxyAddr          string
 }
 
-func NewInferenceService(daoFactory dao.DAOFactory) *InferenceService {
+func NewInferenceService(daoFactory dao.DAOFactory, queue queue.Queue) *InferenceService {
 	slog.Info("inferenceservice:service:NewInferenceService")
 	dao, err := daoFactory.CreateDAO()
 	if err != nil {
@@ -33,7 +43,105 @@ func NewInferenceService(daoFactory dao.DAOFactory) *InferenceService {
 		dao:                dao,
 		downloadingCancels: make(map[string]context.CancelFunc),
 		mu:                 sync.Mutex{},
+		queue:              queue,
+		proxyAddr:          ":8081",
 	}
+}
+
+/*
+TODO:
+
+// 1. On initialize we have to load all downloaded models from DB and update the ModelRegistry
+
+// 2. When a model is downloaded successfully, send out a event to the queue
+s.queue.Publish(ctx, "model.downloaded", msgBytes)
+the queue should be stored in InferenceService like - 	queue queue.Queue, look at SettingsService for details
+
+// 3. this should be registered in intialize(), may be create a new function registerListeners
+// we should update the ModelRegistry with model and paths, thats it !
+s.queue.Subscribe(ctx, "model.downloaded", handler)
+
+// 4. Write code for startLLamaServerProxy based on cmd/main.go
+    this startLLamaServerProxy should be done in the Initialize function
+	in a seperate go routine
+   the server and port of this server should saved in the InferenceService struct
+*/
+
+func (s *InferenceService) startLLamaServerProxy() {
+	slog.Info("inferenceservice:service:startLLamaServerProxy", "addr", s.proxyAddr)
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// We need to read the body to extract the model, but also keep it for the proxy
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Failed to read request body", http.StatusBadRequest)
+			return
+		}
+
+		// Restore the io.ReadCloser to its original state
+		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+		// Parse model from body
+		var reqBody struct {
+			Model string `json:"model"`
+		}
+		if err := json.Unmarshal(bodyBytes, &reqBody); err != nil {
+			// If we can't parse JSON, maybe it's not a chat completion request or similar.
+			// But for this specific requirement, we expect "model" in request.
+			// Let's proceed with caution or return error.
+			// Given the prompt implies routing based on this, we should probably error if missing.
+			http.Error(w, "Invalid JSON or missing 'model' field", http.StatusBadRequest)
+			return
+		}
+
+		if reqBody.Model == "" {
+			http.Error(w, "Model field is required", http.StatusBadRequest)
+			return
+		}
+
+		//TODO: remove llama- prefix
+		reqBody.Model = strings.TrimPrefix(reqBody.Model, "llama-")
+		// Get or start server for the model
+		socketPath, err := llama.GetOrStartServer(reqBody.Model)
+		if err != nil {
+			slog.Error("Error getting server for model", "model", reqBody.Model, "error", err)
+			http.Error(w, fmt.Sprintf("Failed to load model: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Proxy the request to the unix socket
+		s.proxyToSocket(w, r, socketPath)
+	})
+
+	slog.Info("Starting proxy server", "addr", s.proxyAddr)
+	if err := http.ListenAndServe(s.proxyAddr, nil); err != nil {
+		slog.Error("Server failed", "error", err)
+	}
+}
+
+func (s *InferenceService) proxyToSocket(w http.ResponseWriter, r *http.Request, socketPath string) {
+	// Define the dialer for Unix socket
+	dialer := func(network, addr string) (net.Conn, error) {
+		return net.Dial("unix", socketPath)
+	}
+
+	// Create a reverse proxy
+	// The target URL doesn't matter much for Unix sockets, but we need a valid URL struct
+	targetUrl, _ := url.Parse("http://unix")
+
+	proxy := httputil.NewSingleHostReverseProxy(targetUrl)
+
+	// Override the transport to use our Unix socket dialer
+	proxy.Transport = &http.Transport{
+		Dial: dialer,
+	}
+
+	// Update the request URL scheme and host to match what the transport expects (though transport ignores host for unix)
+	r.URL.Scheme = "http"
+	r.URL.Host = "unix"
+
+	// Serve
+	proxy.ServeHTTP(w, r)
 }
 
 // Initialize run on startup to reset models that were left in a pending state
@@ -44,6 +152,32 @@ func (s *InferenceService) Initialize() error {
 		slog.Error("inferenceservice:service:Initialize", "message", "failed to get all models", "error", err)
 		return fmt.Errorf("failed to get all models: %w", err)
 	}
+
+	// 1. On initialize we have to load all downloaded models from DB and update the ModelRegistry
+	for _, model := range models {
+		if model.IsDownloaded && model.FileStoreID != nil {
+			// Update ModelRegistry (assuming llama package has a way to register or we just rely on it checking disk)
+			// The llama package currently has a hardcoded registry, but also checks disk.
+			// We might need to update the llama package to allow dynamic registration if the hardcoded map isn't enough.
+			// For now, based on the prompt "we should update the ModelRegistry with model and paths",
+			// I'll assume we can directly modify the map or add a function.
+			// Since ModelRegistry is a public map in llama package:
+			absPath, err := getModelAbsolutePath(model.Name)
+			if err != nil {
+				slog.Error("Failed to get model absolute path", "model", model.Name, "error", err)
+				continue
+			}
+			llama.ModelRegistry[model.Name] = absPath
+		}
+	}
+
+	// 3. Register listeners
+	go s.registerListeners()
+
+	// 4. Start Proxy
+	go s.startLLamaServerProxy()
+
+	// 5. Reset models that were left in a pending state
 	for _, model := range models {
 		if model.Status == dao.StatusDownloading {
 			err := s.dao.UpdateModelProgress(model.ID, &dao.DownloadProgress{
@@ -62,6 +196,31 @@ func (s *InferenceService) Initialize() error {
 		}
 	}
 	return nil
+}
+
+func (s *InferenceService) registerListeners() {
+	ctx := context.Background()
+	ch, err := s.queue.Subscribe(ctx, "model.downloaded")
+	if err != nil {
+		slog.Error("Failed to subscribe to model.downloaded", "error", err)
+		return
+	}
+
+	for msg := range ch {
+		slog.Info("Received model.downloaded event", "data", string(msg.Data))
+		// we should update the ModelRegistry with model and paths
+		var eventData struct {
+			ModelName string `json:"modelName"`
+			FilePath  string `json:"filePath"`
+		}
+		if err := json.Unmarshal(msg.Data, &eventData); err != nil {
+			slog.Error("Failed to unmarshal event data", "error", err)
+			continue
+		}
+
+		llama.ModelRegistry[eventData.ModelName] = eventData.FilePath
+		slog.Info("Updated ModelRegistry", "model", eventData.ModelName, "path", eventData.FilePath)
+	}
 }
 
 func (s *InferenceService) DownloadModel(ctx context.Context, userID string, modelName string) error {
@@ -164,14 +323,10 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 		fileSize = 0 // Unknown file size
 	}
 
-	modelDir := filepath.Join("filestore", "models")
-	if err := os.MkdirAll(modelDir, 0755); err != nil {
-		slog.Error("inferenceservice:service:downloadModelFromURL", "message", "failed to create model directory", "modelName", modelName, "error", err)
-		return fmt.Errorf("failed to create model directory")
+	filePath, err := getModelAbsolutePath(modelName)
+	if err != nil {
+		return err
 	}
-
-	filename := fmt.Sprintf("%s.model", modelName)
-	filePath := filepath.Join(modelDir, filename)
 
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -222,6 +377,20 @@ func (s *InferenceService) downloadModelFromURL(ctx context.Context, modelID str
 	}
 	s.dao.UpdateModelProgress(modelID, completedProgress)
 	slog.Info("inferenceservice:service:downloadModelFromURL", "message", "Updated model progress to completed", "modelID", modelID, "modelName", modelName, "url", url)
+
+	// 2. When a model is downloaded successfully, send out a event to the queue
+	eventData := struct {
+		ModelName string `json:"modelName"`
+		FilePath  string `json:"filePath"`
+	}{
+		ModelName: modelName,
+		FilePath:  filePath,
+	}
+	msgBytes, _ := json.Marshal(eventData)
+	if err := s.queue.Publish(ctx, "model.downloaded", msgBytes); err != nil {
+		slog.Error("Failed to publish model.downloaded event", "error", err)
+	}
+
 	return nil
 }
 
@@ -458,4 +627,15 @@ func (s *InferenceService) deleteFilestoreObject(filePath string) error {
 
 	slog.Info("inferenceservice:service:deleteFilestoreObject", "message", "Successfully deleted filestore object", "filePath", filePath)
 	return nil
+}
+
+func getModelAbsolutePath(modelName string) (string, error) {
+	modelDir := filepath.Join("filestore", "models")
+	if err := os.MkdirAll(modelDir, 0755); err != nil {
+		slog.Error("inferenceservice:service:getModelAbsolutePath", "message", "failed to create model directory", "modelName", modelName, "error", err)
+		return "", fmt.Errorf("failed to create model directory")
+	}
+
+	filename := fmt.Sprintf("%s.model", modelName)
+	return filepath.Join(modelDir, filename), nil
 }

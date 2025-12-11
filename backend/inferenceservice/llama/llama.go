@@ -28,6 +28,8 @@ var serverMutex sync.Mutex
 
 // isModelDownloaded checks if the model exists in the registry and if the file exists on disk.
 func isModelDownloaded(name string) (bool, Model) {
+	slog.Debug("llama:llama:isModelDownloaded", "model", name)
+	slog.Debug("llama:llama:isModelDownloaded", "registry", ModelRegistry)
 	path, ok := ModelRegistry[name]
 	if !ok {
 		slog.Info("Model not found in registry", "model", name)
@@ -43,7 +45,7 @@ func isModelDownloaded(name string) (bool, Model) {
 }
 
 // GetOrStartServer returns the Unix socket path for a given model, starting a server if necessary.
-func GetOrStartServer(modelName string) (string, error) {
+func GetOrStartServer(modelName string, isEmbeddingModel bool) (string, error) {
 	serverMutex.Lock()
 	defer serverMutex.Unlock()
 
@@ -59,6 +61,7 @@ func GetOrStartServer(modelName string) (string, error) {
 
 	// Check if model is available
 	downloaded, model := isModelDownloaded(modelName)
+	slog.Debug("llama:llama:GetOrStartServer", "model", modelName, "downloaded", downloaded, "model", model)
 	if !downloaded {
 		return "", fmt.Errorf("model '%s' not found or not downloaded", modelName)
 	}
@@ -80,12 +83,23 @@ func GetOrStartServer(modelName string) (string, error) {
 	// The user prompt said: llama-server -m ... --host HOST - unix .sock --port PORT
 	// It seems there might be a typo in user prompt " - unix .sock". I assume it means "--unix <path>".
 
-	cmd := exec.Command("llama-server",
-		"-m", model.Path,
-		"--no-webui",
-		"--host", socketPath,
-		"--port", "0", // Let it pick a port or ignore if unix is used exclusively for our proxy
-	)
+	var cmd *exec.Cmd
+	if isEmbeddingModel {
+		cmd = exec.Command("llama-server",
+			"--embeddings",
+			"-m", model.Path,
+			"--no-webui",
+			"--host", socketPath,
+			"--port", "0", // Let it pick a port or ignore if unix is used exclusively for our proxy
+		)
+	} else {
+		cmd = exec.Command("llama-server",
+			"-m", model.Path,
+			"--no-webui",
+			"--host", socketPath,
+			"--port", "0", // Let it pick a port or ignore if unix is used exclusively for our proxy
+		)
+	}
 
 	// Detach process or just start it.
 	// For a long running server, we should probably not wait for it.

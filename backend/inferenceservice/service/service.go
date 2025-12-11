@@ -77,6 +77,7 @@ func (s *InferenceService) startLLamaServerProxy() {
 			http.Error(w, "Failed to read request body", http.StatusBadRequest)
 			return
 		}
+		slog.Debug("inferenceservice:service:startLLamaServerProxy", "body", string(bodyBytes))
 
 		// Restore the io.ReadCloser to its original state
 		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
@@ -101,8 +102,17 @@ func (s *InferenceService) startLLamaServerProxy() {
 
 		//TODO: remove llama- prefix
 		reqBody.Model = strings.TrimPrefix(reqBody.Model, "llama-")
+
 		// Get or start server for the model
-		socketPath, err := llama.GetOrStartServer(reqBody.Model)
+
+		// If the url contains /embedding, then it is an embedding request,
+		// the llama-server needs an extra flag -embedding to treat it specially and create a /embedding endpoint
+		isEmbeddingModel := false
+		if strings.Contains(r.RequestURI, "/embedding") {
+			slog.Debug("inferenceservice:service:startLLamaServerProxy", "isEmbeddingModel", true)
+			isEmbeddingModel = true
+		}
+		socketPath, err := llama.GetOrStartServer(reqBody.Model, isEmbeddingModel)
 		if err != nil {
 			slog.Error("Error getting server for model", "model", reqBody.Model, "error", err)
 			http.Error(w, fmt.Sprintf("Failed to load model: %v", err), http.StatusInternalServerError)

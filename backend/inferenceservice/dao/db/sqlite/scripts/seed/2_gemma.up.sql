@@ -1,0 +1,4 @@
+INSERT INTO inferenceservice_models_metadata (id, name, url, provider, input_token_cost, output_token_cost,progress,is_downloaded,is_downloadable,status,filestore_id,is_embedding_model)
+   VALUES 
+   ('gemma-3-270m-it-GGUF', 'gemma-3-270m-it-GGUF','https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q8_0.gguf?download=true', 'unsloth', 0.01, 0.01,'',FALSE,TRUE,0,NULL,FALSE),
+   ('embeddinggemma-300M-Q8_0', 'embeddinggemma-300M-Q8_0','https://huggingface.co/ggml-org/embeddinggemma-300M-GGUF/resolve/main/embeddinggemma-300M-Q8_0.gguf', 'unsloth', 0.01, 0.01,'',FALSE,TRUE,0,NULL,TRUE);

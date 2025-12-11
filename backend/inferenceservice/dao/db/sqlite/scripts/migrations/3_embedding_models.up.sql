@@ -1,0 +1,1 @@
+ALTER TABLE inferenceservice_models_metadata ADD COLUMN is_embedding_model BOOLEAN DEFAULT FALSE;

@@ -5,17 +5,18 @@ import (
 )
 
 type ModelMetadata struct {
-	ID              string  `db:"id"`
-	Name            string  `db:"name"`
-	URL             string  `db:"url"`
-	Provider        string  `db:"provider"`
-	InputTokenCost  float64 `db:"input_token_cost"`
-	OutputTokenCost float64 `db:"output_token_cost"`
-	Progress        string  `db:"progress"`
-	IsDownloaded    bool    `db:"is_downloaded"`
-	IsDownloadable  bool    `db:"is_downloadable"`
-	Status          int     `db:"status"`
-	FileStoreID     *string `db:"filestore_id"`
+	ID               string  `db:"id"`
+	Name             string  `db:"name"`
+	URL              string  `db:"url"`
+	Provider         string  `db:"provider"`
+	InputTokenCost   float64 `db:"input_token_cost"`
+	OutputTokenCost  float64 `db:"output_token_cost"`
+	Progress         string  `db:"progress"`
+	IsDownloaded     bool    `db:"is_downloaded"`
+	IsDownloadable   bool    `db:"is_downloadable"`
+	Status           int     `db:"status"`
+	FileStoreID      *string `db:"filestore_id"`
+	IsEmbeddingModel bool    `db:"is_embedding_model"`
 }
 
 // Status constants - using proto enum values

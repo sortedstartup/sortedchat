@@ -20,7 +20,12 @@ TODO
 - RAG uses a hardcoded model "nomic-embed-text"
 - llama-proxy is started at a fixed port 8082
    - desktop app: it should start at a unix socket (what on windows ?)
-   - even on server binary it can use unix socket, but in microsvc mode it should start at a TCP port ?
+   - even on server binary it can use unix socket, but in microsvce mode it should start at a TCP port ?
+
+- problem: Redirecting llama-server output directly to the parent process's stdout/stderr can:
+	Clutter application logs with model server output
+	Cause issues if the parent file descriptors are closed or redirected
+	Make debugging difficult by mixing output from multiple servers
 */
 
 // Model represents a LLM model with its name and file path.

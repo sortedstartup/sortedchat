@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -108,9 +107,7 @@ func GetOrStartServer(modelName string, isEmbeddingModel bool) (string, error) {
 
 	// Set SysProcAttr to detach if needed, but for now let's keep it simple as a child process.
 	// If we want it to survive proxy restarts, we'd need more complex process management.
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
+	setSysProcAttr(cmd)
 
 	// Redirect output for debugging
 	cmd.Stdout = os.Stdout

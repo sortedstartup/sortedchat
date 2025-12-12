@@ -96,7 +96,8 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 
 	embeddingsProvider := &rag.OLLamaEmbedder{
 		SettingsManager: settingsManager,
-		Model:           "nomic-embed-text",
+		// Model:           "embeddinggemma-300M-Q8_0",
+		Model: "nomic-embed-text-v1.5.Q8_0",
 	}
 
 	pipeline := rag.NewPipeline(

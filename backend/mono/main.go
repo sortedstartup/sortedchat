@@ -280,7 +280,7 @@ func main() {
 	// Create SettingsService client for in-process calls
 	settingsClient := proto.NewSettingServiceClient(settingsClientConn)
 
-	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory)
+	inferenceServiceApi := inferenceApi.NewInferenceServiceAPI(inferenceDaoFactory, queue)
 	inferenceServiceApi.Init(inferenceConfig)
 	infereceProto.RegisterInferenceServiceServer(grpcServer, inferenceServiceApi)
 

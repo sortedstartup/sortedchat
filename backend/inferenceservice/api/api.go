@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"sortedstartup/chatservice/queue"
 	"sortedstartup/common/auth"
 	"sortedstartup/inferenceservice/dao"
 	pb "sortedstartup/inferenceservice/proto"
@@ -18,11 +19,11 @@ type InferenceServiceAPI struct {
 
 var SQLITE_DB_URL = "db.sqlite"
 
-func NewInferenceServiceAPI(daoFactory dao.DAOFactory) *InferenceServiceAPI {
+func NewInferenceServiceAPI(daoFactory dao.DAOFactory, queue queue.Queue) *InferenceServiceAPI {
 	slog.Debug("inferenceservice:api:NewInferenceServiceAPI")
 
 	s := &InferenceServiceAPI{
-		service: service.NewInferenceService(daoFactory),
+		service: service.NewInferenceService(daoFactory, queue),
 	}
 
 	slog.Info("InferenceServiceAPI initialized")

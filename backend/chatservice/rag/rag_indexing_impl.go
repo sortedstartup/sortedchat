@@ -152,6 +152,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 			slog.Error("rag_indexing_impl:Embed", "step", "failed to marshal request body", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
+
 		ollama_url := e.SettingsManager.GetSettings().OllamaURL
 		req, err := http.NewRequestWithContext(ctx, "POST", ollama_url, bytes.NewBuffer(bodyBytes))
 		if err != nil {
@@ -177,12 +178,14 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 			slog.Error("rag_indexing_impl:Embed", "step", "failed to decode response", "error", err, "chunk", chunk, "model", e.Model)
 			return nil, err
 		}
+
 		resp.Body.Close()
 
 		var vec []float64
 		if len(respData.Data) > 0 {
 			vec = respData.Data[0].Embedding
 		}
+		slog.Debug("rag_indexing_impl:Embed", "step", "success", "chunk", chunk, "model", e.Model, "vec", vec)
 
 		embeddings = append(embeddings, Embedding{
 			ChunkID:  chunk.ID,

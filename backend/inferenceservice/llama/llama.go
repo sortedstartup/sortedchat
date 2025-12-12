@@ -10,6 +10,19 @@ import (
 	"time"
 )
 
+/*
+TODO
+- need to downlaod llama-server/ from github ? or sortedserver and unzip in a configurable location
+  - filestore ?
+  - configurable in settings ?
+- Show embedding models with "embedding label" in the list
+- during onboarding, ask user to start download embedding+local model
+- RAG uses a hardcoded model "nomic-embed-text"
+- llama-proxy is started at a fixed port 8082
+   - desktop app: it should start at a unix socket (what on windows ?)
+   - even on server binary it can use unix socket, but in microsvc mode it should start at a TCP port ?
+*/
+
 // Model represents a LLM model with its name and file path.
 type Model struct {
 	Name string

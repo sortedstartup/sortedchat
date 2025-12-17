@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"sortedstartup/chatservice/queue"
 	"sortedstartup/common/auth"
 	"sortedstartup/inferenceservice/dao"
+	"sortedstartup/inferenceservice/llama"
 	pb "sortedstartup/inferenceservice/proto"
 	"sortedstartup/inferenceservice/service"
 )
@@ -147,7 +150,67 @@ func (s *InferenceServiceAPI) DeleteModel(ctx context.Context, req *pb.DeleteMod
 	}, nil
 }
 
+func isLamaServerDownloaded() bool {
+	filePath := filepath.Join(llama.LLAMASERVER_DIR, "llama_version")
+	info, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		slog.Error("inferenceservice:api:isLamaServerDownloaded", "message", "failed to stat llama_version file", "error", err)
+		return false
+	}
+
+	return info.Size() > 0
+}
+
+func markLLamaServerDownloaded(sversion string) error {
+	filePath := filepath.Join(llama.LLAMASERVER_DIR, "llama_version")
+	err := os.MkdirAll(llama.LLAMASERVER_DIR, 0755)
+	if err != nil {
+		slog.Error("inferenceservice:api:markLLamaServerDownloaded", "message", "failed to create llamaserver directory", "error", err)
+		return err
+	}
+
+	err = os.WriteFile(filePath, []byte(sversion), 0644)
+	if err != nil {
+		slog.Error("inferenceservice:api:markLLamaServerDownloaded", "message", "failed to write llama_version file", "error", err)
+		return err
+	}
+	return nil
+}
+
 func (s *InferenceServiceAPI) Init(config *dao.Config) {
+	ctx := context.Background()
+	slog.Info("inferenceservice:api:Init", "message", "Downloading LlamaServer")
+	if isDownloaded := isLamaServerDownloaded(); !isDownloaded {
+		progress, err := llama.DownloadLlamaServer(ctx, llama.LLAMASERVER_DIR)
+		if err != nil {
+			slog.Error("inferenceservice:api:Init", "message", "failed to download LlamaServer", "error", err)
+			return
+		}
+		// need to have store when llama-sever is successfully downloaded
+		// cant use database because it will be shared by all instances
+		slog.Info("inferenceservice:api:Init", "message", "LlamaServer downloaded successfully", "progress", progress)
+		go func() {
+			for p := range progress {
+				switch p.Status {
+				case llama.StatusDownloading:
+
+				case llama.StatusCompleted:
+					slog.Info("Downloaded LlamaServer", "progress", p)
+					markLLamaServerDownloaded("not-implemented")
+				default:
+					slog.Info("Default")
+
+				}
+			}
+		}()
+
+	} else if isDownloaded {
+		slog.Info("inferenceservice:api:Init", "message", "LlamaServer is already downloaded")
+	}
+
 	slog.Debug("inferenceservice:api:Init")
 	switch config.Database.Type {
 	case dao.DatabaseTypeSQLite:
@@ -171,6 +234,7 @@ func (s *InferenceServiceAPI) Init(config *dao.Config) {
 		log.Fatalf("InferenceService: Unsupported database type: %s", config.Database.Type)
 	}
 
+	slog.Info("inferenceservice:api:Init", "message", "Initializing InferenceService")
 	err := s.service.Initialize()
 	if err != nil {
 		log.Fatalf("InferenceService: Failed to initialize: %v", err)

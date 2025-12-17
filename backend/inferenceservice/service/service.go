@@ -68,7 +68,7 @@ s.queue.Subscribe(ctx, "model.downloaded", handler)
 */
 
 func (s *InferenceService) startLLamaServerProxy() {
-	slog.Info("inferenceservice:service:startLLamaServerProxy", "addr", s.proxyAddr)
+	slog.Info("Starting llama-proxy", "addr", s.proxyAddr)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// We need to read the body to extract the model, but also keep it for the proxy
@@ -185,6 +185,7 @@ func (s *InferenceService) Initialize() error {
 	go s.registerListeners()
 
 	// 4. Start Proxy
+	slog.Info("inferenceservice:service:Initialize", "message", "Starting proxy server")
 	go s.startLLamaServerProxy()
 
 	// 5. Reset models that were left in a pending state

@@ -1,14 +1,29 @@
 package llama
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 )
+
+const LLAMASERVER_DIR = "llamaserver"
+const LLAMASERVER_VERSION = "b7388"
+
+var releases = map[string]string{
+	"linux-amd64-cpu":      "https://github.com/ggml-org/llama.cpp/releases/download/b7388/llama-b7388-bin-ubuntu-x64.tar.gz",
+	"linux-amd64-vulkan":   "https://github.com/ggml-org/llama.cpp/releases/download/b7388/llama-b7388-bin-ubuntu-vulkan-x64.tar.gz",
+	"darwin-arm64":         "https://github.com/ggml-org/llama.cpp/releases/download/b7388/llama-b7388-bin-macos-arm64.tar.gz",
+	"windows-amd64-cpu":    "https://github.com/ggml-org/llama.cpp/releases/download/b7388/llama-b7388-bin-win-cpu-x64.zip",
+	"windows-amd64-cuda":   "https://github.com/ggml-org/llama.cpp/releases/download/b7388/llama-b7388-bin-win-cuda-13.1-x64.zip",
+	"windows-amd64-vulkan": "https://github.com/ggml-org/llama.cpp/releases/download/b7388/llama-b7388-bin-win-vulkan-x64.zip",
+}
 
 /*
 TODO
@@ -101,8 +116,17 @@ func GetOrStartServer(modelName string, isEmbeddingModel bool) (string, error) {
 	// It seems there might be a typo in user prompt " - unix .sock". I assume it means "--unix <path>".
 
 	var cmd *exec.Cmd
+	var err error
+
+	llamaServerPath, err := filepath.Abs(LLAMASERVER_DIR)
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute path for llama-server: %w", err)
+	}
+
+	llamaServerPath = path.Join(llamaServerPath, "llama-"+LLAMASERVER_VERSION, "llama-server")
+	slog.Info("Starting llama-server at", "path", llamaServerPath)
 	if isEmbeddingModel {
-		cmd = exec.Command("llama-server",
+		cmd = exec.Command(llamaServerPath,
 			"--embeddings",
 			"-m", model.Path,
 			"--no-webui",
@@ -110,7 +134,7 @@ func GetOrStartServer(modelName string, isEmbeddingModel bool) (string, error) {
 			"--port", "0", // Let it pick a port or ignore if unix is used exclusively for our proxy
 		)
 	} else {
-		cmd = exec.Command("llama-server",
+		cmd = exec.Command(llamaServerPath,
 			"-m", model.Path,
 			"--no-webui",
 			"--host", socketPath,
@@ -166,4 +190,57 @@ func GetOrStartServer(modelName string, isEmbeddingModel bool) (string, error) {
 			}
 		}
 	}
+}
+
+// GetSystemInfo returns the OS and Architecture of the current system.
+func GetSystemInfo() (string, string) {
+	return runtime.GOOS, runtime.GOARCH
+}
+
+// DetectPlatform returns the platform key for the releases map.
+// It defaults to "cpu" variant for Linux and Windows if no specific variant is detected/requested.
+func DetectPlatform() (string, error) {
+	osName := runtime.GOOS
+	arch := runtime.GOARCH
+
+	if osName == "darwin" {
+		if arch == "arm64" {
+			return "darwin-arm64", nil
+		}
+		return "", fmt.Errorf("unsupported macos architecture: %s", arch)
+	}
+
+	if osName == "linux" {
+		if arch == "amd64" {
+			// Default to CPU for now
+			return "linux-amd64-cpu", nil
+		}
+		return "", fmt.Errorf("unsupported linux architecture: %s", arch)
+	}
+
+	if osName == "windows" {
+		if arch == "amd64" {
+			// Default to CPU for now
+			return "windows-amd64-cpu", nil
+		}
+		return "", fmt.Errorf("unsupported windows architecture: %s", arch)
+	}
+
+	return "", fmt.Errorf("unsupported os: %s", osName)
+}
+
+// DownloadLlamaServer downloads and extracts the llama-server binary for the current OS.
+// It returns a channel that streams progress updates.
+func DownloadLlamaServer(ctx context.Context, destDir string) (<-chan DownloadProgress, error) {
+	platform, err := DetectPlatform()
+	if err != nil {
+		return nil, err
+	}
+
+	url, ok := releases[platform]
+	if !ok {
+		return nil, fmt.Errorf("no release found for platform: %s", platform)
+	}
+
+	return downloadFile(ctx, url, destDir, true)
 }

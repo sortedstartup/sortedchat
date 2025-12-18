@@ -3,11 +3,11 @@ package llm
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -15,6 +15,9 @@ import (
 	"sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/types"
 )
+
+//go:embed templates/*.txt
+var templateFS embed.FS
 
 type Client struct {
 	settingsManager *settings.SettingsManager
@@ -33,16 +36,20 @@ func NewClient(settingsManager *settings.SettingsManager) *Client {
 
 	templates := make(map[string]*template.Template)
 	templateFiles := map[string]string{
-		"openai": "chatservice/llm/templates/openai.txt",
-		"gemini": "chatservice/llm/templates/gemini.txt",
-		"claude": "chatservice/llm/templates/claude.txt",
+		"openai": "templates/openai.txt",
+		"gemini": "templates/gemini.txt",
+		"claude": "templates/claude.txt",
 	}
 
 	for provider, templateFile := range templateFiles {
-		tmpl, err := template.New(filepath.Base(templateFile)).Funcs(funcMap).ParseFiles(templateFile)
+		content, err := templateFS.ReadFile(templateFile)
 		if err != nil {
 			slog.Error("llm:NewClient", "provider", provider, "error", err)
-			// Continue with other templates even if one fails
+			continue
+		}
+		tmpl, err := template.New(provider).Funcs(funcMap).Parse(string(content))
+		if err != nil {
+			slog.Error("llm:NewClient", "provider", provider, "error", err)
 			continue
 		}
 		templates[provider] = tmpl

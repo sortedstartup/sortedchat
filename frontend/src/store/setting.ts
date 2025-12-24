@@ -51,7 +51,7 @@ export const $onboardingData = atom<{
   CLAUDE_API_URL: "https://api.anthropic.com/v1/chat/completions",
   OPENAI_API_URL: "https://api.openai.com/v1/chat/completions",
   GEMINI_API_URL: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-  OLLAMA_URL: "http://localhost:11434/v1/embeddings",
+  OLLAMA_URL: "http://localhost:8081/v1/embeddings",
 });
 
 export const saveSettings = async (

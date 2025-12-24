@@ -165,6 +165,9 @@ export class Model extends pb_1.Message {
         is_downloadable?: boolean;
         status?: DownloadStatus;
         filestore_id?: string;
+        capabilities?: string;
+        cached_token_cost?: number;
+        is_enabled?: boolean;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -201,6 +204,15 @@ export class Model extends pb_1.Message {
             }
             if ("filestore_id" in data && data.filestore_id != undefined) {
                 this.filestore_id = data.filestore_id;
+            }
+            if ("capabilities" in data && data.capabilities != undefined) {
+                this.capabilities = data.capabilities;
+            }
+            if ("cached_token_cost" in data && data.cached_token_cost != undefined) {
+                this.cached_token_cost = data.cached_token_cost;
+            }
+            if ("is_enabled" in data && data.is_enabled != undefined) {
+                this.is_enabled = data.is_enabled;
             }
         }
     }
@@ -273,6 +285,24 @@ export class Model extends pb_1.Message {
     set filestore_id(value: string) {
         pb_1.Message.setField(this, 11, value);
     }
+    get capabilities() {
+        return pb_1.Message.getFieldWithDefault(this, 12, "") as string;
+    }
+    set capabilities(value: string) {
+        pb_1.Message.setField(this, 12, value);
+    }
+    get cached_token_cost() {
+        return pb_1.Message.getFieldWithDefault(this, 13, 0) as number;
+    }
+    set cached_token_cost(value: number) {
+        pb_1.Message.setField(this, 13, value);
+    }
+    get is_enabled() {
+        return pb_1.Message.getFieldWithDefault(this, 14, false) as boolean;
+    }
+    set is_enabled(value: boolean) {
+        pb_1.Message.setField(this, 14, value);
+    }
     static fromObject(data: {
         id?: string;
         name?: string;
@@ -285,6 +315,9 @@ export class Model extends pb_1.Message {
         is_downloadable?: boolean;
         status?: DownloadStatus;
         filestore_id?: string;
+        capabilities?: string;
+        cached_token_cost?: number;
+        is_enabled?: boolean;
     }): Model {
         const message = new Model({});
         if (data.id != null) {
@@ -320,6 +353,15 @@ export class Model extends pb_1.Message {
         if (data.filestore_id != null) {
             message.filestore_id = data.filestore_id;
         }
+        if (data.capabilities != null) {
+            message.capabilities = data.capabilities;
+        }
+        if (data.cached_token_cost != null) {
+            message.cached_token_cost = data.cached_token_cost;
+        }
+        if (data.is_enabled != null) {
+            message.is_enabled = data.is_enabled;
+        }
         return message;
     }
     toObject() {
@@ -335,6 +377,9 @@ export class Model extends pb_1.Message {
             is_downloadable?: boolean;
             status?: DownloadStatus;
             filestore_id?: string;
+            capabilities?: string;
+            cached_token_cost?: number;
+            is_enabled?: boolean;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -369,6 +414,15 @@ export class Model extends pb_1.Message {
         if (this.filestore_id != null) {
             data.filestore_id = this.filestore_id;
         }
+        if (this.capabilities != null) {
+            data.capabilities = this.capabilities;
+        }
+        if (this.cached_token_cost != null) {
+            data.cached_token_cost = this.cached_token_cost;
+        }
+        if (this.is_enabled != null) {
+            data.is_enabled = this.is_enabled;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -397,6 +451,12 @@ export class Model extends pb_1.Message {
             writer.writeEnum(10, this.status);
         if (this.filestore_id.length)
             writer.writeString(11, this.filestore_id);
+        if (this.capabilities.length)
+            writer.writeString(12, this.capabilities);
+        if (this.cached_token_cost != 0)
+            writer.writeDouble(13, this.cached_token_cost);
+        if (this.is_enabled != false)
+            writer.writeBool(14, this.is_enabled);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -438,6 +498,15 @@ export class Model extends pb_1.Message {
                     break;
                 case 11:
                     message.filestore_id = reader.readString();
+                    break;
+                case 12:
+                    message.capabilities = reader.readString();
+                    break;
+                case 13:
+                    message.cached_token_cost = reader.readDouble();
+                    break;
+                case 14:
+                    message.is_enabled = reader.readBool();
                     break;
                 default: reader.skipField();
             }

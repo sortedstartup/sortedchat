@@ -101,6 +101,9 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 				IsDownloadable:  model.IsDownloadable,
 				Status:          pb.DownloadStatus(model.Status),
 				FilestoreId:     filestoreID,
+				Capabilities:    model.Capabilities,
+				CachedTokenCost: model.CachedTokenCost,
+				IsEnabled:       model.IsEnabled,
 			}
 		}
 		slog.Info("inferenceservice:api:GetLLMModels", "message", "Sending LLM models")

@@ -161,6 +161,9 @@ type Model struct {
 	IsDownloadable  bool                   `protobuf:"varint,9,opt,name=is_downloadable,json=isDownloadable,proto3" json:"is_downloadable,omitempty"`
 	Status          DownloadStatus         `protobuf:"varint,10,opt,name=status,proto3,enum=sortedchat.DownloadStatus" json:"status,omitempty"`
 	FilestoreId     string                 `protobuf:"bytes,11,opt,name=filestore_id,json=filestoreId,proto3" json:"filestore_id,omitempty"` // File path for downloadable models, null for non-downloadable
+	Capabilities    string                 `protobuf:"bytes,12,opt,name=capabilities,proto3" json:"capabilities,omitempty"`
+	CachedTokenCost float64                `protobuf:"fixed64,13,opt,name=cached_token_cost,json=cachedTokenCost,proto3" json:"cached_token_cost,omitempty"`
+	IsEnabled       bool                   `protobuf:"varint,14,opt,name=is_enabled,json=isEnabled,proto3" json:"is_enabled,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -270,6 +273,27 @@ func (x *Model) GetFilestoreId() string {
 		return x.FilestoreId
 	}
 	return ""
+}
+
+func (x *Model) GetCapabilities() string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return ""
+}
+
+func (x *Model) GetCachedTokenCost() float64 {
+	if x != nil {
+		return x.CachedTokenCost
+	}
+	return 0
+}
+
+func (x *Model) GetIsEnabled() bool {
+	if x != nil {
+		return x.IsEnabled
+	}
+	return false
 }
 
 type DownloadModelRequest struct {
@@ -626,7 +650,7 @@ const file_inferenceservice_proto_rawDesc = "" +
 	"\tfile_size\x18\x01 \x01(\x03R\bfileSize\x122\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x1a.sortedchat.DownloadStatusR\x06status\x12\x1a\n" +
 	"\bprogress\x18\x03 \x01(\x05R\bprogress\x12\x14\n" +
-	"\x05speed\x18\x04 \x01(\x03R\x05speed\"\x8e\x03\n" +
+	"\x05speed\x18\x04 \x01(\x03R\x05speed\"\xfd\x03\n" +
 	"\x05Model\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x10\n" +
@@ -639,7 +663,11 @@ const file_inferenceservice_proto_rawDesc = "" +
 	"\x0fis_downloadable\x18\t \x01(\bR\x0eisDownloadable\x122\n" +
 	"\x06status\x18\n" +
 	" \x01(\x0e2\x1a.sortedchat.DownloadStatusR\x06status\x12!\n" +
-	"\ffilestore_id\x18\v \x01(\tR\vfilestoreId\"5\n" +
+	"\ffilestore_id\x18\v \x01(\tR\vfilestoreId\x12\"\n" +
+	"\fcapabilities\x18\f \x01(\tR\fcapabilities\x12*\n" +
+	"\x11cached_token_cost\x18\r \x01(\x01R\x0fcachedTokenCost\x12\x1d\n" +
+	"\n" +
+	"is_enabled\x18\x0e \x01(\bR\tisEnabled\"5\n" +
 	"\x14DownloadModelRequest\x12\x1d\n" +
 	"\n" +
 	"model_name\x18\x01 \x01(\tR\tmodelName\"1\n" +

@@ -7,10 +7,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Phone, PhoneOff, Volume2, ChevronDown } from "lucide-react";
-import { iceCandidate, GetRealtimeModels, offerRequest, $isConnected, $realtimeModelList } from '@/store/realtime';
-
+import { iceCandidate, listModels, offerRequest, $isConnected, $realtimeModelList } from '@/store/realtime';
 import { useStore } from '@nanostores/react';
-import type { Model } from 'proto/inferenceservice';
+import { ModelListInfo } from '../../proto/chatservice';
 
 interface RealtimeAudioModalProps {
   isOpen: boolean;
@@ -20,7 +19,7 @@ interface RealtimeAudioModalProps {
 export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps) {
   const realtimeModelList = useStore($realtimeModelList);
   const isConnected = useStore($isConnected);
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
+  const [selectedModel, setSelectedModel] = useState<ModelListInfo | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Select provider and click Connect');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -35,7 +34,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       setStatusMessage('Please select a model first');
       return;
     }
-
+    
     try {
       setIsConnecting(true);
       setStatusMessage('Connecting...');
@@ -45,7 +44,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
 
       pc.onicecandidate = async (event) => {
         if (event.candidate) {
-          await iceCandidate(JSON.stringify(event.candidate.toJSON()));
+          await iceCandidate(JSON.stringify( event.candidate.toJSON() ));
         }
       };
 
@@ -90,11 +89,11 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
       dataChannel.onmessage = async (event) => {
         try {
           let text = typeof event.data === "string" ? event.data :
-            event.data instanceof ArrayBuffer ? new TextDecoder().decode(event.data) :
-              event.data instanceof Blob ? await event.data.text() : "";
+                    event.data instanceof ArrayBuffer ? new TextDecoder().decode(event.data) :
+                    event.data instanceof Blob ? await event.data.text() : "";
 
           const message = JSON.parse(text);
-
+          
           if (message.type === "OpenAI:input_details") {
             console.log("OpenAI:input_details", message.data);
             if (message.data.audio_tokens) setInputTokens(prev => prev + message.data.audio_tokens);
@@ -121,7 +120,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
         throw new Error("No model selected");
       }
 
-      const response = await offerRequest(String(offer.sdp), selectedModel.provider, selectedModel.id);
+      const response = await offerRequest(String(offer.sdp),selectedModel.provider, selectedModel.id);
       await pc.setRemoteDescription({ type: "answer", sdp: String(response) } as RTCSessionDescription);
 
     } catch (error) {
@@ -134,7 +133,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
   const handleDisconnect = () => {
     pcRef.current?.close();
     streamRef.current?.getTracks().forEach(track => track.stop());
-
+    
     pcRef.current = null;
     streamRef.current = null;
 
@@ -151,7 +150,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
   };
 
   useEffect(() => {
-    GetRealtimeModels();
+    listModels();
     return handleDisconnect;
   }, []);
 
@@ -186,12 +185,12 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${selectedModel?.provider === 'openai' ? 'bg-green-500' : 'bg-blue-500'}`} />
                   <span className="font-medium text-foreground">
-                    {selectedModel ? selectedModel.name || selectedModel.id : 'Select a model'}
+                    {selectedModel ? selectedModel.label || selectedModel.id : 'Select a model'}
                   </span>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
-
+              
               {showDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                   {realtimeModelList.length === 0 ? (
@@ -206,7 +205,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                         className={`w-full p-3 hover:bg-accent text-popover-foreground flex items-center gap-2 ${index < realtimeModelList.length - 1 ? 'border-b border-border' : ''}`}
                       >
                         <div className={`w-2 h-2 rounded-full ${model.provider === 'openai' ? 'bg-green-500' : 'bg-blue-500'}`} />
-                        <span>{model.name}</span>
+                        <span>{model.label}</span>
                       </button>
                     ))
                   )}
@@ -243,9 +242,9 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                   <div
                     key={i}
                     className="w-1 bg-primary rounded-full animate-pulse"
-                    style={{
+                    style={{ 
                       height: `${[32, 24, 40, 16, 32][i]}px`,
-                      animationDelay: `${delay}ms`
+                      animationDelay: `${delay}ms` 
                     }}
                   />
                 ))}

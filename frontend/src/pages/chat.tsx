@@ -24,10 +24,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   $currentChatId,
+  $selectedModel,
   doChat,
   $currentChatMessages,
   $streamingMessage,
   $currentChatMessage,
+  $availableModels,
   BranchChat,
   $listChatBranch,
   $ragEnabled,
@@ -65,7 +67,6 @@ import type {
   ResponseSummary,
   ChatProgress,
 } from "proto/chatservice";
-import { $llmModels, $selectedModel } from "@/store/inference";
 
 function getProgressText(state: number): string {
   switch (state) {
@@ -398,17 +399,15 @@ function ChatInputBox({
     localStorage.setItem('showDetailedTokens', JSON.stringify(newValue));
   };
 
-  // const availableModels = useStore($availableModels);
-  const llmModels = useStore($llmModels);
+  const availableModels = useStore($availableModels);
   const selectedModel = useStore($selectedModel);
   const ragEnabled = useStore($ragEnabled);
   const chatMetadata = useStore($chatMetadata);
   const isStreaming = useStore($isStreaming);
 
   // Get current model capabilities
-  // const modelInfo = availableModels.find(m => m.id === selectedModel.model_name);
-  const llmModelInfo = llmModels.find(m => m.id === selectedModel.model_name);
-  const supportsImageInput = llmModelInfo?.capabilities?.image?.input ?? false;
+  const modelInfo = availableModels.find(m => m.id === selectedModel.model_name);
+  const supportsImageInput = modelInfo?.capabilities?.image?.input ?? false;
 
   // Auto-resize textarea based on content
   useEffect(() => {
@@ -609,12 +608,12 @@ function ChatInputBox({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    {llmModels.map((model) => (
+                    {availableModels.map((model) => (
                       <DropdownMenuItem
-                        key={model.id || model.name}
+                        key={model.id || model.label}
                         onClick={() => handleModelSelect(model.id, model.provider)}
                       >
-                        <span>{model.name}</span>
+                        <span>{model.label}</span>
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>

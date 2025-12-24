@@ -300,6 +300,38 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 	}, nil
 }
 
+// GetModels retrieves all available models
+func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
+	slog.Info("dao_postgres:GetModels")
+	var models []Models
+	err := p.db.Select(&models, "SELECT id, name,provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}'::jsonb)::text AS capabilities FROM model_metadata")
+	if err != nil {
+		slog.Error("dao_postgres:GetModels", "message", "failed to get models", "error", err)
+		return nil, fmt.Errorf("failed to get models")
+	}
+
+	var result []*proto.ModelListInfo
+	for _, m := range models {
+		// Parse capabilities JSON
+		capabilities, err := ParseCapabilities(m.Capabilities)
+		if err != nil {
+			slog.Error("dao_postgres:GetModels", "message", "failed to parse capabilities for model", "error", err, "modelID", m.ID)
+			return nil, fmt.Errorf("failed to parse capabilities for model")
+		}
+
+		result = append(result, &proto.ModelListInfo{
+			Id:              m.ID,
+			Label:           m.Name,
+			Provider:        m.Provider,
+			Url:             m.URL,
+			InputTokenCost:  m.InputTokenCost,
+			OutputTokenCost: m.OutputTokenCost,
+			Capabilities:    capabilities,
+		})
+	}
+	return result, nil
+}
+
 // SearchChatMessages performs full text search across chat messages
 func (p *PostgresDAO) SearchChatMessages(userID string, query string) ([]proto.SearchResult, error) {
 	slog.Info("dao_postgres:SearchChatMessages", "userID", userID, "query", query)

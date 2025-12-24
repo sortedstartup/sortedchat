@@ -9,47 +9,33 @@ import { getUIConfig } from "../lib/config";
 let _inferenceClient: InferenceServiceClient | undefined;
 
 function getClient(): InferenceServiceClient {
-    if (!_inferenceClient) {
-        const config = getUIConfig();
-        if (!config) {
-            throw new Error("UI config not loaded, cannot initialize chat client.");
-        }
-        _inferenceClient = new InferenceServiceClient(
-            config.API_URL,
-            {},
-            createAuthenticatedClientOptions()
-        );
+  if (!_inferenceClient) {
+    const config = getUIConfig();
+    if (!config) {
+      throw new Error("UI config not loaded, cannot initialize chat client.");
     }
-    return _inferenceClient;
-}
-
-
-interface ModelProviderInfo {
-    model_name: string;
-    provider: string;
+    _inferenceClient = new InferenceServiceClient(
+      config.API_URL,
+      {},
+      createAuthenticatedClientOptions()
+    );
+  }
+  return _inferenceClient;
 }
 
 export const $llmModels = atom<Model[]>([]);
-export const $selectedModel = atom<ModelProviderInfo>({
-    model_name: "gpt-5-nano",
-    provider: "openai"
-});
 export const $isLoadingModels = atom<boolean>(false);
 
-onMount($llmModels, () => {
-    ListLLMModels();
-})
-
-export const downloadModel = async (modelName: string) => {
-
+export const downloadModel = async (modelName: string) => { 
+    
     try {
         const req = new DownloadModelRequest({
             model_name: modelName
         });
         const res = await getClient().DownloadModel(req, {});
-
+        
         await ListLLMModels();
-
+        
         return res;
     } catch (error) {
         console.error('Download failed:', error);
@@ -59,34 +45,30 @@ export const downloadModel = async (modelName: string) => {
 
 export const ListLLMModels = async () => {
     $isLoadingModels.set(true);
-
-    return new Promise<void>((resolve, reject) => {
-        try {
-            const req = new GetLLMModelsRequest({});
-            const res = getClient().GetLLMModels(req, {});
-
-            res.on('data', (data) => {
-                console.log('Models list loaded', data.models);
-                $llmModels.set(data.models);
-            });
-
-            res.on('end', () => {
-                console.log('Models list loaded');
-                $isLoadingModels.set(false);
-                resolve();
-            });
-
-            res.on('error', (err) => {
-                console.error('Error loading models:', err);
-                $isLoadingModels.set(false);
-                reject(err);
-            });
-
-        } catch (error) {
+    
+    try {
+        const req = new GetLLMModelsRequest({});
+        const res = getClient().GetLLMModels(req, {});
+        
+        res.on('data', (data) => {
+            $llmModels.set(data.models);
+        });
+        
+        res.on('end', () => {
+            console.log('Models list loaded');
             $isLoadingModels.set(false);
-            reject(error);
-        }
-    });
+        });
+        
+        res.on('error', (err) => {
+            console.error('Error loading models:', err);
+            $isLoadingModels.set(false);
+        });
+        
+        return res;
+    } catch (error) {
+        $isLoadingModels.set(false);
+        throw error;
+    }
 }
 
 onMount($llmModels, () => {

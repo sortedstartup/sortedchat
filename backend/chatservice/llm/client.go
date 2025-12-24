@@ -25,6 +25,11 @@ type Client struct {
 	templates       map[string]*template.Template
 }
 
+const LLAMA_PROVIDER = "llama"
+const OPENAI_PROVIDER = "openai"
+const GEMINI_PROVIDER = "gemini"
+const CLAUDE_PROVIDER = "claude"
+
 func NewClient(settingsManager *settings.SettingsManager) *Client {
 	// Parse templates once during initialization
 	funcMap := template.FuncMap{
@@ -74,13 +79,13 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest) (*ht
 
 	model := req.Model
 
-	if strings.HasPrefix(model, "gemini") {
+	if strings.HasPrefix(model, GEMINI_PROVIDER) {
 		url = c.settingsManager.GetSettings().GeminiAPIUrl
 		apiKey = c.settingsManager.GetSettings().GeminiAPIKey
-	} else if strings.HasPrefix(model, "claude") {
+	} else if strings.HasPrefix(model, CLAUDE_PROVIDER) {
 		url = c.settingsManager.GetSettings().ClaudeAPIUrl
 		apiKey = c.settingsManager.GetSettings().ClaudeAPIKey
-	} else if strings.HasPrefix(model, "llama") {
+	} else if strings.HasPrefix(model, LLAMA_PROVIDER) {
 		//TODO: should not be hard coded
 		url = "http://localhost:8081/v1/chat/completions"
 		apiKey = "x"

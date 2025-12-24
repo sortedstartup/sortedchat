@@ -128,7 +128,7 @@ export const fetchChatMessages = async (chatId: string) => {
       $chatMetadata.set(null);
     }
 
-    
+
     // Set document references if any exist
     if (allReferences.length > 0) {
       $currentDocumentReferences.set(allReferences);
@@ -170,13 +170,13 @@ const addMessageToHistory = (message: ChatMessage) => {
 
 // --- state management ---
 export const createNewChat = async (projectId?: string) => {
-  const requestObj: {name: string,project_id?: string} = {
+  const requestObj: { name: string, project_id?: string } = {
     name: "",
   };
   if (projectId) {
     requestObj.project_id = projectId;
   }
-  
+
   const response = await getChatClient().CreateChat(
     CreateChatRequest.fromObject(requestObj),
     {}
@@ -194,7 +194,7 @@ export const getChatList = (projectId?: string, softDeleted?: boolean) => {
 
   getChatClient().GetChatList(requestObj, {}).then((value: { chats: ChatInfo[] }) => {
     if (softDeleted) {
-      $trashChatList.set(value.chats);  
+      $trashChatList.set(value.chats);
     } else {
       (projectId ? $projectChatList : $chatList).set(value.chats);
     }
@@ -244,15 +244,15 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
   let currentChatReferences: any[] = []; // Track references for this specific chat
 
   if (isFirstMessage || isNewlyBranched) {
-      generateChatName(msg);
-      if (isNewlyBranched) {
-        $isNewlyBranched.set(false);
-      }
+    generateChatName(msg);
+    if (isNewlyBranched) {
+      $isNewlyBranched.set(false);
     }
+  }
 
   // Get RAG enabled state - use stored value for project chats, false for regular chats
   const ragEnabled = projectId ? $ragEnabled.get() : false;
-  
+
   // Clear document references if RAG is disabled
   if (!ragEnabled) {
     $currentDocumentReferences.set([]);
@@ -261,7 +261,7 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
 
   // Build multi-modal content
   const contents: MessageContent[] = [];
-  
+
   // Add text content if provided
   if (msg.trim()) {
     contents.push(
@@ -271,7 +271,7 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
       })
     );
   }
-  
+
   // Add image contents if provided
   if (images && images.length > 0) {
     // Check model capabilities before processing images
@@ -281,7 +281,7 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
       toast.error(`Maximum ${MAX_IMAGES} images allowed per message.`);
       return;
     }
-    
+
     // Enforce total size limit (e.g., 20MB total)
     const MAX_TOTAL_SIZE = 20 * 1024 * 1024; // 20MB
     const totalSize = images.reduce((sum, img) => sum + img.size, 0);
@@ -291,14 +291,14 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
     }
 
 
-    const selectedModel = $selectedModel.get();
+    const selectedModel = $selectedModel.get().model_name;
     const modelInfo = $availableModels.get().find(m => m.id === selectedModel);
-    
+
     if (!modelInfo?.capabilities?.image?.input) {
       toast.error("Selected model does not support image input. Please choose a vision-capable model.");
       return;
     }
-    
+
     for (const image of images) {
       try {
         const base64 = await imageToBase64(image);
@@ -320,16 +320,17 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
   }
 
   // grpc call
-   stream = getChatClient().Chat(
+  stream = getChatClient().Chat(
     ChatRequest.fromObject({
       text: msg, // Keep for backward compatibility
       contents: contents, // New multi-modal content
       chatId: $currentChatId.get(),
-      model: $selectedModel.get(),
+      model: $selectedModel.get().model_name,
       project_context: ProjectContext.fromObject({
         project_id: projectId || "",
         rag_enabled: ragEnabled,
       }),
+      provider: $selectedModel.get().provider,
     }),
     {}
   );
@@ -354,30 +355,30 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
     } else if (res.has_document_reference && ragEnabled) {
       // Only process document references if RAG is enabled
       const docRefList = res.document_reference;
-      
+
       if (docRefList.summary) {
         for (const summary of docRefList.summary) {
-          
+
           const docRef = {
             doc_id: summary.doc_id,
             file_name: summary.file_name,
             Chunks: Array(summary.chunkCount).fill({}) // Create array with chunk count
           };
-          
+
           currentChatReferences.push(docRef);
         }
       }
-      
+
       // Update the store for real-time display
       $currentDocumentReferences.set([...currentChatReferences]);
       $showDocumentReferences.set(true);
-      
-    }else if (res.has_chat_metadata) {
+
+    } else if (res.has_chat_metadata) {
       $chatMetadata.set(res.chat_metadata);
     } else if (res.has_progress) {
       $chatProgress.set(res.progress);
     }
-  } );
+  });
 
   stream.on("end", () => {
     const userMessage = ChatMessage.fromObject({
@@ -386,7 +387,7 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
       contents: contents.length > 0 ? contents : undefined, // Add multi-modal content
       rag_enabled: ragEnabled, // Set the rag_enabled field based on the current state
     });
-    
+
     const assistantMessage = ChatMessage.fromObject({
       role: "assistant",
       content: assistantResponse,
@@ -405,27 +406,27 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
 
     $chatProgress.set(null);
 
-    
+
     // Clear document references if RAG is disabled
     if (!ragEnabled) {
       $currentDocumentReferences.set([]);
       $showDocumentReferences.set(false);
     }
-    
+
     // Reset RAG to enabled for project chats after message completion
     if (projectId) {
       $ragEnabled.set(true);
     }
-    
+
   });
 
   stream.on("error", (err: Error) => {
     console.error("Stream error:", err);
     $streamingMessage.set("");
-    toast.error("An error occurred while receiving the response. Please try again.");  
-    $chatProgress.set(null);    
+    toast.error("An error occurred while receiving the response. Please try again.");
+    $chatProgress.set(null);
     $isStreaming.set(false);
-    
+
     // Reset RAG to enabled for project chats even on error
     if (projectId) {
       $ragEnabled.set(true);
@@ -446,7 +447,7 @@ export const showDocumentReferencesPanel = () => {
 export const toggleRagEnabled = () => {
   const currentState = $ragEnabled.get();
   $ragEnabled.set(!currentState);
-  
+
   // Clear document references if RAG is being disabled
   if (currentState) {
     $currentDocumentReferences.set([]);
@@ -457,7 +458,7 @@ export const toggleRagEnabled = () => {
 // Add function to set RAG enabled state for project chats
 export const setRagEnabledForProject = (enabled: boolean) => {
   $ragEnabled.set(enabled);
-  
+
   // Clear document references if RAG is being disabled
   if (!enabled) {
     $currentDocumentReferences.set([]);
@@ -467,27 +468,27 @@ export const setRagEnabledForProject = (enabled: boolean) => {
 
 export const $chatName = atom<string>("");
 export const generateChatName = async (msg: string) => {
-  try{
+  try {
     // grpc call
     const response = await getChatClient().GenerateChatName(
       GenerateChatNameRequest.fromObject({
         message: msg,
         chat_id: $currentChatId.get(),
-        model: $selectedModel.get()
+        model: $selectedModel.get().model_name
       }),
       {}
     );
-    
+
     $chatName.set(response.chat_name)
   }
-  catch(error) {
+  catch (error) {
     console.error("Can't get the chat name", error)
   }
 };
 
 $chatName.listen(() => {
   const currentProjectId = $currentProjectId.get();
-  getChatList(); 
+  getChatList();
   if (currentProjectId) {
     getChatList(currentProjectId);
   }
@@ -502,8 +503,15 @@ onMount($chatList, () => {
   };
 });
 
+interface ModelProviderInfo {
+  model_name: string;
+  provider: string;
+}
 export const $availableModels = atom<ModelListInfo[]>([]);
-export const $selectedModel = atom<string>("gpt-5-nano");
+export const $selectedModel = atom<ModelProviderInfo>({
+  model_name: "gpt-5-nano",
+  provider: "openai"
+});
 
 export const fetchAvailableModels = async () => {
   try {
@@ -523,7 +531,7 @@ export const $searchResults = atom<SearchResult[]>([]);
 export const $searchText = atom<string>("");
 
 $searchText.listen((newValue, oldValue) => {
-   if (newValue !== oldValue) {
+  if (newValue !== oldValue) {
     if (newValue === "") {
       $searchResults.set([]);
     } else {
@@ -627,12 +635,12 @@ export async function deleteDocument(projectId: string, docId: string) {
       }),
       {}
     );
-    
+
     toast.success(res.message);
-    
+
     // Refresh the documents list
     await fetchDocuments(projectId);
-    
+
     return res.message;
   } catch (error) {
     console.error("Failed to delete document:", error);
@@ -684,10 +692,10 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
       }),
       {}
     );
-    
+
     $isPolling.set(true);
     toast.success(response.message || "Embedding job submitted successfully");
-    
+
     for (let i = 0; i < 8; i++) {
       setTimeout(() => {
         if ($isPolling.get()) {
@@ -696,10 +704,10 @@ export const SubmitGenerateEmbeddingsJob = async (projectId: string): Promise<St
         if (i === 7) {
           $isPolling.set(false);
         }
-      }, i * 3000); 
+      }, i * 3000);
     }
-    
-    return response.message; 
+
+    return response.message;
   } catch (error) {
     console.error("Failed to submit embedding job:", error);
     toast.error("Failed to submit embedding job: " + (error as Error).message);
@@ -742,11 +750,11 @@ export async function BranchChat(branch_from_message_id: string) {
 
 export const $listChatBranch = atom<ChatInfo[]>([]);
 
-export async function ListChatBranch (chatId: string) {
+export async function ListChatBranch(chatId: string) {
   try {
     const res = await getChatClient().ListChatBranch(ListChatBranchRequest.fromObject({
       chat_id: chatId,
-    }),{});
+    }), {});
     $listChatBranch.set(res.branch_chat_list);
   } catch (error) {
     console.error('Failed to fetch branch chat list:', error);
@@ -805,7 +813,7 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
     });
 
     const response = await getChatClient().GetRAGDocumentReference(request, {});
-    
+
     $ragDocumentDetails.set({
       data: response.reference || null,
       loading: false,
@@ -816,7 +824,7 @@ export const fetchRAGDocumentReference = async (messageId: string, projectId: st
   } catch (error) {
     console.error('Failed to fetch RAG document reference:', error);
     const errorMessage = (error as Error).message || 'Failed to fetch document reference';
-    
+
     $ragDocumentDetails.set({
       data: null,
       loading: false,
@@ -841,7 +849,7 @@ export const DeleteChat = async (chatId: string, operation: DeleteChatRequestOpe
       getChatList(undefined, true);
     }
 
-    
+
   } catch (error) {
     console.error('Failed to Delete chat:', error);
     toast.error(`Failed to Delete chat: ${(error as Error).message || 'Unknown error'}`);
@@ -863,7 +871,7 @@ export const RenameItem = async (itemId: string, name: string, itemType: RenameI
   try {
     const res = await getChatClient().RenameItem(RenameItemRequest.fromObject({ item_id: itemId, name: name, item_type: itemType }), {});
 
-    
+
     toast.success(res.message);
 
     if (itemType === RenameItemRequestItemType.CHAT) {
@@ -882,14 +890,14 @@ export const RenameItem = async (itemId: string, name: string, itemType: RenameI
         }
       });
       $projectList.set(projectList);
-      
+
       // Update current project name if it's the one being renamed
       const currentProjectId = $currentProjectId.get();
       if (currentProjectId === itemId) {
         $currentProject.set(name);
       }
     }
-    
+
   } catch (error) {
     console.error('Failed to rename item:', error);
     toast.error(`Failed to rename item: ${(error as Error).message || 'Unknown error'}`);

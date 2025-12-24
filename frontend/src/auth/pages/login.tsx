@@ -91,11 +91,12 @@ export function LoginPage() {
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">
             Welcome to SortedChat
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {isDesktop ? 'Sign in to continue' : 'Sign in with your Google account to continue'}
-          </p>
+          {!isDesktop && (
+            <p className="mt-2 text-sm text-gray-600">
+              Sign in with your Google account to continue
+            </p>
+          )}
         </div>
-
         <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
@@ -115,6 +116,8 @@ export function LoginPage() {
                   <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                   <span>Signing in...</span>
                 </div>
+              ) : isDesktop ? (
+                <span className="font-medium">Continue to App</span>
               ) : (
                 <div className="flex items-center space-x-3">
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -123,24 +126,28 @@ export function LoginPage() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                   </svg>
-                  <span className="font-medium">{isDesktop ? 'Sign in' : 'Continue with Google'}</span>
+                  <span className="font-medium">Continue with Google</span>
                 </div>
               )}
             </Button>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Secure OAuth Authentication</span>
-              </div>
-            </div>
+            {!isDesktop && (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Secure OAuth Authentication</span>
+                  </div>
+                </div>
 
-            <div className="text-xs text-gray-500 text-center space-y-1">
-              <p>By signing in, you agree to our terms of service.</p>
-              <p>Your data is protected with enterprise-grade security.</p>
-            </div>
+                <div className="text-xs text-gray-500 text-center space-y-1">
+                  <p>By signing in, you agree to our terms of service.</p>
+                  <p>Your data is protected with enterprise-grade security.</p>
+                </div>
+              </>
+            )}
           </div>
         </Card>
 

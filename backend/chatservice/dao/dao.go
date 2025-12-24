@@ -19,9 +19,6 @@ type DAO interface {
 	// GetChatList retrieves all chats for a user
 	GetChatList(userID string, projectID string, softDeleted bool) ([]*proto.ChatInfo, error)
 
-	// Model operations
-	GetModels() ([]*proto.ModelListInfo, error)
-
 	// Search operations
 	SearchChatMessages(userID string, query string) ([]proto.SearchResult, error)
 

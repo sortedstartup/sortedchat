@@ -857,16 +857,6 @@ func (s *ChatService) CreateChat(ctx context.Context, userID string, name string
 	return chatId, nil
 }
 
-// func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error) {
-// 	models, err := s.dao.GetModels()
-// 	if err != nil {
-// 		slog.Error("service:ListModel", "message", "failed to fetch models", "error", err)
-// 		return nil, fmt.Errorf("error while processing request, please try again")
-// 	}
-
-// 	return models, nil
-// }
-
 func (s *ChatService) SearchChat(ctx context.Context, userID string, query string) ([]*pb.SearchResult, error) {
 	if query == "" {
 		slog.Error("service:SearchChat", "error", "query is required", "userID", userID)

@@ -190,16 +190,6 @@ func (s *ChatServiceAPI) CreateChat(ctx context.Context, req *pb.CreateChatReque
 	}, nil
 }
 
-// func (s *ChatServiceAPI) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
-// 	models, err := s.service.ListModel(ctx)
-// 	if err != nil {
-// 		slog.Error("api:ListModel", "message", "failed to list models", "error", err)
-// 		return nil, fmt.Errorf("failed to list models")
-// 	}
-
-// 	return &pb.ListModelsResponse{Models: models}, nil
-// }
-
 func (s *ChatServiceAPI) SearchChat(ctx context.Context, req *pb.ChatSearchRequest) (*pb.ChatSearchResponse, error) {
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {

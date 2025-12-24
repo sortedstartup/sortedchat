@@ -11,7 +11,6 @@ service SortedChat {
     rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
     rpc GetChatList(GetChatListRequest) returns (GetChatListResponse);
     rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
-    rpc ListModel(ListModelsRequest) returns (ListModelsResponse);
     rpc SearchChat(ChatSearchRequest) returns (ChatSearchResponse);
 
     rpc GetRAGDocumentReference (RAGDocumentReferenceRequest) returns (RAGDocumentReferenceResponse);
@@ -280,23 +279,6 @@ message ChatInfo {
   int32 input_token_count = 4;
   int32 output_token_count = 5;
   int32 cached_token_count = 6;
-}
-
-message ModelListInfo {
-  string id = 1;
-  string label = 2;
-  string provider = 3;
-  string url = 4;
-  float input_token_cost = 5;
-  float output_token_cost = 6;
-  string capabilities = 7;
-}
-
-
-message ListModelsRequest {}
-
-message ListModelsResponse {
-  repeated ModelListInfo models = 1;
 }
 
 message ChatSearchRequest {

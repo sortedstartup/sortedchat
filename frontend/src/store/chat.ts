@@ -9,8 +9,6 @@ import {
   CreateProjectRequest,
   GetChatListRequest,
   GetHistoryRequest,
-  ListModelsRequest,
-  ModelListInfo,
   SearchResult,
   SortedChatClient,
   Project,
@@ -40,6 +38,7 @@ import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { getUIConfig } from "../lib/config";
 import type { ClientReadableStream } from "grpc-web";
+import { $llmModels, $selectedModel } from "./inference";
 
 let _chatClient: SortedChatClient | undefined;
 
@@ -290,9 +289,9 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
       return;
     }
 
-
+    //coming from inference store
     const selectedModel = $selectedModel.get().model_name;
-    const modelInfo = $availableModels.get().find(m => m.id === selectedModel);
+    const modelInfo = $llmModels.get().find(m => m.id === selectedModel);
 
     if (!modelInfo?.capabilities?.image?.input) {
       toast.error("Selected model does not support image input. Please choose a vision-capable model.");
@@ -501,29 +500,6 @@ onMount($chatList, () => {
   return () => {
     // Disabled mode
   };
-});
-
-interface ModelProviderInfo {
-  model_name: string;
-  provider: string;
-}
-export const $availableModels = atom<ModelListInfo[]>([]);
-export const $selectedModel = atom<ModelProviderInfo>({
-  model_name: "gpt-5-nano",
-  provider: "openai"
-});
-
-export const fetchAvailableModels = async () => {
-  try {
-    const response = await getChatClient().ListModel(ListModelsRequest.fromObject({}), {});
-    $availableModels.set(response.models);
-  } catch (err) {
-    console.error("Failed to fetch models:", err);
-  }
-};
-
-onMount($availableModels, () => {
-  fetchAvailableModels();
 });
 
 // -- search --

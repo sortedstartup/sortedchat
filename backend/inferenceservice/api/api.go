@@ -89,6 +89,12 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 				filestoreID = *model.FileStoreID
 			}
 
+			// Parse capabilities
+			capabilities, err := dao.ParseCapabilities(model.Capabilities)
+			if err != nil {
+				slog.Error("inferenceservice:api:GetLLMModels", "message", "failed to parse capabilities", "error", err, "modelID", model.ID)
+			}
+
 			pbModels[i] = &pb.Model{
 				Id:              model.ID,
 				Name:            model.Name,
@@ -101,7 +107,7 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 				IsDownloadable:  model.IsDownloadable,
 				Status:          pb.DownloadStatus(model.Status),
 				FilestoreId:     filestoreID,
-				Capabilities:    model.Capabilities,
+				Capabilities:    capabilities,
 				CachedTokenCost: model.CachedTokenCost,
 				IsEnabled:       model.IsEnabled,
 			}

@@ -40,9 +40,22 @@ message Model {
   bool is_downloadable = 9;
   DownloadStatus status = 10;
   string filestore_id = 11;  // File path for downloadable models, null for non-downloadable
-  string capabilities = 12;
+  ModelCapabilities capabilities = 12;
   double cached_token_cost = 13;
   bool is_enabled = 14;
+}
+
+message ModelCapabilities {
+  Capability text = 1;
+  Capability audio = 2;
+  Capability video = 3;
+  Capability image = 4;
+  bool realtime = 5;
+}
+
+message Capability {
+  bool input = 1;
+  bool output = 2;
 }
   
 message DownloadModelRequest {

@@ -125,19 +125,19 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	projectID := req.GetProjectContext().GetProjectId()
 	ragEnabled := req.GetProjectContext().GetRagEnabled()
 
-	// STEP 1: Validate model capabilities
-	modelID := req.Model
-	modelInfo, err := s.dao.GetModelByID(modelID)
-	if err != nil {
-		slog.Error("service:Chat", "error", "failed to get model info", "error", err, "modelID", modelID)
-		return fmt.Errorf("failed to get model info")
-	}
+	// TODO: Validate model capabilities from inference service
+	// modelID := req.Model
+	// // modelInfo, err := s.dao.GetModelByID(modelID)
+	// // if err != nil {
+	// // 	slog.Error("service:Chat", "error", "failed to get model info", "error", err, "modelID", modelID)
+	// // 	return fmt.Errorf("failed to get model info")
+	// // }
 
-	capabilities, err := dao.ParseCapabilities(modelInfo.Capabilities)
-	if err != nil {
-		slog.Error("service:Chat", "error", "failed to parse model capabilities", "error", err, "modelID", modelID)
-		return fmt.Errorf("failed to parse model capabilities")
-	}
+	// capabilities, err := dao.ParseCapabilities(modelInfo.Capabilities)
+	// if err != nil {
+	// 	slog.Error("service:Chat", "error", "failed to parse model capabilities", "error", err, "modelID", modelID)
+	// 	return fmt.Errorf("failed to parse model capabilities")
+	// }
 
 	// STEP 2: Check if message contains images
 	hasImages := false
@@ -150,9 +150,9 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 	// STEP 3: Validate image input against model capability
 	if hasImages {
-		if capabilities.Image == nil || !capabilities.Image.Input {
-			return fmt.Errorf("selected model does not support image input")
-		}
+		// if capabilities.Image == nil || !capabilities.Image.Input {
+		// 	return fmt.Errorf("selected model does not support image input")
+		// }
 
 		// Validate image content
 		if err := s.validateImageContent(req.GetContents()); err != nil {
@@ -857,15 +857,15 @@ func (s *ChatService) CreateChat(ctx context.Context, userID string, name string
 	return chatId, nil
 }
 
-func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error) {
-	models, err := s.dao.GetModels()
-	if err != nil {
-		slog.Error("service:ListModel", "message", "failed to fetch models", "error", err)
-		return nil, fmt.Errorf("error while processing request, please try again")
-	}
+// func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error) {
+// 	models, err := s.dao.GetModels()
+// 	if err != nil {
+// 		slog.Error("service:ListModel", "message", "failed to fetch models", "error", err)
+// 		return nil, fmt.Errorf("error while processing request, please try again")
+// 	}
 
-	return models, nil
-}
+// 	return models, nil
+// }
 
 func (s *ChatService) SearchChat(ctx context.Context, userID string, query string) ([]*pb.SearchResult, error) {
 	if query == "" {

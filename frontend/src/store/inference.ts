@@ -23,8 +23,22 @@ function getClient(): InferenceServiceClient {
     return _inferenceClient;
 }
 
+
+interface ModelProviderInfo {
+    model_name: string;
+    provider: string;
+}
+
 export const $llmModels = atom<Model[]>([]);
+export const $selectedModel = atom<ModelProviderInfo>({
+    model_name: "gpt-5-nano",
+    provider: "openai"
+});
 export const $isLoadingModels = atom<boolean>(false);
+
+onMount($llmModels, () => {
+    ListLLMModels();
+})
 
 export const downloadModel = async (modelName: string) => {
 
@@ -46,30 +60,33 @@ export const downloadModel = async (modelName: string) => {
 export const ListLLMModels = async () => {
     $isLoadingModels.set(true);
 
-    try {
-        const req = new GetLLMModelsRequest({});
-        const res = getClient().GetLLMModels(req, {});
+    return new Promise<void>((resolve, reject) => {
+        try {
+            const req = new GetLLMModelsRequest({});
+            const res = getClient().GetLLMModels(req, {});
 
-        res.on('data', (data) => {
-            console.log('Models list loaded', data.models);
-            $llmModels.set(data.models);
-        });
+            res.on('data', (data) => {
+                console.log('Models list loaded', data.models);
+                $llmModels.set(data.models);
+            });
 
-        res.on('end', () => {
-            console.log('Models list loaded');
+            res.on('end', () => {
+                console.log('Models list loaded');
+                $isLoadingModels.set(false);
+                resolve();
+            });
+
+            res.on('error', (err) => {
+                console.error('Error loading models:', err);
+                $isLoadingModels.set(false);
+                reject(err);
+            });
+
+        } catch (error) {
             $isLoadingModels.set(false);
-        });
-
-        res.on('error', (err) => {
-            console.error('Error loading models:', err);
-            $isLoadingModels.set(false);
-        });
-
-        return res;
-    } catch (error) {
-        $isLoadingModels.set(false);
-        throw error;
-    }
+            reject(error);
+        }
+    });
 }
 
 onMount($llmModels, () => {

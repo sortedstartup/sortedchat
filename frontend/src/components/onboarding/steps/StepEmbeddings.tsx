@@ -12,19 +12,19 @@ export function StepEmbeddings() {
   const [isValidating, setIsValidating] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [validationError, setValidationError] = useState<string>('');
-  const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
-  
+  const [testResult, setTestResult] = useState<{ success: boolean, message: string } | null>(null);
+
   const handleTest = async () => {
     if (!data.OLLAMA_URL.trim()) {
       setValidationError('Please enter an Ollama URL to test');
       return;
     }
-    
+
     setIsTesting(true);
     setTestResult(null);
     setValidationError('');
-    
-    try { 
+
+    try {
       const result = await onboardingActions.testConnection(data.OLLAMA_URL, ConnectionType.OLLAMA);
       setTestResult({
         success: result.success,
@@ -39,11 +39,11 @@ export function StepEmbeddings() {
       setIsTesting(false);
     }
   };
-  
+
   const handleNext = async () => {
     setValidationError('');
     setIsValidating(true);
-    
+
     try {
       await onboardingActions.completeOnboarding();
     } catch (error) {
@@ -53,12 +53,12 @@ export function StepEmbeddings() {
       setIsValidating(false);
     }
   };
-  
+
   const handleBack = () => {
     onboardingActions.prevStep();
   };
-  
-  
+
+
   return (
     <div className="space-y-6">
       <div className="space-y-4">
@@ -68,43 +68,50 @@ export function StepEmbeddings() {
             <Input
               id="ollama-url"
               type="url"
-              placeholder="http://localhost:11434"
+              placeholder="http://localhost:8081"
               value={data.OLLAMA_URL}
               onChange={(e) => onboardingActions.setOllamaUrl(e.target.value)}
               className={validationError ? 'border-red-500' : ''}
             />
-            <Button
+            {/* <Button
               variant="outline"
               onClick={handleTest}
               disabled={isTesting || !data.OLLAMA_URL.trim()}
               className="min-w-[80px]"
             >
               {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Test'}
-            </Button>
+            </Button> */}
           </div>
-          
+
           {testResult && (
             <div className={`flex items-center gap-2 mt-2 text-sm ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
               {testResult.success ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               {testResult.message}
             </div>
           )}
-          
+
           {validationError && (
             <p className="text-sm text-red-600 mt-1">{validationError}</p>
           )}
-          <p className="text-sm text-gray-500 mt-1">
+          {/* <p className="text-sm text-gray-500 mt-1">
             URL where your Ollama server is running
-          </p>
+          </p> */}
         </div>
       </div>
-      
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+
+      {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800 mb-2">
           <strong>Need Ollama?</strong> Download from ollama.ai and run: <code className="bg-blue-100 px-1 rounded">ollama pull nomic-embed-text</code>
         </p>
+      </div> */}
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800 mb-2">
+          <strong></strong> Currently using <code className="bg--blue-100 px-1 rounded">nomic-embed-text</code> model for embedding generation
+        </p>
       </div>
-      
+
+
       <div className="flex justify-between">
         <Button
           variant="outline"
@@ -112,7 +119,7 @@ export function StepEmbeddings() {
         >
           Back
         </Button>
-        
+
         <Button
           onClick={handleNext}
           disabled={isValidating}
@@ -122,4 +129,4 @@ export function StepEmbeddings() {
       </div>
     </div>
   );
-}
+}	

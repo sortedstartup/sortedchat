@@ -29,16 +29,27 @@ const Settings = () => {
     try {
       const message = await saveSettings(formData);
       toast.success(message);
-      
+
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : "An unexpected error occurred while saving settings";
-        
+
       toast.error(errorMessage);
-      
+
       console.error("Save failed:", error);
-    } 
+    }
+  };
+
+  // Determine input type based on field name
+  const getInputType = (fieldName: string): string => {
+    if (fieldName.includes("URL")) {
+      return "text";
+    }
+    if (fieldName.includes("KEY")) {
+      return "password";
+    }
+    return "text"; // default to text
   };
 
   return (
@@ -56,16 +67,17 @@ const Settings = () => {
               <Input
                 id={fieldName}
                 value={formData[fieldName] || ""}
+                type={getInputType(fieldName)}
                 onChange={(e) => handleFieldChange(fieldName, e.target.value)}
               />
             </div>
           ))}
-          
+
           <div className="pt-2">
-            <Button 
-              onClick={handleSave} 
+            <Button
+              onClick={handleSave}
             >
-                Save
+              Save
             </Button>
           </div>
         </CardContent>

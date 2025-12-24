@@ -177,6 +177,7 @@ message ChatRequest {
     string model = 3;
     ProjectContext project_context = 4;
     repeated MessageContent contents = 5;  // New: support multiple content pieces
+    string provider = 6;
 }
 
 message ChatResponse {

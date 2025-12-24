@@ -160,7 +160,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
-	if apiKey == "" {
+	if apiKey == "" && req.Provider != "llama" {
 		slog.Error("service:Chat", "error", "OpenAI API key not set")
 		return fmt.Errorf("OpenAI API key not set")
 	}

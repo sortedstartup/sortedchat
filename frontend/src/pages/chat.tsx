@@ -148,7 +148,7 @@ function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undef
       })}
     </div>
   );
-  
+
 }
 
 interface MessageProps {
@@ -217,7 +217,7 @@ function Message({
             AI
           </div>
         )}
-  
+
         <div className={`flex-1 min-w-0 ${isUser ? "text-right" : "text-left"}`}>
           {isProgress ? (
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -363,7 +363,7 @@ function Message({
             </div>
           )}
         </div>
-  
+
         {isUser && (
           <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
             U
@@ -406,7 +406,7 @@ function ChatInputBox({
   const isStreaming = useStore($isStreaming);
 
   // Get current model capabilities
-  const modelInfo = availableModels.find(m => m.id === selectedModel);
+  const modelInfo = availableModels.find(m => m.id === selectedModel.model_name);
   const supportsImageInput = modelInfo?.capabilities?.image?.input ?? false;
 
   // Auto-resize textarea based on content
@@ -415,7 +415,7 @@ function ChatInputBox({
     if (textarea) {
       // Reset height to auto to get the correct scrollHeight
       textarea.style.height = 'auto';
-      
+
       // Calculate new height (min 48px, max 200px)
       const newHeight = Math.min(Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT), MAX_TEXTAREA_HEIGHT);
       textarea.style.height = `${newHeight}px`;
@@ -424,26 +424,26 @@ function ChatInputBox({
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
+
     // Validate file types
     const validFiles = files.filter(f => f.type.startsWith('image/'));
-    
+
     // Validate file sizes (20MB limit)
     const validSizes = validFiles.filter(f => f.size <= 20 * 1024 * 1024);
-    
+
     // Track validation issues
     const invalidTypeCount = files.length - validFiles.length;
     const invalidSizeCount = validFiles.length - validSizes.length;
-    
+
     // Check total image count limit (current + new)
     const currentCount = selectedImages.length;
     const newValidCount = validSizes.length;
     const totalCount = currentCount + newValidCount;
     const maxImages = 10;
-    
+
     let finalImages = validSizes;
     let wasLimited = false;
-    
+
     if (totalCount > maxImages) {
       const availableSlots = maxImages - currentCount;
       if (availableSlots <= 0) {
@@ -453,7 +453,7 @@ function ChatInputBox({
       finalImages = validSizes.slice(0, availableSlots);
       wasLimited = true;
     }
-    
+
     // Show appropriate error messages
     const errors = [];
     if (invalidTypeCount > 0) {
@@ -466,18 +466,18 @@ function ChatInputBox({
       const skippedCount = newValidCount - finalImages.length;
       errors.push(`${skippedCount} image(s) skipped (max ${maxImages} images allowed)`);
     }
-    
+
     if (errors.length > 0) {
       toast.error(errors.join(", "));
     }
-    
+
     // Only add images if we have valid ones to add
     if (finalImages.length > 0) {
       setSelectedImages(prev => [...prev, ...finalImages]);
       toast.success(`${finalImages.length} image(s) added`);
     }
   };
-  
+
   const removeImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
@@ -511,8 +511,8 @@ function ChatInputBox({
     }
   };
 
-  const handleModelSelect = (model: string) => {
-    $selectedModel.set(model);
+  const handleModelSelect = (model: string, provider: string) => {
+    $selectedModel.set({ model_name: model, provider });
   };
 
   const { costDisplay, cachedTokensDisplay } = formatCostAndTokens(
@@ -559,7 +559,7 @@ function ChatInputBox({
               </label>
             </div>
           )}
-          
+
           <div className="relative rounded-lg border border-border bg-card focus-within:ring-2 focus-within:ring-ring focus-within:border-ring">
             <textarea
               ref={textareaRef}
@@ -596,7 +596,7 @@ function ChatInputBox({
                     </Button>
                   </>
                 )}
-                
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -604,14 +604,14 @@ function ChatInputBox({
                       size="sm"
                       className="text-xs"
                     >
-                      {selectedModel || "Select Model"}
+                      {selectedModel.model_name || "Select Model"}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     {availableModels.map((model) => (
                       <DropdownMenuItem
                         key={model.id || model.label}
-                        onClick={() => handleModelSelect(model.id)}
+                        onClick={() => handleModelSelect(model.id, model.provider)}
                       >
                         <span>{model.label}</span>
                       </DropdownMenuItem>
@@ -642,19 +642,19 @@ function ChatInputBox({
               )}
             </div>
           </div>
-          
+
           {/* Show warning if images selected but model doesn't support */}
           {!supportsImageInput && selectedImages.length > 0 && (
             <div className="mt-2 text-xs text-destructive">
               Selected model doesn't support images. Choose a vision-capable model.
             </div>
           )}
-          
+
           {/* Optional: Detail level selector for advanced users */}
           {selectedImages.length > 0 && supportsImageInput && (
             <div className="mt-2 flex items-center space-x-2 text-xs text-muted-foreground">
               <span>Image detail:</span>
-              <select 
+              <select
                 className="text-xs border border-border rounded px-1 bg-card text-foreground"
                 value={imageDetail}
                 onChange={(e) => setImageDetail(e.target.value)}
@@ -829,15 +829,15 @@ export function Chat() {
   return (
     <div className="flex flex-col h-full w-full">
       {projectId && currentProject && (
-      <div className="p-4 border-b border-gray-200 flex-shrink-0 bg-white">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-            <FileText className="size-5 text-orange-500" />
+        <div className="p-4 border-b border-gray-200 flex-shrink-0 bg-white">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+              <FileText className="size-5 text-orange-500" />
+            </div>
+            <h1 className="text-xl font-bold">{currentProject}</h1>
           </div>
-          <h1 className="text-xl font-bold">{currentProject}</h1>
         </div>
-      </div>
-    )}
+      )}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto min-h-0">
         <div className={`mx-auto w-full transition-all ${isExpanded ? "max-w-7xl" : "max-w-4xl"}`}>
           {loading ? (

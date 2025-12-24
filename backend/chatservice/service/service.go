@@ -62,6 +62,7 @@ type GenerateEmbeddingMessage struct {
 
 const MAX_CHAT_NAME_LENGTH = 50
 const MIN_CHAT_NAME_LENGTH = 1
+const LLAMA_PROVIDER = "llama"
 
 // Image processing constants
 const (
@@ -160,7 +161,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
-	if apiKey == "" && req.Provider != "llama" {
+	if apiKey == "" && req.Provider != LLAMA_PROVIDER {
 		slog.Error("service:Chat", "error", "OpenAI API key not set")
 		return fmt.Errorf("OpenAI API key not set")
 	}

@@ -1,6 +1,7 @@
-import { Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2, AudioLines,
+import {
+  Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2, AudioLines,
   //  AudioLines //temporarily hiding it for this release only
-  } from "lucide-react";
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
@@ -61,7 +62,7 @@ export function AppSidebar() {
   const searchResults = useStore($searchResults);
   const trashChatList = useStore($trashChatList);
   const auth = useStore($auth);
-  
+
   const [projectName, setProjectName] = useState("");
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
@@ -69,7 +70,7 @@ export function AppSidebar() {
   const [showSoftDeleted, setShowSoftDeleted] = useState(false);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false); // Add state for audio modal
 
-  
+
   // Rename states (for both chats and projects)
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [renameItemId, setRenameItemId] = useState("");
@@ -179,7 +180,7 @@ export function AppSidebar() {
     getChatList($currentProjectId.get(), newShowSoftDeleted);
   };
 
-  const handleDeleteChat = async (chatId: string) => {  
+  const handleDeleteChat = async (chatId: string) => {
     await DeleteChat(chatId, DeleteChatRequestOperation.DELETE);
     navigate("/");
   };
@@ -199,7 +200,7 @@ export function AppSidebar() {
 
   const handleRenameConfirm = async () => {
     if (!newItemName.trim() || !renameItemId) return;
-    
+
     try {
       if (renameItemType === "chat") {
         await RenameChat(renameItemId, newItemName.trim());
@@ -242,7 +243,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
 
                 {/* Temporarily hiding it for this release only */}
-                 <SidebarMenuItem>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <button onClick={() => setIsAudioModalOpen(true)}
                     >
@@ -250,8 +251,8 @@ export function AppSidebar() {
                       <span>New Realtime Voice Chat</span>
                     </button>
                   </SidebarMenuButton>
-                </SidebarMenuItem> 
-                
+                </SidebarMenuItem>
+
                 <SidebarMenuItem>
                   <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
                     <DialogTrigger asChild>
@@ -264,7 +265,7 @@ export function AppSidebar() {
                       <DialogHeader className="px-6 pt-6 pb-4">
                         <DialogTitle>Search Conversations</DialogTitle>
                       </DialogHeader>
-                      
+
                       <div className="px-6">
                         <Input
                           type="text"
@@ -308,7 +309,7 @@ export function AppSidebar() {
                     </DialogContent>
                   </Dialog>
                 </SidebarMenuItem>
-                
+
                 <SidebarMenuItem>
                   <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
                     <DialogTrigger asChild>
@@ -358,9 +359,12 @@ export function AppSidebar() {
           <SidebarSeparator />
 
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
-              Projects
-            </SidebarGroupLabel>
+            <div className="flex items-center justify-between">
+              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
+                Projects
+              </SidebarGroupLabel>
+              <Button className="h-6 w-6 p-0" onClick={() => setIsProjectDialogOpen(true)}><Plus /></Button>
+            </div>
             <SidebarGroupContent>
               <SidebarMenu>
                 {projectsList.map((project) => (
@@ -373,7 +377,7 @@ export function AppSidebar() {
                         <Folder />
                         <span>{project.name}</span>
                       </SidebarMenuButton>
-                      
+
                       {/* Dropdown menu for projects */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -386,7 +390,7 @@ export function AppSidebar() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleRenameClick(project.id, project.name, "project")}
                             className="focus:bg-blue-50 focus:text-blue-600"
                           >
@@ -405,22 +409,27 @@ export function AppSidebar() {
           <SidebarSeparator />
 
           <SidebarGroup>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
                 {showSoftDeleted ? "Trash Chats" : "Chats"}
               </SidebarGroupLabel>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={toggleSoftDeleteView}
-              >
-                {showSoftDeleted ? (
-                  <ArchiveRestore className="h-4 w-4" />
-                ) : (
-                  <Archive className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button className="h-6 w-6 p-0" onClick={handleNewChat}>
+                  <Plus />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={toggleSoftDeleteView}
+                >
+                  {showSoftDeleted ? (
+                    <ArchiveRestore className="h-4 w-4" />
+                  ) : (
+                    <Archive className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -436,7 +445,7 @@ export function AppSidebar() {
                           {chat.name || "New Chat"}
                         </span>
                       </SidebarMenuButton>
-                      
+
                       {showSoftDeleted ? (
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
@@ -471,14 +480,14 @@ export function AppSidebar() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => handleRenameClick(chat.chatId, chat.name, "chat")}
                               className="focus:bg-blue-50 focus:text-blue-600"
                             >
                               <Edit2 className="h-4 w-4 mr-2" />
                               Rename
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => handleMoveToTrash(chat.chatId)}
                               className="text-red-600 focus:text-red-600"
                             >
@@ -571,7 +580,7 @@ export function AppSidebar() {
           </SidebarGroup>
         </div>
       </SidebarContent>
-      <RealtimeAudioModal 
+      <RealtimeAudioModal
         isOpen={isAudioModalOpen}
         onClose={() => setIsAudioModalOpen(false)}
       />

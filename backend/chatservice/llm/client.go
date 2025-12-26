@@ -96,24 +96,6 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 		apiKey = c.settingsManager.GetSettings().OpenAIAPIKey
 	}
 
-	// if provider == GEMINI_PROVIDER {
-	// 	url = c.settingsManager.GetSettings().GeminiAPIUrl
-	// 	apiKey = c.settingsManager.GetSettings().GeminiAPIKey
-	// } else if provider == CLAUDE_PROVIDER {
-	// 	url = c.settingsManager.GetSettings().ClaudeAPIUrl
-	// 	apiKey = c.settingsManager.GetSettings().ClaudeAPIKey
-	// } else if provider == LOCAL_PROVIDER {
-	// 	//TODO: should not be hard coded
-	// 	url = "http://localhost:8081/v1/chat/completions"
-	// 	apiKey = "x"
-	// } else {
-	// 	url = c.settingsManager.GetSettings().OpenaiAPIUrl
-	// 	apiKey = c.settingsManager.GetSettings().OpenAIAPIKey
-	// }
-	// if apiKey == "" {
-	// 	return nil, fmt.Errorf("API key not configured for model: %s", model)
-	// }
-
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		slog.Error("llm:Call", "error", err)

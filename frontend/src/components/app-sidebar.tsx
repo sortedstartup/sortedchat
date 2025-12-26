@@ -73,13 +73,8 @@ export function AppSidebar() {
 
   useEffect(() => {
     const checkEnv = async () => {
-      // Check if running in Wails
       if (typeof window !== 'undefined' && ((window as any).runtime || (window as any).go)) {
         try {
-          // Dynamic import to avoid build issues if wailsjs is not present in some environments
-          // or just import it at top level if we are sure. 
-          // Since we are in the same repo, we can import it.
-          // But wait, I need to add the import at the top.
           const { Environment } = await import("../../wailsjs/runtime/runtime");
           const env = await Environment();
           if (env.platform === 'linux') {

@@ -1071,7 +1071,7 @@ func (p *PostgresDAO) UpdateChatMessageDocumentReferences(userID string, message
 func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
 	slog.Info("dao_postgres:GetModels")
 	var models []Models
-	err := p.db.Select(&models, "SELECT id, name,provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}'::jsonb)::text AS capabilities FROM shared_models_metadata")
+	err := p.db.Select(&models, "SELECT id, name,provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}'::jsonb)::text AS capabilities, is_embedding_model, is_downloaded, is_downloadable FROM shared_models_metadata")
 	if err != nil {
 		slog.Error("dao_postgres:GetModels", "message", "failed to get models", "error", err)
 		return nil, fmt.Errorf("failed to get models")
@@ -1087,13 +1087,16 @@ func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
 		}
 
 		result = append(result, &proto.ModelListInfo{
-			Id:              m.ID,
-			Label:           m.Name,
-			Provider:        m.Provider,
-			Url:             m.URL,
-			InputTokenCost:  m.InputTokenCost,
-			OutputTokenCost: m.OutputTokenCost,
-			Capabilities:    capabilities,
+			Id:               m.ID,
+			Label:            m.Name,
+			Provider:         m.Provider,
+			Url:              m.URL,
+			InputTokenCost:   m.InputTokenCost,
+			OutputTokenCost:  m.OutputTokenCost,
+			Capabilities:     capabilities,
+			IsDownloadable:   m.IsDownloadable,
+			IsDownloaded:     m.IsDownloaded,
+			IsEmbeddingModel: m.IsEmbeddingModel,
 		})
 	}
 	return result, nil

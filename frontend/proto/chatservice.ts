@@ -5775,6 +5775,9 @@ export class ModelListInfo extends pb_1.Message {
         input_token_cost?: number;
         output_token_cost?: number;
         capabilities?: ModelCapabilities;
+        is_downloaded?: boolean;
+        is_downloadable?: boolean;
+        is_embedding_model?: boolean;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -5799,6 +5802,15 @@ export class ModelListInfo extends pb_1.Message {
             }
             if ("capabilities" in data && data.capabilities != undefined) {
                 this.capabilities = data.capabilities;
+            }
+            if ("is_downloaded" in data && data.is_downloaded != undefined) {
+                this.is_downloaded = data.is_downloaded;
+            }
+            if ("is_downloadable" in data && data.is_downloadable != undefined) {
+                this.is_downloadable = data.is_downloadable;
+            }
+            if ("is_embedding_model" in data && data.is_embedding_model != undefined) {
+                this.is_embedding_model = data.is_embedding_model;
             }
         }
     }
@@ -5847,6 +5859,24 @@ export class ModelListInfo extends pb_1.Message {
     get has_capabilities() {
         return pb_1.Message.getField(this, 7) != null;
     }
+    get is_downloaded() {
+        return pb_1.Message.getFieldWithDefault(this, 8, false) as boolean;
+    }
+    set is_downloaded(value: boolean) {
+        pb_1.Message.setField(this, 8, value);
+    }
+    get is_downloadable() {
+        return pb_1.Message.getFieldWithDefault(this, 9, false) as boolean;
+    }
+    set is_downloadable(value: boolean) {
+        pb_1.Message.setField(this, 9, value);
+    }
+    get is_embedding_model() {
+        return pb_1.Message.getFieldWithDefault(this, 10, false) as boolean;
+    }
+    set is_embedding_model(value: boolean) {
+        pb_1.Message.setField(this, 10, value);
+    }
     static fromObject(data: {
         id?: string;
         label?: string;
@@ -5855,6 +5885,9 @@ export class ModelListInfo extends pb_1.Message {
         input_token_cost?: number;
         output_token_cost?: number;
         capabilities?: ReturnType<typeof ModelCapabilities.prototype.toObject>;
+        is_downloaded?: boolean;
+        is_downloadable?: boolean;
+        is_embedding_model?: boolean;
     }): ModelListInfo {
         const message = new ModelListInfo({});
         if (data.id != null) {
@@ -5878,6 +5911,15 @@ export class ModelListInfo extends pb_1.Message {
         if (data.capabilities != null) {
             message.capabilities = ModelCapabilities.fromObject(data.capabilities);
         }
+        if (data.is_downloaded != null) {
+            message.is_downloaded = data.is_downloaded;
+        }
+        if (data.is_downloadable != null) {
+            message.is_downloadable = data.is_downloadable;
+        }
+        if (data.is_embedding_model != null) {
+            message.is_embedding_model = data.is_embedding_model;
+        }
         return message;
     }
     toObject() {
@@ -5889,6 +5931,9 @@ export class ModelListInfo extends pb_1.Message {
             input_token_cost?: number;
             output_token_cost?: number;
             capabilities?: ReturnType<typeof ModelCapabilities.prototype.toObject>;
+            is_downloaded?: boolean;
+            is_downloadable?: boolean;
+            is_embedding_model?: boolean;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -5911,6 +5956,15 @@ export class ModelListInfo extends pb_1.Message {
         if (this.capabilities != null) {
             data.capabilities = this.capabilities.toObject();
         }
+        if (this.is_downloaded != null) {
+            data.is_downloaded = this.is_downloaded;
+        }
+        if (this.is_downloadable != null) {
+            data.is_downloadable = this.is_downloadable;
+        }
+        if (this.is_embedding_model != null) {
+            data.is_embedding_model = this.is_embedding_model;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -5931,6 +5985,12 @@ export class ModelListInfo extends pb_1.Message {
             writer.writeFloat(6, this.output_token_cost);
         if (this.has_capabilities)
             writer.writeMessage(7, this.capabilities, () => this.capabilities.serialize(writer));
+        if (this.is_downloaded != false)
+            writer.writeBool(8, this.is_downloaded);
+        if (this.is_downloadable != false)
+            writer.writeBool(9, this.is_downloadable);
+        if (this.is_embedding_model != false)
+            writer.writeBool(10, this.is_embedding_model);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -5960,6 +6020,15 @@ export class ModelListInfo extends pb_1.Message {
                     break;
                 case 7:
                     reader.readMessage(message.capabilities, () => message.capabilities = ModelCapabilities.deserialize(reader));
+                    break;
+                case 8:
+                    message.is_downloaded = reader.readBool();
+                    break;
+                case 9:
+                    message.is_downloadable = reader.readBool();
+                    break;
+                case 10:
+                    message.is_embedding_model = reader.readBool();
                     break;
                 default: reader.skipField();
             }

@@ -608,14 +608,22 @@ function ChatInputBox({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    {availableModels.map((model) => (
-                      <DropdownMenuItem
-                        key={model.id || model.label}
-                        onClick={() => handleModelSelect(model.id, model.provider)}
-                      >
-                        <span>{model.label}</span>
-                      </DropdownMenuItem>
-                    ))}
+                    {availableModels
+                      .filter(
+                        (model) =>
+                          !model.is_embedding_model &&
+                          (!model.is_downloadable || model.is_downloaded)
+                      )
+                      .map((model) => (
+                        <DropdownMenuItem
+                          key={model.id || model.label}
+                          onClick={() =>
+                            handleModelSelect(model.id, model.provider)
+                          }
+                        >
+                          <span>{model.label}</span>
+                        </DropdownMenuItem>
+                      ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

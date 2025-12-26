@@ -1,10 +1,7 @@
 package dao
 
 import (
-	"encoding/json"
-	"fmt"
 	pb "sortedstartup/inferenceservice/proto"
-	"strings"
 )
 
 type ModelMetadata struct {
@@ -41,45 +38,4 @@ type DownloadProgress struct {
 	Status   int   `json:"status"`   // Status constant (0-4)
 	Progress int   `json:"progress"` // Progress percentage (0-100)
 	Speed    int64 `json:"speed"`    // Download speed in kilobytes per second
-}
-
-// Intermediate struct for JSON parsing
-type CapabilitiesJSON struct {
-	Text     CapabilityJSON `json:"text"`
-	Audio    CapabilityJSON `json:"audio"`
-	Video    CapabilityJSON `json:"video"`
-	Image    CapabilityJSON `json:"image"`
-	Realtime bool           `json:"realtime"`
-}
-
-type CapabilityJSON struct {
-	Input  bool `json:"input"`
-	Output bool `json:"output"`
-}
-
-func ParseCapabilities(capabilitiesJSON string) (*pb.ModelCapabilities, error) {
-	if strings.TrimSpace(capabilitiesJSON) == "" {
-		return &pb.ModelCapabilities{}, nil
-	}
-	var caps CapabilitiesJSON
-	dec := json.NewDecoder(strings.NewReader(capabilitiesJSON))
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&caps); err != nil {
-		return nil, fmt.Errorf("parse capabilities: %w", err)
-	}
-
-	toProto := func(c CapabilityJSON) *pb.Capability {
-		if !c.Input && !c.Output {
-			return nil
-		}
-		return &pb.Capability{Input: c.Input, Output: c.Output}
-	}
-
-	return &pb.ModelCapabilities{
-		Text:     toProto(caps.Text),
-		Audio:    toProto(caps.Audio),
-		Video:    toProto(caps.Video),
-		Image:    toProto(caps.Image),
-		Realtime: caps.Realtime,
-	}, nil
 }

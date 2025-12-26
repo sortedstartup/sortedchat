@@ -128,7 +128,7 @@ func (s *ChatServiceAPI) GenerateChatName(ctx context.Context, req *pb.GenerateC
 		slog.Error("api:GenerateChatName", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
-	chatName, err := s.service.GenerateChatName(ctx, userID, req.GetChatId(), req.GetMessage(), req.GetModel())
+	chatName, err := s.service.GenerateChatName(ctx, userID, req.GetChatId(), req.GetMessage(), req.GetModel(), req.GetProvider())
 	if err != nil {
 		slog.Error("api:GenerateChatName", "message", "failed to generate chat name", "error", err)
 		return nil, fmt.Errorf("failed to generate chat name")
@@ -414,6 +414,16 @@ func (s *ChatServiceAPI) RenameItem(ctx context.Context, req *pb.RenameItemReque
 	}
 
 	return &pb.RenameItemResponse{Message: msg}, nil
+}
+
+func (s *ChatServiceAPI) ListModel(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {
+	models, err := s.service.ListModel(ctx)
+	if err != nil {
+		slog.Error("api:ListModel", "message", "failed to list models", "error", err)
+		return nil, fmt.Errorf("failed to list models")
+	}
+
+	return &pb.ListModelsResponse{Models: models}, nil
 }
 
 func (s *ChatServiceAPI) Init(config *db.Config) {

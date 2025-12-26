@@ -1,5 +1,12 @@
 package dao
 
+import (
+	"encoding/json"
+	"fmt"
+	"sortedstartup/chatservice/proto"
+	"strings"
+)
+
 type ChatMessageRow struct {
 	Role               string  `db:"role" json:"role"`
 	Content            string  `db:"content" json:"content"`
@@ -92,29 +99,29 @@ type dbSettings struct {
 	Settings string `db:"settings"`
 }
 
-// func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {
-// 	if strings.TrimSpace(capabilitiesJSON) == "" {
-// 		return &proto.ModelCapabilities{}, nil
-// 	}
-// 	var caps CapabilitiesJSON
-// 	dec := json.NewDecoder(strings.NewReader(capabilitiesJSON))
-// 	dec.DisallowUnknownFields()
-// 	if err := dec.Decode(&caps); err != nil {
-// 		return nil, fmt.Errorf("parse capabilities: %w", err)
-// 	}
+func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {
+	if strings.TrimSpace(capabilitiesJSON) == "" {
+		return &proto.ModelCapabilities{}, nil
+	}
+	var caps CapabilitiesJSON
+	dec := json.NewDecoder(strings.NewReader(capabilitiesJSON))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&caps); err != nil {
+		return nil, fmt.Errorf("parse capabilities: %w", err)
+	}
 
-// 	toProto := func(c CapabilityJSON) *proto.Capability {
-// 		if !c.Input && !c.Output {
-// 			return nil
-// 		}
-// 		return &proto.Capability{Input: c.Input, Output: c.Output}
-// 	}
+	toProto := func(c CapabilityJSON) *proto.Capability {
+		if !c.Input && !c.Output {
+			return nil
+		}
+		return &proto.Capability{Input: c.Input, Output: c.Output}
+	}
 
-// 	return &proto.ModelCapabilities{
-// 		Text:     toProto(caps.Text),
-// 		Audio:    toProto(caps.Audio),
-// 		Video:    toProto(caps.Video),
-// 		Image:    toProto(caps.Image),
-// 		Realtime: caps.Realtime,
-// 	}, nil
-// }
+	return &proto.ModelCapabilities{
+		Text:     toProto(caps.Text),
+		Audio:    toProto(caps.Audio),
+		Video:    toProto(caps.Video),
+		Image:    toProto(caps.Image),
+		Realtime: caps.Realtime,
+	}, nil
+}

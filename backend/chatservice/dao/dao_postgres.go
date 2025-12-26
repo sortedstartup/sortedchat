@@ -150,7 +150,7 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 func (p *PostgresDAO) GetModelByID(modelID string) (*Models, error) {
 	var model Models
 	err := p.db.Get(&model,
-		"SELECT id, name, provider, url, input_token_cost, output_token_cost, COALESCE(capabilities, '{}'::jsonb)::text AS capabilities FROM model_metadata WHERE id = $1",
+		"SELECT id, name, provider, url, input_token_cost, output_token_cost, COALESCE(capabilities, '{}'::jsonb)::text AS capabilities FROM shared_models_metadata WHERE id = $1",
 		modelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get model: %w", err)
@@ -248,7 +248,7 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 		),
 		prices AS (
 			SELECT input_token_cost, output_token_cost, cached_token_cost
-			FROM model_metadata WHERE id = $5
+			FROM shared_models_metadata WHERE id = $5
 		),
 		calc AS (
 			SELECT (p.input_token_cost * $6
@@ -920,7 +920,7 @@ func (p *PostgresDAO) IsNameExists(userID string, chatId string, name string) (b
 func (p *PostgresDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
 	slog.Info("dao_postgres:UpsertModel", "modelID", modelID, "name", name, "url", url, "provider", provider, "inputTokenCost", inputTokenCost, "outputTokenCost", outputTokenCost, "cachedTokenCost", cachedTokenCost)
 	_, err := p.db.Exec(`
-		INSERT INTO model_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
+		INSERT INTO shared_models_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (id) DO UPDATE SET
 			name = EXCLUDED.name,
@@ -1071,7 +1071,7 @@ func (p *PostgresDAO) UpdateChatMessageDocumentReferences(userID string, message
 func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
 	slog.Info("dao_postgres:GetModels")
 	var models []Models
-	err := p.db.Select(&models, "SELECT id, name,provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}'::jsonb)::text AS capabilities FROM model_metadata")
+	err := p.db.Select(&models, "SELECT id, name,provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}'::jsonb)::text AS capabilities FROM shared_models_metadata")
 	if err != nil {
 		slog.Error("dao_postgres:GetModels", "message", "failed to get models", "error", err)
 		return nil, fmt.Errorf("failed to get models")

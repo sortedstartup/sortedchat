@@ -199,7 +199,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 	var inputCost, outputCost, cachedCost float64
 	err = s.db.QueryRow(`
         SELECT input_token_cost, output_token_cost, cached_token_cost
-        FROM 
+        FROM shared_models_metadata
         WHERE id = ?`, model).Scan(&inputCost, &outputCost, &cachedCost)
 	if err != nil {
 		slog.Error("dao_sqlite:AddChatMessageWithTokens", "message", "failed to get model metadata", "error", err, "chatId", chatId, "userID", userID)

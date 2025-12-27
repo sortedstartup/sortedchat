@@ -3352,6 +3352,1100 @@ func (x *ListChatBranchResponse) GetBranchChatList() []*ChatInfo {
 	return nil
 }
 
+type CreateAgentRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// not mandatory
+	Description   string   `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	SystemPrompt  string   `protobuf:"bytes,3,opt,name=system_prompt,json=systemPrompt,proto3" json:"system_prompt,omitempty"`
+	Provider      string   `protobuf:"bytes,5,opt,name=provider,proto3" json:"provider,omitempty"`
+	Model         string   `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
+	LocalTools    []string `protobuf:"bytes,6,rep,name=local_tools,json=localTools,proto3" json:"local_tools,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateAgentRequest) Reset() {
+	*x = CreateAgentRequest{}
+	mi := &file_chatservice_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAgentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAgentRequest) ProtoMessage() {}
+
+func (x *CreateAgentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAgentRequest.ProtoReflect.Descriptor instead.
+func (*CreateAgentRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{55}
+}
+
+func (x *CreateAgentRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateAgentRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *CreateAgentRequest) GetSystemPrompt() string {
+	if x != nil {
+		return x.SystemPrompt
+	}
+	return ""
+}
+
+func (x *CreateAgentRequest) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *CreateAgentRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *CreateAgentRequest) GetLocalTools() []string {
+	if x != nil {
+		return x.LocalTools
+	}
+	return nil
+}
+
+type Agent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// metadata
+	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name        string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// configuration
+	SystemPrompt string `protobuf:"bytes,4,opt,name=system_prompt,json=systemPrompt,proto3" json:"system_prompt,omitempty"`
+	Provider     string `protobuf:"bytes,5,opt,name=provider,proto3" json:"provider,omitempty"`
+	Model        string `protobuf:"bytes,6,opt,name=model,proto3" json:"model,omitempty"`
+	// tools
+	LocalTools    []string `protobuf:"bytes,8,rep,name=local_tools,json=localTools,proto3" json:"local_tools,omitempty"` // repeated string remote_tools = 9;
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Agent) Reset() {
+	*x = Agent{}
+	mi := &file_chatservice_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Agent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Agent) ProtoMessage() {}
+
+func (x *Agent) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Agent.ProtoReflect.Descriptor instead.
+func (*Agent) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *Agent) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Agent) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Agent) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *Agent) GetSystemPrompt() string {
+	if x != nil {
+		return x.SystemPrompt
+	}
+	return ""
+}
+
+func (x *Agent) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *Agent) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *Agent) GetLocalTools() []string {
+	if x != nil {
+		return x.LocalTools
+	}
+	return nil
+}
+
+type CreateAgentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateAgentResponse) Reset() {
+	*x = CreateAgentResponse{}
+	mi := &file_chatservice_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAgentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAgentResponse) ProtoMessage() {}
+
+func (x *CreateAgentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAgentResponse.ProtoReflect.Descriptor instead.
+func (*CreateAgentResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *CreateAgentResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *CreateAgentResponse) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+type GetAgentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAgentsRequest) Reset() {
+	*x = GetAgentsRequest{}
+	mi := &file_chatservice_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAgentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAgentsRequest) ProtoMessage() {}
+
+func (x *GetAgentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAgentsRequest.ProtoReflect.Descriptor instead.
+func (*GetAgentsRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{58}
+}
+
+type GetAgentsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Agents        []*Agent               `protobuf:"bytes,1,rep,name=agents,proto3" json:"agents,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAgentsResponse) Reset() {
+	*x = GetAgentsResponse{}
+	mi := &file_chatservice_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAgentsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAgentsResponse) ProtoMessage() {}
+
+func (x *GetAgentsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAgentsResponse.ProtoReflect.Descriptor instead.
+func (*GetAgentsResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *GetAgentsResponse) GetAgents() []*Agent {
+	if x != nil {
+		return x.Agents
+	}
+	return nil
+}
+
+type CreateSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateSessionRequest) Reset() {
+	*x = CreateSessionRequest{}
+	mi := &file_chatservice_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateSessionRequest) ProtoMessage() {}
+
+func (x *CreateSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateSessionRequest.ProtoReflect.Descriptor instead.
+func (*CreateSessionRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *CreateSessionRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+type CreateSessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateSessionResponse) Reset() {
+	*x = CreateSessionResponse{}
+	mi := &file_chatservice_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateSessionResponse) ProtoMessage() {}
+
+func (x *CreateSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateSessionResponse.ProtoReflect.Descriptor instead.
+func (*CreateSessionResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{61}
+}
+
+func (x *CreateSessionResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *CreateSessionResponse) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type AgentChatRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentChatRequest) Reset() {
+	*x = AgentChatRequest{}
+	mi := &file_chatservice_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentChatRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentChatRequest) ProtoMessage() {}
+
+func (x *AgentChatRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentChatRequest.ProtoReflect.Descriptor instead.
+func (*AgentChatRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *AgentChatRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *AgentChatRequest) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type AgentChatResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Response:
+	//
+	//	*AgentChatResponse_Message
+	//	*AgentChatResponse_Thinking
+	//	*AgentChatResponse_ToolCall
+	//	*AgentChatResponse_ToolResult
+	//	*AgentChatResponse_Error
+	Response      isAgentChatResponse_Response `protobuf_oneof:"response"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentChatResponse) Reset() {
+	*x = AgentChatResponse{}
+	mi := &file_chatservice_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentChatResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentChatResponse) ProtoMessage() {}
+
+func (x *AgentChatResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentChatResponse.ProtoReflect.Descriptor instead.
+func (*AgentChatResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *AgentChatResponse) GetResponse() isAgentChatResponse_Response {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *AgentChatResponse) GetMessage() string {
+	if x != nil {
+		if x, ok := x.Response.(*AgentChatResponse_Message); ok {
+			return x.Message
+		}
+	}
+	return ""
+}
+
+func (x *AgentChatResponse) GetThinking() string {
+	if x != nil {
+		if x, ok := x.Response.(*AgentChatResponse_Thinking); ok {
+			return x.Thinking
+		}
+	}
+	return ""
+}
+
+func (x *AgentChatResponse) GetToolCall() string {
+	if x != nil {
+		if x, ok := x.Response.(*AgentChatResponse_ToolCall); ok {
+			return x.ToolCall
+		}
+	}
+	return ""
+}
+
+func (x *AgentChatResponse) GetToolResult() string {
+	if x != nil {
+		if x, ok := x.Response.(*AgentChatResponse_ToolResult); ok {
+			return x.ToolResult
+		}
+	}
+	return ""
+}
+
+func (x *AgentChatResponse) GetError() string {
+	if x != nil {
+		if x, ok := x.Response.(*AgentChatResponse_Error); ok {
+			return x.Error
+		}
+	}
+	return ""
+}
+
+type isAgentChatResponse_Response interface {
+	isAgentChatResponse_Response()
+}
+
+type AgentChatResponse_Message struct {
+	Message string `protobuf:"bytes,1,opt,name=message,proto3,oneof"`
+}
+
+type AgentChatResponse_Thinking struct {
+	Thinking string `protobuf:"bytes,2,opt,name=thinking,proto3,oneof"`
+}
+
+type AgentChatResponse_ToolCall struct {
+	ToolCall string `protobuf:"bytes,3,opt,name=tool_call,json=toolCall,proto3,oneof"`
+}
+
+type AgentChatResponse_ToolResult struct {
+	ToolResult string `protobuf:"bytes,4,opt,name=tool_result,json=toolResult,proto3,oneof"`
+}
+
+type AgentChatResponse_Error struct {
+	Error string `protobuf:"bytes,5,opt,name=error,proto3,oneof"`
+}
+
+func (*AgentChatResponse_Message) isAgentChatResponse_Response() {}
+
+func (*AgentChatResponse_Thinking) isAgentChatResponse_Response() {}
+
+func (*AgentChatResponse_ToolCall) isAgentChatResponse_Response() {}
+
+func (*AgentChatResponse_ToolResult) isAgentChatResponse_Response() {}
+
+func (*AgentChatResponse_Error) isAgentChatResponse_Response() {}
+
+type GetSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSessionRequest) Reset() {
+	*x = GetSessionRequest{}
+	mi := &file_chatservice_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSessionRequest) ProtoMessage() {}
+
+func (x *GetSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSessionRequest.ProtoReflect.Descriptor instead.
+func (*GetSessionRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *GetSessionRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type GetSessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSessionResponse) Reset() {
+	*x = GetSessionResponse{}
+	mi := &file_chatservice_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSessionResponse) ProtoMessage() {}
+
+func (x *GetSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSessionResponse.ProtoReflect.Descriptor instead.
+func (*GetSessionResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *GetSessionResponse) GetSession() *Session {
+	if x != nil {
+		return x.Session
+	}
+	return nil
+}
+
+type Session struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Session) Reset() {
+	*x = Session{}
+	mi := &file_chatservice_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Session) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Session) ProtoMessage() {}
+
+func (x *Session) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Session.ProtoReflect.Descriptor instead.
+func (*Session) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *Session) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Session) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+type GetSessionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSessionsRequest) Reset() {
+	*x = GetSessionsRequest{}
+	mi := &file_chatservice_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSessionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSessionsRequest) ProtoMessage() {}
+
+func (x *GetSessionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSessionsRequest.ProtoReflect.Descriptor instead.
+func (*GetSessionsRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{67}
+}
+
+type GetSessionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sessions      []*Session             `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSessionsResponse) Reset() {
+	*x = GetSessionsResponse{}
+	mi := &file_chatservice_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSessionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSessionsResponse) ProtoMessage() {}
+
+func (x *GetSessionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSessionsResponse.ProtoReflect.Descriptor instead.
+func (*GetSessionsResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{68}
+}
+
+func (x *GetSessionsResponse) GetSessions() []*Session {
+	if x != nil {
+		return x.Sessions
+	}
+	return nil
+}
+
+type GetAgentMessagesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAgentMessagesRequest) Reset() {
+	*x = GetAgentMessagesRequest{}
+	mi := &file_chatservice_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAgentMessagesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAgentMessagesRequest) ProtoMessage() {}
+
+func (x *GetAgentMessagesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAgentMessagesRequest.ProtoReflect.Descriptor instead.
+func (*GetAgentMessagesRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{69}
+}
+
+func (x *GetAgentMessagesRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type GetAgentMessagesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Messages      []*AgentMessage        `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAgentMessagesResponse) Reset() {
+	*x = GetAgentMessagesResponse{}
+	mi := &file_chatservice_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAgentMessagesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAgentMessagesResponse) ProtoMessage() {}
+
+func (x *GetAgentMessagesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAgentMessagesResponse.ProtoReflect.Descriptor instead.
+func (*GetAgentMessagesResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *GetAgentMessagesResponse) GetMessages() []*AgentMessage {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
+type AgentMessage struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	SessionId      string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	SequenceNumber int32                  `protobuf:"varint,3,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
+	Role           string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
+	Type           string                 `protobuf:"bytes,5,opt,name=type,proto3" json:"type,omitempty"`
+	Content        string                 `protobuf:"bytes,6,opt,name=content,proto3" json:"content,omitempty"`
+	ToolName       string                 `protobuf:"bytes,7,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
+	ToolCallId     string                 `protobuf:"bytes,8,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	ToolArgs       string                 `protobuf:"bytes,9,opt,name=tool_args,json=toolArgs,proto3" json:"tool_args,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *AgentMessage) Reset() {
+	*x = AgentMessage{}
+	mi := &file_chatservice_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentMessage) ProtoMessage() {}
+
+func (x *AgentMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentMessage.ProtoReflect.Descriptor instead.
+func (*AgentMessage) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{71}
+}
+
+func (x *AgentMessage) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetSequenceNumber() int32 {
+	if x != nil {
+		return x.SequenceNumber
+	}
+	return 0
+}
+
+func (x *AgentMessage) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetToolName() string {
+	if x != nil {
+		return x.ToolName
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetToolArgs() string {
+	if x != nil {
+		return x.ToolArgs
+	}
+	return ""
+}
+
+type GetAgentMessageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAgentMessageRequest) Reset() {
+	*x = GetAgentMessageRequest{}
+	mi := &file_chatservice_proto_msgTypes[72]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAgentMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAgentMessageRequest) ProtoMessage() {}
+
+func (x *GetAgentMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[72]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAgentMessageRequest.ProtoReflect.Descriptor instead.
+func (*GetAgentMessageRequest) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{72}
+}
+
+func (x *GetAgentMessageRequest) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+type GetAgentMessageResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *AgentMessage          `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAgentMessageResponse) Reset() {
+	*x = GetAgentMessageResponse{}
+	mi := &file_chatservice_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAgentMessageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAgentMessageResponse) ProtoMessage() {}
+
+func (x *GetAgentMessageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chatservice_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAgentMessageResponse.ProtoReflect.Descriptor instead.
+func (*GetAgentMessageResponse) Descriptor() ([]byte, []int) {
+	return file_chatservice_proto_rawDescGZIP(), []int{73}
+}
+
+func (x *GetAgentMessageResponse) GetMessage() *AgentMessage {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
 type RAGDocumentReferenceSummaryList_Summary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DocId         string                 `protobuf:"bytes,1,opt,name=doc_id,json=docId,proto3" json:"doc_id,omitempty"`
@@ -3363,7 +4457,7 @@ type RAGDocumentReferenceSummaryList_Summary struct {
 
 func (x *RAGDocumentReferenceSummaryList_Summary) Reset() {
 	*x = RAGDocumentReferenceSummaryList_Summary{}
-	mi := &file_chatservice_proto_msgTypes[55]
+	mi := &file_chatservice_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3375,7 +4469,7 @@ func (x *RAGDocumentReferenceSummaryList_Summary) String() string {
 func (*RAGDocumentReferenceSummaryList_Summary) ProtoMessage() {}
 
 func (x *RAGDocumentReferenceSummaryList_Summary) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[55]
+	mi := &file_chatservice_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3424,7 +4518,7 @@ type RAGDocumentReference_Chunk struct {
 
 func (x *RAGDocumentReference_Chunk) Reset() {
 	*x = RAGDocumentReference_Chunk{}
-	mi := &file_chatservice_proto_msgTypes[56]
+	mi := &file_chatservice_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3436,7 +4530,7 @@ func (x *RAGDocumentReference_Chunk) String() string {
 func (*RAGDocumentReference_Chunk) ProtoMessage() {}
 
 func (x *RAGDocumentReference_Chunk) ProtoReflect() protoreflect.Message {
-	mi := &file_chatservice_proto_msgTypes[56]
+	mi := &file_chatservice_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3721,7 +4815,82 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x15ListChatBranchRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\"X\n" +
 	"\x16ListChatBranchResponse\x12>\n" +
-	"\x10branch_chat_list\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x0ebranchChatList*(\n" +
+	"\x10branch_chat_list\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x0ebranchChatList\"\xc2\x01\n" +
+	"\x12CreateAgentRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12#\n" +
+	"\rsystem_prompt\x18\x03 \x01(\tR\fsystemPrompt\x12\x1a\n" +
+	"\bprovider\x18\x05 \x01(\tR\bprovider\x12\x14\n" +
+	"\x05model\x18\x04 \x01(\tR\x05model\x12\x1f\n" +
+	"\vlocal_tools\x18\x06 \x03(\tR\n" +
+	"localTools\"\xc5\x01\n" +
+	"\x05Agent\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12#\n" +
+	"\rsystem_prompt\x18\x04 \x01(\tR\fsystemPrompt\x12\x1a\n" +
+	"\bprovider\x18\x05 \x01(\tR\bprovider\x12\x14\n" +
+	"\x05model\x18\x06 \x01(\tR\x05model\x12\x1f\n" +
+	"\vlocal_tools\x18\b \x03(\tR\n" +
+	"localTools\"J\n" +
+	"\x13CreateAgentResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\"\x12\n" +
+	"\x10GetAgentsRequest\">\n" +
+	"\x11GetAgentsResponse\x12)\n" +
+	"\x06agents\x18\x01 \x03(\v2\x11.sortedchat.AgentR\x06agents\"1\n" +
+	"\x14CreateSessionRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\tR\aagentId\"P\n" +
+	"\x15CreateSessionResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\"K\n" +
+	"\x10AgentChatRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xb3\x01\n" +
+	"\x11AgentChatResponse\x12\x1a\n" +
+	"\amessage\x18\x01 \x01(\tH\x00R\amessage\x12\x1c\n" +
+	"\bthinking\x18\x02 \x01(\tH\x00R\bthinking\x12\x1d\n" +
+	"\ttool_call\x18\x03 \x01(\tH\x00R\btoolCall\x12!\n" +
+	"\vtool_result\x18\x04 \x01(\tH\x00R\n" +
+	"toolResult\x12\x16\n" +
+	"\x05error\x18\x05 \x01(\tH\x00R\x05errorB\n" +
+	"\n" +
+	"\bresponse\"2\n" +
+	"\x11GetSessionRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"C\n" +
+	"\x12GetSessionResponse\x12-\n" +
+	"\asession\x18\x01 \x01(\v2\x13.sortedchat.SessionR\asession\"4\n" +
+	"\aSession\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\"\x14\n" +
+	"\x12GetSessionsRequest\"F\n" +
+	"\x13GetSessionsResponse\x12/\n" +
+	"\bsessions\x18\x01 \x03(\v2\x13.sortedchat.SessionR\bsessions\"8\n" +
+	"\x17GetAgentMessagesRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"P\n" +
+	"\x18GetAgentMessagesResponse\x124\n" +
+	"\bmessages\x18\x01 \x03(\v2\x18.sortedchat.AgentMessageR\bmessages\"\x84\x02\n" +
+	"\fAgentMessage\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12'\n" +
+	"\x0fsequence_number\x18\x03 \x01(\x05R\x0esequenceNumber\x12\x12\n" +
+	"\x04role\x18\x04 \x01(\tR\x04role\x12\x12\n" +
+	"\x04type\x18\x05 \x01(\tR\x04type\x12\x18\n" +
+	"\acontent\x18\x06 \x01(\tR\acontent\x12\x1b\n" +
+	"\ttool_name\x18\a \x01(\tR\btoolName\x12 \n" +
+	"\ftool_call_id\x18\b \x01(\tR\n" +
+	"toolCallId\x12\x1b\n" +
+	"\ttool_args\x18\t \x01(\tR\btoolArgs\"7\n" +
+	"\x16GetAgentMessageRequest\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\"M\n" +
+	"\x17GetAgentMessageResponse\x122\n" +
+	"\amessage\x18\x01 \x01(\v2\x18.sortedchat.AgentMessageR\amessage*(\n" +
 	"\x0eConnectionType\x12\n" +
 	"\n" +
 	"\x06OLLAMA\x10\x00\x12\n" +
@@ -3762,7 +4931,17 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"SetSetting\x12\x1d.sortedchat.SetSettingRequest\x1a\x1e.sortedchat.SetSettingResponse\x12N\n" +
 	"\vIsFirstBoot\x12\x1e.sortedchat.IsFirstBootRequest\x1a\x1f.sortedchat.IsFirstBootResponse\x12W\n" +
-	"\x0eTestConnection\x12!.sortedchat.TestConnectionRequest\x1a\".sortedchat.TestConnectionResponseB!Z\x1fsortedstartup/chatservice/protob\x06proto3"
+	"\x0eTestConnection\x12!.sortedchat.TestConnectionRequest\x1a\".sortedchat.TestConnectionResponse2\xa2\x05\n" +
+	"\fAgentService\x12N\n" +
+	"\vCreateAgent\x12\x1e.sortedchat.CreateAgentRequest\x1a\x1f.sortedchat.CreateAgentResponse\x12H\n" +
+	"\tGetAgents\x12\x1c.sortedchat.GetAgentsRequest\x1a\x1d.sortedchat.GetAgentsResponse\x12T\n" +
+	"\rCreateSession\x12 .sortedchat.CreateSessionRequest\x1a!.sortedchat.CreateSessionResponse\x12K\n" +
+	"\n" +
+	"GetSession\x12\x1d.sortedchat.GetSessionRequest\x1a\x1e.sortedchat.GetSessionResponse\x12N\n" +
+	"\vGetSessions\x12\x1e.sortedchat.GetSessionsRequest\x1a\x1f.sortedchat.GetSessionsResponse\x12J\n" +
+	"\tAgentChat\x12\x1c.sortedchat.AgentChatRequest\x1a\x1d.sortedchat.AgentChatResponse0\x01\x12]\n" +
+	"\x10GetAgentMessages\x12#.sortedchat.GetAgentMessagesRequest\x1a$.sortedchat.GetAgentMessagesResponse\x12Z\n" +
+	"\x0fGetAgentMessage\x12\".sortedchat.GetAgentMessageRequest\x1a#.sortedchat.GetAgentMessageResponseB!Z\x1fsortedstartup/chatservice/protob\x06proto3"
 
 var (
 	file_chatservice_proto_rawDescOnce sync.Once
@@ -3777,7 +4956,7 @@ func file_chatservice_proto_rawDescGZIP() []byte {
 }
 
 var file_chatservice_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 57)
+var file_chatservice_proto_msgTypes = make([]protoimpl.MessageInfo, 76)
 var file_chatservice_proto_goTypes = []any{
 	(ConnectionType)(0),                             // 0: sortedchat.ConnectionType
 	(Embedding_Status)(0),                           // 1: sortedchat.Embedding_Status
@@ -3839,8 +5018,27 @@ var file_chatservice_proto_goTypes = []any{
 	(*BranchAChatResponse)(nil),                     // 57: sortedchat.BranchAChatResponse
 	(*ListChatBranchRequest)(nil),                   // 58: sortedchat.ListChatBranchRequest
 	(*ListChatBranchResponse)(nil),                  // 59: sortedchat.ListChatBranchResponse
-	(*RAGDocumentReferenceSummaryList_Summary)(nil), // 60: sortedchat.RAGDocumentReferenceSummaryList.Summary
-	(*RAGDocumentReference_Chunk)(nil),              // 61: sortedchat.RAGDocumentReference.Chunk
+	(*CreateAgentRequest)(nil),                      // 60: sortedchat.CreateAgentRequest
+	(*Agent)(nil),                                   // 61: sortedchat.Agent
+	(*CreateAgentResponse)(nil),                     // 62: sortedchat.CreateAgentResponse
+	(*GetAgentsRequest)(nil),                        // 63: sortedchat.GetAgentsRequest
+	(*GetAgentsResponse)(nil),                       // 64: sortedchat.GetAgentsResponse
+	(*CreateSessionRequest)(nil),                    // 65: sortedchat.CreateSessionRequest
+	(*CreateSessionResponse)(nil),                   // 66: sortedchat.CreateSessionResponse
+	(*AgentChatRequest)(nil),                        // 67: sortedchat.AgentChatRequest
+	(*AgentChatResponse)(nil),                       // 68: sortedchat.AgentChatResponse
+	(*GetSessionRequest)(nil),                       // 69: sortedchat.GetSessionRequest
+	(*GetSessionResponse)(nil),                      // 70: sortedchat.GetSessionResponse
+	(*Session)(nil),                                 // 71: sortedchat.Session
+	(*GetSessionsRequest)(nil),                      // 72: sortedchat.GetSessionsRequest
+	(*GetSessionsResponse)(nil),                     // 73: sortedchat.GetSessionsResponse
+	(*GetAgentMessagesRequest)(nil),                 // 74: sortedchat.GetAgentMessagesRequest
+	(*GetAgentMessagesResponse)(nil),                // 75: sortedchat.GetAgentMessagesResponse
+	(*AgentMessage)(nil),                            // 76: sortedchat.AgentMessage
+	(*GetAgentMessageRequest)(nil),                  // 77: sortedchat.GetAgentMessageRequest
+	(*GetAgentMessageResponse)(nil),                 // 78: sortedchat.GetAgentMessageResponse
+	(*RAGDocumentReferenceSummaryList_Summary)(nil), // 79: sortedchat.RAGDocumentReferenceSummaryList.Summary
+	(*RAGDocumentReference_Chunk)(nil),              // 80: sortedchat.RAGDocumentReference.Chunk
 }
 var file_chatservice_proto_depIdxs = []int32{
 	2,  // 0: sortedchat.RenameItemRequest.item_type:type_name -> sortedchat.RenameItemRequest.ItemType
@@ -3857,8 +5055,8 @@ var file_chatservice_proto_depIdxs = []int32{
 	40, // 11: sortedchat.ChatResponse.chat_metadata:type_name -> sortedchat.ChatInfo
 	31, // 12: sortedchat.ChatResponse.progress:type_name -> sortedchat.ChatProgress
 	4,  // 13: sortedchat.ChatProgress.state:type_name -> sortedchat.ChatProgress.State
-	60, // 14: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
-	61, // 15: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
+	79, // 14: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
+	80, // 15: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
 	37, // 16: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
 	40, // 17: sortedchat.GetHistoryResponse.chat_metadata:type_name -> sortedchat.ChatInfo
 	33, // 18: sortedchat.ChatMessage.references:type_name -> sortedchat.RAGDocumentReference
@@ -3869,53 +5067,74 @@ var file_chatservice_proto_depIdxs = []int32{
 	51, // 23: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document
 	1,  // 24: sortedchat.Document.embedding_status:type_name -> sortedchat.Embedding_Status
 	40, // 25: sortedchat.ListChatBranchResponse.branch_chat_list:type_name -> sortedchat.ChatInfo
-	29, // 26: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
-	54, // 27: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
-	35, // 28: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
-	38, // 29: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
-	24, // 30: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
-	41, // 31: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
-	13, // 32: sortedchat.SortedChat.GetRAGDocumentReference:input_type -> sortedchat.RAGDocumentReferenceRequest
-	11, // 33: sortedchat.SortedChat.DeleteDocument:input_type -> sortedchat.DeleteDocumentRequest
-	44, // 34: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
-	46, // 35: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
-	49, // 36: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
-	52, // 37: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
-	56, // 38: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
-	58, // 39: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
-	9,  // 40: sortedchat.SortedChat.DeleteChat:input_type -> sortedchat.DeleteChatRequest
-	7,  // 41: sortedchat.SortedChat.RestoreChat:input_type -> sortedchat.RestoreChatRequest
-	5,  // 42: sortedchat.SortedChat.RenameItem:input_type -> sortedchat.RenameItemRequest
-	18, // 43: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
-	20, // 44: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
-	22, // 45: sortedchat.SettingService.IsFirstBoot:input_type -> sortedchat.IsFirstBootRequest
-	15, // 46: sortedchat.SettingService.TestConnection:input_type -> sortedchat.TestConnectionRequest
-	30, // 47: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
-	55, // 48: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
-	36, // 49: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
-	39, // 50: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
-	25, // 51: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
-	43, // 52: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
-	14, // 53: sortedchat.SortedChat.GetRAGDocumentReference:output_type -> sortedchat.RAGDocumentReferenceResponse
-	12, // 54: sortedchat.SortedChat.DeleteDocument:output_type -> sortedchat.DeleteDocumentResponse
-	45, // 55: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
-	47, // 56: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
-	50, // 57: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
-	53, // 58: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
-	57, // 59: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
-	59, // 60: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
-	10, // 61: sortedchat.SortedChat.DeleteChat:output_type -> sortedchat.DeleteChatResponse
-	8,  // 62: sortedchat.SortedChat.RestoreChat:output_type -> sortedchat.RestoreChatResponse
-	6,  // 63: sortedchat.SortedChat.RenameItem:output_type -> sortedchat.RenameItemResponse
-	19, // 64: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
-	21, // 65: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
-	23, // 66: sortedchat.SettingService.IsFirstBoot:output_type -> sortedchat.IsFirstBootResponse
-	16, // 67: sortedchat.SettingService.TestConnection:output_type -> sortedchat.TestConnectionResponse
-	47, // [47:68] is the sub-list for method output_type
-	26, // [26:47] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	61, // 26: sortedchat.GetAgentsResponse.agents:type_name -> sortedchat.Agent
+	71, // 27: sortedchat.GetSessionResponse.session:type_name -> sortedchat.Session
+	71, // 28: sortedchat.GetSessionsResponse.sessions:type_name -> sortedchat.Session
+	76, // 29: sortedchat.GetAgentMessagesResponse.messages:type_name -> sortedchat.AgentMessage
+	76, // 30: sortedchat.GetAgentMessageResponse.message:type_name -> sortedchat.AgentMessage
+	29, // 31: sortedchat.SortedChat.Chat:input_type -> sortedchat.ChatRequest
+	54, // 32: sortedchat.SortedChat.GenerateChatName:input_type -> sortedchat.GenerateChatNameRequest
+	35, // 33: sortedchat.SortedChat.GetHistory:input_type -> sortedchat.GetHistoryRequest
+	38, // 34: sortedchat.SortedChat.GetChatList:input_type -> sortedchat.GetChatListRequest
+	24, // 35: sortedchat.SortedChat.CreateChat:input_type -> sortedchat.CreateChatRequest
+	41, // 36: sortedchat.SortedChat.SearchChat:input_type -> sortedchat.ChatSearchRequest
+	13, // 37: sortedchat.SortedChat.GetRAGDocumentReference:input_type -> sortedchat.RAGDocumentReferenceRequest
+	11, // 38: sortedchat.SortedChat.DeleteDocument:input_type -> sortedchat.DeleteDocumentRequest
+	44, // 39: sortedchat.SortedChat.CreateProject:input_type -> sortedchat.CreateProjectRequest
+	46, // 40: sortedchat.SortedChat.GetProjects:input_type -> sortedchat.GetProjectsRequest
+	49, // 41: sortedchat.SortedChat.ListDocuments:input_type -> sortedchat.ListDocumentsRequest
+	52, // 42: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:input_type -> sortedchat.GenerateEmbeddingRequest
+	56, // 43: sortedchat.SortedChat.BranchAChat:input_type -> sortedchat.BranchAChatRequest
+	58, // 44: sortedchat.SortedChat.ListChatBranch:input_type -> sortedchat.ListChatBranchRequest
+	9,  // 45: sortedchat.SortedChat.DeleteChat:input_type -> sortedchat.DeleteChatRequest
+	7,  // 46: sortedchat.SortedChat.RestoreChat:input_type -> sortedchat.RestoreChatRequest
+	5,  // 47: sortedchat.SortedChat.RenameItem:input_type -> sortedchat.RenameItemRequest
+	18, // 48: sortedchat.SettingService.GetSetting:input_type -> sortedchat.GetSettingRequest
+	20, // 49: sortedchat.SettingService.SetSetting:input_type -> sortedchat.SetSettingRequest
+	22, // 50: sortedchat.SettingService.IsFirstBoot:input_type -> sortedchat.IsFirstBootRequest
+	15, // 51: sortedchat.SettingService.TestConnection:input_type -> sortedchat.TestConnectionRequest
+	60, // 52: sortedchat.AgentService.CreateAgent:input_type -> sortedchat.CreateAgentRequest
+	63, // 53: sortedchat.AgentService.GetAgents:input_type -> sortedchat.GetAgentsRequest
+	65, // 54: sortedchat.AgentService.CreateSession:input_type -> sortedchat.CreateSessionRequest
+	69, // 55: sortedchat.AgentService.GetSession:input_type -> sortedchat.GetSessionRequest
+	72, // 56: sortedchat.AgentService.GetSessions:input_type -> sortedchat.GetSessionsRequest
+	67, // 57: sortedchat.AgentService.AgentChat:input_type -> sortedchat.AgentChatRequest
+	74, // 58: sortedchat.AgentService.GetAgentMessages:input_type -> sortedchat.GetAgentMessagesRequest
+	77, // 59: sortedchat.AgentService.GetAgentMessage:input_type -> sortedchat.GetAgentMessageRequest
+	30, // 60: sortedchat.SortedChat.Chat:output_type -> sortedchat.ChatResponse
+	55, // 61: sortedchat.SortedChat.GenerateChatName:output_type -> sortedchat.GenerateChatNameResponse
+	36, // 62: sortedchat.SortedChat.GetHistory:output_type -> sortedchat.GetHistoryResponse
+	39, // 63: sortedchat.SortedChat.GetChatList:output_type -> sortedchat.GetChatListResponse
+	25, // 64: sortedchat.SortedChat.CreateChat:output_type -> sortedchat.CreateChatResponse
+	43, // 65: sortedchat.SortedChat.SearchChat:output_type -> sortedchat.ChatSearchResponse
+	14, // 66: sortedchat.SortedChat.GetRAGDocumentReference:output_type -> sortedchat.RAGDocumentReferenceResponse
+	12, // 67: sortedchat.SortedChat.DeleteDocument:output_type -> sortedchat.DeleteDocumentResponse
+	45, // 68: sortedchat.SortedChat.CreateProject:output_type -> sortedchat.CreateProjectResponse
+	47, // 69: sortedchat.SortedChat.GetProjects:output_type -> sortedchat.GetProjectsResponse
+	50, // 70: sortedchat.SortedChat.ListDocuments:output_type -> sortedchat.ListDocumentsResponse
+	53, // 71: sortedchat.SortedChat.SubmitGenerateEmbeddingsJob:output_type -> sortedchat.GenerateEmbeddingResponse
+	57, // 72: sortedchat.SortedChat.BranchAChat:output_type -> sortedchat.BranchAChatResponse
+	59, // 73: sortedchat.SortedChat.ListChatBranch:output_type -> sortedchat.ListChatBranchResponse
+	10, // 74: sortedchat.SortedChat.DeleteChat:output_type -> sortedchat.DeleteChatResponse
+	8,  // 75: sortedchat.SortedChat.RestoreChat:output_type -> sortedchat.RestoreChatResponse
+	6,  // 76: sortedchat.SortedChat.RenameItem:output_type -> sortedchat.RenameItemResponse
+	19, // 77: sortedchat.SettingService.GetSetting:output_type -> sortedchat.GetSettingResponse
+	21, // 78: sortedchat.SettingService.SetSetting:output_type -> sortedchat.SetSettingResponse
+	23, // 79: sortedchat.SettingService.IsFirstBoot:output_type -> sortedchat.IsFirstBootResponse
+	16, // 80: sortedchat.SettingService.TestConnection:output_type -> sortedchat.TestConnectionResponse
+	62, // 81: sortedchat.AgentService.CreateAgent:output_type -> sortedchat.CreateAgentResponse
+	64, // 82: sortedchat.AgentService.GetAgents:output_type -> sortedchat.GetAgentsResponse
+	66, // 83: sortedchat.AgentService.CreateSession:output_type -> sortedchat.CreateSessionResponse
+	70, // 84: sortedchat.AgentService.GetSession:output_type -> sortedchat.GetSessionResponse
+	73, // 85: sortedchat.AgentService.GetSessions:output_type -> sortedchat.GetSessionsResponse
+	68, // 86: sortedchat.AgentService.AgentChat:output_type -> sortedchat.AgentChatResponse
+	75, // 87: sortedchat.AgentService.GetAgentMessages:output_type -> sortedchat.GetAgentMessagesResponse
+	78, // 88: sortedchat.AgentService.GetAgentMessage:output_type -> sortedchat.GetAgentMessageResponse
+	60, // [60:89] is the sub-list for method output_type
+	31, // [31:60] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_chatservice_proto_init() }
@@ -3931,15 +5150,22 @@ func file_chatservice_proto_init() {
 		(*ChatResponse_ChatMetadata)(nil),
 		(*ChatResponse_Progress)(nil),
 	}
+	file_chatservice_proto_msgTypes[63].OneofWrappers = []any{
+		(*AgentChatResponse_Message)(nil),
+		(*AgentChatResponse_Thinking)(nil),
+		(*AgentChatResponse_ToolCall)(nil),
+		(*AgentChatResponse_ToolResult)(nil),
+		(*AgentChatResponse_Error)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chatservice_proto_rawDesc), len(file_chatservice_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   57,
+			NumMessages:   76,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
 		GoTypes:           file_chatservice_proto_goTypes,
 		DependencyIndexes: file_chatservice_proto_depIdxs,

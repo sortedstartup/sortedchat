@@ -947,3 +947,391 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "chatservice.proto",
 }
+
+const (
+	AgentService_CreateAgent_FullMethodName      = "/sortedchat.AgentService/CreateAgent"
+	AgentService_GetAgents_FullMethodName        = "/sortedchat.AgentService/GetAgents"
+	AgentService_CreateSession_FullMethodName    = "/sortedchat.AgentService/CreateSession"
+	AgentService_GetSession_FullMethodName       = "/sortedchat.AgentService/GetSession"
+	AgentService_GetSessions_FullMethodName      = "/sortedchat.AgentService/GetSessions"
+	AgentService_AgentChat_FullMethodName        = "/sortedchat.AgentService/AgentChat"
+	AgentService_GetAgentMessages_FullMethodName = "/sortedchat.AgentService/GetAgentMessages"
+	AgentService_GetAgentMessage_FullMethodName  = "/sortedchat.AgentService/GetAgentMessage"
+)
+
+// AgentServiceClient is the client API for AgentService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// ------- Agent Service -------
+type AgentServiceClient interface {
+	CreateAgent(ctx context.Context, in *CreateAgentRequest, opts ...grpc.CallOption) (*CreateAgentResponse, error)
+	// rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
+	GetAgents(ctx context.Context, in *GetAgentsRequest, opts ...grpc.CallOption) (*GetAgentsResponse, error)
+	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error)
+	GetSession(ctx context.Context, in *GetSessionRequest, opts ...grpc.CallOption) (*GetSessionResponse, error)
+	GetSessions(ctx context.Context, in *GetSessionsRequest, opts ...grpc.CallOption) (*GetSessionsResponse, error)
+	// doesnot sound right, its more like chat with agent to continue with last session
+	AgentChat(ctx context.Context, in *AgentChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AgentChatResponse], error)
+	// we may need to edit history of a session ? or delete a message ?
+	// TODO: thinking
+	GetAgentMessages(ctx context.Context, in *GetAgentMessagesRequest, opts ...grpc.CallOption) (*GetAgentMessagesResponse, error)
+	// rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+	// rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
+	GetAgentMessage(ctx context.Context, in *GetAgentMessageRequest, opts ...grpc.CallOption) (*GetAgentMessageResponse, error)
+}
+
+type agentServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewAgentServiceClient(cc grpc.ClientConnInterface) AgentServiceClient {
+	return &agentServiceClient{cc}
+}
+
+func (c *agentServiceClient) CreateAgent(ctx context.Context, in *CreateAgentRequest, opts ...grpc.CallOption) (*CreateAgentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAgentResponse)
+	err := c.cc.Invoke(ctx, AgentService_CreateAgent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) GetAgents(ctx context.Context, in *GetAgentsRequest, opts ...grpc.CallOption) (*GetAgentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAgentsResponse)
+	err := c.cc.Invoke(ctx, AgentService_GetAgents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateSessionResponse)
+	err := c.cc.Invoke(ctx, AgentService_CreateSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) GetSession(ctx context.Context, in *GetSessionRequest, opts ...grpc.CallOption) (*GetSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSessionResponse)
+	err := c.cc.Invoke(ctx, AgentService_GetSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) GetSessions(ctx context.Context, in *GetSessionsRequest, opts ...grpc.CallOption) (*GetSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSessionsResponse)
+	err := c.cc.Invoke(ctx, AgentService_GetSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) AgentChat(ctx context.Context, in *AgentChatRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AgentChatResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &AgentService_ServiceDesc.Streams[0], AgentService_AgentChat_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[AgentChatRequest, AgentChatResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AgentService_AgentChatClient = grpc.ServerStreamingClient[AgentChatResponse]
+
+func (c *agentServiceClient) GetAgentMessages(ctx context.Context, in *GetAgentMessagesRequest, opts ...grpc.CallOption) (*GetAgentMessagesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAgentMessagesResponse)
+	err := c.cc.Invoke(ctx, AgentService_GetAgentMessages_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) GetAgentMessage(ctx context.Context, in *GetAgentMessageRequest, opts ...grpc.CallOption) (*GetAgentMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAgentMessageResponse)
+	err := c.cc.Invoke(ctx, AgentService_GetAgentMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AgentServiceServer is the server API for AgentService service.
+// All implementations must embed UnimplementedAgentServiceServer
+// for forward compatibility.
+//
+// ------- Agent Service -------
+type AgentServiceServer interface {
+	CreateAgent(context.Context, *CreateAgentRequest) (*CreateAgentResponse, error)
+	// rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
+	GetAgents(context.Context, *GetAgentsRequest) (*GetAgentsResponse, error)
+	CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error)
+	GetSession(context.Context, *GetSessionRequest) (*GetSessionResponse, error)
+	GetSessions(context.Context, *GetSessionsRequest) (*GetSessionsResponse, error)
+	// doesnot sound right, its more like chat with agent to continue with last session
+	AgentChat(*AgentChatRequest, grpc.ServerStreamingServer[AgentChatResponse]) error
+	// we may need to edit history of a session ? or delete a message ?
+	// TODO: thinking
+	GetAgentMessages(context.Context, *GetAgentMessagesRequest) (*GetAgentMessagesResponse, error)
+	// rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+	// rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
+	GetAgentMessage(context.Context, *GetAgentMessageRequest) (*GetAgentMessageResponse, error)
+	mustEmbedUnimplementedAgentServiceServer()
+}
+
+// UnimplementedAgentServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedAgentServiceServer struct{}
+
+func (UnimplementedAgentServiceServer) CreateAgent(context.Context, *CreateAgentRequest) (*CreateAgentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAgent not implemented")
+}
+func (UnimplementedAgentServiceServer) GetAgents(context.Context, *GetAgentsRequest) (*GetAgentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAgents not implemented")
+}
+func (UnimplementedAgentServiceServer) CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSession not implemented")
+}
+func (UnimplementedAgentServiceServer) GetSession(context.Context, *GetSessionRequest) (*GetSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSession not implemented")
+}
+func (UnimplementedAgentServiceServer) GetSessions(context.Context, *GetSessionsRequest) (*GetSessionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSessions not implemented")
+}
+func (UnimplementedAgentServiceServer) AgentChat(*AgentChatRequest, grpc.ServerStreamingServer[AgentChatResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method AgentChat not implemented")
+}
+func (UnimplementedAgentServiceServer) GetAgentMessages(context.Context, *GetAgentMessagesRequest) (*GetAgentMessagesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAgentMessages not implemented")
+}
+func (UnimplementedAgentServiceServer) GetAgentMessage(context.Context, *GetAgentMessageRequest) (*GetAgentMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAgentMessage not implemented")
+}
+func (UnimplementedAgentServiceServer) mustEmbedUnimplementedAgentServiceServer() {}
+func (UnimplementedAgentServiceServer) testEmbeddedByValue()                      {}
+
+// UnsafeAgentServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to AgentServiceServer will
+// result in compilation errors.
+type UnsafeAgentServiceServer interface {
+	mustEmbedUnimplementedAgentServiceServer()
+}
+
+func RegisterAgentServiceServer(s grpc.ServiceRegistrar, srv AgentServiceServer) {
+	// If the following call pancis, it indicates UnimplementedAgentServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&AgentService_ServiceDesc, srv)
+}
+
+func _AgentService_CreateAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAgentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).CreateAgent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_CreateAgent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).CreateAgent(ctx, req.(*CreateAgentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_GetAgents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAgentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).GetAgents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_GetAgents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).GetAgents(ctx, req.(*GetAgentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_CreateSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).CreateSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_CreateSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).CreateSession(ctx, req.(*CreateSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_GetSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).GetSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_GetSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).GetSession(ctx, req.(*GetSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_GetSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).GetSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_GetSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).GetSessions(ctx, req.(*GetSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_AgentChat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(AgentChatRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AgentServiceServer).AgentChat(m, &grpc.GenericServerStream[AgentChatRequest, AgentChatResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type AgentService_AgentChatServer = grpc.ServerStreamingServer[AgentChatResponse]
+
+func _AgentService_GetAgentMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAgentMessagesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).GetAgentMessages(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_GetAgentMessages_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).GetAgentMessages(ctx, req.(*GetAgentMessagesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_GetAgentMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAgentMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).GetAgentMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_GetAgentMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).GetAgentMessage(ctx, req.(*GetAgentMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// AgentService_ServiceDesc is the grpc.ServiceDesc for AgentService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var AgentService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "sortedchat.AgentService",
+	HandlerType: (*AgentServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateAgent",
+			Handler:    _AgentService_CreateAgent_Handler,
+		},
+		{
+			MethodName: "GetAgents",
+			Handler:    _AgentService_GetAgents_Handler,
+		},
+		{
+			MethodName: "CreateSession",
+			Handler:    _AgentService_CreateSession_Handler,
+		},
+		{
+			MethodName: "GetSession",
+			Handler:    _AgentService_GetSession_Handler,
+		},
+		{
+			MethodName: "GetSessions",
+			Handler:    _AgentService_GetSessions_Handler,
+		},
+		{
+			MethodName: "GetAgentMessages",
+			Handler:    _AgentService_GetAgentMessages_Handler,
+		},
+		{
+			MethodName: "GetAgentMessage",
+			Handler:    _AgentService_GetAgentMessage_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "AgentChat",
+			Handler:       _AgentService_AgentChat_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "chatservice.proto",
+}

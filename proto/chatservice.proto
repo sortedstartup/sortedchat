@@ -407,14 +407,14 @@ service AgentService {
   //rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse);
 
   // doesnot sound right, its more like chat with agent to continue with last session
-  rpc Chat(ChatRequest) returns (stream ChatResponse);
+  rpc AgentChat(AgentChatRequest) returns (stream AgentChatResponse);
 
   // we may need to edit history of a session ? or delete a message ?
   // TODO: thinking
-  rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
+  rpc GetAgentMessages(GetAgentMessagesRequest) returns (GetAgentMessagesResponse);
   //rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
   //rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
-  rpc ListMessage(ListMessageRequest) returns (ListMessageResponse);
+  rpc GetAgentMessage(GetAgentMessageRequest) returns (GetAgentMessageResponse);
   //rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
 
   // TODO: we need
@@ -506,12 +506,12 @@ message CreateSessionResponse {
   string session_id = 2;
 }
 
-message ChatRequest {
+message AgentChatRequest {
   string session_id = 1;
   string message = 2;
 }
 
-message ChatResponse {
+message AgentChatResponse {
   oneof response {
     string message = 1;
     string thinking = 2;
@@ -520,3 +520,52 @@ message ChatResponse {
     string error = 5;
   }
 }
+
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  Session session = 1;
+}
+
+message Session {
+  string id = 1;
+  string agent_id = 2;
+}
+
+message GetSessionsRequest {}
+
+message GetSessionsResponse {
+  repeated Session sessions = 1;
+}
+
+message GetAgentMessagesRequest {
+  string session_id = 1;
+}
+
+message GetAgentMessagesResponse {
+  repeated AgentMessage messages = 1;
+}
+
+message AgentMessage {
+  string id = 1;
+  string session_id = 2;
+  int32 sequence_number = 3;
+  string role = 4;
+  string type = 5;
+  string content = 6;
+  string tool_name = 7;
+  string tool_call_id = 8;
+  string tool_args = 9;
+}
+
+message GetAgentMessageRequest {
+  string message_id = 1;
+}
+
+message GetAgentMessageResponse {
+  AgentMessage message = 1;
+}
+
+

@@ -118,3 +118,40 @@ type dbSettings struct {
 // 		Realtime: caps.Realtime,
 // 	}, nil
 // }
+// }
+
+type AgentRow struct {
+	ID           string `db:"id" json:"id"`
+	Name         string `db:"name" json:"name"`
+	Description  string `db:"description" json:"description"`
+	SystemPrompt string `db:"system_prompt" json:"system_prompt"`
+	Provider     string `db:"provider" json:"provider"`
+	Model        string `db:"model" json:"model"`
+	LocalTools   string `db:"local_tools" json:"local_tools"`
+	CreatedAt    string `db:"created_at" json:"created_at"`
+	UpdatedAt    string `db:"updated_at" json:"updated_at"`
+}
+
+type AgentSessionRow struct {
+	ID              string  `db:"id" json:"id"`
+	AgentID         string  `db:"agent_id" json:"agent_id"`
+	UserID          string  `db:"user_id" json:"user_id"`
+	Status          string  `db:"status" json:"status"`
+	Title           *string `db:"title" json:"title"`
+	ParentSessionID *string `db:"parent_session_id" json:"parent_session_id"`
+	CreatedAt       string  `db:"created_at" json:"created_at"`
+	UpdatedAt       string  `db:"updated_at" json:"updated_at"`
+}
+
+type AgentMessageRow struct {
+	ID             string  `db:"id" json:"id"`
+	SessionID      string  `db:"session_id" json:"session_id"`
+	SequenceNumber int     `db:"sequence_number" json:"sequence_number"`
+	Role           string  `db:"role" json:"role"`
+	Type           string  `db:"type" json:"type"`
+	Content        string  `db:"content" json:"content"`
+	ToolName       *string `db:"tool_name" json:"tool_name"`
+	ToolCallID     *string `db:"tool_call_id" json:"tool_call_id"`
+	ToolArgs       *string `db:"tool_args" json:"tool_args"`
+	CreatedAt      string  `db:"created_at" json:"created_at"`
+}

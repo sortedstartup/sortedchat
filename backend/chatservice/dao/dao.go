@@ -59,3 +59,16 @@ type SettingsDAO interface {
 	GetSettingValue(settingName string) (string, error)
 	SetSettingValue(settingName string, settingValue string) error
 }
+
+type AgentDAO interface {
+	CreateAgent(agent AgentRow) error
+	GetAgents() ([]AgentRow, error)
+	GetAgent(agentID string) (*AgentRow, error)
+
+	CreateSession(session AgentSessionRow) error
+	GetSession(sessionID string) (*AgentSessionRow, error)
+	GetAgentSessions(agentID string) ([]AgentSessionRow, error)
+
+	AddAgentMessage(message AgentMessageRow) error
+	GetAgentMessages(sessionID string) ([]AgentMessageRow, error)
+}

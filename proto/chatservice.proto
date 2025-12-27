@@ -389,33 +389,33 @@ message ListChatBranchResponse {
 // ------- Agent Service -------
 service AgentService {
   rpc CreateAgent(CreateAgentRequest) returns (CreateAgentResponse);
-  rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
-  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+ // rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
+  rpc GetAgents(GetAgentsRequest) returns (GetAgentsResponse);
 
   // todo
-  rpc UpdateAgent(UpdateAgentRequest) returns (UpdateAgentResponse);
-  rpc DeleteAgent(DeleteAgentRequest) returns (DeleteAgentResponse);
+  // rpc UpdateAgent(UpdateAgentRequest) returns (UpdateAgentResponse);
+  // rpc DeleteAgent(DeleteAgentRequest) returns (DeleteAgentResponse);
   
   // we want a run agent or may be better chat with agent to continue with last session, ok so session is the keyword
   // we need to start a session with the agent and can choose to continue with last session or start a new session
   // in case of a virtual employee there should a long running background session known as "experience", a session known as "company knwowledge:
   // and then a current task session
 
-  rpc StartSession(StartSessionRequest) returns (StartSessionResponse);
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
-  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
-  rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse);
+  rpc GetSessions(GetSessionsRequest) returns (GetSessionsResponse);
+  //rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse);
 
   // doesnot sound right, its more like chat with agent to continue with last session
-  rpc ChatWithAgent(ChatWithAgentRequest) returns (ChatWithAgentResponse);
+  rpc Chat(ChatRequest) returns (stream ChatResponse);
 
   // we may need to edit history of a session ? or delete a message ?
   // TODO: thinking
   rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
-  rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
-  rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
+  //rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+  //rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
   rpc ListMessage(ListMessageRequest) returns (ListMessageResponse);
-  rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+  //rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
 
   // TODO: we need
   // - streaming output from the agent,
@@ -483,10 +483,40 @@ message Agent {
 
   // tools
   repeated string local_tools = 8;
-  repeated string remote_tools = 9;
+ // repeated string remote_tools = 9;
 }
 
 message CreateAgentResponse {
   string message = 1;
   string agent_id = 2;
+}
+
+message GetAgentsRequest {}
+
+message GetAgentsResponse {
+  repeated Agent agents = 1;
+}
+
+message CreateSessionRequest {
+  string agent_id = 1;
+}
+
+message CreateSessionResponse {
+  string message = 1;
+  string session_id = 2;
+}
+
+message ChatRequest {
+  string session_id = 1;
+  string message = 2;
+}
+
+message ChatResponse {
+  oneof response {
+    string message = 1;
+    string thinking = 2;
+    string tool_call = 3;
+    string tool_result = 4;
+    string error = 5;
+  }
 }

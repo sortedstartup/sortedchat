@@ -14,6 +14,7 @@ import (
 )
 
 const LLAMASERVER_DIR = "llamaserver"
+const LLAMASERVER_LOGS_DIR = "llamaserver-logs"
 const LLAMASERVER_VERSION = "b7388"
 
 var releases = map[string]string{
@@ -152,9 +153,8 @@ func GetOrStartServer(modelName string, isEmbeddingModel bool) (string, error) {
 	setSysProcAttr(cmd)
 
 	// Redirect output for debugging
-	foldername := "llama_server_logs"
-	os.Mkdir(foldername, 0755)
-	filename := fmt.Sprintf("%s/llama_server_%s_%s.log", foldername, modelName, time.Now().Format("2006-01-02_15-04-05"))
+	os.Mkdir(LLAMASERVER_LOGS_DIR, 0755)
+	filename := fmt.Sprintf("%s/llama_server_%s.log", LLAMASERVER_LOGS_DIR, modelName)
 	logFile, err := os.Create(filename)
 	if err != nil {
 		slog.Error("Failed to open log file for llama-server", "error", err)

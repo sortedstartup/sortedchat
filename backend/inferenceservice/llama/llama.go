@@ -152,8 +152,19 @@ func GetOrStartServer(modelName string, isEmbeddingModel bool) (string, error) {
 	setSysProcAttr(cmd)
 
 	// Redirect output for debugging
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	foldername := "llama_server_logs"
+	os.Mkdir(foldername, 0755)
+	filename := fmt.Sprintf("%s/llama_server_%s_%s.log", foldername, modelName, time.Now().Format("2006-01-02_15-04-05"))
+	logFile, err := os.Create(filename)
+	if err != nil {
+		slog.Error("Failed to open log file for llama-server", "error", err)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	} else {
+		defer logFile.Close()
+		cmd.Stdout = logFile
+		cmd.Stderr = logFile
+	}
 
 	if err := cmd.Start(); err != nil {
 		return "", fmt.Errorf("failed to start llama-server: %w", err)

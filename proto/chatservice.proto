@@ -534,7 +534,9 @@ message Session {
   string agent_id = 2;
 }
 
-message GetSessionsRequest {}
+message GetSessionsRequest {
+  string agent_id = 1;
+}
 
 message GetSessionsResponse {
   repeated Session sessions = 1;

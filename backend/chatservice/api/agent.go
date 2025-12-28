@@ -20,7 +20,11 @@ type AgentServiceAPI struct {
 	dao db.AgentDAO
 }
 
-func NewAgentService(dao db.AgentDAO) *AgentServiceAPI {
+func NewAgentService(daoFactory db.DAOFactory) *AgentServiceAPI {
+	dao, err := daoFactory.CreateAgentDAO()
+	if err != nil {
+		panic(err)
+	}
 	return &AgentServiceAPI{dao: dao}
 }
 
@@ -124,7 +128,22 @@ func (s *AgentServiceAPI) GetSession(ctx context.Context, req *pb.GetSessionRequ
 }
 
 func (s *AgentServiceAPI) GetSessions(ctx context.Context, req *pb.GetSessionsRequest) (*pb.GetSessionsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "GetSessions not implemented in DAO")
+	sessions, err := s.dao.GetAgentSessions(req.AgentId)
+	if err != nil {
+		slog.Error("api:GetSessions", "error", err)
+		return nil, status.Error(codes.Internal, "failed to get sessions")
+	}
+
+	var pbSessions []*pb.Session
+	for _, sess := range sessions {
+		pbSessions = append(pbSessions, &pb.Session{
+			Id:      sess.ID,
+			AgentId: sess.AgentID,
+			// UserId and Status are not in proto definition
+		})
+	}
+
+	return &pb.GetSessionsResponse{Sessions: pbSessions}, nil
 }
 
 func (s *AgentServiceAPI) AgentChat(req *pb.AgentChatRequest, stream pb.AgentService_AgentChatServer) error {
@@ -140,7 +159,7 @@ func (s *AgentServiceAPI) AgentChat(req *pb.AgentChatRequest, stream pb.AgentSer
 	userMsg := db.AgentMessageRow{
 		ID:             msgID,
 		SessionID:      req.SessionId,
-		SequenceNumber: int(time.Now().UnixNano()), // Simple sequence for now
+		SequenceNumber: int(int32(time.Now().Unix())), // Use Unix timestamp to fit in int32 and avoid overflow
 		Role:           "user",
 		Type:           "text",
 		Content:        req.Message,

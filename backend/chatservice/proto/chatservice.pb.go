@@ -4084,6 +4084,7 @@ func (x *Session) GetAgentId() string {
 
 type GetSessionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4116,6 +4117,13 @@ func (x *GetSessionsRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use GetSessionsRequest.ProtoReflect.Descriptor instead.
 func (*GetSessionsRequest) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *GetSessionsRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
 }
 
 type GetSessionsResponse struct {
@@ -4865,8 +4873,9 @@ const file_chatservice_proto_rawDesc = "" +
 	"\asession\x18\x01 \x01(\v2\x13.sortedchat.SessionR\asession\"4\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
-	"\bagent_id\x18\x02 \x01(\tR\aagentId\"\x14\n" +
-	"\x12GetSessionsRequest\"F\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\"/\n" +
+	"\x12GetSessionsRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\tR\aagentId\"F\n" +
 	"\x13GetSessionsResponse\x12/\n" +
 	"\bsessions\x18\x01 \x03(\v2\x13.sortedchat.SessionR\bsessions\"8\n" +
 	"\x17GetAgentMessagesRequest\x12\x1d\n" +

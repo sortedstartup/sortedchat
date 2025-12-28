@@ -7013,23 +7013,47 @@ export class Session extends pb_1.Message {
 }
 export class GetSessionsRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {}) {
+    constructor(data?: any[] | {
+        agent_id?: string;
+    }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") { }
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("agent_id" in data && data.agent_id != undefined) {
+                this.agent_id = data.agent_id;
+            }
+        }
     }
-    static fromObject(data: {}): GetSessionsRequest {
+    get agent_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set agent_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        agent_id?: string;
+    }): GetSessionsRequest {
         const message = new GetSessionsRequest({});
+        if (data.agent_id != null) {
+            message.agent_id = data.agent_id;
+        }
         return message;
     }
     toObject() {
-        const data: {} = {};
+        const data: {
+            agent_id?: string;
+        } = {};
+        if (this.agent_id != null) {
+            data.agent_id = this.agent_id;
+        }
         return data;
     }
     serialize(): Uint8Array;
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
+        if (this.agent_id.length)
+            writer.writeString(1, this.agent_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -7039,6 +7063,9 @@ export class GetSessionsRequest extends pb_1.Message {
             if (reader.isEndGroup())
                 break;
             switch (reader.getFieldNumber()) {
+                case 1:
+                    message.agent_id = reader.readString();
+                    break;
                 default: reader.skipField();
             }
         }

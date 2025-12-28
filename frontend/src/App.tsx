@@ -13,6 +13,8 @@ import { loadUIConfig, type UIConfig } from "./lib/config";
 import { OnboardingWizard } from "./pages/onboard";
 import { GetIsFirstBootStatus } from "./store/setting";
 import React from "react";
+import { AgentChat } from "./pages/agent-chat";
+import { CreateAgentPage } from "./pages/create-agent";
 
 // Protected route wrapper component with onboarding check
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -103,6 +105,14 @@ const router = createBrowserRouter([
       {
         path: "models",
         element: <Models />,
+      },
+      {
+        path: "agent/:agentId/session/:sessionId",
+        element: <AgentChat />,
+      },
+      {
+        path: "agent/new",
+        element: <CreateAgentPage />,
       },
       {
         path: "*",

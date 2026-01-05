@@ -102,7 +102,7 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 func (s *SQLiteDAO) GetModelByID(modelID string) (*Models, error) {
 	var model Models
 	err := s.db.Get(&model,
-		"SELECT id, name, provider, url, input_token_cost, output_token_cost, COALESCE(capabilities, '{}') AS capabilities FROM model_metadata WHERE id = ?",
+		"SELECT id, name, provider, url, input_token_cost, output_token_cost, COALESCE(capabilities, '{}') AS capabilities FROM shared_models_metadata WHERE id = ?",
 		modelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get model: %w", err)
@@ -199,7 +199,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 	var inputCost, outputCost, cachedCost float64
 	err = s.db.QueryRow(`
         SELECT input_token_cost, output_token_cost, cached_token_cost
-        FROM model_metadata
+        FROM shared_models_metadata
         WHERE id = ?`, model).Scan(&inputCost, &outputCost, &cachedCost)
 	if err != nil {
 		slog.Error("dao_sqlite:AddChatMessageWithTokens", "message", "failed to get model metadata", "error", err, "chatId", chatId, "userID", userID)
@@ -719,7 +719,7 @@ func (s *SQLiteDAO) IsNameExists(userID string, chatId string, name string) (boo
 
 func (s *SQLiteDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
 	_, err := s.db.Exec(`
-		INSERT INTO model_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
+		INSERT INTO shared_models_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
 			name = excluded.name,
@@ -829,4 +829,38 @@ func (s *SQLiteDAO) UpdateChatMessageDocumentReferences(userID string, messageID
 		return fmt.Errorf("failed to update chat message document references, please try again")
 	}
 	return nil
+}
+
+func (s *SQLiteDAO) GetModels() ([]*proto.ModelListInfo, error) {
+	var models []Models
+
+	err := s.db.Select(&models, "SELECT id, name, provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}') AS capabilities, is_embedding_model, is_downloaded, is_downloadable FROM shared_models_metadata")
+	if err != nil {
+		slog.Error("dao_sqlite:GetModels", "message", "failed to get models", "error", err)
+		return nil, fmt.Errorf("failed to get models")
+	}
+
+	var result []*proto.ModelListInfo
+	for _, m := range models {
+		// Parse capabilities JSON
+		capabilities, err := ParseCapabilities(m.Capabilities)
+		if err != nil {
+			slog.Error("dao_sqlite:GetModels", "message", "failed to parse capabilities for model", "error", err, "modelID", m.ID)
+			return nil, fmt.Errorf("failed to parse capabilities for model")
+		}
+
+		result = append(result, &proto.ModelListInfo{
+			Id:               m.ID,
+			Label:            m.Name,
+			Provider:         m.Provider,
+			Url:              m.URL,
+			InputTokenCost:   m.InputTokenCost,
+			OutputTokenCost:  m.OutputTokenCost,
+			Capabilities:     capabilities,
+			IsDownloadable:   m.IsDownloadable,
+			IsDownloaded:     m.IsDownloaded,
+			IsEmbeddingModel: m.IsEmbeddingModel,
+		})
+	}
+	return result, nil
 }

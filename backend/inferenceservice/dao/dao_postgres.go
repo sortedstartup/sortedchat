@@ -57,7 +57,7 @@ func (d *PostgresDAO) Infer(dummy string) error {
 
 func (d *PostgresDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
 	slog.Info("inferenceservice:dao_postgres:GetModelByName")
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM inferenceservice_models_metadata WHERE name = $1`
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM shared_models_metadata WHERE name = $1`
 
 	var model ModelMetadata
 	err := d.db.Get(&model, query, modelName)
@@ -71,7 +71,7 @@ func (d *PostgresDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
 
 func (d *PostgresDAO) GetAllModels() ([]*ModelMetadata, error) {
 	slog.Info("inferenceservice:dao_postgres:GetAllModels")
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM inferenceservice_models_metadata ORDER BY name`
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, cached_token_cost, is_enabled, is_embedding_model FROM shared_models_metadata ORDER BY name`
 
 	var models []*ModelMetadata
 	err := d.db.Select(&models, query)
@@ -86,7 +86,7 @@ func (d *PostgresDAO) GetAllModels() ([]*ModelMetadata, error) {
 func (d *PostgresDAO) UpdateModelProgress(id string, progress *DownloadProgress) error {
 	slog.Info("inferenceservice:dao_postgres:UpdateModelProgress")
 	isDownloaded := progress.Status == StatusCompleted
-	query := `UPDATE inferenceservice_models_metadata SET progress = $1, is_downloaded = $2, status = $3 WHERE id = $4`
+	query := `UPDATE shared_models_metadata SET progress = $1, is_downloaded = $2, status = $3 WHERE id = $4`
 
 	progressJSON, err := progress.ToJSON()
 	if err != nil {
@@ -104,7 +104,7 @@ func (d *PostgresDAO) UpdateModelProgress(id string, progress *DownloadProgress)
 
 func (d *PostgresDAO) UpdateModelFileStoreID(id string, filestoreID string) error {
 	slog.Info("inferenceservice:dao_postgres:UpdateModelFileStoreID")
-	query := `UPDATE inferenceservice_models_metadata SET filestore_id = $1 WHERE id = $2`
+	query := `UPDATE shared_models_metadata SET filestore_id = $1 WHERE id = $2`
 	_, err := d.db.Exec(query, filestoreID, id)
 	if err != nil {
 		slog.Error("inferenceservice:dao_postgres:UpdateModelFileStoreID", "message", "failed to update model file store ID", "error", err)
@@ -115,7 +115,7 @@ func (d *PostgresDAO) UpdateModelFileStoreID(id string, filestoreID string) erro
 
 func (d *PostgresDAO) ResetModelToInitialState(id string) error {
 	slog.Info("inferenceservice:dao_postgres:ResetModelToInitialState")
-	query := `UPDATE inferenceservice_models_metadata SET progress = '', status = 0, is_downloaded = false, filestore_id = NULL WHERE id = $1`
+	query := `UPDATE shared_models_metadata SET progress = '', status = 0, is_downloaded = false, filestore_id = NULL WHERE id = $1`
 	_, err := d.db.Exec(query, id)
 	if err != nil {
 		slog.Error("inferenceservice:dao_postgres:ResetModelToInitialState", "message", "failed to reset model to initial state", "error", err)

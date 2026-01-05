@@ -62,7 +62,7 @@ type GenerateEmbeddingMessage struct {
 
 const MAX_CHAT_NAME_LENGTH = 50
 const MIN_CHAT_NAME_LENGTH = 1
-const LLAMA_PROVIDER = "llama"
+const LOCAL_PROVIDER = "local"
 
 // Image processing constants
 const (
@@ -125,19 +125,18 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	projectID := req.GetProjectContext().GetProjectId()
 	ragEnabled := req.GetProjectContext().GetRagEnabled()
 
-	// TODO: Validate model capabilities from inference service
-	// modelID := req.Model
-	// // modelInfo, err := s.dao.GetModelByID(modelID)
-	// // if err != nil {
-	// // 	slog.Error("service:Chat", "error", "failed to get model info", "error", err, "modelID", modelID)
-	// // 	return fmt.Errorf("failed to get model info")
-	// // }
+	modelID := req.Model
+	modelInfo, err := s.dao.GetModelByID(modelID)
+	if err != nil {
+		slog.Error("service:Chat", "error", "failed to get model info", "error", err, "modelID", modelID)
+		return fmt.Errorf("failed to get model info")
+	}
 
-	// capabilities, err := dao.ParseCapabilities(modelInfo.Capabilities)
-	// if err != nil {
-	// 	slog.Error("service:Chat", "error", "failed to parse model capabilities", "error", err, "modelID", modelID)
-	// 	return fmt.Errorf("failed to parse model capabilities")
-	// }
+	capabilities, err := dao.ParseCapabilities(modelInfo.Capabilities)
+	if err != nil {
+		slog.Error("service:Chat", "error", "failed to parse model capabilities", "error", err, "modelID", modelID)
+		return fmt.Errorf("failed to parse model capabilities")
+	}
 
 	// STEP 2: Check if message contains images
 	hasImages := false
@@ -150,9 +149,9 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 	// STEP 3: Validate image input against model capability
 	if hasImages {
-		// if capabilities.Image == nil || !capabilities.Image.Input {
-		// 	return fmt.Errorf("selected model does not support image input")
-		// }
+		if capabilities.Image == nil || !capabilities.Image.Input {
+			return fmt.Errorf("selected model does not support image input")
+		}
 
 		// Validate image content
 		if err := s.validateImageContent(req.GetContents()); err != nil {
@@ -161,7 +160,8 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
-	if apiKey == "" && req.Provider != LLAMA_PROVIDER {
+	provider := req.GetProvider()
+	if apiKey == "" && provider != LOCAL_PROVIDER {
 		slog.Error("service:Chat", "error", "OpenAI API key not set")
 		return fmt.Errorf("OpenAI API key not set")
 	}
@@ -439,7 +439,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_SENDING_REQUEST_TO_LLM, Message: "Sending request to LLM"}},
 	})
 
-	resp, err := s.llmClient.Call(ctx, llmReq)
+	resp, err := s.llmClient.Call(ctx, llmReq, provider)
 	if err != nil {
 		slog.Error("service:Chat", "message", "LLM request failed", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("LLM request failed, please try again")
@@ -624,7 +624,7 @@ const (
 	END_MESSAGE_LENGTH   = 250
 )
 
-func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatId string, message string, model string) (string, error) {
+func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatId string, message string, model string, provider string) (string, error) {
 	if chatId == "" {
 		slog.Error("service:GenerateChatName", "message", "chat ID is required", "chatId", chatId, "userID", userID)
 		return "", fmt.Errorf("chat ID is required")
@@ -675,7 +675,7 @@ func (s *ChatService) GenerateChatName(ctx context.Context, userID string, chatI
 	}
 
 	// Call LLM using the client
-	resp, err := s.llmClient.Call(ctx, llmReq)
+	resp, err := s.llmClient.Call(ctx, llmReq, provider)
 	if err != nil {
 		slog.Error("service:GenerateChatName", "message", "LLM request failed", "error", err, "chatId", chatId, "userID", userID)
 		return "", fmt.Errorf("LLM request failed, please try again")
@@ -1566,6 +1566,16 @@ func (s *ChatService) validateImageContent(contents []*pb.MessageContent) error 
 	}
 
 	return nil
+}
+
+func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error) {
+	models, err := s.dao.GetModels()
+	if err != nil {
+		slog.Error("service:ListModel", "message", "failed to fetch models", "error", err)
+		return nil, fmt.Errorf("error while processing request, please try again")
+	}
+
+	return models, nil
 }
 
 func (s *ChatService) Init(config *dao.Config) *sql.DB {

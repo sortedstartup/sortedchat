@@ -1,5 +1,12 @@
 package dao
 
+import (
+	"encoding/json"
+	"fmt"
+	"sortedstartup/chatservice/proto"
+	"strings"
+)
+
 type ChatMessageRow struct {
 	Role               string  `db:"role" json:"role"`
 	Content            string  `db:"content" json:"content"`
@@ -64,13 +71,16 @@ type ChatInfoRow struct {
 }
 
 type Models struct {
-	ID              string  `db:"id"`
-	Name            string  `db:"name"`
-	Provider        string  `db:"provider"`
-	URL             string  `db:"url"`
-	InputTokenCost  float32 `db:"input_token_cost"`
-	OutputTokenCost float32 `db:"output_token_cost"`
-	Capabilities    string  `db:"capabilities"` // JSON string from SQLite
+	ID               string  `db:"id"`
+	Name             string  `db:"name"`
+	Provider         string  `db:"provider"`
+	URL              string  `db:"url"`
+	InputTokenCost   float32 `db:"input_token_cost"`
+	OutputTokenCost  float32 `db:"output_token_cost"`
+	Capabilities     string  `db:"capabilities"` // JSON string from SQLite
+	IsDownloadable   bool    `db:"is_downloadable"`
+	IsDownloaded     bool    `db:"is_downloaded"`
+	IsEmbeddingModel bool    `db:"is_embedding_model"`
 }
 
 // Intermediate struct for JSON parsing
@@ -92,23 +102,23 @@ type dbSettings struct {
 	Settings string `db:"settings"`
 }
 
-// func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {
-// 	if strings.TrimSpace(capabilitiesJSON) == "" {
-// 		return &proto.ModelCapabilities{}, nil
-// 	}
-// 	var caps CapabilitiesJSON
-// 	dec := json.NewDecoder(strings.NewReader(capabilitiesJSON))
-// 	dec.DisallowUnknownFields()
-// 	if err := dec.Decode(&caps); err != nil {
-// 		return nil, fmt.Errorf("parse capabilities: %w", err)
-// 	}
+func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {
+	if strings.TrimSpace(capabilitiesJSON) == "" {
+		return &proto.ModelCapabilities{}, nil
+	}
+	var caps CapabilitiesJSON
+	dec := json.NewDecoder(strings.NewReader(capabilitiesJSON))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&caps); err != nil {
+		return nil, fmt.Errorf("parse capabilities: %w", err)
+	}
 
-// 	toProto := func(c CapabilityJSON) *proto.Capability {
-// 		if !c.Input && !c.Output {
-// 			return nil
-// 		}
-// 		return &proto.Capability{Input: c.Input, Output: c.Output}
-// 	}
+	toProto := func(c CapabilityJSON) *proto.Capability {
+		if !c.Input && !c.Output {
+			return nil
+		}
+		return &proto.Capability{Input: c.Input, Output: c.Output}
+	}
 
 // 	return &proto.ModelCapabilities{
 // 		Text:     toProto(caps.Text),

@@ -25,7 +25,7 @@ type Client struct {
 	templates       map[string]*template.Template
 }
 
-const LLAMA_PROVIDER = "llama"
+const LOCAL_PROVIDER = "local"
 const OPENAI_PROVIDER = "openai"
 const GEMINI_PROVIDER = "gemini"
 const CLAUDE_PROVIDER = "claude"
@@ -67,7 +67,7 @@ func NewClient(settingsManager *settings.SettingsManager) *Client {
 	}
 }
 
-func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest) (*http.Response, error) {
+func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, provider string) (*http.Response, error) {
 	jsonData, err := c.generateRequestBody(req)
 	if err != nil {
 		slog.Error("llm:Call", "error", err)
@@ -78,23 +78,22 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest) (*ht
 	var apiKey string
 
 	model := req.Model
+	slog.Info("llm:Call", "model", model)
 
-	if strings.HasPrefix(model, GEMINI_PROVIDER) {
+	switch provider {
+	case GEMINI_PROVIDER:
 		url = c.settingsManager.GetSettings().GeminiAPIUrl
 		apiKey = c.settingsManager.GetSettings().GeminiAPIKey
-	} else if strings.HasPrefix(model, CLAUDE_PROVIDER) {
+	case CLAUDE_PROVIDER:
 		url = c.settingsManager.GetSettings().ClaudeAPIUrl
 		apiKey = c.settingsManager.GetSettings().ClaudeAPIKey
-	} else if strings.HasPrefix(model, LLAMA_PROVIDER) {
+	case LOCAL_PROVIDER:
 		//TODO: should not be hard coded
 		url = "http://localhost:8081/v1/chat/completions"
 		apiKey = "x"
-	} else {
+	default:
 		url = c.settingsManager.GetSettings().OpenaiAPIUrl
 		apiKey = c.settingsManager.GetSettings().OpenAIAPIKey
-	}
-	if apiKey == "" {
-		return nil, fmt.Errorf("API key not configured for model: %s", model)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))

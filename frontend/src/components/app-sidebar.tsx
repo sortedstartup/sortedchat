@@ -70,6 +70,24 @@ export function AppSidebar() {
   const [localSearchText, setLocalSearchText] = useState("");
   const [showSoftDeleted, setShowSoftDeleted] = useState(false);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false); // Add state for audio modal
+  const [isLinuxDesktop, setIsLinuxDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkEnv = async () => {
+      if (typeof window !== 'undefined' && ((window as any).runtime || (window as any).go)) {
+        try {
+          const { Environment } = await import("../../wailsjs/runtime/runtime");
+          const env = await Environment();
+          if (env.platform === 'linux') {
+            setIsLinuxDesktop(true);
+          }
+        } catch (err) {
+          console.error("Error detecting environment:", err);
+        }
+      }
+    };
+    checkEnv();
+  }, []);
 
 
   // Rename states (for both chats and projects)
@@ -243,10 +261,13 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {/* Temporarily hiding it for this release only */}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <button onClick={() => setIsAudioModalOpen(true)}
+                    <button
+                      onClick={() => !isLinuxDesktop && setIsAudioModalOpen(true)}
+                      disabled={isLinuxDesktop}
+                      className={isLinuxDesktop ? "opacity-50 cursor-not-allowed" : ""}
+                      title={isLinuxDesktop ? "Not available on Linux Desktop" : ""}
                     >
                       <AudioLines />
                       <span>New Realtime Voice Chat</span>

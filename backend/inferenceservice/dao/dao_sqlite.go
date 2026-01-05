@@ -47,7 +47,7 @@ func (d *SQLiteDAO) Infer(dummy string) error {
 }
 
 func (d *SQLiteDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM inferenceservice_models_metadata WHERE name = ?`
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id FROM shared_models_metadata WHERE name = ?`
 
 	var model ModelMetadata
 	err := d.db.Get(&model, query, modelName)
@@ -60,7 +60,7 @@ func (d *SQLiteDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
 }
 
 func (d *SQLiteDAO) GetAllModels() ([]*ModelMetadata, error) {
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, capabilities, cached_token_cost, is_enabled FROM inferenceservice_models_metadata ORDER BY name`
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, cached_token_cost, is_enabled, is_embedding_model FROM shared_models_metadata ORDER BY name`
 
 	var models []*ModelMetadata
 	err := d.db.Select(&models, query)
@@ -75,7 +75,7 @@ func (d *SQLiteDAO) GetAllModels() ([]*ModelMetadata, error) {
 func (d *SQLiteDAO) UpdateModelProgress(id string, progress *DownloadProgress) error {
 	slog.Info("inferenceservice:dao_sqlite:UpdateModelProgress", "id", id, "progress", progress.Status)
 	isDownloaded := progress.Status == StatusCompleted
-	query := `UPDATE inferenceservice_models_metadata SET progress = ?, is_downloaded = ?, status = ? WHERE id = ?`
+	query := `UPDATE shared_models_metadata SET progress = ?, is_downloaded = ?, status = ? WHERE id = ?`
 
 	progressJSON, err := progress.ToJSON()
 	if err != nil {
@@ -92,7 +92,7 @@ func (d *SQLiteDAO) UpdateModelProgress(id string, progress *DownloadProgress) e
 }
 
 func (d *SQLiteDAO) UpdateModelFileStoreID(id string, filestoreID string) error {
-	query := `UPDATE inferenceservice_models_metadata SET filestore_id = ? WHERE id = ?`
+	query := `UPDATE shared_models_metadata SET filestore_id = ? WHERE id = ?`
 	_, err := d.db.Exec(query, filestoreID, id)
 	if err != nil {
 		slog.Error("inferenceservice:dao_sqlite:UpdateModelFileStoreID", "message", "failed to update model file store ID", "error", err)
@@ -102,7 +102,7 @@ func (d *SQLiteDAO) UpdateModelFileStoreID(id string, filestoreID string) error 
 }
 
 func (d *SQLiteDAO) ResetModelToInitialState(id string) error {
-	query := `UPDATE inferenceservice_models_metadata SET progress = '', status = 0, is_downloaded = false, filestore_id = NULL WHERE id = ?`
+	query := `UPDATE shared_models_metadata SET progress = '', status = 0, is_downloaded = false, filestore_id = NULL WHERE id = ?`
 	_, err := d.db.Exec(query, id)
 	if err != nil {
 		slog.Error("inferenceservice:dao_sqlite:ResetModelToInitialState", "message", "failed to reset model to initial state", "error", err)

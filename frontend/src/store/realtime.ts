@@ -1,11 +1,11 @@
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { IceCandidateRequest, OfferRequest, RealtimeServiceClient } from "../../proto/realtimeservice";
 import { getUIConfig } from "../lib/config";
-import { $llmModels, ListLLMModels } from "./inference";
+import { ListModelsRequest, ModelListInfo } from "../../proto/chatservice";
+import { getChatClient } from "./chat";
 import { atom } from "nanostores";
 
 import { toast } from "sonner";
-import type { Model } from "proto/inferenceservice";
 
 
 let _realtimeClient: RealtimeServiceClient | undefined;
@@ -28,7 +28,7 @@ function getClient(): RealtimeServiceClient {
     return _realtimeClient;
 }
 
-export const $realtimeModelList = atom<Model[]>([]);
+export const $realtimeModelList = atom<ModelListInfo[]>([]);
 
 export const offerRequest = async (offer: string, provider: string, model: string) => {
     console.log("offerRequest", offer, provider, model);
@@ -80,17 +80,23 @@ export const iceCandidate = async (candidate: string) => {
     }
 }
 
-export const GetRealtimeModels = async () => {
+export const listModels = async () => {
+    const req = new ListModelsRequest({});
     try {
-        console.log("GetRealtimeModels", $llmModels.get());
-        if ($llmModels.get().length === 0) {
-            await ListLLMModels()
+        const res = await getChatClient().ListModel(req, {});
+        console.log("listModels", res);
+
+        // Filter models where realtime is true and set realtimeModelList
+        if (res.models) {
+            const realtimeModels = res.models.filter(
+                (model) => model.capabilities?.realtime === true
+            );
+            $realtimeModelList.set(realtimeModels);
         }
-        const models = $llmModels.get().filter((model) => model.capabilities?.realtime === true);
-        $realtimeModelList.set(models);
-        return models;
+
+        return res;
     } catch (error) {
-        console.error("Failed to get realtime models:", error);
+        console.error("Failed to list models:", error);
         throw error;
     }
-}
+};

@@ -108,7 +108,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
         className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
       };
     }
-    
+
 
     if (!isDownloadable) {
       return null;
@@ -151,7 +151,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
             )}
           </div>
         </div>
-  
+
         <div className="ml-4 flex flex-col items-end space-y-2">
           {buttonState && (
             <button
@@ -162,7 +162,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
               {buttonState.text}
             </button>
           )}
-  
+
           {progressData && progressData.status === 2 && (
             <div className="w-48">
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
@@ -182,7 +182,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
           )}
         </div>
       </div>
-  
+
       {(model.input_token_cost > 0 || model.output_token_cost > 0) && (
         <div className="border-t border-border pt-4 mt-4">
           <h4 className="text-sm font-medium text-foreground mb-2">Token Costs</h4>
@@ -198,7 +198,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
           </div>
         </div>
       )}
-  
+
       <div className="border-t border-border pt-4 mt-4">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2 flex-wrap">
@@ -215,7 +215,7 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
                 )}
               </>
             )}
-  
+
             {!isDownloadable && (
               <div className="flex items-center space-x-2">
                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
@@ -228,8 +228,14 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
                 )}
               </div>
             )}
+
+            {model.is_embedding_model && (
+              <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                Embedding Model
+              </span>
+            )}
           </div>
-  
+
           {progressData && progressData.filesize > 0 && progressData.status !== 2 && (
             <span className="text-muted-foreground">{formatFileSize(progressData.filesize)}</span>
           )}
@@ -237,5 +243,5 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
       </div>
     </div>
   );
-  
+
 };

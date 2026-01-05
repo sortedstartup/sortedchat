@@ -16,6 +16,8 @@ type DAO interface {
 	IsChatDeleted(chatId string, userID string) (bool, error)
 	GetChatMetadata(userID string, chatId string) (ChatInfoRow, error)
 
+	GetModels() ([]*proto.ModelListInfo, error)
+
 	// GetChatList retrieves all chats for a user
 	GetChatList(userID string, projectID string, softDeleted bool) ([]*proto.ChatInfo, error)
 

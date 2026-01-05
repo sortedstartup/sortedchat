@@ -12,11 +12,34 @@ import {
     GetAgentsRequest,
     GetSessionsRequest,
     Session,
-    SortedChatClient,
+    ContentEvent,
+    ToolCall,
+    ToolResult,
 } from "../../proto/chatservice";
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { getUIConfig } from "../lib/config";
 import type { ClientReadableStream } from "grpc-web";
+
+// Stream event types matching the new proto structure
+export interface StreamEvent {
+    type: 'text' | 'thinking' | 'tool_call' | 'tool_result' | 'error' | 'image' | 'video' | 'audio';
+    timestamp: number;
+    // For content events (text, thinking, image, etc.)
+    text?: string;
+    phase?: string;
+    model?: string;
+    url?: string;
+    mimeType?: string;
+    // For tool_call events
+    toolCallId?: string;
+    toolName?: string;
+    argumentsJson?: string;
+    // For tool_result events
+    resultJson?: string;
+    success?: boolean;
+    errorMessage?: string;
+    durationMs?: number;
+}
 
 let _agentClient: AgentServiceClient | undefined;
 
@@ -44,7 +67,7 @@ export const $sessions = map<Record<string, Session[]>>({});
 export const $currentSessionId = atom<string>("");
 
 export const $agentMessages = atom<{
-    data: AgentMessage[];
+    data: Array<AgentMessage & { streamEvents?: StreamEvent[] }>;
     loading: boolean;
     error: string | null;
 }>({
@@ -55,6 +78,7 @@ export const $agentMessages = atom<{
 
 export const $isAgentStreaming = atom<boolean>(false);
 export const $agentStreamingMessage = atom<string>("");
+export const $agentStreamingEvents = atom<StreamEvent[]>([]);
 export let agentStream: ClientReadableStream<AgentChatResponse> | null = null;
 
 // Actions
@@ -170,7 +194,6 @@ export const sendAgentMessage = async (sessionId: string, message: string) => {
     userMsg.role = "user";
     userMsg.content = message;
     userMsg.type = "text";
-    // Temporary ID and sequence until refresh? Or just optimistic update
     userMsg.id = "temp-" + Date.now();
 
     $agentMessages.set({
@@ -180,6 +203,7 @@ export const sendAgentMessage = async (sessionId: string, message: string) => {
 
     $isAgentStreaming.set(true);
     $agentStreamingMessage.set("");
+    $agentStreamingEvents.set([]);
 
     try {
         agentStream = getAgentClient().AgentChat(
@@ -191,30 +215,103 @@ export const sendAgentMessage = async (sessionId: string, message: string) => {
         );
 
         let assistantContent = "";
+        const events: StreamEvent[] = [];
 
         agentStream.on("data", (res: AgentChatResponse) => {
-            if (res.has_message) {
-                assistantContent += res.message;
-                $agentStreamingMessage.set(assistantContent);
+            const responseType = res.response;
+            console.log("Agent stream data:", responseType, res.toObject());
+            
+            // Handle ContentEvent (text, thinking, image, video, audio)
+            if (res.has_content) {
+                const content = res.content;
+                const eventType = content.type as StreamEvent['type'];
+                
+                if (eventType === 'text') {
+                    // Accumulate text content
+                    assistantContent += content.text;
+                    $agentStreamingMessage.set(assistantContent);
+                }
+                
+                // Add event for all content types
+                events.push({
+                    type: eventType,
+                    timestamp: Date.now(),
+                    text: content.text,
+                    phase: content.phase,
+                    model: content.model,
+                    url: content.url,
+                    mimeType: content.mime_type,
+                });
+                $agentStreamingEvents.set([...events]);
             }
-            // TODO: Handle thinking, tool_call, tool_result
+            
+            // Handle ToolCall
+            if (res.has_tool_call) {
+                const toolCall = res.tool_call;
+                events.push({
+                    type: 'tool_call',
+                    timestamp: Date.now(),
+                    toolCallId: toolCall.id,
+                    toolName: toolCall.name,
+                    argumentsJson: toolCall.arguments_json,
+                });
+                $agentStreamingEvents.set([...events]);
+            }
+            
+            // Handle ToolResult
+            if (res.has_tool_result) {
+                const toolResult = res.tool_result;
+                events.push({
+                    type: 'tool_result',
+                    timestamp: Date.now(),
+                    toolCallId: toolResult.id,
+                    toolName: toolResult.name,
+                    resultJson: toolResult.result_json,
+                    success: toolResult.success,
+                    errorMessage: toolResult.error_message,
+                    durationMs: Number(toolResult.duration_ms),
+                });
+                $agentStreamingEvents.set([...events]);
+            }
+            
+            // Handle Error
+            if (res.has_error) {
+                events.push({
+                    type: 'error',
+                    timestamp: Date.now(),
+                    text: res.error,
+                });
+                $agentStreamingEvents.set([...events]);
+            }
         });
 
         agentStream.on("end", () => {
-            const assistantMsg = new AgentMessage();
-            assistantMsg.role = "assistant";
-            assistantMsg.content = assistantContent;
-            assistantMsg.type = "text";
-            assistantMsg.id = "temp-resp-" + Date.now();
+            // Create assistant message object with proper fields
+            const msgWithEvents = {
+                id: "temp-resp-" + Date.now(),
+                session_id: sessionId,
+                sequence_number: 0,
+                role: "assistant",
+                content: assistantContent,
+                type: "text",
+                tool_name: "",
+                tool_call_id: "",
+                tool_args: "",
+                streamEvents: events
+            };
 
+            // Add message to history FIRST, before clearing streaming state
             $agentMessages.set({
                 ...$agentMessages.get(),
-                data: [...$agentMessages.get().data, assistantMsg],
+                data: [...$agentMessages.get().data, msgWithEvents],
                 loading: false,
                 error: null
             });
-            $isAgentStreaming.set(false);
+            
+            // Now clear streaming state after message is in history
             $agentStreamingMessage.set("");
+            $agentStreamingEvents.set([]);
+            $isAgentStreaming.set(false);
         });
 
         agentStream.on("error", (err) => {

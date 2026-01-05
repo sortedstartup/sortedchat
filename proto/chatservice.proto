@@ -513,12 +513,38 @@ message AgentChatRequest {
 
 message AgentChatResponse {
   oneof response {
-    string message = 1;
-    string thinking = 2;
-    string tool_call = 3;
-    string tool_result = 4;
-    string error = 5;
+    ContentEvent content = 1;
+    ToolCall tool_call = 2;
+    ToolResult tool_result = 3;
+    string error = 4;
   }
+}
+
+// Generic content output (text, thinking, images, video, etc.)
+message ContentEvent {
+  string type = 1;            // "text", "thinking", "image", "video", "audio"
+  string text = 2;            // for text/thinking content
+  string url = 3;             // for media (image/video/audio URL or base64)
+  string mime_type = 4;       // e.g., "image/png", "video/mp4"
+  string phase = 5;           // for thinking: "before_model", "after_model", "before_tool", "after_tool"
+  string model = 6;           // which model generated this
+}
+
+// Tool being called (sent BEFORE execution)
+message ToolCall {
+  string id = 1;              // unique ID to correlate with ToolResult
+  string name = 2;            // tool name
+  string arguments_json = 3;  // JSON string of arguments
+}
+
+// Tool finished (sent AFTER execution)
+message ToolResult {
+  string id = 1;              // matches ToolCall.id
+  string name = 2;            // tool name
+  string result_json = 3;     // JSON string of result
+  bool success = 4;           // true if tool executed successfully
+  string error_message = 5;   // populated if success=false
+  int64 duration_ms = 6;      // execution time in milliseconds
 }
 
 message GetSessionRequest {

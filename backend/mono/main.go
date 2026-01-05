@@ -257,7 +257,10 @@ func main() {
 	settingServiceApi := api.NewSettingService(queue, daoFactory)
 	settingServiceApi.Init()
 
-	agentsServiceApi := api.NewAgentService(daoFactory)
+	agentsServiceApi, err := api.NewAgentService(daoFactory)
+	if err != nil {
+		log.Fatalf("Failed to create agent service: %v", err)
+	}
 	// agentsServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 	proto.RegisterSettingServiceServer(internalGrpcServer, settingServiceApi)

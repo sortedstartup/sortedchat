@@ -40,8 +40,10 @@ message Model {
   bool is_downloadable = 9;
   DownloadStatus status = 10;
   string filestore_id = 11;  // File path for downloadable models, null for non-downloadable
+  bool is_embedding_model = 12;
+  bool is_enabled = 14;
 }
-  
+
 message DownloadModelRequest {
   string model_name = 1;
 }

@@ -396,6 +396,9 @@ message ModelListInfo {
   float input_token_cost = 5;
   float output_token_cost = 6;
   ModelCapabilities capabilities = 7;
+  bool is_downloaded = 8;
+  bool is_downloadable = 9;
+  bool is_embedding_model = 10;
 }
 
 message ModelCapabilities {

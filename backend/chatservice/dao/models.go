@@ -71,13 +71,16 @@ type ChatInfoRow struct {
 }
 
 type Models struct {
-	ID              string  `db:"id"`
-	Name            string  `db:"name"`
-	Provider        string  `db:"provider"`
-	URL             string  `db:"url"`
-	InputTokenCost  float32 `db:"input_token_cost"`
-	OutputTokenCost float32 `db:"output_token_cost"`
-	Capabilities    string  `db:"capabilities"` // JSON string from SQLite
+	ID               string  `db:"id"`
+	Name             string  `db:"name"`
+	Provider         string  `db:"provider"`
+	URL              string  `db:"url"`
+	InputTokenCost   float32 `db:"input_token_cost"`
+	OutputTokenCost  float32 `db:"output_token_cost"`
+	Capabilities     string  `db:"capabilities"` // JSON string from SQLite
+	IsDownloadable   bool    `db:"is_downloadable"`
+	IsDownloaded     bool    `db:"is_downloaded"`
+	IsEmbeddingModel bool    `db:"is_embedding_model"`
 }
 
 // Intermediate struct for JSON parsing

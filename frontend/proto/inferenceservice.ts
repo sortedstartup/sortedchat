@@ -165,6 +165,8 @@ export class Model extends pb_1.Message {
         is_downloadable?: boolean;
         status?: DownloadStatus;
         filestore_id?: string;
+        is_embedding_model?: boolean;
+        is_enabled?: boolean;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -201,6 +203,12 @@ export class Model extends pb_1.Message {
             }
             if ("filestore_id" in data && data.filestore_id != undefined) {
                 this.filestore_id = data.filestore_id;
+            }
+            if ("is_embedding_model" in data && data.is_embedding_model != undefined) {
+                this.is_embedding_model = data.is_embedding_model;
+            }
+            if ("is_enabled" in data && data.is_enabled != undefined) {
+                this.is_enabled = data.is_enabled;
             }
         }
     }
@@ -273,6 +281,18 @@ export class Model extends pb_1.Message {
     set filestore_id(value: string) {
         pb_1.Message.setField(this, 11, value);
     }
+    get is_embedding_model() {
+        return pb_1.Message.getFieldWithDefault(this, 12, false) as boolean;
+    }
+    set is_embedding_model(value: boolean) {
+        pb_1.Message.setField(this, 12, value);
+    }
+    get is_enabled() {
+        return pb_1.Message.getFieldWithDefault(this, 14, false) as boolean;
+    }
+    set is_enabled(value: boolean) {
+        pb_1.Message.setField(this, 14, value);
+    }
     static fromObject(data: {
         id?: string;
         name?: string;
@@ -285,6 +305,8 @@ export class Model extends pb_1.Message {
         is_downloadable?: boolean;
         status?: DownloadStatus;
         filestore_id?: string;
+        is_embedding_model?: boolean;
+        is_enabled?: boolean;
     }): Model {
         const message = new Model({});
         if (data.id != null) {
@@ -320,6 +342,12 @@ export class Model extends pb_1.Message {
         if (data.filestore_id != null) {
             message.filestore_id = data.filestore_id;
         }
+        if (data.is_embedding_model != null) {
+            message.is_embedding_model = data.is_embedding_model;
+        }
+        if (data.is_enabled != null) {
+            message.is_enabled = data.is_enabled;
+        }
         return message;
     }
     toObject() {
@@ -335,6 +363,8 @@ export class Model extends pb_1.Message {
             is_downloadable?: boolean;
             status?: DownloadStatus;
             filestore_id?: string;
+            is_embedding_model?: boolean;
+            is_enabled?: boolean;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -369,6 +399,12 @@ export class Model extends pb_1.Message {
         if (this.filestore_id != null) {
             data.filestore_id = this.filestore_id;
         }
+        if (this.is_embedding_model != null) {
+            data.is_embedding_model = this.is_embedding_model;
+        }
+        if (this.is_enabled != null) {
+            data.is_enabled = this.is_enabled;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -397,6 +433,10 @@ export class Model extends pb_1.Message {
             writer.writeEnum(10, this.status);
         if (this.filestore_id.length)
             writer.writeString(11, this.filestore_id);
+        if (this.is_embedding_model != false)
+            writer.writeBool(12, this.is_embedding_model);
+        if (this.is_enabled != false)
+            writer.writeBool(14, this.is_enabled);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -438,6 +478,12 @@ export class Model extends pb_1.Message {
                     break;
                 case 11:
                     message.filestore_id = reader.readString();
+                    break;
+                case 12:
+                    message.is_embedding_model = reader.readBool();
+                    break;
+                case 14:
+                    message.is_enabled = reader.readBool();
                     break;
                 default: reader.skipField();
             }

@@ -149,20 +149,22 @@ func (x *DownloadProgress) GetSpeed() int64 {
 }
 
 type Model struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Url             string                 `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
-	Provider        string                 `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
-	InputTokenCost  float64                `protobuf:"fixed64,5,opt,name=input_token_cost,json=inputTokenCost,proto3" json:"input_token_cost,omitempty"`
-	OutputTokenCost float64                `protobuf:"fixed64,6,opt,name=output_token_cost,json=outputTokenCost,proto3" json:"output_token_cost,omitempty"`
-	Progress        *DownloadProgress      `protobuf:"bytes,7,opt,name=progress,proto3" json:"progress,omitempty"`
-	IsDownloaded    bool                   `protobuf:"varint,8,opt,name=is_downloaded,json=isDownloaded,proto3" json:"is_downloaded,omitempty"`
-	IsDownloadable  bool                   `protobuf:"varint,9,opt,name=is_downloadable,json=isDownloadable,proto3" json:"is_downloadable,omitempty"`
-	Status          DownloadStatus         `protobuf:"varint,10,opt,name=status,proto3,enum=sortedchat.DownloadStatus" json:"status,omitempty"`
-	FilestoreId     string                 `protobuf:"bytes,11,opt,name=filestore_id,json=filestoreId,proto3" json:"filestore_id,omitempty"` // File path for downloadable models, null for non-downloadable
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Url              string                 `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	Provider         string                 `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
+	InputTokenCost   float64                `protobuf:"fixed64,5,opt,name=input_token_cost,json=inputTokenCost,proto3" json:"input_token_cost,omitempty"`
+	OutputTokenCost  float64                `protobuf:"fixed64,6,opt,name=output_token_cost,json=outputTokenCost,proto3" json:"output_token_cost,omitempty"`
+	Progress         *DownloadProgress      `protobuf:"bytes,7,opt,name=progress,proto3" json:"progress,omitempty"`
+	IsDownloaded     bool                   `protobuf:"varint,8,opt,name=is_downloaded,json=isDownloaded,proto3" json:"is_downloaded,omitempty"`
+	IsDownloadable   bool                   `protobuf:"varint,9,opt,name=is_downloadable,json=isDownloadable,proto3" json:"is_downloadable,omitempty"`
+	Status           DownloadStatus         `protobuf:"varint,10,opt,name=status,proto3,enum=sortedchat.DownloadStatus" json:"status,omitempty"`
+	FilestoreId      string                 `protobuf:"bytes,11,opt,name=filestore_id,json=filestoreId,proto3" json:"filestore_id,omitempty"` // File path for downloadable models, null for non-downloadable
+	IsEmbeddingModel bool                   `protobuf:"varint,12,opt,name=is_embedding_model,json=isEmbeddingModel,proto3" json:"is_embedding_model,omitempty"`
+	IsEnabled        bool                   `protobuf:"varint,14,opt,name=is_enabled,json=isEnabled,proto3" json:"is_enabled,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Model) Reset() {
@@ -270,6 +272,20 @@ func (x *Model) GetFilestoreId() string {
 		return x.FilestoreId
 	}
 	return ""
+}
+
+func (x *Model) GetIsEmbeddingModel() bool {
+	if x != nil {
+		return x.IsEmbeddingModel
+	}
+	return false
+}
+
+func (x *Model) GetIsEnabled() bool {
+	if x != nil {
+		return x.IsEnabled
+	}
+	return false
 }
 
 type DownloadModelRequest struct {
@@ -626,7 +642,7 @@ const file_inferenceservice_proto_rawDesc = "" +
 	"\tfile_size\x18\x01 \x01(\x03R\bfileSize\x122\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x1a.sortedchat.DownloadStatusR\x06status\x12\x1a\n" +
 	"\bprogress\x18\x03 \x01(\x05R\bprogress\x12\x14\n" +
-	"\x05speed\x18\x04 \x01(\x03R\x05speed\"\x8e\x03\n" +
+	"\x05speed\x18\x04 \x01(\x03R\x05speed\"\xdb\x03\n" +
 	"\x05Model\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x10\n" +
@@ -639,7 +655,10 @@ const file_inferenceservice_proto_rawDesc = "" +
 	"\x0fis_downloadable\x18\t \x01(\bR\x0eisDownloadable\x122\n" +
 	"\x06status\x18\n" +
 	" \x01(\x0e2\x1a.sortedchat.DownloadStatusR\x06status\x12!\n" +
-	"\ffilestore_id\x18\v \x01(\tR\vfilestoreId\"5\n" +
+	"\ffilestore_id\x18\v \x01(\tR\vfilestoreId\x12,\n" +
+	"\x12is_embedding_model\x18\f \x01(\bR\x10isEmbeddingModel\x12\x1d\n" +
+	"\n" +
+	"is_enabled\x18\x0e \x01(\bR\tisEnabled\"5\n" +
 	"\x14DownloadModelRequest\x12\x1d\n" +
 	"\n" +
 	"model_name\x18\x01 \x01(\tR\tmodelName\"1\n" +

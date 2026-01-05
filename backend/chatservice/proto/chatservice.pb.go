@@ -3361,16 +3361,19 @@ func (x *ListChatBranchResponse) GetBranchChatList() []*ChatInfo {
 }
 
 type ModelListInfo struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Label           string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	Provider        string                 `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
-	Url             string                 `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
-	InputTokenCost  float32                `protobuf:"fixed32,5,opt,name=input_token_cost,json=inputTokenCost,proto3" json:"input_token_cost,omitempty"`
-	OutputTokenCost float32                `protobuf:"fixed32,6,opt,name=output_token_cost,json=outputTokenCost,proto3" json:"output_token_cost,omitempty"`
-	Capabilities    *ModelCapabilities     `protobuf:"bytes,7,opt,name=capabilities,proto3" json:"capabilities,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Label            string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	Provider         string                 `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
+	Url              string                 `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
+	InputTokenCost   float32                `protobuf:"fixed32,5,opt,name=input_token_cost,json=inputTokenCost,proto3" json:"input_token_cost,omitempty"`
+	OutputTokenCost  float32                `protobuf:"fixed32,6,opt,name=output_token_cost,json=outputTokenCost,proto3" json:"output_token_cost,omitempty"`
+	Capabilities     *ModelCapabilities     `protobuf:"bytes,7,opt,name=capabilities,proto3" json:"capabilities,omitempty"`
+	IsDownloaded     bool                   `protobuf:"varint,8,opt,name=is_downloaded,json=isDownloaded,proto3" json:"is_downloaded,omitempty"`
+	IsDownloadable   bool                   `protobuf:"varint,9,opt,name=is_downloadable,json=isDownloadable,proto3" json:"is_downloadable,omitempty"`
+	IsEmbeddingModel bool                   `protobuf:"varint,10,opt,name=is_embedding_model,json=isEmbeddingModel,proto3" json:"is_embedding_model,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ModelListInfo) Reset() {
@@ -3450,6 +3453,27 @@ func (x *ModelListInfo) GetCapabilities() *ModelCapabilities {
 		return x.Capabilities
 	}
 	return nil
+}
+
+func (x *ModelListInfo) GetIsDownloaded() bool {
+	if x != nil {
+		return x.IsDownloaded
+	}
+	return false
+}
+
+func (x *ModelListInfo) GetIsDownloadable() bool {
+	if x != nil {
+		return x.IsDownloadable
+	}
+	return false
+}
+
+func (x *ModelListInfo) GetIsEmbeddingModel() bool {
+	if x != nil {
+		return x.IsEmbeddingModel
+	}
+	return false
 }
 
 type ModelCapabilities struct {
@@ -4030,7 +4054,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x15ListChatBranchRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\"X\n" +
 	"\x16ListChatBranchResponse\x12>\n" +
-	"\x10branch_chat_list\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x0ebranchChatList\"\xfc\x01\n" +
+	"\x10branch_chat_list\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x0ebranchChatList\"\xf8\x02\n" +
 	"\rModelListInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x1a\n" +
@@ -4038,7 +4062,11 @@ const file_chatservice_proto_rawDesc = "" +
 	"\x03url\x18\x04 \x01(\tR\x03url\x12(\n" +
 	"\x10input_token_cost\x18\x05 \x01(\x02R\x0einputTokenCost\x12*\n" +
 	"\x11output_token_cost\x18\x06 \x01(\x02R\x0foutputTokenCost\x12A\n" +
-	"\fcapabilities\x18\a \x01(\v2\x1d.sortedchat.ModelCapabilitiesR\fcapabilities\"\xe5\x01\n" +
+	"\fcapabilities\x18\a \x01(\v2\x1d.sortedchat.ModelCapabilitiesR\fcapabilities\x12#\n" +
+	"\ris_downloaded\x18\b \x01(\bR\fisDownloaded\x12'\n" +
+	"\x0fis_downloadable\x18\t \x01(\bR\x0eisDownloadable\x12,\n" +
+	"\x12is_embedding_model\x18\n" +
+	" \x01(\bR\x10isEmbeddingModel\"\xe5\x01\n" +
 	"\x11ModelCapabilities\x12*\n" +
 	"\x04text\x18\x01 \x01(\v2\x16.sortedchat.CapabilityR\x04text\x12,\n" +
 	"\x05audio\x18\x02 \x01(\v2\x16.sortedchat.CapabilityR\x05audio\x12,\n" +

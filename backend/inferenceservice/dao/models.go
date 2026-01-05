@@ -17,7 +17,6 @@ type ModelMetadata struct {
 	Status           int     `db:"status"`
 	FileStoreID      *string `db:"filestore_id"`
 	IsEmbeddingModel bool    `db:"is_embedding_model"`
-	Capabilities     string  `db:"capabilities"`
 	CachedTokenCost  float64 `db:"cached_token_cost"`
 	IsEnabled        bool    `db:"is_enabled"`
 }

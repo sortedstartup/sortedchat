@@ -90,17 +90,19 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 			}
 
 			pbModels[i] = &pb.Model{
-				Id:              model.ID,
-				Name:            model.Name,
-				Url:             model.URL,
-				Provider:        model.Provider,
-				InputTokenCost:  model.InputTokenCost,
-				OutputTokenCost: model.OutputTokenCost,
-				Progress:        progressProto,
-				IsDownloaded:    model.IsDownloaded,
-				IsDownloadable:  model.IsDownloadable,
-				Status:          pb.DownloadStatus(model.Status),
-				FilestoreId:     filestoreID,
+				Id:               model.ID,
+				Name:             model.Name,
+				Url:              model.URL,
+				Provider:         model.Provider,
+				InputTokenCost:   model.InputTokenCost,
+				OutputTokenCost:  model.OutputTokenCost,
+				Progress:         progressProto,
+				IsDownloaded:     model.IsDownloaded,
+				IsDownloadable:   model.IsDownloadable,
+				Status:           pb.DownloadStatus(model.Status),
+				FilestoreId:      filestoreID,
+				IsEmbeddingModel: model.IsEmbeddingModel,
+				IsEnabled:        model.IsEnabled,
 			}
 		}
 		slog.Info("inferenceservice:api:GetLLMModels", "message", "Sending LLM models")

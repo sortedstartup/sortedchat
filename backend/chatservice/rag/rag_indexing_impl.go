@@ -153,7 +153,8 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 			return nil, err
 		}
 
-		ollama_url := e.SettingsManager.GetSettings().OllamaURL
+		//TODO:remove hardcoded url
+		ollama_url := "http://localhost:8081/v1/embeddings"
 		req, err := http.NewRequestWithContext(ctx, "POST", ollama_url, bytes.NewBuffer(bodyBytes))
 		if err != nil {
 			slog.Error("rag_indexing_impl:Embed", "step", "failed to create request", "error", err, "chunk", chunk, "model", e.Model)
@@ -190,7 +191,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		embeddings = append(embeddings, Embedding{
 			ChunkID:  chunk.ID,
 			Vector:   vec,
-			Provider: e.SettingsManager.GetSettings().OllamaURL,
+			Provider: "ollama",
 		})
 	}
 

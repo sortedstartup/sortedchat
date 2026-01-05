@@ -77,13 +77,9 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 	var url string
 	var apiKey string
 
-	model := req.Model
-	slog.Info("llm:Call", "model", model)
-
 	switch provider {
 	case GEMINI_PROVIDER:
 		url, apiKey, err = c.settingsManager.GetProviderSetting(GEMINI_PROVIDER)
-		slog.Info("llm:Call", "url", url, "apiKey", apiKey)
 		if err != nil {
 			slog.Error("llm:Call", "error", err)
 			return nil, fmt.Errorf("failed to get provider setting: %v", err)
@@ -100,7 +96,6 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 		apiKey = "x"
 	default:
 		url, apiKey, err = c.settingsManager.GetProviderSetting(OPENAI_PROVIDER)
-		slog.Info("llm:Call", "url", url, "apiKey", apiKey)
 		if err != nil {
 			slog.Error("llm:Call", "error", err)
 			return nil, fmt.Errorf("failed to get provider setting: %v", err)

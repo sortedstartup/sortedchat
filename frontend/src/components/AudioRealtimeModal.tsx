@@ -7,10 +7,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Phone, PhoneOff, Volume2, ChevronDown } from "lucide-react";
-import { iceCandidate, GetRealtimeModels, offerRequest, $isConnected, $realtimeModelList } from '@/store/realtime';
+import { iceCandidate, offerRequest, $isConnected, $realtimeModelList, listModels } from '@/store/realtime';
 
 import { useStore } from '@nanostores/react';
-import type { Model } from 'proto/inferenceservice';
+import { ModelListInfo } from '../../proto/chatservice';
 
 interface RealtimeAudioModalProps {
   isOpen: boolean;
@@ -20,7 +20,7 @@ interface RealtimeAudioModalProps {
 export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps) {
   const realtimeModelList = useStore($realtimeModelList);
   const isConnected = useStore($isConnected);
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
+  const [selectedModel, setSelectedModel] = useState<ModelListInfo | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Select provider and click Connect');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -151,7 +151,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
   };
 
   useEffect(() => {
-    GetRealtimeModels();
+    listModels();
     return handleDisconnect;
   }, []);
 
@@ -186,7 +186,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${selectedModel?.provider === 'openai' ? 'bg-green-500' : 'bg-blue-500'}`} />
                   <span className="font-medium text-foreground">
-                    {selectedModel ? selectedModel.name || selectedModel.id : 'Select a model'}
+                    {selectedModel ? selectedModel.label || selectedModel.id : 'Select a model'}
                   </span>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -206,7 +206,7 @@ export function RealtimeAudioModal({ isOpen, onClose }: RealtimeAudioModalProps)
                         className={`w-full p-3 hover:bg-accent text-popover-foreground flex items-center gap-2 ${index < realtimeModelList.length - 1 ? 'border-b border-border' : ''}`}
                       >
                         <div className={`w-2 h-2 rounded-full ${model.provider === 'openai' ? 'bg-green-500' : 'bg-blue-500'}`} />
-                        <span>{model.name}</span>
+                        <span>{model.label}</span>
                       </button>
                     ))
                   )}

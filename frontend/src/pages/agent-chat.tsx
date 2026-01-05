@@ -14,7 +14,7 @@ import {
     Brain,
     Clock
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams } from "react-router-dom";
 import {
@@ -37,141 +37,163 @@ interface MessageProps {
     isCopied: boolean;
 }
 
-function ToolCallCard({ event }: { event: StreamEvent }) {
-    const [isExpanded, setIsExpanded] = useState(true);
+// Combined tool execution info
+interface ToolExecution {
+    toolCallId?: string;
+    toolName: string;
+    argumentsJson?: string;
+    resultJson?: string;
+    success?: boolean;
+    errorMessage?: string;
+    durationMs?: number;
+    isComplete: boolean;
+}
 
-    // Parse arguments JSON
+// Compact expandable code block with line limit
+function ExpandableCode({ content, defaultLines = 50 }: { content: string; defaultLines?: number }) {
+    const [isFullyExpanded, setIsFullyExpanded] = useState(false);
+    const lines = content.split('\n');
+    const needsTruncation = lines.length > defaultLines;
+    
+    const displayContent = needsTruncation && !isFullyExpanded 
+        ? lines.slice(0, defaultLines).join('\n') + '\n...'
+        : content;
+
+    return (
+        <div>
+            <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto max-h-[300px] overflow-y-auto">
+                <code>{displayContent}</code>
+            </pre>
+            {needsTruncation && (
+                <button
+                    onClick={() => setIsFullyExpanded(!isFullyExpanded)}
+                    className="mt-1 text-xs text-primary hover:underline"
+                >
+                    {isFullyExpanded ? 'Show less' : `Show all ${lines.length} lines`}
+                </button>
+            )}
+        </div>
+    );
+}
+
+// Compact inline tool chip - clickable to expand
+function ToolChip({ execution, isExpanded, onToggle }: { 
+    execution: ToolExecution; 
+    isExpanded: boolean;
+    onToggle: () => void;
+}) {
+    const isSuccess = execution.success !== false;
+    const isComplete = execution.isComplete;
+
+    const getBgColor = () => {
+        if (!isComplete) return "bg-muted hover:bg-muted/80";
+        if (isSuccess) return "bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-900/60";
+        return "bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60";
+    };
+
+    const getIconColor = () => {
+        if (!isComplete) return "text-muted-foreground";
+        if (isSuccess) return "text-green-600 dark:text-green-400";
+        return "text-red-600 dark:text-red-400";
+    };
+
+    return (
+        <button
+            onClick={onToggle}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${getBgColor()} transition-colors`}
+        >
+            {!isComplete ? (
+                <Loader2 className={`w-3 h-3 animate-spin ${getIconColor()}`} />
+            ) : isSuccess ? (
+                <CheckCircle2 className={`w-3 h-3 ${getIconColor()}`} />
+            ) : (
+                <XCircle className={`w-3 h-3 ${getIconColor()}`} />
+            )}
+            <span className="font-medium">{execution.toolName}</span>
+            {isComplete && execution.durationMs !== undefined && (
+                <span className="text-muted-foreground text-[10px]">{execution.durationMs}ms</span>
+            )}
+            {isExpanded ? (
+                <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            ) : (
+                <ChevronRight className="w-3 h-3 text-muted-foreground" />
+            )}
+        </button>
+    );
+}
+
+// Expanded detail panel for a tool execution
+function ToolDetailPanel({ execution }: { execution: ToolExecution }) {
+    // Parse arguments and result
     let args = {};
+    let result = {};
     try {
-        if (event.argumentsJson) {
-            args = JSON.parse(event.argumentsJson);
+        if (execution.argumentsJson) {
+            args = JSON.parse(execution.argumentsJson);
+        }
+    } catch (e) { /* ignore */ }
+    
+    try {
+        if (execution.resultJson) {
+            result = JSON.parse(execution.resultJson);
         }
     } catch (e) {
-        // Keep empty object
+        result = execution.resultJson || {};
     }
 
     return (
-        <div className="my-3 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950/30 overflow-hidden">
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-            >
-                <div className="flex items-center space-x-2">
-                    <Wrench className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin" />
-                    <span className="text-[10px] font-mono bg-blue-200 dark:bg-blue-800 px-1 rounded text-blue-800 dark:text-blue-200">
-                        tool_call
-                    </span>
-                    <span className="font-medium text-sm text-blue-900 dark:text-blue-100">
-                        {event.toolName || 'Unknown'}
-                    </span>
-                    {event.toolCallId && (
-                        <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400">
-                            #{event.toolCallId}
-                        </span>
-                    )}
+        <div className="mt-2 p-2 border border-border rounded-lg bg-muted/20 text-left">
+            <div className="text-xs font-medium mb-1">{execution.toolName}</div>
+            
+            {/* Arguments */}
+            <div className="mb-2">
+                <div className="text-[10px] text-muted-foreground mb-0.5">Arguments:</div>
+                <ExpandableCode content={JSON.stringify(args, null, 2)} defaultLines={50} />
+            </div>
+            
+            {/* Result (if complete) */}
+            {execution.isComplete && (
+                <div>
+                    <div className="text-[10px] text-muted-foreground mb-0.5">Result:</div>
+                    <ExpandableCode content={JSON.stringify(result, null, 2)} defaultLines={50} />
                 </div>
-                {isExpanded ? (
-                    <ChevronDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                ) : (
-                    <ChevronRight className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                )}
-            </button>
-            {isExpanded && (
-                <div className="px-4 pb-3 pt-1">
-                    <div className="text-xs text-muted-foreground mb-1">Arguments:</div>
-                    <pre className="text-xs bg-blue-100 dark:bg-blue-900/50 p-2 rounded overflow-x-auto">
-                        <code>{JSON.stringify(args, null, 2)}</code>
-                    </pre>
+            )}
+            
+            {/* Error message */}
+            {execution.errorMessage && (
+                <div className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    Error: {execution.errorMessage}
                 </div>
             )}
         </div>
     );
 }
 
-function ToolResultCard({ event }: { event: StreamEvent }) {
-    const [isExpanded, setIsExpanded] = useState(true);
+// Container for multiple tool chips in a horizontal row
+function ToolExecutionsRow({ executions }: { executions: ToolExecution[] }) {
+    const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
-    // Parse result JSON
-    let result = {};
-    try {
-        if (event.resultJson) {
-            result = JSON.parse(event.resultJson);
-        }
-    } catch (e) {
-        result = event.resultJson || {};
-    }
-
-    const isSuccess = event.success !== false;
-    const borderColor = isSuccess 
-        ? "border-green-200 dark:border-green-800" 
-        : "border-red-200 dark:border-red-800";
-    const bgColor = isSuccess 
-        ? "bg-green-50 dark:bg-green-950/30" 
-        : "bg-red-50 dark:bg-red-950/30";
-    const hoverBg = isSuccess 
-        ? "hover:bg-green-100 dark:hover:bg-green-900/30" 
-        : "hover:bg-red-100 dark:hover:bg-red-900/30";
-    const textColor = isSuccess 
-        ? "text-green-600 dark:text-green-400" 
-        : "text-red-600 dark:text-red-400";
-    const badgeBg = isSuccess 
-        ? "bg-green-200 dark:bg-green-800" 
-        : "bg-red-200 dark:bg-red-800";
-    const badgeText = isSuccess 
-        ? "text-green-800 dark:text-green-200" 
-        : "text-red-800 dark:text-red-200";
-    const resultBg = isSuccess 
-        ? "bg-green-100 dark:bg-green-900/50" 
-        : "bg-red-100 dark:bg-red-900/50";
+    const handleToggle = (index: number) => {
+        setExpandedIndex(expandedIndex === index ? null : index);
+    };
 
     return (
-        <div className={`my-3 border ${borderColor} rounded-lg ${bgColor} overflow-hidden`}>
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className={`w-full px-4 py-3 flex items-center justify-between ${hoverBg} transition-colors`}
-            >
-                <div className="flex items-center space-x-2">
-                    {isSuccess ? (
-                        <CheckCircle2 className={`w-4 h-4 ${textColor}`} />
-                    ) : (
-                        <XCircle className={`w-4 h-4 ${textColor}`} />
-                    )}
-                    <span className={`text-[10px] font-mono ${badgeBg} px-1 rounded ${badgeText}`}>
-                        tool_result
-                    </span>
-                    <span className={`font-medium text-sm ${isSuccess ? "text-green-900 dark:text-green-100" : "text-red-900 dark:text-red-100"}`}>
-                        {event.toolName || 'Unknown'}
-                    </span>
-                    {event.toolCallId && (
-                        <span className={`text-[10px] font-mono ${textColor}`}>
-                            #{event.toolCallId}
-                        </span>
-                    )}
-                    {event.durationMs !== undefined && (
-                        <span className="flex items-center text-[10px] font-mono text-muted-foreground">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {event.durationMs}ms
-                        </span>
-                    )}
-                </div>
-                {isExpanded ? (
-                    <ChevronDown className={`w-4 h-4 ${textColor}`} />
-                ) : (
-                    <ChevronRight className={`w-4 h-4 ${textColor}`} />
-                )}
-            </button>
-            {isExpanded && (
-                <div className="px-4 pb-3 pt-1">
-                    <div className="text-xs text-muted-foreground mb-1">Result:</div>
-                    <pre className={`text-xs ${resultBg} p-2 rounded overflow-x-auto`}>
-                        <code>{JSON.stringify(result, null, 2)}</code>
-                    </pre>
-                    {event.errorMessage && (
-                        <div className="mt-2 text-xs text-red-600 dark:text-red-400">
-                            Error: {event.errorMessage}
-                        </div>
-                    )}
-                </div>
+        <div className="mb-3">
+            {/* Horizontal row of chips */}
+            <div className="flex flex-wrap gap-1.5">
+                {executions.map((execution, idx) => (
+                    <ToolChip
+                        key={execution.toolCallId || idx}
+                        execution={execution}
+                        isExpanded={expandedIndex === idx}
+                        onToggle={() => handleToggle(idx)}
+                    />
+                ))}
+            </div>
+            
+            {/* Expanded detail panel (shown below chips) */}
+            {expandedIndex !== null && executions[expandedIndex] && (
+                <ToolDetailPanel execution={executions[expandedIndex]} />
             )}
         </div>
     );
@@ -234,8 +256,55 @@ function Message({
         }
     }
 
-    // Filter out 'text' events from eventsToRender (they are shown as main content)
-    const nonTextEvents = eventsToRender.filter(e => e.type !== 'text');
+    // Filter out 'text' and 'thinking' events (text shown as main content, thinking is noise)
+    const toolEvents = eventsToRender.filter(e => e.type === 'tool_call' || e.type === 'tool_result');
+    const errorEvents = eventsToRender.filter(e => e.type === 'error');
+    const imageEvents = eventsToRender.filter(e => e.type === 'image');
+
+    // Combine tool_call and tool_result events into unified executions
+    const toolExecutions = useMemo(() => {
+        const executions: ToolExecution[] = [];
+        const callMap = new Map<string, ToolExecution>();
+        
+        for (const event of toolEvents) {
+            const key = event.toolCallId || event.toolName || 'unknown';
+            
+            if (event.type === 'tool_call') {
+                const execution: ToolExecution = {
+                    toolCallId: event.toolCallId,
+                    toolName: event.toolName || 'Unknown',
+                    argumentsJson: event.argumentsJson,
+                    isComplete: false
+                };
+                callMap.set(key, execution);
+                executions.push(execution);
+            } else if (event.type === 'tool_result') {
+                // Find matching call or create new entry
+                let execution = callMap.get(key);
+                if (execution) {
+                    // Update existing execution with result
+                    execution.resultJson = event.resultJson;
+                    execution.success = event.success;
+                    execution.errorMessage = event.errorMessage;
+                    execution.durationMs = event.durationMs;
+                    execution.isComplete = true;
+                } else {
+                    // Result without matching call (shouldn't happen but handle gracefully)
+                    executions.push({
+                        toolCallId: event.toolCallId,
+                        toolName: event.toolName || 'Unknown',
+                        resultJson: event.resultJson,
+                        success: event.success,
+                        errorMessage: event.errorMessage,
+                        durationMs: event.durationMs,
+                        isComplete: true
+                    });
+                }
+            }
+        }
+        
+        return executions;
+    }, [toolEvents]);
 
     return (
         <div
@@ -254,40 +323,37 @@ function Message({
                 )}
 
                 <div className={`flex-1 min-w-0 ${isUser ? "text-right" : "text-left"}`}>
-                    {/* Stream Events (thinking, tool calls, tool results) */}
-                    {!isUser && nonTextEvents.length > 0 && (
+                    {/* Tool Executions - horizontal chips */}
+                    {!isUser && toolExecutions.length > 0 && (
+                        <ToolExecutionsRow executions={toolExecutions} />
+                    )}
+
+                    {/* Error Events */}
+                    {!isUser && errorEvents.length > 0 && (
                         <div className="space-y-2 mb-4">
-                            {nonTextEvents.map((event, idx) => {
-                                if (event.type === 'thinking') {
-                                    return <ThinkingCard key={idx} event={event} />;
-                                } else if (event.type === 'tool_call') {
-                                    return <ToolCallCard key={idx} event={event} />;
-                                } else if (event.type === 'tool_result') {
-                                    return <ToolResultCard key={idx} event={event} />;
-                                } else if (event.type === 'error') {
-                                    return (
-                                        <div key={idx} className="my-2 px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
-                                            <div className="flex items-center space-x-2 text-xs text-red-700 dark:text-red-300">
-                                                <span className="text-[10px] font-mono bg-red-200 dark:bg-red-800 px-1 rounded text-red-800 dark:text-red-200">
-                                                    error
-                                                </span>
-                                                <span>❌ {event.text}</span>
-                                            </div>
-                                        </div>
-                                    );
-                                } else if (event.type === 'image' && event.url) {
-                                    return (
-                                        <div key={idx} className="my-2">
-                                            <img 
-                                                src={event.url} 
-                                                alt="Generated image" 
-                                                className="max-w-md rounded-lg border border-border"
-                                            />
-                                        </div>
-                                    );
-                                }
-                                return null;
-                            })}
+                            {errorEvents.map((event, idx) => (
+                                <div key={idx} className="my-2 px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                                    <div className="flex items-center space-x-2 text-xs text-red-700 dark:text-red-300">
+                                        <XCircle className="w-4 h-4" />
+                                        <span>{event.text}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Image Events */}
+                    {!isUser && imageEvents.length > 0 && (
+                        <div className="space-y-2 mb-4">
+                            {imageEvents.map((event, idx) => (
+                                <div key={idx} className="my-2">
+                                    <img 
+                                        src={event.url} 
+                                        alt="Generated image" 
+                                        className="max-w-md rounded-lg border border-border"
+                                    />
+                                </div>
+                            ))}
                         </div>
                     )}
 
@@ -437,6 +503,77 @@ export function AgentChat() {
         }
     }, [messages, streamingMessage]);
 
+    // Process messages to combine tool_call/tool_result with adjacent assistant messages
+    const processedMessages = useMemo(() => {
+        const result: Array<typeof messages[0] & { streamEvents?: StreamEvent[] }> = [];
+        let pendingToolEvents: StreamEvent[] = [];
+        
+        for (let i = 0; i < messages.length; i++) {
+            const msg = messages[i];
+            
+            if (msg.type === 'tool_call') {
+                // Add to pending tool events
+                pendingToolEvents.push({
+                    type: 'tool_call',
+                    timestamp: msg.created_at || 0,
+                    toolCallId: msg.tool_call_id || undefined,
+                    toolName: msg.tool_name || 'Unknown',
+                    argumentsJson: msg.tool_args || undefined,
+                });
+            } else if (msg.type === 'tool_result') {
+                // Add to pending tool events - mark as complete
+                pendingToolEvents.push({
+                    type: 'tool_result',
+                    timestamp: msg.created_at || 0,
+                    toolCallId: msg.tool_call_id || undefined,
+                    toolName: msg.tool_name || 'Unknown',
+                    resultJson: msg.content || undefined,
+                    success: true,
+                });
+            } else {
+                // Regular message (user or assistant text)
+                // Attach any pending tool events to assistant messages
+                if (msg.role === 'assistant' && pendingToolEvents.length > 0) {
+                    result.push({
+                        ...msg,
+                        streamEvents: [...pendingToolEvents, ...(msg.streamEvents || [])],
+                    });
+                    pendingToolEvents = [];
+                } else if (msg.role === 'user' && pendingToolEvents.length > 0) {
+                    // If user message comes before assistant, create a synthetic assistant message for tools
+                    result.push({
+                        id: `tool-group-${i}`,
+                        role: 'assistant',
+                        content: '',
+                        type: 'text',
+                        sequence_number: msg.sequence_number - 0.5,
+                        created_at: msg.created_at,
+                        streamEvents: pendingToolEvents,
+                    } as typeof messages[0] & { streamEvents?: StreamEvent[] });
+                    pendingToolEvents = [];
+                    result.push(msg);
+                } else {
+                    result.push(msg);
+                }
+            }
+        }
+        
+        // Handle any remaining tool events (show at the end)
+        if (pendingToolEvents.length > 0) {
+            result.push({
+                id: `tool-group-end`,
+                role: 'assistant',
+                content: '',
+                type: 'text',
+                sequence_number: 9999,
+                created_at: Date.now(),
+                streamEvents: pendingToolEvents,
+            } as typeof messages[0] & { streamEvents?: StreamEvent[] });
+        }
+        
+        return result;
+    }, [messages]);
+
     const handleSendMessage = (content: string) => {
         if (sessionId) {
             sendAgentMessage(sessionId, content);
@@ -461,13 +598,13 @@ export function AgentChat() {
                     <div className="flex items-center justify-center h-full">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     </div>
-                ) : messages.length === 0 && !isStreaming ? (
+                ) : processedMessages.length === 0 && !isStreaming ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                         No messages yet. Start a conversation!
                     </div>
                 ) : (
                     <div className="flex flex-col w-full max-w-none">
-                        {messages.map((msg, index) => (
+                        {processedMessages.map((msg, index) => (
                             <Message
                                 key={msg.id || index}
                                 message={msg}

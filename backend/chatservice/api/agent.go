@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,6 +22,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"sortedstartup/chatservice/agents"
 	db "sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/common/auth"
@@ -258,24 +260,30 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 	// Parse local tools (if any)
 	var tools []tool.Tool
 
-	// Add debug tools (hardcoded for testing)
-	addTool, err := functiontool.New(functiontool.Config{
-		Name:        "add",
-		Description: "Adds two numbers together and returns the result.",
-	}, add)
+	// Create filesystem tools with sandboxed path: ./agentid/sessionid
+	workspacePath := filepath.Join(".", agentRow.ID, sessionID)
+	fsTools, err := agents.NewFileSystemTools(agentRow.ID, workspacePath)
 	if err != nil {
-		return fmt.Errorf("failed to create add tool: %w", err)
+		return fmt.Errorf("failed to create filesystem tools: %w", err)
 	}
-	tools = append(tools, addTool)
 
-	subTool, err := functiontool.New(functiontool.Config{
-		Name:        "subtract",
-		Description: "Subtracts the second number from the first number and returns the result.",
-	}, subtract)
+	// Get filesystem tools for agent
+	fileSystemTools, err := fsTools.GetTools()
 	if err != nil {
-		return fmt.Errorf("failed to create subtract tool: %w", err)
+		return fmt.Errorf("failed to get filesystem tools: %w", err)
 	}
-	tools = append(tools, subTool)
+	tools = append(tools, fileSystemTools...)
+	slog.Debug("Added filesystem tools to agent", "count", len(fileSystemTools), "workspace", workspacePath)
+
+	// Add timestamp tool
+	timestampTool, err := functiontool.New(functiontool.Config{
+		Name:        "get_timestamp",
+		Description: "Returns the current timestamp in RFC3339 format (ISO 8601). Useful for getting the current date and time.",
+	}, getTimestamp)
+	if err != nil {
+		return fmt.Errorf("failed to create timestamp tool: %w", err)
+	}
+	tools = append(tools, timestampTool)
 
 	// Create agent with callbacks
 	llmAgent, err := llmagent.New(llmagent.Config{
@@ -316,7 +324,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 			event := session.NewEvent(fmt.Sprintf("history_%d", msg.SequenceNumber))
 			// Set the Author field to match our agent name - this is required by ADK runner
 			event.Author = agentRow.Name
-			
+
 			// Convert our message types to genai.Content
 			switch msg.Type {
 			case "text":
@@ -326,50 +334,50 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 						{Text: msg.Content},
 					},
 				}
-		case "tool_call":
-			// Parse tool args
-			var args map[string]any
-			if msg.ToolArgs != nil {
-				if err := json.Unmarshal([]byte(*msg.ToolArgs), &args); err != nil {
-					slog.Warn("Failed to unmarshal tool_call arguments, skipping message",
+			case "tool_call":
+				// Parse tool args
+				var args map[string]any
+				if msg.ToolArgs != nil {
+					if err := json.Unmarshal([]byte(*msg.ToolArgs), &args); err != nil {
+						slog.Warn("Failed to unmarshal tool_call arguments, skipping message",
+							"error", err,
+							"sequence", msg.SequenceNumber,
+							"tool_name", getStringValue(msg.ToolName),
+							"tool_call_id", msg.ToolCallID)
+						continue
+					}
+				}
+				event.Content = &genai.Content{
+					Role: "model",
+					Parts: []*genai.Part{
+						{FunctionCall: &genai.FunctionCall{
+							Name: getStringValue(msg.ToolName),
+							Args: args,
+						}},
+					},
+				}
+			case "tool_result":
+				// Parse tool result
+				var result map[string]any
+				if err := json.Unmarshal([]byte(msg.Content), &result); err != nil {
+					slog.Warn("Failed to unmarshal tool_result content, skipping message",
 						"error", err,
 						"sequence", msg.SequenceNumber,
 						"tool_name", getStringValue(msg.ToolName),
 						"tool_call_id", msg.ToolCallID)
 					continue
 				}
+				event.Content = &genai.Content{
+					Role: "function",
+					Parts: []*genai.Part{
+						{FunctionResponse: &genai.FunctionResponse{
+							Name:     getStringValue(msg.ToolName),
+							Response: result,
+						}},
+					},
+				}
 			}
-			event.Content = &genai.Content{
-				Role: "model",
-				Parts: []*genai.Part{
-					{FunctionCall: &genai.FunctionCall{
-						Name: getStringValue(msg.ToolName),
-						Args: args,
-					}},
-				},
-			}
-		case "tool_result":
-			// Parse tool result
-			var result map[string]any
-			if err := json.Unmarshal([]byte(msg.Content), &result); err != nil {
-				slog.Warn("Failed to unmarshal tool_result content, skipping message",
-					"error", err,
-					"sequence", msg.SequenceNumber,
-					"tool_name", getStringValue(msg.ToolName),
-					"tool_call_id", msg.ToolCallID)
-				continue
-			}
-			event.Content = &genai.Content{
-				Role: "function",
-				Parts: []*genai.Part{
-					{FunctionResponse: &genai.FunctionResponse{
-						Name:     getStringValue(msg.ToolName),
-						Response: result,
-					}},
-				},
-			}
-			}
-			
+
 			if event.Content != nil {
 				if err := sessionService.AppendEvent(ctx, adkSession, event); err != nil {
 					slog.Warn("Failed to append history event", "error", err, "seq", msg.SequenceNumber)
@@ -434,7 +442,12 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 					// Save Tool Call
 					argsBytes, _ := json.Marshal(part.FunctionCall.Args)
 					argsStr := string(argsBytes)
-					s.saveAgentMessage(sessionID, *nextSeq, "assistant", "tool_call", "", strPtr(part.FunctionCall.Name), nil, &argsStr)
+					// Look up tool call ID from state (generated in BeforeToolCallback)
+					var toolCallIDPtr *string
+					if state, ok := toolState[part.FunctionCall.Name]; ok {
+						toolCallIDPtr = &state.id
+					}
+					s.saveAgentMessage(sessionID, *nextSeq, "assistant", "tool_call", "", strPtr(part.FunctionCall.Name), toolCallIDPtr, &argsStr)
 					*nextSeq++
 				}
 
@@ -449,7 +462,14 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 					// Save Tool Result
 					resBytes, _ := json.Marshal(part.FunctionResponse.Response)
 					resStr := string(resBytes)
-					s.saveAgentMessage(sessionID, *nextSeq, "tool", "tool_result", resStr, strPtr(part.FunctionResponse.Name), nil, nil)
+					// Look up tool call ID from state (generated in BeforeToolCallback)
+					var toolCallIDPtr *string
+					if state, ok := toolState[part.FunctionResponse.Name]; ok {
+						toolCallIDPtr = &state.id
+						// Clean up after saving - no longer needed
+						delete(toolState, part.FunctionResponse.Name)
+					}
+					s.saveAgentMessage(sessionID, *nextSeq, "tool", "tool_result", resStr, strPtr(part.FunctionResponse.Name), toolCallIDPtr, nil)
 					*nextSeq++
 				}
 			}
@@ -580,8 +600,6 @@ func (s *AgentServiceAPI) createAfterModelCallback(stream pb.AgentService_AgentC
 // createBeforeToolCallback creates a callback that fires before tool execution
 func (s *AgentServiceAPI) createBeforeToolCallback(stream pb.AgentService_AgentChatServer, modelName string, toolState map[string]toolCallState, toolCallIDCounter *int) llmagent.BeforeToolCallback {
 	return func(ctx tool.Context, t tool.Tool, args map[string]any) (map[string]any, error) {
-		slog.Info("[Callback] BeforeTool triggered", "tool", t.Name(), "agent", ctx.AgentName())
-
 		// Generate unique tool call ID and track start time
 		*toolCallIDCounter++
 		toolCallID := fmt.Sprintf("call_%d", *toolCallIDCounter)
@@ -605,9 +623,6 @@ func (s *AgentServiceAPI) createBeforeToolCallback(stream pb.AgentService_AgentC
 			slog.Error("Failed to send tool call message", "error", err)
 		}
 
-		// Log args
-		slog.Info("[Callback] Tool args", "tool", t.Name(), "args", args)
-
 		return nil, nil // Proceed with original args
 	}
 }
@@ -615,15 +630,13 @@ func (s *AgentServiceAPI) createBeforeToolCallback(stream pb.AgentService_AgentC
 // createAfterToolCallback creates a callback that fires after tool execution
 func (s *AgentServiceAPI) createAfterToolCallback(stream pb.AgentService_AgentChatServer, modelName string, toolState map[string]toolCallState) llmagent.AfterToolCallback {
 	return func(ctx tool.Context, t tool.Tool, args, result map[string]any, err error) (map[string]any, error) {
-		slog.Info("[Callback] AfterTool triggered", "tool", t.Name(), "agent", ctx.AgentName())
-
 		// Get the tool call ID and calculate duration from stored state
 		var toolCallID string
 		var durationMs int64
 		if state, ok := toolState[t.Name()]; ok {
 			toolCallID = state.id
 			durationMs = time.Since(state.startTime).Milliseconds()
-			delete(toolState, t.Name())
+			// Don't delete yet - the main loop needs it to save FunctionResponse with the ID
 		} else {
 			toolCallID = "unknown"
 		}
@@ -703,9 +716,7 @@ type AddArgs struct {
 
 // add is a debug tool that adds two numbers
 func add(ctx tool.Context, args *AddArgs) (float64, error) {
-	slog.Info("[Tool] Add called", "a", args.A, "b", args.B)
 	result := args.A + args.B
-	slog.Info("[Tool] Add result", "result", result)
 	return result, nil
 }
 
@@ -717,8 +728,26 @@ type SubArgs struct {
 
 // subtract is a debug tool that subtracts two numbers
 func subtract(ctx tool.Context, args *SubArgs) (float64, error) {
-	slog.Info("[Tool] Subtract called", "a", args.A, "b", args.B)
 	result := args.A - args.B
-	slog.Info("[Tool] Subtract result", "result", result)
 	return result, nil
+}
+
+// GetTimestampArgs defines arguments for the timestamp tool (empty - no args needed)
+type GetTimestampArgs struct{}
+
+// TimestampResponse contains the current timestamp information
+type TimestampResponse struct {
+	Timestamp string `json:"timestamp" jsonschema:"Current timestamp in RFC3339 format (ISO 8601)"`
+	Unix      int64  `json:"unix" jsonschema:"Unix timestamp in seconds since epoch"`
+	UnixMilli int64  `json:"unix_milli" jsonschema:"Unix timestamp in milliseconds since epoch"`
+}
+
+// getTimestamp returns the current timestamp
+func getTimestamp(ctx tool.Context, args *GetTimestampArgs) (TimestampResponse, error) {
+	now := time.Now()
+	return TimestampResponse{
+		Timestamp: now.Format(time.RFC3339),
+		Unix:      now.Unix(),
+		UnixMilli: now.UnixMilli(),
+	}, nil
 }

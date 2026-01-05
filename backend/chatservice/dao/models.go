@@ -120,15 +120,14 @@ func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error
 		return &proto.Capability{Input: c.Input, Output: c.Output}
 	}
 
-// 	return &proto.ModelCapabilities{
-// 		Text:     toProto(caps.Text),
-// 		Audio:    toProto(caps.Audio),
-// 		Video:    toProto(caps.Video),
-// 		Image:    toProto(caps.Image),
-// 		Realtime: caps.Realtime,
-// 	}, nil
-// }
-// }
+	return &proto.ModelCapabilities{
+		Text:     toProto(caps.Text),
+		Audio:    toProto(caps.Audio),
+		Video:    toProto(caps.Video),
+		Image:    toProto(caps.Image),
+		Realtime: caps.Realtime,
+	}, nil
+}
 
 type AgentRow struct {
 	ID           string `db:"id" json:"id"`
@@ -164,4 +163,16 @@ type AgentMessageRow struct {
 	ToolCallID     *string `db:"tool_call_id" json:"tool_call_id"`
 	ToolArgs       *string `db:"tool_args" json:"tool_args"`
 	CreatedAt      string  `db:"created_at" json:"created_at"`
+}
+
+type AgentFSOperationRow struct {
+	ID           string  `db:"id" json:"id"`
+	AgentID      string  `db:"agent_id" json:"agent_id"`
+	SessionID    *string `db:"session_id" json:"session_id"`
+	Operation    string  `db:"operation" json:"operation"`
+	Path         string  `db:"path" json:"path"`
+	Success      bool    `db:"success" json:"success"`
+	ErrorMessage *string `db:"error_message" json:"error_message"`
+	FileSize     *int64  `db:"file_size" json:"file_size"`
+	CreatedAt    string  `db:"created_at" json:"created_at"`
 }

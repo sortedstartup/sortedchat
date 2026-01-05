@@ -3,11 +3,12 @@ import { DownloadStatus, Model as ModelType } from '../../proto/inferenceservice
 import { downloadModel, cancelDownload, deleteModel } from "@/store/inference";
 
 
-export const ModelCard = ({ model }: { model: ModelType }) => {
+export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLocal?: boolean }) => {
   const [showUrl, setShowUrl] = useState(false);
 
   const isDownloaded = model.is_downloaded;
-  const isDownloadable = model.is_downloadable;
+  // For local models, treat as downloadable even if flag is not set
+  const isDownloadable = isLocal ? true : model.is_downloadable;
 
   const handleDownload = async () => {
     if (!isDownloadable || isDownloaded || model.status === DownloadStatus.DOWNLOADING) return;
@@ -153,7 +154,8 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
         </div>
 
         <div className="ml-4 flex flex-col items-end space-y-2">
-          {buttonState && (
+          {/* Show download/delete buttons only for local models */}
+          {isLocal && buttonState && (
             <button
               onClick={buttonState.onClick || handleDownload}
               disabled={buttonState.disabled}
@@ -234,6 +236,14 @@ export const ModelCard = ({ model }: { model: ModelType }) => {
                 Embedding Model
               </span>
             )}
+            
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              model.is_enabled 
+                ? 'bg-green-500/10 text-green-600 dark:text-green-400' 
+                : 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
+            }`}>
+              {model.is_enabled ? 'Enabled' : 'Disabled'}
+            </span>
           </div>
 
           {progressData && progressData.filesize > 0 && progressData.status !== 2 && (

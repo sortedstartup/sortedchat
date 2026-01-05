@@ -66,14 +66,25 @@ func (s *RealtimeService) Offer(offer string, provider string, model string, use
 		return "", fmt.Errorf("model cannot be empty")
 	}
 
-	settings, err := s.settingsClient.GetSetting(context.Background(), &proto.GetSettingRequest{})
-	if err != nil {
-		slog.Error("RealtimeService: Init", "message", "failed to get setting", "error", err)
-		return "", err
+	if provider == "openai" {
+		providerResp, err := s.settingsClient.GetProviderSetting(context.Background(), &proto.GetProviderSettingRequest{Name: "openai"})
+		if err != nil {
+			slog.Error("RealtimeService: Offer", "message", "failed to get openai provider settings", "error", err)
+			return "", fmt.Errorf("failed to get provider settings: %w", err)
+		}
+		if providerResp.Settings != nil {
+			OPENAI_API_KEY = providerResp.Settings.ApiKey
+		}
+	} else if provider == "gemini" {
+		providerResp, err := s.settingsClient.GetProviderSetting(context.Background(), &proto.GetProviderSettingRequest{Name: "gemini"})
+		if err != nil {
+			slog.Error("RealtimeService: Offer", "message", "failed to get gemini provider settings", "error", err)
+			return "", fmt.Errorf("failed to get provider settings: %w", err)
+		}
+		if providerResp.Settings != nil {
+			GEMINI_API_KEY = providerResp.Settings.ApiKey
+		}
 	}
-
-	OPENAI_API_KEY = settings.Settings.OPENAI_API_KEY
-	GEMINI_API_KEY = settings.Settings.GEMINI_API_KEY
 
 	slog.Info("RealtimeService: Offer", "offer", offer, "provider", provider, "model", model, "userID", userID)
 

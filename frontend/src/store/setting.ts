@@ -1,15 +1,17 @@
 // store/setting.ts
 import {
   Settings,
-  GetSettingRequest,
-  GetSettingResponse,
   SetSettingRequest,
-  SetSettingResponse,
   SettingServiceClient,
   IsFirstBootRequest,
   TestConnectionRequest,
   TestConnectionResponse,
   ConnectionType,
+  GetAllProviderSettingsRequest,
+  GetAllProviderSettingsResponse,
+  SetProviderSettingRequest,
+  SetProviderSettingResponse,
+  ProviderSettings,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -33,6 +35,8 @@ function getClient(): SettingServiceClient {
 }
 
 export const $settings = atom<Settings>(new Settings({}));
+export const $providerSettings = atom<Map<string, ProviderSettings>>(new Map());
+export const $isLoadingProviderSettings = atom<boolean>(false);
 
 // Onboarding state
 export const $onboardingStep = atom<number>(0);
@@ -53,24 +57,6 @@ export const $onboardingData = atom<{
   GEMINI_API_URL: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
   OLLAMA_URL: "http://localhost:8081/v1/embeddings",
 });
-
-export const saveSettings = async (
-  formData: Record<string, string>,
-): Promise<string> => {
-  try {
-    const settings = new Settings(formData);
-
-    const req = new SetSettingRequest({ settings });
-    const res: SetSettingResponse = await getClient().SetSetting(req, {});
-
-    $settings.set(settings);
-
-    return res.message ?? "Settings saved successfully";
-  } catch (error) {
-    console.error("Failed to save settings:", error);
-    throw new Error("Failed to save settings");
-  }
-};
 
 // Onboarding actions
 export const onboardingActions = {
@@ -156,19 +142,6 @@ export const onboardingActions = {
     }
   },
 };
-
-const getSetting = async () => {
-  try {
-    const req = new GetSettingRequest({});
-    const res: GetSettingResponse = await getClient().GetSetting(req, {});
-    if (res.settings) {
-      $settings.set(res.settings);
-    }
-  } catch (error) {
-    console.error("Failed to fetch settings:", error);
-  }
-};
-
 export const GetIsFirstBootStatus = async (): Promise<boolean> => {
   try {
     const req = new IsFirstBootRequest({});
@@ -180,7 +153,42 @@ export const GetIsFirstBootStatus = async (): Promise<boolean> => {
   }
 };
 
-onMount($settings, () => {
-  getSetting();
+export const GetAllProviderSettings = async () => {
+  $isLoadingProviderSettings.set(true);
+  try {
+    const req = new GetAllProviderSettingsRequest({});
+    const res: GetAllProviderSettingsResponse = await getClient().GetAllProviderSettings(req, {});
+
+    $providerSettings.set(res.settings as Map<string, ProviderSettings>);
+    $isLoadingProviderSettings.set(false);
+  } catch (error) {
+    console.error("Failed to fetch provider settings:", error);
+    $isLoadingProviderSettings.set(false);
+  }
+};
+
+export const SetProviderSetting = async (
+  providerName: string,
+  settings: ProviderSettings
+): Promise<string> => {
+  try {
+    const req = new SetProviderSettingRequest({
+      name: providerName,
+      settings: settings,
+    });
+    const res: SetProviderSettingResponse = await getClient().SetProviderSetting(req, {});
+
+    // Refresh all provider settings after successful save
+    await GetAllProviderSettings();
+
+    return res.message ?? "Provider settings saved successfully";
+  } catch (error) {
+    console.error("Failed to save provider settings:", error);
+    throw new Error("Failed to save provider settings");
+  }
+};
+
+onMount($providerSettings, () => {
+  GetAllProviderSettings();
   return () => { };
 });

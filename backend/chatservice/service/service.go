@@ -159,8 +159,12 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 	}
 
-	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	provider := req.GetProvider()
+	apiKey, _, err := s.settingsManager.GetProviderSetting(provider)
+	if err != nil {
+		slog.Error("service:Chat", "error", "failed to get provider setting", "error", err, "provider", provider)
+		return fmt.Errorf("failed to get provider setting")
+	}
 	if apiKey == "" && provider != LOCAL_PROVIDER {
 		slog.Error("service:Chat", "error", "OpenAI API key not set")
 		return fmt.Errorf("OpenAI API key not set")

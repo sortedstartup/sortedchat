@@ -82,18 +82,29 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 
 	switch provider {
 	case GEMINI_PROVIDER:
-		url = c.settingsManager.GetSettings().GeminiAPIUrl
-		apiKey = c.settingsManager.GetSettings().GeminiAPIKey
+		url, apiKey, err = c.settingsManager.GetProviderSetting(GEMINI_PROVIDER)
+		slog.Info("llm:Call", "url", url, "apiKey", apiKey)
+		if err != nil {
+			slog.Error("llm:Call", "error", err)
+			return nil, fmt.Errorf("failed to get provider setting: %v", err)
+		}
 	case CLAUDE_PROVIDER:
-		url = c.settingsManager.GetSettings().ClaudeAPIUrl
-		apiKey = c.settingsManager.GetSettings().ClaudeAPIKey
+		url, apiKey, err = c.settingsManager.GetProviderSetting(CLAUDE_PROVIDER)
+		if err != nil {
+			slog.Error("llm:Call", "error", err)
+			return nil, fmt.Errorf("failed to get provider setting: %v", err)
+		}
 	case LOCAL_PROVIDER:
 		//TODO: should not be hard coded
 		url = "http://localhost:8081/v1/chat/completions"
 		apiKey = "x"
 	default:
-		url = c.settingsManager.GetSettings().OpenaiAPIUrl
-		apiKey = c.settingsManager.GetSettings().OpenAIAPIKey
+		url, apiKey, err = c.settingsManager.GetProviderSetting(OPENAI_PROVIDER)
+		slog.Info("llm:Call", "url", url, "apiKey", apiKey)
+		if err != nil {
+			slog.Error("llm:Call", "error", err)
+			return nil, fmt.Errorf("failed to get provider setting: %v", err)
+		}
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))

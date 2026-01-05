@@ -60,4 +60,5 @@ type DAO interface {
 type SettingsDAO interface {
 	GetSettingValue(settingName string) (string, error)
 	SetSettingValue(settingName string, settingValue string) error
+	GetSettingsByPrefix(prefix string) (map[string]string, error)
 }

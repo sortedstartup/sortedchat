@@ -804,6 +804,22 @@ func (s *SQLiteSettingsDAO) SetSettingValue(settingName string, settingValue str
 	return nil
 }
 
+func (s *SQLiteSettingsDAO) GetSettingsByPrefix(prefix string) (map[string]string, error) {
+	var dbSettings []dbSettings
+	// Use LIKE 'prefix%' to find matching settings
+	err := s.db.Select(&dbSettings, "SELECT name, settings FROM settings WHERE name LIKE ?", prefix+"%")
+	if err != nil {
+		slog.Error("dao_sqlite:GetSettingsByPrefix", "message", "failed to get settings", "error", err)
+		return nil, err
+	}
+
+	result := make(map[string]string)
+	for _, setting := range dbSettings {
+		result[setting.Name] = setting.Settings
+	}
+	return result, nil
+}
+
 // GetChatMessageByID retrieves a specific chat message by its ID
 func (s *SQLiteDAO) GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error) {
 	var message ChatMessageRow

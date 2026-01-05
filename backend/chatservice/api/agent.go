@@ -326,34 +326,48 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 						{Text: msg.Content},
 					},
 				}
-			case "tool_call":
-				// Parse tool args
-				var args map[string]any
-				if msg.ToolArgs != nil {
-					json.Unmarshal([]byte(*msg.ToolArgs), &args)
+		case "tool_call":
+			// Parse tool args
+			var args map[string]any
+			if msg.ToolArgs != nil {
+				if err := json.Unmarshal([]byte(*msg.ToolArgs), &args); err != nil {
+					slog.Warn("Failed to unmarshal tool_call arguments, skipping message",
+						"error", err,
+						"sequence", msg.SequenceNumber,
+						"tool_name", getStringValue(msg.ToolName),
+						"tool_call_id", msg.ToolCallID)
+					continue
 				}
-				event.Content = &genai.Content{
-					Role: "model",
-					Parts: []*genai.Part{
-						{FunctionCall: &genai.FunctionCall{
-							Name: getStringValue(msg.ToolName),
-							Args: args,
-						}},
-					},
-				}
-			case "tool_result":
-				// Parse tool result
-				var result map[string]any
-				json.Unmarshal([]byte(msg.Content), &result)
-				event.Content = &genai.Content{
-					Role: "function",
-					Parts: []*genai.Part{
-						{FunctionResponse: &genai.FunctionResponse{
-							Name:     getStringValue(msg.ToolName),
-							Response: result,
-						}},
-					},
-				}
+			}
+			event.Content = &genai.Content{
+				Role: "model",
+				Parts: []*genai.Part{
+					{FunctionCall: &genai.FunctionCall{
+						Name: getStringValue(msg.ToolName),
+						Args: args,
+					}},
+				},
+			}
+		case "tool_result":
+			// Parse tool result
+			var result map[string]any
+			if err := json.Unmarshal([]byte(msg.Content), &result); err != nil {
+				slog.Warn("Failed to unmarshal tool_result content, skipping message",
+					"error", err,
+					"sequence", msg.SequenceNumber,
+					"tool_name", getStringValue(msg.ToolName),
+					"tool_call_id", msg.ToolCallID)
+				continue
+			}
+			event.Content = &genai.Content{
+				Role: "function",
+				Parts: []*genai.Part{
+					{FunctionResponse: &genai.FunctionResponse{
+						Name:     getStringValue(msg.ToolName),
+						Response: result,
+					}},
+				},
+			}
 			}
 			
 			if event.Content != nil {

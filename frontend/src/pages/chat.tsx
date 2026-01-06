@@ -594,11 +594,6 @@ function ChatInputBox({
                 )}
 
                 <ModelSelector
-                  models={availableModels.filter(
-                    (model) =>
-                      !model.is_embedding_model &&
-                      (!model.is_downloadable || model.is_downloaded)
-                  )}
                   selectedModelId={selectedModel.model_name}
                   onSelectModel={handleModelSelect}
                 />

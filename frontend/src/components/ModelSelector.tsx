@@ -16,16 +16,15 @@ import { useStore } from '@nanostores/react';
 import { $pinnedModels, togglePinnedModel } from '../store/inference';
 import { $providerSettings } from '../store/setting';
 import { useNavigate } from 'react-router-dom';
+import { $availableModels } from '@/store/chat';
 
 interface ModelSelectorProps {
-    models: ModelListInfo[];
     selectedModelId: string;
     onSelectModel: (modelId: string, provider: string) => void;
     className?: string;
 }
 
 export function ModelSelector({
-    models,
     selectedModelId,
     onSelectModel,
     className,
@@ -34,8 +33,17 @@ export function ModelSelector({
     const [isOpen, setIsOpen] = useState(false);
     const pinnedModels = useStore($pinnedModels);
     const providerSettings = useStore($providerSettings);
+    const rawAvailableModels = useStore($availableModels);
     const navigate = useNavigate();
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const models = useMemo(() => {
+        return rawAvailableModels.filter(
+            (model) =>
+                !model.is_embedding_model &&
+                (!model.is_downloadable || model.is_downloaded)
+        );
+    }, [rawAvailableModels]);
 
     const selectedModel = models.find((m) => m.id === selectedModelId);
 
@@ -88,7 +96,7 @@ export function ModelSelector({
                     variant="outline"
                     role="combobox"
                     aria-expanded={isOpen}
-                    className={cn("w-[200px] justify-between text-xs", className)}
+                    className={cn("w-fit justify-between text-xs", className)}
                     size="sm"
                 >
                     <span className="truncate">

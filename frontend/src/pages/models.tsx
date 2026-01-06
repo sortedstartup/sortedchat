@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import {
   $llmModels,
   ListLLMModels,
-  $isLoadingModels
+  $isLoadingModels,
+  $modelsByProvider
 } from '../store/inference';
 import {
   $providerSettings,
@@ -18,6 +19,7 @@ import { ProviderSettings } from '../../proto/chatservice';
 
 const Models = () => {
   const models = useStore($llmModels);
+  const modelsByProvider = useStore($modelsByProvider);
   const isLoading = useStore($isLoadingModels);
   const providerSettings = useStore($providerSettings);
   const isLoadingProviders = useStore($isLoadingProviderSettings);
@@ -34,7 +36,7 @@ const Models = () => {
   }, []);
 
   // Get unique providers from models
-  const providers = Array.from(new Set(models.map(m => m.provider).filter(Boolean)));
+  const providers = Object.keys(modelsByProvider);
 
   // Auto-select first provider
   useEffect(() => {
@@ -55,7 +57,7 @@ const Models = () => {
 
   // Filter models by selected provider
   const filteredModels = selectedProvider
-    ? models.filter(m => m.provider === selectedProvider)
+    ? modelsByProvider[selectedProvider] || []
     : [];
 
   // Default URLs for providers
@@ -128,8 +130,8 @@ const Models = () => {
               key={provider}
               onClick={() => setSelectedProvider(provider)}
               className={`w-full text-left px-4 py-3 rounded-md mb-1 transition-colors ${selectedProvider === provider
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-accent text-foreground'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-accent text-foreground'
                 }`}
             >
               <div className="font-medium capitalize">{provider === 'local' ? 'Local (llama.cpp)' : provider}</div>

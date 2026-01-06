@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { createAgent } from "@/store/agents";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { FileUploader } from "@/components/FileUploader";
+import { ModelSelector } from "@/components/ModelSelector";
 
 export function CreateAgentPage() {
     const navigate = useNavigate();
@@ -98,31 +99,15 @@ export function CreateAgentPage() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Provider</label>
-                            <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={formData.provider}
-                                onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                            >
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic</option>
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Model</label>
-                            <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={formData.model}
-                                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                            >
-                                <option value="gpt-4o">GPT-4o</option>
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                            </select>
-                        </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Model</label>
+                        <ModelSelector
+                            selectedModelId={formData.model}
+                            onSelectModel={(modelId, provider) => {
+                                setFormData({ ...formData, model: modelId, provider });
+                            }}
+                            className="w-full"
+                        />
                     </div>
 
                     <div className="pt-4 flex justify-end">

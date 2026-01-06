@@ -475,7 +475,8 @@ export const generateChatName = async (msg: string) => {
       GenerateChatNameRequest.fromObject({
         message: msg,
         chat_id: $currentChatId.get(),
-        model: $selectedModel.get().model_name
+        model: $selectedModel.get().model_name,
+        provider: $selectedModel.get().provider
       }),
       {}
     );

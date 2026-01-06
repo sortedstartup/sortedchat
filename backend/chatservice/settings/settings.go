@@ -180,28 +180,23 @@ func (s *SettingsManager) LoadSettingsFromDB() error {
 	return s.LoadSettings(&settings)
 }
 
-func (cm *SettingsManager) GetProviderSetting(providerName string) (string, string, error) {
+func (cm *SettingsManager) GetProviderSetting(providerName string) (*proto.ProviderSettings, error) {
 	key := "provider." + providerName
 	val, err := cm.dao.GetSettingValue(key)
 	if err != nil {
 		slog.Error("settings:GetProviderSetting", "provider", providerName, "error", err)
-		return "", "", fmt.Errorf("failed to get provider setting: %w", err)
+		return nil, fmt.Errorf("failed to get provider setting: %w", err)
 	}
 
 	if val == "" {
-		return "", "", nil
+		return nil, nil
 	}
 
 	// Parse the JSON
-	var ps struct {
-		ApiUrl    string `json:"api_url"`
-		ApiKey    string `json:"api_key"`
-		IsEnabled bool   `json:"is_enabled"`
-	}
-
+	var ps proto.ProviderSettings
 	if err := json.Unmarshal([]byte(val), &ps); err != nil {
-		return "", "", fmt.Errorf("failed to unmarshal provider settings: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal provider settings: %w", err)
 	}
 
-	return ps.ApiUrl, ps.ApiKey, nil
+	return &ps, nil
 }

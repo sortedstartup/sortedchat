@@ -138,6 +138,7 @@ message SetSettingResponse {
 
 message ProviderSettings {
     string api_url = 1;
+    // TODO: this is a bad design and the secret my be stored encrypte din the db backend, once we save its never to be shown again on the ui
     string api_key = 2;
     bool is_enabled = 3;
 }

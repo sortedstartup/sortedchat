@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"sortedstartup/chatservice/constants"
 	"sortedstartup/chatservice/settings"
 	"strings"
 
@@ -19,7 +20,7 @@ type defaultPipeline struct {
 	em Embedder
 }
 
-const LOCAL_MODEL_URL = "http://localhost:8081/v1/embeddings"
+const LOCAL_MODEL_URL = constants.LOCAL_LLAMA_PROXY_BASE_URL + "/v1/embeddings"
 
 func NewPipeline(ex Extractor, ch Chunker, em Embedder) RAGIndexingPipeline {
 	return &defaultPipeline{ex: ex, ch: ch, em: em}
@@ -193,7 +194,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		embeddings = append(embeddings, Embedding{
 			ChunkID:  chunk.ID,
 			Vector:   vec,
-			Provider: "ollama",
+			Provider: "ollama", // not getting used anywhere right now
 		})
 	}
 

@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strings"
 
+	"sortedstartup/chatservice/constants"
 	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
 	"sortedstartup/chatservice/llm"
@@ -62,7 +63,7 @@ type GenerateEmbeddingMessage struct {
 
 const MAX_CHAT_NAME_LENGTH = 50
 const MIN_CHAT_NAME_LENGTH = 1
-const LOCAL_PROVIDER = "local"
+const LOCAL_PROVIDER = constants.LOCAL_PROVIDER
 
 // Image processing constants
 const (
@@ -160,7 +161,6 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	provider := req.GetProvider()
-	slog.Info("service:Chatsanskar", "provider", provider)
 	if provider != LOCAL_PROVIDER {
 		providerSettings, err := s.settingsManager.GetProviderSetting(provider)
 		if providerSettings.ApiKey == "" {

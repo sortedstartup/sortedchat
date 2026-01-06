@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	constants "sortedstartup/chatservice/constants"
 	"sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/types"
 )
@@ -24,9 +25,7 @@ type Client struct {
 	templates       map[string]*template.Template
 }
 
-const LOCAL_PROVIDER = "local"
-const OPENAI_PROVIDER = "openai"
-const LOCAL_MODEL_URL = "http://localhost:8081/v1/chat/completions"
+const LOCAL_MODEL_URL = constants.LOCAL_LLAMA_PROXY_BASE_URL + "/v1/chat/completions"
 
 func NewClient(settingsManager *settings.SettingsManager) *Client {
 	// Parse templates once during initialization
@@ -75,7 +74,7 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 	var url string
 	var apiKey string
 
-	if provider == LOCAL_PROVIDER {
+	if provider == constants.LOCAL_PROVIDER {
 		url = LOCAL_MODEL_URL
 		apiKey = "x"
 	} else {
@@ -110,14 +109,17 @@ func (c *Client) generateRequestBody(req types.ChatCompletionRequest, provider s
 		StreamOptions: req.StreamOptions,
 	}
 
-	if provider == LOCAL_PROVIDER {
-		provider = OPENAI_PROVIDER
+	var provider_rest_api_format string
+	if provider == constants.LOCAL_PROVIDER {
+		provider_rest_api_format = constants.OPENAI_PROVIDER
+	} else {
+		provider_rest_api_format = provider
 	}
 
 	// Get the cached template
-	tmpl, ok := c.templates[provider]
+	tmpl, ok := c.templates[provider_rest_api_format]
 	if !ok {
-		return nil, fmt.Errorf("template not found for provider: %s", provider)
+		return nil, fmt.Errorf("template not found for provider: %s", provider_rest_api_format)
 	}
 
 	var bodyBuffer bytes.Buffer

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,138 @@ import { githubLight, githubDark } from '@uiw/codemirror-theme-github';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
 import { html } from '@codemirror/lang-html';
+import { EditorState } from 'prosemirror-state';
+import { EditorView } from 'prosemirror-view';
+import { defaultMarkdownParser, defaultMarkdownSerializer, schema as markdownSchema } from 'prosemirror-markdown';
+import { keymap } from 'prosemirror-keymap';
+import { history, undo, redo } from 'prosemirror-history';
+import { baseKeymap } from 'prosemirror-commands';
+import { inputRules, wrappingInputRule, textblockTypeInputRule, InputRule } from 'prosemirror-inputrules';
+import { splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 
 type TabType = "agent" | "files" | "editor";
+
+// Create markdown input rules for WYSIWYG editing
+function buildMarkdownInputRules() {
+    const rules: InputRule[] = [];
+    
+    // Heading rules: # to ######
+    for (let level = 1; level <= 6; level++) {
+        rules.push(
+            textblockTypeInputRule(
+                new RegExp(`^(#{${level}})\\s$`),
+                markdownSchema.nodes.heading,
+                { level }
+            )
+        );
+    }
+    
+    // Bullet list rule: * or -
+    if (markdownSchema.nodes.bullet_list) {
+        rules.push(
+            wrappingInputRule(
+                /^\s*([-*])\s$/,
+                markdownSchema.nodes.bullet_list
+            )
+        );
+    }
+    
+    // Ordered list rule: 1.
+    if (markdownSchema.nodes.ordered_list) {
+        rules.push(
+            wrappingInputRule(
+                /^(\d+)\.\s$/,
+                markdownSchema.nodes.ordered_list,
+                (match) => ({ order: +match[1] }),
+                (match, node) => node.childCount + node.attrs.order === +match[1]
+            )
+        );
+    }
+    
+    // Code block rule: ```
+    rules.push(
+        textblockTypeInputRule(
+            /^```$/,
+            markdownSchema.nodes.code_block
+        )
+    );
+    
+    // Blockquote rule: >
+    rules.push(
+        wrappingInputRule(
+            /^\s*>\s$/,
+            markdownSchema.nodes.blockquote
+        )
+    );
+    
+    return inputRules({ rules });
+}
+
+function MarkdownEditor({ content, isDark, onChange }: { content: string; isDark: boolean; onChange: (text: string) => void }) {
+    const mountRef = useRef<HTMLDivElement>(null);
+    const [editorView, setEditorView] = useState<EditorView | null>(null);
+    
+    useEffect(() => {
+        if (!mountRef.current) return;
+
+        const doc = defaultMarkdownParser.parse(content) || markdownSchema.node('doc', null, [markdownSchema.node('paragraph')]);
+        
+        const state = EditorState.create({
+            doc,
+            schema: markdownSchema,
+            plugins: [
+                buildMarkdownInputRules(),
+                history(),
+                keymap({
+                    'Enter': splitListItem(markdownSchema.nodes.list_item),
+                    'Mod-[': liftListItem(markdownSchema.nodes.list_item),
+                    'Mod-]': sinkListItem(markdownSchema.nodes.list_item),
+                    'Mod-z': undo,
+                    'Mod-y': redo,
+                    'Mod-Shift-z': redo,
+                }),
+                keymap(baseKeymap),
+            ],
+        });
+
+        const view = new EditorView(mountRef.current, {
+            state,
+            dispatchTransaction(transaction) {
+                const newState = view.state.apply(transaction);
+                view.updateState(newState);
+                
+                // Update text content for potential saving later
+                const markdown = defaultMarkdownSerializer.serialize(newState.doc);
+                onChange(markdown);
+            },
+        });
+
+        setEditorView(view);
+
+        return () => {
+            view.destroy();
+        };
+    }, []);
+
+    // Update content when file changes
+    useEffect(() => {
+        if (editorView && content !== defaultMarkdownSerializer.serialize(editorView.state.doc)) {
+            const doc = defaultMarkdownParser.parse(content) || markdownSchema.node('doc', null, [markdownSchema.node('paragraph')]);
+            const state = EditorState.create({
+                doc,
+                schema: markdownSchema,
+                plugins: editorView.state.plugins,
+            });
+            editorView.updateState(state);
+        }
+    }, [content, editorView]);
+
+    return (
+        <div className={`h-full overflow-y-auto p-4 prose ${isDark ? 'prose-invert' : ''} max-w-none`}>
+            <div ref={mountRef} className="ProseMirror-wrapper" />
+        </div>
+    );
+}
 
 interface AgentFile {
     id: string;
@@ -156,6 +286,11 @@ export function EditAgentPage() {
 
     const handleFileUploadComplete = () => {
         loadAgentFiles();
+    };
+
+    const isMarkdownFile = (fileName: string) => {
+        const ext = fileName.split('.').pop()?.toLowerCase();
+        return ext === 'md' || ext === 'markdown';
     };
 
     const loadFileContent = async (file: AgentFile) => {
@@ -604,6 +739,12 @@ export function EditAgentPage() {
                                                 <div className="flex items-center justify-center h-full">
                                                     <Loader2 className="h-6 w-6 animate-spin" />
                                                 </div>
+                                            ) : isMarkdownFile(selectedFile.file_name) ? (
+                                                <MarkdownEditor
+                                                    content={fileContent}
+                                                    isDark={isDarkMode}
+                                                    onChange={setFileContent}
+                                                />
                                             ) : (
                                                 <CodeMirror
                                                     value={fileContent}

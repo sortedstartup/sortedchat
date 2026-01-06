@@ -2,15 +2,20 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Loader2, Trash2, Download, File } from "lucide-react";
+import { ChevronLeft, Loader2, Trash2, Download, File, ChevronRight, ChevronDown, FileText } from "lucide-react";
 import { FileUploader } from "@/components/FileUploader";
 import { getAgentClient } from "@/store/agents";
 import { GetAgentsRequest } from "../../proto/chatservice";
 import { toast } from "sonner";
 import { getJWTToken } from "@/lib/auth";
 import { getUIConfig } from "@/lib/config";
+import CodeMirror from '@uiw/react-codemirror';
+import { githubLight, githubDark } from '@uiw/codemirror-theme-github';
+import { javascript } from '@codemirror/lang-javascript';
+import { python } from '@codemirror/lang-python';
+import { html } from '@codemirror/lang-html';
 
-type TabType = "agent" | "files";
+type TabType = "agent" | "files" | "editor";
 
 interface AgentFile {
     id: string;
@@ -30,6 +35,32 @@ export function EditAgentPage() {
     const [agentFiles, setAgentFiles] = useState<AgentFile[]>([]);
     const [loadingFiles, setLoadingFiles] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>("agent");
+    
+    // Editor tab state
+    const [selectedFile, setSelectedFile] = useState<AgentFile | null>(null);
+    const [fileContent, setFileContent] = useState<string>("");
+    const [loadingContent, setLoadingContent] = useState(false);
+    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    // Detect dark mode
+    useEffect(() => {
+        const checkDarkMode = () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            setIsDarkMode(isDark);
+        };
+        
+        checkDarkMode();
+        
+        // Watch for theme changes
+        const observer = new MutationObserver(checkDarkMode);
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+        
+        return () => observer.disconnect();
+    }, []);
     
     const [formData, setFormData] = useState({
         name: "",
@@ -125,6 +156,50 @@ export function EditAgentPage() {
 
     const handleFileUploadComplete = () => {
         loadAgentFiles();
+    };
+
+    const loadFileContent = async (file: AgentFile) => {
+        try {
+            setLoadingContent(true);
+            const config = getUIConfig();
+            if (!config) {
+                toast.error("Configuration not loaded");
+                return;
+            }
+
+            const token = getJWTToken();
+            const url = `${config.API_UPLOAD_URL}/agents/files/${file.docs_id}`;
+            const response = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                const text = await response.text();
+                setFileContent(text);
+                setSelectedFile(file);
+            } else {
+                toast.error("Failed to load file content");
+            }
+        } catch (error) {
+            console.error("Failed to load file content", error);
+            toast.error("Failed to load file content");
+        } finally {
+            setLoadingContent(false);
+        }
+    };
+
+    const toggleFolder = (folderPath: string) => {
+        setExpandedFolders(prev => {
+            const next = new Set(prev);
+            if (next.has(folderPath)) {
+                next.delete(folderPath);
+            } else {
+                next.add(folderPath);
+            }
+            return next;
+        });
     };
 
     const handleDeleteFile = async (docsId: string) => {
@@ -251,6 +326,69 @@ export function EditAgentPage() {
         });
     };
 
+    const renderCompactFileTree = (node: any, path = "", depth = 0) => {
+        return Object.entries(node).map(([key, value]: [string, any]) => {
+            const currentPath = path + key;
+            
+            if (value.docs_id) {
+                // It's a file
+                const isSelected = selectedFile?.id === value.id;
+                return (
+                    <div
+                        key={value.id}
+                        className={`flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-muted rounded text-sm ${
+                            isSelected ? "bg-primary/10 text-primary" : ""
+                        }`}
+                        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+                        onClick={() => loadFileContent(value)}
+                    >
+                        <FileText className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{key}</span>
+                    </div>
+                );
+            } else {
+                // It's a folder
+                const isExpanded = expandedFolders.has(currentPath);
+                return (
+                    <div key={currentPath}>
+                        <div
+                            className="flex items-center gap-1 px-2 py-1 cursor-pointer hover:bg-muted rounded text-sm"
+                            style={{ paddingLeft: `${depth * 12 + 8}px` }}
+                            onClick={() => toggleFolder(currentPath)}
+                        >
+                            {isExpanded ? (
+                                <ChevronDown className="h-3 w-3 shrink-0" />
+                            ) : (
+                                <ChevronRight className="h-3 w-3 shrink-0" />
+                            )}
+                            <span className="font-medium">{key}</span>
+                        </div>
+                        {isExpanded && renderCompactFileTree(value, currentPath + "/", depth + 1)}
+                    </div>
+                );
+            }
+        });
+    };
+
+    const getLanguageExtension = (fileName: string) => {
+        const ext = fileName.split('.').pop()?.toLowerCase();
+        switch (ext) {
+            case 'js':
+            case 'jsx':
+                return [javascript({ jsx: true })];
+            case 'ts':
+            case 'tsx':
+                return [javascript({ jsx: true, typescript: true })];
+            case 'py':
+                return [python()];
+            case 'html':
+            case 'htm':
+                return [html()];
+            default:
+                return [];
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen">
@@ -275,7 +413,7 @@ export function EditAgentPage() {
 
             {/* Tabs */}
             <div className="flex-shrink-0 border-b border-border bg-card">
-                <div className="max-w-4xl mx-auto w-full">
+                <div className="max-w-full mx-auto w-full">
                     <div className="flex gap-1 px-6">
                         <button
                             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -297,13 +435,23 @@ export function EditAgentPage() {
                         >
                             Files {agentFiles.length > 0 && `(${agentFiles.length})`}
                         </button>
+                        <button
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === "editor"
+                                    ? "border-primary text-primary"
+                                    : "border-transparent text-muted-foreground hover:text-foreground"
+                            }`}
+                            onClick={() => setActiveTab("editor")}
+                        >
+                            Editor
+                        </button>
                     </div>
                 </div>
             </div>
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto min-h-0 bg-background">
-                <div className="max-w-4xl mx-auto w-full p-6 pb-12">
+                <div className={`${activeTab === "editor" ? "max-w-full h-full" : "max-w-4xl"} mx-auto w-full ${activeTab === "editor" ? "" : "p-6 pb-12"}`}>
                     {activeTab === "agent" && (
                         <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-lg border border-border">
                             <div className="space-y-2">
@@ -415,6 +563,67 @@ export function EditAgentPage() {
                                 <Button variant="outline" onClick={() => navigate("/")}>
                                     Done
                                 </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === "editor" && (
+                        <div className="flex h-full p-4 gap-4">
+                            {/* Left sidebar - File tree */}
+                            <div className="w-64 border border-border bg-card overflow-y-auto rounded-lg">
+                                <div className="p-3 border-b border-border">
+                                    <h3 className="text-sm font-semibold">Files</h3>
+                                </div>
+                                <div className="py-2">
+                                    {loadingFiles ? (
+                                        <div className="flex items-center justify-center p-4">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        </div>
+                                    ) : agentFiles.length > 0 ? (
+                                        renderCompactFileTree(buildFileTree(agentFiles))
+                                    ) : (
+                                        <div className="text-center text-muted-foreground text-xs p-4">
+                                            No files
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Right panel - Editor */}
+                            <div className="flex-1 flex flex-col border border-border rounded-lg overflow-hidden bg-card">
+                                {selectedFile ? (
+                                    <>
+                                        <div className="px-4 py-2 border-b border-border bg-card">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="h-4 w-4" />
+                                                <span className="text-sm font-medium">{selectedFile.file_name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 overflow-hidden">
+                                            {loadingContent ? (
+                                                <div className="flex items-center justify-center h-full">
+                                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                                </div>
+                                            ) : (
+                                                <CodeMirror
+                                                    value={fileContent}
+                                                    height="100%"
+                                                    theme={isDarkMode ? githubDark : githubLight}
+                                                    extensions={getLanguageExtension(selectedFile.file_name)}
+                                                    onChange={(value) => setFileContent(value)}
+                                                    className="h-full"
+                                                />
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                                        <div className="text-center">
+                                            <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                                            <p className="text-sm">Select a file to edit</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

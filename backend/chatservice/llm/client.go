@@ -26,9 +26,7 @@ type Client struct {
 }
 
 const LOCAL_PROVIDER = "local"
-const OPENAI_PROVIDER = "openai"
-const GEMINI_PROVIDER = "gemini"
-const CLAUDE_PROVIDER = "claude"
+const LOCAL_MODEL_URL = "http://localhost:8081/v1/chat/completions"
 
 func NewClient(settingsManager *settings.SettingsManager) *Client {
 	// Parse templates once during initialization
@@ -77,29 +75,17 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 	var url string
 	var apiKey string
 
-	switch provider {
-	case GEMINI_PROVIDER:
-		url, apiKey, err = c.settingsManager.GetProviderSetting(GEMINI_PROVIDER)
-		if err != nil {
-			slog.Error("llm:Call", "error", err)
-			return nil, fmt.Errorf("failed to get provider setting: %v", err)
-		}
-	case CLAUDE_PROVIDER:
-		url, apiKey, err = c.settingsManager.GetProviderSetting(CLAUDE_PROVIDER)
-		if err != nil {
-			slog.Error("llm:Call", "error", err)
-			return nil, fmt.Errorf("failed to get provider setting: %v", err)
-		}
-	case LOCAL_PROVIDER:
-		//TODO: should not be hard coded
-		url = "http://localhost:8081/v1/chat/completions"
+	if provider == LOCAL_PROVIDER {
+		url = LOCAL_MODEL_URL
 		apiKey = "x"
-	default:
-		url, apiKey, err = c.settingsManager.GetProviderSetting(OPENAI_PROVIDER)
+	} else {
+		providerSettings, err := c.settingsManager.GetProviderSetting(provider)
 		if err != nil {
 			slog.Error("llm:Call", "error", err)
 			return nil, fmt.Errorf("failed to get provider setting: %v", err)
 		}
+		url = providerSettings.ApiUrl
+		apiKey = providerSettings.ApiKey
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))

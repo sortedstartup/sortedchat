@@ -7,6 +7,7 @@ import (
 	"log"
 	"log/slog"
 	proto "sortedstartup/chatservice/proto"
+	"strings"
 
 	// sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 
@@ -806,8 +807,13 @@ func (s *SQLiteSettingsDAO) SetSettingValue(settingName string, settingValue str
 
 func (s *SQLiteSettingsDAO) GetSettingsByPrefix(prefix string) (map[string]string, error) {
 	var dbSettings []dbSettings
+
+	escapedPrefix := strings.ReplaceAll(prefix, "\\", "\\\\")
+	escapedPrefix = strings.ReplaceAll(escapedPrefix, "%", "\\%")
+	escapedPrefix = strings.ReplaceAll(escapedPrefix, "_", "\\_")
+
 	// Use LIKE 'prefix%' to find matching settings
-	err := s.db.Select(&dbSettings, "SELECT name, settings FROM settings WHERE name LIKE ?", prefix+"%")
+	err := s.db.Select(&dbSettings, "SELECT name, settings FROM settings WHERE name LIKE ?", escapedPrefix+"%")
 	if err != nil {
 		slog.Error("dao_sqlite:GetSettingsByPrefix", "message", "failed to get settings", "error", err)
 		return nil, err

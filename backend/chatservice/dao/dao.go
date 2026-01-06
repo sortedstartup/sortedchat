@@ -60,5 +60,6 @@ type DAO interface {
 type SettingsDAO interface {
 	GetSettingValue(settingName string) (string, error)
 	SetSettingValue(settingName string, settingValue string) error
+	// GetSettingsByPrefix retrieves all settings where the name starts with the given prefix.
 	GetSettingsByPrefix(prefix string) (map[string]string, error)
 }

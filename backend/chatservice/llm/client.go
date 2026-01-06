@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"text/template"
 	"time"
 
@@ -26,6 +25,7 @@ type Client struct {
 }
 
 const LOCAL_PROVIDER = "local"
+const OPENAI_PROVIDER = "openai"
 const LOCAL_MODEL_URL = "http://localhost:8081/v1/chat/completions"
 
 func NewClient(settingsManager *settings.SettingsManager) *Client {
@@ -66,7 +66,7 @@ func NewClient(settingsManager *settings.SettingsManager) *Client {
 }
 
 func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, provider string) (*http.Response, error) {
-	jsonData, err := c.generateRequestBody(req)
+	jsonData, err := c.generateRequestBody(req, provider)
 	if err != nil {
 		slog.Error("llm:Call", "error", err)
 		return nil, fmt.Errorf("failed to generate request body: %v", err)
@@ -100,7 +100,7 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 	return c.httpClient.Do(httpReq)
 }
 
-func (c *Client) generateRequestBody(req types.ChatCompletionRequest) ([]byte, error) {
+func (c *Client) generateRequestBody(req types.ChatCompletionRequest, provider string) ([]byte, error) {
 	// Convert ChatCompletionRequest to CustomChatRequest
 	// The structure is very similar, mainly mapping Model -> ModelName
 	customReq := types.CustomChatRequest{
@@ -110,14 +110,8 @@ func (c *Client) generateRequestBody(req types.ChatCompletionRequest) ([]byte, e
 		StreamOptions: req.StreamOptions,
 	}
 
-	// Determine which template to use based on model prefix
-	var provider string
-	if strings.HasPrefix(req.Model, "gemini") {
-		provider = "gemini"
-	} else if strings.HasPrefix(req.Model, "claude") {
-		provider = "claude"
-	} else {
-		provider = "openai"
+	if provider == LOCAL_PROVIDER {
+		provider = OPENAI_PROVIDER
 	}
 
 	// Get the cached template

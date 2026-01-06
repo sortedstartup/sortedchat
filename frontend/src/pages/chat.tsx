@@ -48,12 +48,8 @@ import {
   $currentProjectId,
 } from "@/store/chat";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+import { ModelSelector } from "@/components/ModelSelector";
+
 import {
   Dialog,
   DialogContent,
@@ -597,35 +593,10 @@ function ChatInputBox({
                   </>
                 )}
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs"
-                    >
-                      {selectedModel.model_name || "Select Model"}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {availableModels
-                      .filter(
-                        (model) =>
-                          !model.is_embedding_model &&
-                          (!model.is_downloadable || model.is_downloaded)
-                      )
-                      .map((model) => (
-                        <DropdownMenuItem
-                          key={model.id || model.label}
-                          onClick={() =>
-                            handleModelSelect(model.id, model.provider)
-                          }
-                        >
-                          <span>{model.label}</span>
-                        </DropdownMenuItem>
-                      ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <ModelSelector
+                  selectedModelId={selectedModel.model_name}
+                  onSelectModel={handleModelSelect}
+                />
               </div>
 
               {isStreaming ? (

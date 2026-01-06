@@ -163,9 +163,18 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	provider := req.GetProvider()
 	if provider != LOCAL_PROVIDER {
 		providerSettings, err := s.settingsManager.GetProviderSetting(provider)
-		if providerSettings.ApiKey == "" {
+		if providerSettings == nil || providerSettings.ApiKey == "" {
+
 			slog.Error("service:Chat", "error", "API key not set for provider", "provider", provider)
-			return fmt.Errorf("API key not set for provider")
+			stream(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Error{
+					Error: &pb.ChatError{
+						Type:    pb.ChatError_PROVIDER_CONFIGURATION_ERROR,
+						Message: fmt.Sprintf("API key not configured for provider %s, Please configure it in the models page", provider),
+					},
+				},
+			})
+			return fmt.Errorf("API key not configured for provider %s, Please configure it in the models page", provider)
 		}
 		if err != nil {
 			slog.Error("service:Chat", "error", "failed to get provider settings", "error", err, "provider", provider)

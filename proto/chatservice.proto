@@ -237,7 +237,16 @@ message ChatResponse {
     RAGDocumentReferenceSummaryList document_reference = 4; 
     ChatInfo chat_metadata = 5;
     ChatProgress progress = 6;
+    ChatError error = 7;
   }
+}
+
+message ChatError {
+  enum Type {
+    PROVIDER_CONFIGURATION_ERROR = 0;
+  }
+  Type type = 1;
+  string message = 2;
 }
 
 message ChatProgress {

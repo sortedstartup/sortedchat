@@ -2967,7 +2967,7 @@ export class ChatRequest extends pb_1.Message {
     }
 }
 export class ChatResponse extends pb_1.Message {
-    #one_of_decls: number[][] = [[1, 2, 3, 4, 5, 6]];
+    #one_of_decls: number[][] = [[1, 2, 3, 4, 5, 6, 7]];
     constructor(data?: any[] | ({} & (({
         text?: string;
         summary?: never;
@@ -2975,6 +2975,7 @@ export class ChatResponse extends pb_1.Message {
         document_reference?: never;
         chat_metadata?: never;
         progress?: never;
+        error?: never;
     } | {
         text?: never;
         summary?: ResponseSummary;
@@ -2982,6 +2983,7 @@ export class ChatResponse extends pb_1.Message {
         document_reference?: never;
         chat_metadata?: never;
         progress?: never;
+        error?: never;
     } | {
         text?: never;
         summary?: never;
@@ -2989,6 +2991,7 @@ export class ChatResponse extends pb_1.Message {
         document_reference?: never;
         chat_metadata?: never;
         progress?: never;
+        error?: never;
     } | {
         text?: never;
         summary?: never;
@@ -2996,6 +2999,7 @@ export class ChatResponse extends pb_1.Message {
         document_reference?: RAGDocumentReferenceSummaryList;
         chat_metadata?: never;
         progress?: never;
+        error?: never;
     } | {
         text?: never;
         summary?: never;
@@ -3003,6 +3007,7 @@ export class ChatResponse extends pb_1.Message {
         document_reference?: never;
         chat_metadata?: ChatInfo;
         progress?: never;
+        error?: never;
     } | {
         text?: never;
         summary?: never;
@@ -3010,6 +3015,15 @@ export class ChatResponse extends pb_1.Message {
         document_reference?: never;
         chat_metadata?: never;
         progress?: ChatProgress;
+        error?: never;
+    } | {
+        text?: never;
+        summary?: never;
+        request_message_id?: never;
+        document_reference?: never;
+        chat_metadata?: never;
+        progress?: never;
+        error?: ChatError;
     })))) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -3031,6 +3045,9 @@ export class ChatResponse extends pb_1.Message {
             }
             if ("progress" in data && data.progress != undefined) {
                 this.progress = data.progress;
+            }
+            if ("error" in data && data.error != undefined) {
+                this.error = data.error;
             }
         }
     }
@@ -3088,9 +3105,18 @@ export class ChatResponse extends pb_1.Message {
     get has_progress() {
         return pb_1.Message.getField(this, 6) != null;
     }
+    get error() {
+        return pb_1.Message.getWrapperField(this, ChatError, 7) as ChatError;
+    }
+    set error(value: ChatError) {
+        pb_1.Message.setOneofWrapperField(this, 7, this.#one_of_decls[0], value);
+    }
+    get has_error() {
+        return pb_1.Message.getField(this, 7) != null;
+    }
     get response() {
         const cases: {
-            [index: number]: "none" | "text" | "summary" | "request_message_id" | "document_reference" | "chat_metadata" | "progress";
+            [index: number]: "none" | "text" | "summary" | "request_message_id" | "document_reference" | "chat_metadata" | "progress" | "error";
         } = {
             0: "none",
             1: "text",
@@ -3098,9 +3124,10 @@ export class ChatResponse extends pb_1.Message {
             3: "request_message_id",
             4: "document_reference",
             5: "chat_metadata",
-            6: "progress"
+            6: "progress",
+            7: "error"
         };
-        return cases[pb_1.Message.computeOneofCase(this, [1, 2, 3, 4, 5, 6])];
+        return cases[pb_1.Message.computeOneofCase(this, [1, 2, 3, 4, 5, 6, 7])];
     }
     static fromObject(data: {
         text?: string;
@@ -3109,6 +3136,7 @@ export class ChatResponse extends pb_1.Message {
         document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
         chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
         progress?: ReturnType<typeof ChatProgress.prototype.toObject>;
+        error?: ReturnType<typeof ChatError.prototype.toObject>;
     }): ChatResponse {
         const message = new ChatResponse({});
         if (data.text != null) {
@@ -3129,6 +3157,9 @@ export class ChatResponse extends pb_1.Message {
         if (data.progress != null) {
             message.progress = ChatProgress.fromObject(data.progress);
         }
+        if (data.error != null) {
+            message.error = ChatError.fromObject(data.error);
+        }
         return message;
     }
     toObject() {
@@ -3139,6 +3170,7 @@ export class ChatResponse extends pb_1.Message {
             document_reference?: ReturnType<typeof RAGDocumentReferenceSummaryList.prototype.toObject>;
             chat_metadata?: ReturnType<typeof ChatInfo.prototype.toObject>;
             progress?: ReturnType<typeof ChatProgress.prototype.toObject>;
+            error?: ReturnType<typeof ChatError.prototype.toObject>;
         } = {};
         if (this.text != null) {
             data.text = this.text;
@@ -3158,6 +3190,9 @@ export class ChatResponse extends pb_1.Message {
         if (this.progress != null) {
             data.progress = this.progress.toObject();
         }
+        if (this.error != null) {
+            data.error = this.error.toObject();
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -3176,6 +3211,8 @@ export class ChatResponse extends pb_1.Message {
             writer.writeMessage(5, this.chat_metadata, () => this.chat_metadata.serialize(writer));
         if (this.has_progress)
             writer.writeMessage(6, this.progress, () => this.progress.serialize(writer));
+        if (this.has_error)
+            writer.writeMessage(7, this.error, () => this.error.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -3203,6 +3240,9 @@ export class ChatResponse extends pb_1.Message {
                 case 6:
                     reader.readMessage(message.progress, () => message.progress = ChatProgress.deserialize(reader));
                     break;
+                case 7:
+                    reader.readMessage(message.error, () => message.error = ChatError.deserialize(reader));
+                    break;
                 default: reader.skipField();
             }
         }
@@ -3214,6 +3254,99 @@ export class ChatResponse extends pb_1.Message {
     static deserializeBinary(bytes: Uint8Array): ChatResponse {
         return ChatResponse.deserialize(bytes);
     }
+}
+export class ChatError extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        type?: ChatErrorType;
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("type" in data && data.type != undefined) {
+                this.type = data.type;
+            }
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get type() {
+        return pb_1.Message.getFieldWithDefault(this, 1, ChatErrorType.PROVIDER_CONFIGURATION_ERROR) as ChatErrorType;
+    }
+    set type(value: ChatErrorType) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    static fromObject(data: {
+        type?: ChatErrorType;
+        message?: string;
+    }): ChatError {
+        const message = new ChatError({});
+        if (data.type != null) {
+            message.type = data.type;
+        }
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            type?: ChatErrorType;
+            message?: string;
+        } = {};
+        if (this.type != null) {
+            data.type = this.type;
+        }
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.type != ChatErrorType.PROVIDER_CONFIGURATION_ERROR)
+            writer.writeEnum(1, this.type);
+        if (this.message.length)
+            writer.writeString(2, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ChatError {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ChatError();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.type = reader.readEnum();
+                    break;
+                case 2:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): ChatError {
+        return ChatError.deserialize(bytes);
+    }
+}
+export enum ChatErrorType {
+    PROVIDER_CONFIGURATION_ERROR = 0
 }
 export class ChatProgress extends pb_1.Message {
     #one_of_decls: number[][] = [];

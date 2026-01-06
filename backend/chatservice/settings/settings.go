@@ -179,3 +179,24 @@ func (s *SettingsManager) LoadSettingsFromDB() error {
 
 	return s.LoadSettings(&settings)
 }
+
+func (cm *SettingsManager) GetProviderSetting(providerName string) (*proto.ProviderSettings, error) {
+	key := "provider." + providerName
+	val, err := cm.dao.GetSettingValue(key)
+	if err != nil {
+		slog.Error("settings:GetProviderSetting", "provider", providerName, "error", err)
+		return nil, fmt.Errorf("failed to get provider setting: %w", err)
+	}
+
+	if val == "" {
+		return nil, nil
+	}
+
+	// Parse the JSON
+	var ps proto.ProviderSettings
+	if err := json.Unmarshal([]byte(val), &ps); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal provider settings: %w", err)
+	}
+
+	return &ps, nil
+}

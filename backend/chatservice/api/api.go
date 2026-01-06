@@ -38,8 +38,8 @@ func (s *SettingServiceAPI) Init() {
 }
 
 func (s *SettingServiceAPI) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
-	slog.Debug("api:GetSetting", "settingService", s.service)
-	settings, err := s.service.GetSetting(ctx)
+	slog.Debug("api:GetSetting", "settingService", s.service, "name", req.Name)
+	settings, err := s.service.GetSetting(ctx, req.Name)
 	if err != nil {
 		slog.Error("api:GetSetting", "failed to get settings", "error", err)
 		return nil, err
@@ -51,7 +51,7 @@ func (s *SettingServiceAPI) GetSetting(ctx context.Context, req *pb.GetSettingRe
 }
 
 func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRequest) (*pb.SetSettingResponse, error) {
-	err := s.service.SetSetting(ctx, req.Settings)
+	err := s.service.SetSetting(ctx, req.Name, req.Settings)
 	if err != nil {
 		slog.Error("api:SetSetting", "message", "failed to set settings", "error", err)
 		return nil, err
@@ -60,6 +60,42 @@ func (s *SettingServiceAPI) SetSetting(ctx context.Context, req *pb.SetSettingRe
 	return &pb.SetSettingResponse{
 		Message: "Setting Saved",
 	}, nil
+}
+
+func (s *SettingServiceAPI) GetProviderSetting(ctx context.Context, req *pb.GetProviderSettingRequest) (*pb.GetProviderSettingResponse, error) {
+	settings, err := s.service.GetProviderSetting(ctx, req.Name)
+	if err != nil {
+		slog.Error("api:GetProviderSetting", "failed to get provider settings", "error", err)
+		return nil, err
+	}
+	return &pb.GetProviderSettingResponse{Settings: settings}, nil
+}
+
+func (s *SettingServiceAPI) SetProviderSetting(ctx context.Context, req *pb.SetProviderSettingRequest) (*pb.SetProviderSettingResponse, error) {
+	err := s.service.SetProviderSetting(ctx, req.Name, req.Settings)
+	if err != nil {
+		slog.Error("api:SetProviderSetting", "failed to set provider settings", "error", err)
+		return nil, err
+	}
+	return &pb.SetProviderSettingResponse{Message: "Provider Setting Saved"}, nil
+}
+
+func (s *SettingServiceAPI) GetAllProviderSettings(ctx context.Context, req *pb.GetAllProviderSettingsRequest) (*pb.GetAllProviderSettingsResponse, error) {
+	settings, err := s.service.GetAllProviderSettings(ctx)
+	if err != nil {
+		slog.Error("api:GetAllProviderSettings", "failed to get all provider settings", "error", err)
+		return nil, err
+	}
+	return &pb.GetAllProviderSettingsResponse{Settings: settings}, nil
+}
+
+func (s *SettingServiceAPI) SetAllProviderSettings(ctx context.Context, req *pb.SetAllProviderSettingsRequest) (*pb.SetAllProviderSettingsResponse, error) {
+	err := s.service.SetAllProviderSettings(ctx, req.Settings)
+	if err != nil {
+		slog.Error("api:SetAllProviderSettings", "failed to set all provider settings", "error", err)
+		return nil, err
+	}
+	return &pb.SetAllProviderSettingsResponse{Message: "All Provider Settings Saved"}, nil
 }
 
 func (s *SettingServiceAPI) IsFirstBoot(ctx context.Context, req *pb.IsFirstBootRequest) (*pb.IsFirstBootResponse, error) {

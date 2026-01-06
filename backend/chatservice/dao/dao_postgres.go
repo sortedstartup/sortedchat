@@ -1039,6 +1039,28 @@ func (p *PostgresSettingsDAO) SetSettingValue(settingName string, settingValue s
 	return nil
 }
 
+func (p *PostgresSettingsDAO) GetSettingsByPrefix(prefix string) (map[string]string, error) {
+	slog.Info("dao_postgres:GetSettingsByPrefix", "prefix", prefix)
+	var dbSettings []dbSettings
+
+	escapedPrefix := strings.ReplaceAll(prefix, "\\", "\\\\")
+	escapedPrefix = strings.ReplaceAll(escapedPrefix, "%", "\\%")
+	escapedPrefix = strings.ReplaceAll(escapedPrefix, "_", "\\_")
+
+	// Use LIKE 'prefix%' to find matching settings
+	err := p.db.Select(&dbSettings, "SELECT name, settings FROM settings WHERE name LIKE $1", escapedPrefix+"%")
+	if err != nil {
+		slog.Error("dao_postgres:GetSettingsByPrefix", "message", "failed to get settings", "error", err)
+		return nil, err
+	}
+
+	result := make(map[string]string)
+	for _, setting := range dbSettings {
+		result[setting.Name] = setting.Settings
+	}
+	return result, nil
+}
+
 // GetChatMessageByID retrieves a specific chat message by its ID
 func (p *PostgresDAO) GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error) {
 	slog.Info("dao_postgres:GetChatMessageByID", "userID", userID, "messageID", messageID)

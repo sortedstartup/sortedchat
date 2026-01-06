@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strings"
 
+	"sortedstartup/chatservice/constants"
 	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
 	"sortedstartup/chatservice/llm"
@@ -62,7 +63,7 @@ type GenerateEmbeddingMessage struct {
 
 const MAX_CHAT_NAME_LENGTH = 50
 const MIN_CHAT_NAME_LENGTH = 1
-const LOCAL_PROVIDER = "local"
+const LOCAL_PROVIDER = constants.LOCAL_PROVIDER
 
 // Image processing constants
 const (
@@ -159,11 +160,18 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		}
 	}
 
-	apiKey := s.settingsManager.GetSettings().OpenAIAPIKey
 	provider := req.GetProvider()
-	if apiKey == "" && provider != LOCAL_PROVIDER {
-		slog.Error("service:Chat", "error", "OpenAI API key not set")
-		return fmt.Errorf("OpenAI API key not set")
+	if provider != LOCAL_PROVIDER {
+		providerSettings, err := s.settingsManager.GetProviderSetting(provider)
+		if providerSettings.ApiKey == "" {
+			slog.Error("service:Chat", "error", "API key not set for provider", "provider", provider)
+			return fmt.Errorf("API key not set for provider")
+		}
+		if err != nil {
+			slog.Error("service:Chat", "error", "failed to get provider settings", "error", err, "provider", provider)
+			return fmt.Errorf("failed to get provider settings")
+		}
+
 	}
 
 	chatId := req.ChatId

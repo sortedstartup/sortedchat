@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"text/template"
 	"time"
 
+	constants "sortedstartup/chatservice/constants"
 	"sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/types"
 )
@@ -25,10 +25,7 @@ type Client struct {
 	templates       map[string]*template.Template
 }
 
-const LOCAL_PROVIDER = "local"
-const OPENAI_PROVIDER = "openai"
-const GEMINI_PROVIDER = "gemini"
-const CLAUDE_PROVIDER = "claude"
+const LOCAL_MODEL_URL = constants.LOCAL_LLAMA_PROXY_BASE_URL + "/v1/chat/completions"
 
 func NewClient(settingsManager *settings.SettingsManager) *Client {
 	// Parse templates once during initialization
@@ -68,7 +65,7 @@ func NewClient(settingsManager *settings.SettingsManager) *Client {
 }
 
 func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, provider string) (*http.Response, error) {
-	jsonData, err := c.generateRequestBody(req)
+	jsonData, err := c.generateRequestBody(req, provider)
 	if err != nil {
 		slog.Error("llm:Call", "error", err)
 		return nil, fmt.Errorf("failed to generate request body: %v", err)
@@ -77,23 +74,17 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 	var url string
 	var apiKey string
 
-	model := req.Model
-	slog.Info("llm:Call", "model", model)
-
-	switch provider {
-	case GEMINI_PROVIDER:
-		url = c.settingsManager.GetSettings().GeminiAPIUrl
-		apiKey = c.settingsManager.GetSettings().GeminiAPIKey
-	case CLAUDE_PROVIDER:
-		url = c.settingsManager.GetSettings().ClaudeAPIUrl
-		apiKey = c.settingsManager.GetSettings().ClaudeAPIKey
-	case LOCAL_PROVIDER:
-		//TODO: should not be hard coded
-		url = "http://localhost:8081/v1/chat/completions"
+	if provider == constants.LOCAL_PROVIDER {
+		url = LOCAL_MODEL_URL
 		apiKey = "x"
-	default:
-		url = c.settingsManager.GetSettings().OpenaiAPIUrl
-		apiKey = c.settingsManager.GetSettings().OpenAIAPIKey
+	} else {
+		providerSettings, err := c.settingsManager.GetProviderSetting(provider)
+		if err != nil {
+			slog.Error("llm:Call", "error", err)
+			return nil, fmt.Errorf("failed to get provider setting: %v", err)
+		}
+		url = providerSettings.ApiUrl
+		apiKey = providerSettings.ApiKey
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
@@ -108,7 +99,7 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 	return c.httpClient.Do(httpReq)
 }
 
-func (c *Client) generateRequestBody(req types.ChatCompletionRequest) ([]byte, error) {
+func (c *Client) generateRequestBody(req types.ChatCompletionRequest, provider string) ([]byte, error) {
 	// Convert ChatCompletionRequest to CustomChatRequest
 	// The structure is very similar, mainly mapping Model -> ModelName
 	customReq := types.CustomChatRequest{
@@ -118,20 +109,17 @@ func (c *Client) generateRequestBody(req types.ChatCompletionRequest) ([]byte, e
 		StreamOptions: req.StreamOptions,
 	}
 
-	// Determine which template to use based on model prefix
-	var provider string
-	if strings.HasPrefix(req.Model, "gemini") {
-		provider = "gemini"
-	} else if strings.HasPrefix(req.Model, "claude") {
-		provider = "claude"
+	var provider_rest_api_format string
+	if provider == constants.LOCAL_PROVIDER {
+		provider_rest_api_format = constants.OPENAI_PROVIDER
 	} else {
-		provider = "openai"
+		provider_rest_api_format = provider
 	}
 
 	// Get the cached template
-	tmpl, ok := c.templates[provider]
+	tmpl, ok := c.templates[provider_rest_api_format]
 	if !ok {
-		return nil, fmt.Errorf("template not found for provider: %s", provider)
+		return nil, fmt.Errorf("template not found for provider: %s", provider_rest_api_format)
 	}
 
 	var bodyBuffer bytes.Buffer

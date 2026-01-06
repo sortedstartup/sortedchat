@@ -18,6 +18,9 @@ type RealtimeService struct {
 	settingsClient proto.SettingServiceClient
 }
 
+const OPENAI_PROVIDER = "openai"
+const GEMINI_PROVIDER = "gemini"
+
 func NewRealtimeService(daoFactory dao.DAOFactory, settingsClient proto.SettingServiceClient) *RealtimeService {
 	slog.Info("RealtimeService: NewRealtimeService")
 
@@ -59,21 +62,32 @@ var (
 
 func (s *RealtimeService) Offer(offer string, provider string, model string, userID string) (string, error) {
 
-	if provider != "gemini" && provider != "openai" {
+	if provider != GEMINI_PROVIDER && provider != OPENAI_PROVIDER {
 		return "", fmt.Errorf("unsupported provider: %s", provider)
 	}
 	if model == "" {
 		return "", fmt.Errorf("model cannot be empty")
 	}
 
-	settings, err := s.settingsClient.GetSetting(context.Background(), &proto.GetSettingRequest{})
-	if err != nil {
-		slog.Error("RealtimeService: Init", "message", "failed to get setting", "error", err)
-		return "", err
+	if provider == OPENAI_PROVIDER {
+		providerResp, err := s.settingsClient.GetProviderSetting(context.Background(), &proto.GetProviderSettingRequest{Name: OPENAI_PROVIDER})
+		if err != nil {
+			slog.Error("RealtimeService: Offer", "message", "failed to get openai provider settings", "error", err)
+			return "", fmt.Errorf("failed to get provider settings: %w", err)
+		}
+		if providerResp.Settings != nil {
+			OPENAI_API_KEY = providerResp.Settings.ApiKey
+		}
+	} else if provider == GEMINI_PROVIDER {
+		providerResp, err := s.settingsClient.GetProviderSetting(context.Background(), &proto.GetProviderSettingRequest{Name: GEMINI_PROVIDER})
+		if err != nil {
+			slog.Error("RealtimeService: Offer", "message", "failed to get gemini provider settings", "error", err)
+			return "", fmt.Errorf("failed to get provider settings: %w", err)
+		}
+		if providerResp.Settings != nil {
+			GEMINI_API_KEY = providerResp.Settings.ApiKey
+		}
 	}
-
-	OPENAI_API_KEY = settings.Settings.OPENAI_API_KEY
-	GEMINI_API_KEY = settings.Settings.GEMINI_API_KEY
 
 	slog.Info("RealtimeService: Offer", "offer", offer, "provider", provider, "model", model, "userID", userID)
 
@@ -128,7 +142,7 @@ func (s *RealtimeService) Offer(offer string, provider string, model string, use
 				return
 			}
 
-			if provider == "gemini" {
+			if provider == GEMINI_PROVIDER {
 				if userConn.geminiRealtime != nil {
 					slog.Info("Handling audio track with Gemini", "userID", userID)
 					go userConn.geminiRealtime.HandleAudioTrack(track)

@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Loader2, Trash2, Download, File, X } from "lucide-react";
+import { ChevronLeft, Loader2, Trash2, Download, File } from "lucide-react";
 import { FileUploader } from "@/components/FileUploader";
 import { getAgentClient } from "@/store/agents";
 import { GetAgentsRequest } from "../../proto/chatservice";
 import { toast } from "sonner";
 import { getJWTToken } from "@/lib/auth";
 import { getUIConfig } from "@/lib/config";
+
+type TabType = "agent" | "files";
 
 interface AgentFile {
     id: string;
@@ -27,7 +29,7 @@ export function EditAgentPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [agentFiles, setAgentFiles] = useState<AgentFile[]>([]);
     const [loadingFiles, setLoadingFiles] = useState(true);
-    const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
+    const [activeTab, setActiveTab] = useState<TabType>("agent");
     
     const [formData, setFormData] = useState({
         name: "",
@@ -123,7 +125,6 @@ export function EditAgentPage() {
 
     const handleFileUploadComplete = () => {
         loadAgentFiles();
-        setUploadedFilesCount(prev => prev + 1);
     };
 
     const handleDeleteFile = async (docsId: string) => {
@@ -272,118 +273,151 @@ export function EditAgentPage() {
                 </div>
             </div>
 
+            {/* Tabs */}
+            <div className="flex-shrink-0 border-b border-border bg-card">
+                <div className="max-w-4xl mx-auto w-full">
+                    <div className="flex gap-1 px-6">
+                        <button
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === "agent"
+                                    ? "border-primary text-primary"
+                                    : "border-transparent text-muted-foreground hover:text-foreground"
+                            }`}
+                            onClick={() => setActiveTab("agent")}
+                        >
+                            Agent
+                        </button>
+                        <button
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === "files"
+                                    ? "border-primary text-primary"
+                                    : "border-transparent text-muted-foreground hover:text-foreground"
+                            }`}
+                            onClick={() => setActiveTab("files")}
+                        >
+                            Files {agentFiles.length > 0 && `(${agentFiles.length})`}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto min-h-0 bg-background">
-                <div className="max-w-4xl mx-auto w-full space-y-8 p-6 pb-12">
-
-                <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-lg border border-border">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Name</label>
-                        <Input
-                            required
-                            placeholder="e.g. Coding Assistant"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Description</label>
-                        <Input
-                            placeholder="Brief description of what this agent does"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">System Prompt</label>
-                        <textarea
-                            className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            placeholder="You are a helpful assistant..."
-                            value={formData.systemPrompt}
-                            onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Provider</label>
-                            <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={formData.provider}
-                                onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                            >
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic</option>
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Model</label>
-                            <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={formData.model}
-                                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                            >
-                                <option value="gpt-4o">GPT-4o</option>
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="pt-4 flex justify-end">
-                        <Button type="submit" disabled={isSaving}>
-                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Changes
-                        </Button>
-                    </div>
-                </form>
-
-                {/* Agent Files Section */}
-                <div className="space-y-4 bg-card p-6 rounded-lg border border-border">
-                    <div className="space-y-2">
-                        <h2 className="text-xl font-semibold">Agent Files</h2>
-                        <p className="text-sm text-muted-foreground">
-                            Files and folders that this agent can access during conversations.
-                        </p>
-                    </div>
-
-                    {loadingFiles ? (
-                        <div className="flex items-center justify-center p-8">
-                            <Loader2 className="h-6 w-6 animate-spin" />
-                        </div>
-                    ) : agentFiles.length > 0 ? (
-                        <div className="space-y-2 border rounded-md p-4 max-h-96 overflow-y-auto">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium">
-                                    {agentFiles.length} file(s)
-                                </span>
+                <div className="max-w-4xl mx-auto w-full p-6 pb-12">
+                    {activeTab === "agent" && (
+                        <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-lg border border-border">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Name</label>
+                                <Input
+                                    required
+                                    placeholder="e.g. Coding Assistant"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
                             </div>
-                            {renderFileTree(buildFileTree(agentFiles))}
-                        </div>
-                    ) : (
-                        <div className="text-center text-muted-foreground p-8 border rounded-md border-dashed">
-                            No files uploaded yet
-                        </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Description</label>
+                                <Input
+                                    placeholder="Brief description of what this agent does"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">System Prompt</label>
+                                <textarea
+                                    className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    placeholder="You are a helpful assistant..."
+                                    value={formData.systemPrompt}
+                                    onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Provider</label>
+                                    <select
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={formData.provider}
+                                        onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
+                                    >
+                                        <option value="openai">OpenAI</option>
+                                        <option value="anthropic">Anthropic</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Model</label>
+                                    <select
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={formData.model}
+                                        onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                                    >
+                                        <option value="gpt-4o">GPT-4o</option>
+                                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                                        <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 flex justify-end gap-2">
+                                <Button variant="outline" onClick={() => navigate("/")}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={isSaving}>
+                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </form>
                     )}
 
-                    <div className="pt-4 border-t">
-                        <h3 className="text-sm font-medium mb-3">Upload Additional Files</h3>
-                        <FileUploader
-                            uploadUrl="/agents/upload"
-                            agentId={agentId}
-                            onCompleteUpload={handleFileUploadComplete}
-                        />
-                    </div>
-                </div>
+                    {activeTab === "files" && (
+                        <div className="space-y-4 bg-card p-6 rounded-lg border border-border">
+                            <div className="space-y-2">
+                                <h2 className="text-xl font-semibold">Agent Files</h2>
+                                <p className="text-sm text-muted-foreground">
+                                    Files and folders that this agent can access during conversations.
+                                </p>
+                            </div>
 
-                <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => navigate("/")}>
-                        Done
-                    </Button>
-                </div>
+                            {loadingFiles ? (
+                                <div className="flex items-center justify-center p-8">
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                </div>
+                            ) : agentFiles.length > 0 ? (
+                                <div className="space-y-2 border rounded-md p-4 max-h-96 overflow-y-auto">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium">
+                                            {agentFiles.length} file(s)
+                                        </span>
+                                    </div>
+                                    {renderFileTree(buildFileTree(agentFiles))}
+                                </div>
+                            ) : (
+                                <div className="text-center text-muted-foreground p-8 border rounded-md border-dashed">
+                                    No files uploaded yet
+                                </div>
+                            )}
+
+                            <div className="pt-4 border-t">
+                                <h3 className="text-sm font-medium mb-3">Upload Additional Files</h3>
+                                <FileUploader
+                                    uploadUrl="/agents/upload"
+                                    agentId={agentId}
+                                    onCompleteUpload={handleFileUploadComplete}
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={() => navigate("/")}>
+                                    Done
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

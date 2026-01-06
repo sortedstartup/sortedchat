@@ -1,4 +1,4 @@
-import { atom, onMount } from "nanostores";
+import { atom, onMount, computed } from "nanostores";
 import {
     DownloadModelRequest, InferenceServiceClient, GetLLMModelsRequest, Model, CancelDownloadRequest, DeleteModelRequest
 } from "../../proto/inferenceservice"
@@ -25,6 +25,18 @@ function getClient(): InferenceServiceClient {
 
 export const $llmModels = atom<Model[]>([]);
 export const $isLoadingModels = atom<boolean>(false);
+
+export const $modelsByProvider = computed($llmModels, (models) => {
+    const groups: Record<string, Model[]> = {};
+    models.forEach((model) => {
+        const provider = model.provider || "other";
+        if (!groups[provider]) {
+            groups[provider] = [];
+        }
+        groups[provider].push(model);
+    });
+    return groups;
+});
 
 export const downloadModel = async (modelName: string) => {
 

@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "google/protobuf/struct.proto";
 
 package sortedchat;
 
@@ -84,6 +85,10 @@ message RAGDocumentReferenceResponse {
 service SettingService {
     rpc GetSetting(GetSettingRequest) returns (GetSettingResponse);
     rpc SetSetting(SetSettingRequest) returns (SetSettingResponse);
+    rpc GetProviderSetting(GetProviderSettingRequest) returns (GetProviderSettingResponse);
+    rpc SetProviderSetting(SetProviderSettingRequest) returns (SetProviderSettingResponse);
+    rpc GetAllProviderSettings(GetAllProviderSettingsRequest) returns (GetAllProviderSettingsResponse);
+    rpc SetAllProviderSettings(SetAllProviderSettingsRequest) returns (SetAllProviderSettingsResponse);
     rpc IsFirstBoot(IsFirstBootRequest) returns (IsFirstBootResponse);
     rpc TestConnection(TestConnectionRequest) returns (TestConnectionResponse);  
 
@@ -114,17 +119,58 @@ message Settings {
    string GEMINI_API_URL = 7;
 }
 
-message GetSettingRequest {}
+message GetSettingRequest {
+    string name = 1;
+}
 
 message GetSettingResponse {
-    Settings settings = 1;
+    google.protobuf.Struct settings = 1;
 }
 
 message SetSettingRequest {
-    Settings settings = 1;
+    string name = 1;
+    google.protobuf.Struct settings = 2;
 }
 
 message SetSettingResponse {
+    string message = 1;
+}
+
+message ProviderSettings {
+    string api_url = 1;
+    // TODO: this is a bad design and the secret my be stored encrypte din the db backend, once we save its never to be shown again on the ui
+    string api_key = 2;
+    bool is_enabled = 3;
+}
+
+message GetProviderSettingRequest {
+    string name = 1;
+}
+
+message GetProviderSettingResponse {
+    ProviderSettings settings = 1;
+}
+
+message SetProviderSettingRequest {
+    string name = 1;
+    ProviderSettings settings = 2;
+}
+
+message SetProviderSettingResponse {
+    string message = 1;
+}
+
+message GetAllProviderSettingsRequest {}
+
+message GetAllProviderSettingsResponse {
+    map<string, ProviderSettings> settings = 1;
+}
+
+message SetAllProviderSettingsRequest {
+    map<string, ProviderSettings> settings = 1;
+}
+
+message SetAllProviderSettingsResponse {
     string message = 1;
 }
 
@@ -191,7 +237,16 @@ message ChatResponse {
     RAGDocumentReferenceSummaryList document_reference = 4; 
     ChatInfo chat_metadata = 5;
     ChatProgress progress = 6;
+    ChatError error = 7;
   }
+}
+
+message ChatError {
+  enum Type {
+    PROVIDER_CONFIGURATION_ERROR = 0;
+  }
+  Type type = 1;
+  string message = 2;
 }
 
 message ChatProgress {

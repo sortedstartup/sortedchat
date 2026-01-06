@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"sortedstartup/chatservice/constants"
 	"sortedstartup/chatservice/settings"
 	"strings"
 
@@ -18,6 +19,8 @@ type defaultPipeline struct {
 	ch Chunker
 	em Embedder
 }
+
+const LOCAL_MODEL_URL = constants.LOCAL_LLAMA_PROXY_BASE_URL + "/v1/embeddings"
 
 func NewPipeline(ex Extractor, ch Chunker, em Embedder) RAGIndexingPipeline {
 	return &defaultPipeline{ex: ex, ch: ch, em: em}
@@ -153,7 +156,8 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 			return nil, err
 		}
 
-		ollama_url := e.SettingsManager.GetSettings().OllamaURL
+		//TODO:remove hardcoded url
+		ollama_url := LOCAL_MODEL_URL
 		req, err := http.NewRequestWithContext(ctx, "POST", ollama_url, bytes.NewBuffer(bodyBytes))
 		if err != nil {
 			slog.Error("rag_indexing_impl:Embed", "step", "failed to create request", "error", err, "chunk", chunk, "model", e.Model)
@@ -190,7 +194,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		embeddings = append(embeddings, Embedding{
 			ChunkID:  chunk.ID,
 			Vector:   vec,
-			Provider: e.SettingsManager.GetSettings().OllamaURL,
+			Provider: "ollama", // not getting used anywhere right now
 		})
 	}
 

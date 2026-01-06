@@ -771,10 +771,14 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	SettingService_GetSetting_FullMethodName     = "/sortedchat.SettingService/GetSetting"
-	SettingService_SetSetting_FullMethodName     = "/sortedchat.SettingService/SetSetting"
-	SettingService_IsFirstBoot_FullMethodName    = "/sortedchat.SettingService/IsFirstBoot"
-	SettingService_TestConnection_FullMethodName = "/sortedchat.SettingService/TestConnection"
+	SettingService_GetSetting_FullMethodName             = "/sortedchat.SettingService/GetSetting"
+	SettingService_SetSetting_FullMethodName             = "/sortedchat.SettingService/SetSetting"
+	SettingService_GetProviderSetting_FullMethodName     = "/sortedchat.SettingService/GetProviderSetting"
+	SettingService_SetProviderSetting_FullMethodName     = "/sortedchat.SettingService/SetProviderSetting"
+	SettingService_GetAllProviderSettings_FullMethodName = "/sortedchat.SettingService/GetAllProviderSettings"
+	SettingService_SetAllProviderSettings_FullMethodName = "/sortedchat.SettingService/SetAllProviderSettings"
+	SettingService_IsFirstBoot_FullMethodName            = "/sortedchat.SettingService/IsFirstBoot"
+	SettingService_TestConnection_FullMethodName         = "/sortedchat.SettingService/TestConnection"
 )
 
 // SettingServiceClient is the client API for SettingService service.
@@ -783,6 +787,10 @@ const (
 type SettingServiceClient interface {
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*GetSettingResponse, error)
 	SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*SetSettingResponse, error)
+	GetProviderSetting(ctx context.Context, in *GetProviderSettingRequest, opts ...grpc.CallOption) (*GetProviderSettingResponse, error)
+	SetProviderSetting(ctx context.Context, in *SetProviderSettingRequest, opts ...grpc.CallOption) (*SetProviderSettingResponse, error)
+	GetAllProviderSettings(ctx context.Context, in *GetAllProviderSettingsRequest, opts ...grpc.CallOption) (*GetAllProviderSettingsResponse, error)
+	SetAllProviderSettings(ctx context.Context, in *SetAllProviderSettingsRequest, opts ...grpc.CallOption) (*SetAllProviderSettingsResponse, error)
 	IsFirstBoot(ctx context.Context, in *IsFirstBootRequest, opts ...grpc.CallOption) (*IsFirstBootResponse, error)
 	TestConnection(ctx context.Context, in *TestConnectionRequest, opts ...grpc.CallOption) (*TestConnectionResponse, error)
 }
@@ -815,6 +823,46 @@ func (c *settingServiceClient) SetSetting(ctx context.Context, in *SetSettingReq
 	return out, nil
 }
 
+func (c *settingServiceClient) GetProviderSetting(ctx context.Context, in *GetProviderSettingRequest, opts ...grpc.CallOption) (*GetProviderSettingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProviderSettingResponse)
+	err := c.cc.Invoke(ctx, SettingService_GetProviderSetting_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *settingServiceClient) SetProviderSetting(ctx context.Context, in *SetProviderSettingRequest, opts ...grpc.CallOption) (*SetProviderSettingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetProviderSettingResponse)
+	err := c.cc.Invoke(ctx, SettingService_SetProviderSetting_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *settingServiceClient) GetAllProviderSettings(ctx context.Context, in *GetAllProviderSettingsRequest, opts ...grpc.CallOption) (*GetAllProviderSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAllProviderSettingsResponse)
+	err := c.cc.Invoke(ctx, SettingService_GetAllProviderSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *settingServiceClient) SetAllProviderSettings(ctx context.Context, in *SetAllProviderSettingsRequest, opts ...grpc.CallOption) (*SetAllProviderSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetAllProviderSettingsResponse)
+	err := c.cc.Invoke(ctx, SettingService_SetAllProviderSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *settingServiceClient) IsFirstBoot(ctx context.Context, in *IsFirstBootRequest, opts ...grpc.CallOption) (*IsFirstBootResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IsFirstBootResponse)
@@ -841,6 +889,10 @@ func (c *settingServiceClient) TestConnection(ctx context.Context, in *TestConne
 type SettingServiceServer interface {
 	GetSetting(context.Context, *GetSettingRequest) (*GetSettingResponse, error)
 	SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error)
+	GetProviderSetting(context.Context, *GetProviderSettingRequest) (*GetProviderSettingResponse, error)
+	SetProviderSetting(context.Context, *SetProviderSettingRequest) (*SetProviderSettingResponse, error)
+	GetAllProviderSettings(context.Context, *GetAllProviderSettingsRequest) (*GetAllProviderSettingsResponse, error)
+	SetAllProviderSettings(context.Context, *SetAllProviderSettingsRequest) (*SetAllProviderSettingsResponse, error)
 	IsFirstBoot(context.Context, *IsFirstBootRequest) (*IsFirstBootResponse, error)
 	TestConnection(context.Context, *TestConnectionRequest) (*TestConnectionResponse, error)
 	mustEmbedUnimplementedSettingServiceServer()
@@ -858,6 +910,18 @@ func (UnimplementedSettingServiceServer) GetSetting(context.Context, *GetSetting
 }
 func (UnimplementedSettingServiceServer) SetSetting(context.Context, *SetSettingRequest) (*SetSettingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetSetting not implemented")
+}
+func (UnimplementedSettingServiceServer) GetProviderSetting(context.Context, *GetProviderSettingRequest) (*GetProviderSettingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetProviderSetting not implemented")
+}
+func (UnimplementedSettingServiceServer) SetProviderSetting(context.Context, *SetProviderSettingRequest) (*SetProviderSettingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetProviderSetting not implemented")
+}
+func (UnimplementedSettingServiceServer) GetAllProviderSettings(context.Context, *GetAllProviderSettingsRequest) (*GetAllProviderSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAllProviderSettings not implemented")
+}
+func (UnimplementedSettingServiceServer) SetAllProviderSettings(context.Context, *SetAllProviderSettingsRequest) (*SetAllProviderSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetAllProviderSettings not implemented")
 }
 func (UnimplementedSettingServiceServer) IsFirstBoot(context.Context, *IsFirstBootRequest) (*IsFirstBootResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method IsFirstBoot not implemented")
@@ -922,6 +986,78 @@ func _SettingService_SetSetting_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SettingService_GetProviderSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProviderSettingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).GetProviderSetting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_GetProviderSetting_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).GetProviderSetting(ctx, req.(*GetProviderSettingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SettingService_SetProviderSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetProviderSettingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).SetProviderSetting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_SetProviderSetting_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).SetProviderSetting(ctx, req.(*SetProviderSettingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SettingService_GetAllProviderSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllProviderSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).GetAllProviderSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_GetAllProviderSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).GetAllProviderSettings(ctx, req.(*GetAllProviderSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SettingService_SetAllProviderSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetAllProviderSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).SetAllProviderSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_SetAllProviderSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).SetAllProviderSettings(ctx, req.(*SetAllProviderSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SettingService_IsFirstBoot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IsFirstBootRequest)
 	if err := dec(in); err != nil {
@@ -972,6 +1108,22 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetSetting",
 			Handler:    _SettingService_SetSetting_Handler,
+		},
+		{
+			MethodName: "GetProviderSetting",
+			Handler:    _SettingService_GetProviderSetting_Handler,
+		},
+		{
+			MethodName: "SetProviderSetting",
+			Handler:    _SettingService_SetProviderSetting_Handler,
+		},
+		{
+			MethodName: "GetAllProviderSettings",
+			Handler:    _SettingService_GetAllProviderSettings_Handler,
+		},
+		{
+			MethodName: "SetAllProviderSettings",
+			Handler:    _SettingService_SetAllProviderSettings_Handler,
 		},
 		{
 			MethodName: "IsFirstBoot",

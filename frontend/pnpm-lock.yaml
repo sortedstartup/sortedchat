@@ -20,6 +20,9 @@ importers:
       '@codemirror/lang-python':
         specifier: ^6.2.1
         version: 6.2.1
+      '@nanostores/persistent':
+        specifier: ^1.2.0
+        version: 1.2.0(nanostores@1.0.1)
       '@nanostores/query':
         specifier: github:nanostores/query
         version: https://codeload.github.com/nanostores/query/tar.gz/94340c18120cd54a1d2bf6ce6cdb88dda6376712(nanostores@1.0.1)
@@ -678,6 +681,12 @@ packages:
 
   '@mermaid-js/parser@0.6.2':
     resolution: {integrity: sha512-+PO02uGF6L6Cs0Bw8RpGhikVvMWEysfAyl27qTlroUB8jSWr1lL0Sf6zi78ZxlSnmgSY2AMMKVgghnN9jTtwkQ==}
+
+  '@nanostores/persistent@1.2.0':
+    resolution: {integrity: sha512-kf5WOLpVI9Pk+AwXHIax4in3pesNe8299BEGQ2H8kgI05SZw7KKWCDv7bt2FOlND8E5y7rO5PRW34q0UCAl/DA==}
+    engines: {node: ^20.0.0 || >=22.0.0}
+    peerDependencies:
+      nanostores: ^0.9.0 || ^0.10.0 || ^0.11.0 || ^1.0.0
 
   '@nanostores/query@https://codeload.github.com/nanostores/query/tar.gz/94340c18120cd54a1d2bf6ce6cdb88dda6376712':
     resolution: {tarball: https://codeload.github.com/nanostores/query/tar.gz/94340c18120cd54a1d2bf6ce6cdb88dda6376712}
@@ -3743,6 +3752,10 @@ snapshots:
   '@mermaid-js/parser@0.6.2':
     dependencies:
       langium: 3.3.1
+
+  '@nanostores/persistent@1.2.0(nanostores@1.0.1)':
+    dependencies:
+      nanostores: 1.0.1
 
   '@nanostores/query@https://codeload.github.com/nanostores/query/tar.gz/94340c18120cd54a1d2bf6ce6cdb88dda6376712(nanostores@1.0.1)':
     dependencies:

@@ -20,6 +20,7 @@
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/lang-python": "^6.2.1",
+    "@nanostores/persistent": "^1.2.0",
     "@nanostores/query": "github:nanostores/query",
     "@nanostores/react": "github:nanostores/react",
     "@nytimes/react-prosemirror": "^1.0.3",

@@ -35,6 +35,7 @@ import {
   ImageUrl,
   ListModelsRequest,
   ModelListInfo,
+  ChatError,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
@@ -151,6 +152,7 @@ export const fetchChatMessages = async (chatId: string) => {
 
 export const $currentChatMessage = atom<string>("");
 export const $streamingMessage = atom<string>("");
+export const $currentChatError = atom<ChatError | null>(null);
 //key here is message id and value is response summary, only used till we do not reload the page
 //store new chat summaries after page load
 export const $responseSummaries = atom<Record<string, ResponseSummary>>({});
@@ -378,6 +380,9 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
       $chatMetadata.set(res.chat_metadata);
     } else if (res.has_progress) {
       $chatProgress.set(res.progress);
+    } else if (res.has_error) {
+      $currentChatError.set(res.error);
+      $isStreaming.set(false);
     }
   });
 
@@ -424,7 +429,8 @@ export const doChat = async (msg: string, projectId: string | undefined, images?
   stream.on("error", (err: Error) => {
     console.error("Stream error:", err);
     $streamingMessage.set("");
-    toast.error("An error occurred while receiving the response. Please try again.");
+    // toast.error("An error occurred while receiving the response. Please try again.");
+    toast.error(err.message);
     $chatProgress.set(null);
     $isStreaming.set(false);
 
@@ -475,7 +481,8 @@ export const generateChatName = async (msg: string) => {
       GenerateChatNameRequest.fromObject({
         message: msg,
         chat_id: $currentChatId.get(),
-        model: $selectedModel.get().model_name
+        model: $selectedModel.get().model_name,
+        provider: $selectedModel.get().provider
       }),
       {}
     );

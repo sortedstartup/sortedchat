@@ -1,9 +1,10 @@
-import { atom, onMount } from "nanostores";
+import { atom, onMount, computed } from "nanostores";
 import {
     DownloadModelRequest, InferenceServiceClient, GetLLMModelsRequest, Model, CancelDownloadRequest, DeleteModelRequest
 } from "../../proto/inferenceservice"
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { getUIConfig } from "../lib/config";
+import { persistentAtom } from '@nanostores/persistent';
 
 
 let _inferenceClient: InferenceServiceClient | undefined;
@@ -25,6 +26,18 @@ function getClient(): InferenceServiceClient {
 
 export const $llmModels = atom<Model[]>([]);
 export const $isLoadingModels = atom<boolean>(false);
+
+export const $modelsByProvider = computed($llmModels, (models) => {
+    const groups: Record<string, Model[]> = {};
+    models.forEach((model) => {
+        const provider = model.provider || "other";
+        if (!groups[provider]) {
+            groups[provider] = [];
+        }
+        groups[provider].push(model);
+    });
+    return groups;
+});
 
 export const downloadModel = async (modelName: string) => {
 
@@ -108,3 +121,17 @@ export const deleteModel = async (modelName: string) => {
         throw error;
     }
 }
+
+export const $pinnedModels = persistentAtom<string[]>('pinned_models', [], {
+    encode: JSON.stringify,
+    decode: JSON.parse,
+});
+
+export const togglePinnedModel = (modelId: string) => {
+    const currentPinned = $pinnedModels.get();
+    if (currentPinned.includes(modelId)) {
+        $pinnedModels.set(currentPinned.filter(id => id !== modelId));
+    } else {
+        $pinnedModels.set([...currentPinned, modelId]);
+    }
+};

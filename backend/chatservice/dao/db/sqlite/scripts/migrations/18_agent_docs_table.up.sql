@@ -16,3 +16,4 @@ CREATE INDEX idx_agent_docs_agent_id ON agent_docs(agent_id);
 CREATE INDEX idx_agent_docs_docs_id ON agent_docs(docs_id);
 CREATE INDEX idx_agent_docs_path ON agent_docs(agent_id, file_path);
 
+

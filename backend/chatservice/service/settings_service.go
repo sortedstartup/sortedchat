@@ -17,6 +17,8 @@ import (
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
 	settings "sortedstartup/chatservice/settings"
+
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type SettingService struct {
@@ -45,7 +47,25 @@ func (s *SettingService) Init() {
 	if isFirstBoot {
 		// Save default settings but DON'T mark onboarding as complete
 		// User must complete onboarding wizard to set is_first_boot = 1
-		s.setSettingWithoutCompletingOnboarding(settings.DefaultSettings.ToProto())
+
+		// Convert DefaultSettings to map for structpb
+		defaultSettingsMap := map[string]interface{}{
+			"OPENAI_API_KEY": settings.DefaultSettings.OpenAIAPIKey,
+			"GEMINI_API_KEY": settings.DefaultSettings.GeminiAPIKey,
+			"CLAUDE_API_KEY": settings.DefaultSettings.ClaudeAPIKey,
+			"CLAUDE_API_URL": settings.DefaultSettings.ClaudeAPIUrl,
+			"GEMINI_API_URL": settings.DefaultSettings.GeminiAPIUrl,
+			"OPENAI_API_URL": settings.DefaultSettings.OpenaiAPIUrl,
+			"OLLAMA_URL":     settings.DefaultSettings.OllamaURL,
+		}
+
+		st, err := structpb.NewStruct(defaultSettingsMap)
+		if err != nil {
+			slog.Error("settings_service:Init", "error", "failed to create default settings struct", "err", err)
+			return
+		}
+
+		s.setSettingWithoutCompletingOnboarding("settings", st)
 	}
 
 	// Note: FirstBootComplete() is now called only after onboarding wizard completion
@@ -58,74 +78,61 @@ func (s *SettingService) FirstBootComplete() {
 	}
 }
 
-func (s *SettingService) GetSetting(ctx context.Context) (*pb.Settings, error) {
-	settingsString, err := s.dao.GetSettingValue("settings")
+func (s *SettingService) GetSetting(ctx context.Context, name string) (*structpb.Struct, error) {
+	settingsString, err := s.dao.GetSettingValue(name)
 	if err != nil {
-		slog.Error("settings_service:GetSetting", "step", "failed to get settings", "error", err)
+		if err == sql.ErrNoRows {
+			return &structpb.Struct{}, nil
+		}
+		slog.Error("settings_service:GetSetting", "step", "failed to get settings", "error", err, "name", name)
 		return nil, fmt.Errorf("failed to get settings")
 	}
 
-	//json decode the settings
-	var settingsObj settings.Settings
-	err = json.Unmarshal([]byte(settingsString), &settingsObj)
+	if settingsString == "" {
+		return &structpb.Struct{}, nil
+	}
+
+	var settingsMap map[string]interface{}
+	err = json.Unmarshal([]byte(settingsString), &settingsMap)
 	if err != nil {
-		slog.Error("settings_service:GetSetting", "step", "failed to unmarshal settings", "error", err)
+		slog.Error("settings_service:GetSetting", "step", "failed to unmarshal settings", "error", err, "name", name)
 		return nil, fmt.Errorf("failed to get settings")
 	}
 
-	return settingsObj.ToProto(), nil
+	return structpb.NewStruct(settingsMap)
 }
 
 // saveSettings is the internal implementation for saving settings
 // If completeOnboarding is true, sets is_first_boot = 1
-func (s *SettingService) saveSettings(settingsProto *pb.Settings, completeOnboarding bool) error {
+func (s *SettingService) saveSettings(name string, settingsStruct *structpb.Struct, completeOnboarding bool) error {
 	// Load existing settings from DB to support merge behavior
-	existingSettingsStr, err := s.dao.GetSettingValue("settings")
-	if err != nil {
+	existingSettingsStr, err := s.dao.GetSettingValue(name)
+	if err != nil && err != sql.ErrNoRows {
 		slog.Error("settings_service:saveSettings", "step", "failed to load existing settings for merge", "error", err)
 		// Continue with empty existing settings on error; we'll still write incoming
 	}
 
-	var existing settings.Settings
+	existingMap := make(map[string]interface{})
 	if existingSettingsStr != "" {
-		if err := json.Unmarshal([]byte(existingSettingsStr), &existing); err != nil {
+		if err := json.Unmarshal([]byte(existingSettingsStr), &existingMap); err != nil {
 			slog.Error("settings_service:saveSettings", "step", "failed to unmarshal existing settings", "error", err)
 		}
 	}
 
-	// Build incoming settings from proto
-	incoming := settings.FromProto(settingsProto)
+	incomingMap := settingsStruct.AsMap()
 
-	// Merge: if incoming fields are empty strings, retain existing values
-	if incoming.OpenAIAPIKey == "" {
-		incoming.OpenAIAPIKey = existing.OpenAIAPIKey
-	}
-	if incoming.GeminiAPIKey == "" {
-		incoming.GeminiAPIKey = existing.GeminiAPIKey
-	}
-	if incoming.ClaudeAPIKey == "" {
-		incoming.ClaudeAPIKey = existing.ClaudeAPIKey
-	}
-	if incoming.ClaudeAPIUrl == "" {
-		incoming.ClaudeAPIUrl = existing.ClaudeAPIUrl
-	}
-	if incoming.GeminiAPIUrl == "" {
-		incoming.GeminiAPIUrl = existing.GeminiAPIUrl
-	}
-	if incoming.OpenaiAPIUrl == "" {
-		incoming.OpenaiAPIUrl = existing.OpenaiAPIUrl
-	}
-	if incoming.OllamaURL == "" {
-		incoming.OllamaURL = existing.OllamaURL
+	// Merge: overwrite existing with incoming
+	for k, v := range incomingMap {
+		existingMap[k] = v
 	}
 
-	settingsJSON, err := json.Marshal(incoming)
+	settingsJSON, err := json.Marshal(existingMap)
 	if err != nil {
-		slog.Error("settings_service:saveSettings", "step", "failed to set settings", "error", err)
+		slog.Error("settings_service:saveSettings", "step", "failed to marshal settings", "error", err)
 		return fmt.Errorf("failed to set settings")
 	}
 
-	err = s.dao.SetSettingValue("settings", string(settingsJSON))
+	err = s.dao.SetSettingValue(name, string(settingsJSON))
 	if err != nil {
 		slog.Error("settings_service:saveSettings", "step", "failed to set settings", "error", err)
 		return fmt.Errorf("failed to set settings")
@@ -148,13 +155,78 @@ func (s *SettingService) saveSettings(settingsProto *pb.Settings, completeOnboar
 }
 
 // setSettingWithoutCompletingOnboarding saves settings without marking onboarding as complete
-func (s *SettingService) setSettingWithoutCompletingOnboarding(settingsProto *pb.Settings) error {
-	return s.saveSettings(settingsProto, false)
+func (s *SettingService) setSettingWithoutCompletingOnboarding(name string, settingsStruct *structpb.Struct) error {
+	return s.saveSettings(name, settingsStruct, false)
 }
 
 // SetSetting saves settings and marks onboarding as complete
-func (s *SettingService) SetSetting(ctx context.Context, settingsProto *pb.Settings) error {
-	return s.saveSettings(settingsProto, true)
+func (s *SettingService) SetSetting(ctx context.Context, name string, settingsStruct *structpb.Struct) error {
+	return s.saveSettings(name, settingsStruct, true)
+}
+
+func (s *SettingService) GetProviderSetting(ctx context.Context, name string) (*pb.ProviderSettings, error) {
+	key := "provider." + name
+	val, err := s.dao.GetSettingValue(key)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &pb.ProviderSettings{}, nil
+		}
+		return nil, err
+	}
+
+	if val == "" {
+		return &pb.ProviderSettings{}, nil
+	}
+
+	var ps pb.ProviderSettings
+	if err := json.Unmarshal([]byte(val), &ps); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal provider settings: %w", err)
+	}
+	return &ps, nil
+}
+
+func (s *SettingService) SetProviderSetting(ctx context.Context, name string, settings *pb.ProviderSettings) error {
+	key := "provider." + name
+	bytes, err := json.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("failed to marshal provider settings: %w", err)
+	}
+
+	if err := s.dao.SetSettingValue(key, string(bytes)); err != nil {
+		return err
+	}
+
+	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
+	return nil
+}
+
+func (s *SettingService) GetAllProviderSettings(ctx context.Context) (map[string]*pb.ProviderSettings, error) {
+	settingsMap, err := s.dao.GetSettingsByPrefix("provider.")
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]*pb.ProviderSettings)
+	for k, v := range settingsMap {
+		// k is like "provider.openai", we want just "openai"
+		name := strings.TrimPrefix(k, "provider.")
+		var ps pb.ProviderSettings
+		if err := json.Unmarshal([]byte(v), &ps); err != nil {
+			slog.Error("failed to unmarshal provider setting", "key", k, "error", err)
+			continue
+		}
+		result[name] = &ps
+	}
+	return result, nil
+}
+
+func (s *SettingService) SetAllProviderSettings(ctx context.Context, settingsMap map[string]*pb.ProviderSettings) error {
+	for name, ps := range settingsMap {
+		if err := s.SetProviderSetting(ctx, name, ps); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // IsFirstBoot checks if this is the first boot by looking for the 'is_first_boot' setting

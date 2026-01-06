@@ -60,6 +60,15 @@ type DAO interface {
 type SettingsDAO interface {
 	GetSettingValue(settingName string) (string, error)
 	SetSettingValue(settingName string, settingValue string) error
+	// This is mainly needed to make like at UI layer simple
+	// for e.g. DB has settings 'provider.openai', 'openai.gemini',
+	// UI can ask for all LLM provider settings - 'provider.*'
+	// return - 
+	//  {
+	//    'provider.openai': setting json (proto message type struct ...,
+	//    'provider.gemini': setting json (proto message type struct ...
+	// }
+	GetSettingsByPrefix(prefix string) (map[string]string, error)
 }
 
 type AgentDAO interface {

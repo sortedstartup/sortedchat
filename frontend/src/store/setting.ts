@@ -97,7 +97,7 @@ export const onboardingActions = {
 
   nextStep: () => {
     const current = $onboardingStep.get();
-    if (current < 1) {
+    if (current < 2) {
       $onboardingStep.set(current + 1);
     }
   },
@@ -126,12 +126,44 @@ export const onboardingActions = {
   completeOnboarding: async (): Promise<void> => {
     try {
       const data = $onboardingData.get();
-      const settings = new Settings(data);
+      
+      // Save each provider's settings individually
+      const providers = [
+        { name: 'openai', apiKey: data.OPENAI_API_KEY, apiUrl: data.OPENAI_API_URL },
+        { name: 'claude', apiKey: data.CLAUDE_API_KEY, apiUrl: data.CLAUDE_API_URL },
+        { name: 'gemini', apiKey: data.GEMINI_API_KEY, apiUrl: data.GEMINI_API_URL },
+      ];
 
-      // Save settings
-      const setReq = new SetSettingRequest({ settings });
+      for (const provider of providers) {
+        if (provider.apiKey || provider.apiUrl) {
+          const settings = new ProviderSettings({
+            api_key: provider.apiKey,
+            api_url: provider.apiUrl,
+            is_enabled: true,
+          });
+          const req = new SetProviderSettingRequest({
+            name: provider.name,
+            settings: settings,
+          });
+          await getClient().SetProviderSetting(req, {});
+        }
+      }
+
+      // Save general settings (Ollama URL, etc.) using SetSetting
+      // This also marks onboarding as complete (sets is_first_boot = 1)
+      // Struct format: { fields: { [key: string]: { string_value: string } } }
+      const setReq = SetSettingRequest.fromObject({
+        name: "general",
+        settings: {
+          fields: {
+            OLLAMA_URL: { string_value: data.OLLAMA_URL || "" },
+          },
+        },
+      });
       await getClient().SetSetting(setReq, {});
 
+      // Save Ollama URL locally in Settings store
+      const settings = new Settings(data);
       $settings.set(settings);
 
       // Force a full page reload to ensure isFirstBoot check runs fresh

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Loader2, Trash2, Download, File, ChevronRight, ChevronDown, FileText, Code2 } from "lucide-react";
+import { ChevronLeft, Loader2, Trash2, Download, File, ChevronRight, ChevronDown, FileText, Code2, Save, AlertCircle } from "lucide-react";
 import { FileUploader } from "@/components/FileUploader";
 import { getAgentClient } from "@/store/agents";
 import { GetAgentsRequest } from "../../proto/chatservice";
@@ -170,10 +170,15 @@ export function EditAgentPage() {
     // Editor tab state
     const [selectedFile, setSelectedFile] = useState<AgentFile | null>(null);
     const [fileContent, setFileContent] = useState<string>("");
+    const [originalContent, setOriginalContent] = useState<string>("");
     const [loadingContent, setLoadingContent] = useState(false);
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isRawMode, setIsRawMode] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [isSavingFile, setIsSavingFile] = useState(false);
+    const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+    const [pendingFile, setPendingFile] = useState<AgentFile | null>(null);
 
     // Detect dark mode
     useEffect(() => {
@@ -307,16 +312,25 @@ export function EditAgentPage() {
 
             const token = getJWTToken();
             const url = `${config.API_UPLOAD_URL}/agents/files/${file.docs_id}`;
+            console.log("Loading file:", { url, docs_id: file.docs_id, file_name: file.file_name });
+            
             const response = await fetch(url, {
+                method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
+                cache: 'no-store', // Don't use cached version
             });
+
+            console.log("Load response:", response.status);
 
             if (response.ok) {
                 const text = await response.text();
+                console.log("Loaded content length:", text.length, "first 100 chars:", text.substring(0, 100));
                 setFileContent(text);
+                setOriginalContent(text);
                 setSelectedFile(file);
+                setHasUnsavedChanges(false);
             } else {
                 toast.error("Failed to load file content");
             }
@@ -326,6 +340,105 @@ export function EditAgentPage() {
         } finally {
             setLoadingContent(false);
         }
+    };
+
+    const handleFileContentChange = (newContent: string) => {
+        setFileContent(newContent);
+        setHasUnsavedChanges(newContent !== originalContent);
+    };
+
+    const saveFileContent = async (): Promise<boolean> => {
+        if (!selectedFile) return false;
+
+        try {
+            setIsSavingFile(true);
+            const config = getUIConfig();
+            if (!config) {
+                toast.error("Configuration not loaded");
+                return false;
+            }
+
+            const token = getJWTToken();
+            const url = `${config.API_UPLOAD_URL}/agents/files/update`;
+            
+            console.log("Saving file:", {
+                url,
+                agent_id: agentId,
+                docs_id: selectedFile.docs_id,
+                contentLength: fileContent.length
+            });
+            
+            const response = await fetch(url, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    agent_id: agentId,
+                    docs_id: selectedFile.docs_id,
+                    content: fileContent,
+                }),
+            });
+
+            console.log("Save response:", response.status, response.statusText);
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log("Save result:", result);
+                setOriginalContent(fileContent);
+                setHasUnsavedChanges(false);
+                toast.success("File saved successfully");
+                return true;
+            } else {
+                const errorText = await response.text();
+                console.error("Failed to save file:", response.status, errorText);
+                toast.error(`Failed to save file: ${response.status}`);
+                return false;
+            }
+        } catch (error) {
+            console.error("Failed to save file", error);
+            toast.error("Failed to save file: " + (error as Error).message);
+            return false;
+        } finally {
+            setIsSavingFile(false);
+        }
+    };
+
+    const handleFileSelect = (file: AgentFile) => {
+        if (hasUnsavedChanges && selectedFile && selectedFile.id !== file.id) {
+            setPendingFile(file);
+            setShowUnsavedModal(true);
+        } else {
+            loadFileContent(file);
+        }
+    };
+
+    const handleDiscardChanges = () => {
+        setShowUnsavedModal(false);
+        if (pendingFile) {
+            loadFileContent(pendingFile);
+            setPendingFile(null);
+        }
+    };
+
+    const handleSaveAndContinue = async () => {
+        const saved = await saveFileContent();
+        if (saved) {
+            setShowUnsavedModal(false);
+            if (pendingFile) {
+                loadFileContent(pendingFile);
+                setPendingFile(null);
+            }
+        } else {
+            // Keep the modal open if save failed
+            toast.error("Could not switch files due to save failure");
+        }
+    };
+
+    const handleCancelSwitch = () => {
+        setShowUnsavedModal(false);
+        setPendingFile(null);
     };
 
     const toggleFolder = (folderPath: string) => {
@@ -471,6 +584,7 @@ export function EditAgentPage() {
             if (value.docs_id) {
                 // It's a file
                 const isSelected = selectedFile?.id === value.id;
+                const fileHasChanges = isSelected && hasUnsavedChanges;
                 return (
                     <div
                         key={value.id}
@@ -478,10 +592,13 @@ export function EditAgentPage() {
                             isSelected ? "bg-primary/10 text-primary" : ""
                         }`}
                         style={{ paddingLeft: `${depth * 12 + 8}px` }}
-                        onClick={() => loadFileContent(value)}
+                        onClick={() => handleFileSelect(value)}
                     >
                         <FileText className="h-3 w-3 shrink-0" />
                         <span className="truncate">{key}</span>
+                        {fileHasChanges && (
+                            <span className="h-2 w-2 rounded-full bg-red-500 shrink-0" title="Unsaved changes" />
+                        )}
                     </div>
                 );
             } else {
@@ -735,20 +852,41 @@ export function EditAgentPage() {
                                 {selectedFile ? (
                                     <>
                                         <div className="px-4 py-2 border-b border-border bg-card">
-                                            <div className="flex items-center gap-3">
-                                                <FileText className="h-4 w-4" />
-                                                <span className="text-sm font-medium">{selectedFile.file_name}</span>
-                                                {isMarkdownFile(selectedFile.file_name) && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setIsRawMode(!isRawMode)}
-                                                        className="h-7 gap-1 ml-2"
-                                                    >
-                                                        <Code2 className="h-3 w-3" />
-                                                        <span className="text-xs">{isRawMode ? 'Preview' : 'Raw'}</span>
-                                                    </Button>
-                                                )}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <FileText className="h-4 w-4" />
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-medium">{selectedFile.file_name}</span>
+                                                        {hasUnsavedChanges && (
+                                                            <span className="h-2 w-2 rounded-full bg-red-500" title="Unsaved changes" />
+                                                        )}
+                                                    </div>
+                                                    {isMarkdownFile(selectedFile.file_name) && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setIsRawMode(!isRawMode)}
+                                                            className="h-7 gap-1"
+                                                        >
+                                                            <Code2 className="h-3 w-3" />
+                                                            <span className="text-xs">{isRawMode ? 'Preview' : 'Raw'}</span>
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                <Button
+                                                    variant="default"
+                                                    size="sm"
+                                                    onClick={saveFileContent}
+                                                    disabled={!hasUnsavedChanges || isSavingFile}
+                                                    className="h-7 gap-1"
+                                                >
+                                                    {isSavingFile ? (
+                                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                                    ) : (
+                                                        <Save className="h-3 w-3" />
+                                                    )}
+                                                    <span className="text-xs">Save</span>
+                                                </Button>
                                             </div>
                                         </div>
                                         <div className="flex-1 overflow-hidden">
@@ -758,17 +896,19 @@ export function EditAgentPage() {
                                                 </div>
                                             ) : isMarkdownFile(selectedFile.file_name) && !isRawMode ? (
                                                 <MarkdownEditor
+                                                    key={selectedFile.docs_id}
                                                     content={fileContent}
                                                     isDark={isDarkMode}
-                                                    onChange={setFileContent}
+                                                    onChange={handleFileContentChange}
                                                 />
                                             ) : (
                                                 <CodeMirror
+                                                    key={selectedFile.docs_id}
                                                     value={fileContent}
                                                     height="100%"
                                                     theme={isDarkMode ? githubDark : githubLight}
                                                     extensions={getLanguageExtension(selectedFile.file_name)}
-                                                    onChange={(value) => setFileContent(value)}
+                                                    onChange={(value) => handleFileContentChange(value)}
                                                     className="h-full"
                                                 />
                                             )}
@@ -787,6 +927,49 @@ export function EditAgentPage() {
                     )}
                 </div>
             </div>
+
+            {/* Unsaved Changes Modal */}
+            {showUnsavedModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+                        <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                                <AlertCircle className="h-6 w-6 text-yellow-500" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-semibold mb-2">Unsaved Changes</h3>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    You have unsaved changes in "{selectedFile?.file_name}". 
+                                    Do you want to save them before switching files?
+                                </p>
+                                <div className="flex gap-2 justify-end">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCancelSwitch}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={handleDiscardChanges}
+                                    >
+                                        Discard
+                                    </Button>
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={handleSaveAndContinue}
+                                    >
+                                        Save & Continue
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

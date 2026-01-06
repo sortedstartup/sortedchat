@@ -25,6 +25,7 @@ func (s *ChatServiceAPI) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/agents/files/", s.handleAgentFileDownload)
 	mux.HandleFunc("/agents/files-list/", s.handleAgentFilesList)
 	mux.HandleFunc("/agents/files/delete", s.handleAgentFileDelete)
+	mux.HandleFunc("/agents/files/update", s.handleAgentFileUpdate)
 }
 
 func (s *ChatServiceAPI) handleUpload(w http.ResponseWriter, r *http.Request) {
@@ -156,11 +157,21 @@ func (s *ChatServiceAPI) handleAgentFileDownload(w http.ResponseWriter, r *http.
 
 	// Reuse same filestore location
 	filePath := filepath.Join("filestore", "objects", docsID)
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		slog.Error("File not found on disk", "error", err)
+	absPath, _ := filepath.Abs(filePath)
+	slog.Info("Loading file", "path", filePath, "abs_path", absPath)
+
+	if stat, err := os.Stat(filePath); os.IsNotExist(err) {
+		slog.Error("File not found on disk", "error", err, "path", filePath)
 		http.Error(w, "File not found on disk", http.StatusNotFound)
 		return
+	} else {
+		slog.Info("File found", "size", stat.Size(), "modified", stat.ModTime())
 	}
+
+	// Prevent caching to ensure we always get the latest version
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
 
 	http.ServeFile(w, r, filePath)
 }
@@ -240,5 +251,74 @@ func (s *ChatServiceAPI) handleAgentFileDelete(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "File deleted successfully",
+	})
+}
+
+func (s *ChatServiceAPI) handleAgentFileUpdate(w http.ResponseWriter, r *http.Request) {
+	slog.Info("api:handleAgentFileUpdate", "method", r.Method, "path", r.URL.Path)
+	if r.Method != http.MethodPut {
+		slog.Error("Method not allowed", "method", r.Method)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		AgentID string `json:"agent_id"`
+		DocsID  string `json:"docs_id"`
+		Content string `json:"content"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Error("Failed to decode request", "error", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	slog.Info("api:handleAgentFileUpdate decoded request", "agent_id", req.AgentID, "docs_id", req.DocsID, "content_length", len(req.Content))
+
+	if req.AgentID == "" || req.DocsID == "" {
+		slog.Error("Missing required fields", "agent_id", req.AgentID, "docs_id", req.DocsID)
+		http.Error(w, "Missing agent_id or docs_id", http.StatusBadRequest)
+		return
+	}
+
+	// Get user ID from context
+	userID, err := auth.GetUserIDFromContext_WithError(r.Context())
+	if err != nil {
+		slog.Error("User ID not found", "error", err)
+		http.Error(w, "User ID not found", http.StatusUnauthorized)
+		return
+	}
+	_ = userID // Will use for validation later
+
+	// TODO: Validate user has access to this agent
+
+	// Write the updated content to the physical file
+	filePath := filepath.Join("filestore", "objects", req.DocsID)
+	absPath, _ := filepath.Abs(filePath)
+	slog.Info("Writing file", "path", filePath, "abs_path", absPath, "size", len(req.Content))
+
+	// Verify file exists before writing
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		slog.Warn("File doesn't exist, will create new", "path", filePath)
+	}
+
+	if err := os.WriteFile(filePath, []byte(req.Content), 0644); err != nil {
+		slog.Error("Failed to write file", "error", err, "path", filePath, "abs_path", absPath)
+		http.Error(w, "Failed to update file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Verify the write was successful
+	if stat, err := os.Stat(filePath); err == nil {
+		slog.Info("File updated successfully", "path", filePath, "abs_path", absPath, "new_size", stat.Size())
+	} else {
+		slog.Error("File stat failed after write", "error", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "File updated successfully",
 	})
 }

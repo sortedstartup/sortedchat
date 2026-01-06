@@ -107,7 +107,7 @@ func (f *PostgresDAOFactory) CreateSettingsDAO() (SettingsDAO, error) {
 }
 
 func (f *PostgresDAOFactory) CreateAgentDAO() (AgentDAO, error) {
-	return nil, fmt.Errorf("CreateAgentDAO not implemented for Postgres")
+	return NewPostgresAgentsDAO(f.db), nil
 }
 
 func (f *PostgresDAOFactory) Close() error {

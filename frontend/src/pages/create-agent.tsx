@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createAgent } from "@/store/agents";
 import { ChevronLeft, Loader2 } from "lucide-react";
+import { FileUploader } from "@/components/FileUploader";
 
 export function CreateAgentPage() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+    const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
+    const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
     const [formData, setFormData] = useState({
         name: "",
         description: "",
@@ -21,17 +24,15 @@ export function CreateAgentPage() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await createAgent(
+            const agentId = await createAgent(
                 formData.name,
                 formData.description,
                 formData.systemPrompt,
                 formData.model,
                 formData.provider
             );
-            // Navigate back or to the list, let's go back for now or maybe to the new agent?
-            // createAgent returns agent_id but we might just want to go back to home or let user pick.
-            // For now, let's go back to home which will show the new agent in sidebar.
-            navigate("/");
+            // Store the agent ID to enable file uploads
+            setCreatedAgentId(agentId);
         } catch (error) {
             console.error("Failed to create agent", error);
             // Toast is handled in store
@@ -40,15 +41,32 @@ export function CreateAgentPage() {
         }
     };
 
+    const handleFileUploadComplete = (files: any[]) => {
+        // files array only contains successfully uploaded files now
+        setUploadedFilesCount(prev => prev + files.length);
+    };
+
+    const handleFinish = () => {
+        navigate("/");
+    };
+
     return (
-        <div className="flex flex-col h-screen w-full bg-background p-6">
-            <div className="max-w-2xl mx-auto w-full space-y-8">
-                <div className="flex items-center space-x-4">
-                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <h1 className="text-2xl font-bold">Create New Agent</h1>
+        <div className="flex flex-col h-full w-full">
+            {/* Header - Fixed */}
+            <div className="flex-shrink-0 p-6 border-b border-border bg-card">
+                <div className="max-w-2xl mx-auto w-full">
+                    <div className="flex items-center space-x-4">
+                        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <h1 className="text-2xl font-bold">Create New Agent</h1>
+                    </div>
                 </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto min-h-0 bg-background">
+                <div className="max-w-2xl mx-auto w-full space-y-8 p-6 pb-12">
 
                 <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-lg border border-border">
                     <div className="space-y-2">
@@ -108,12 +126,46 @@ export function CreateAgentPage() {
                     </div>
 
                     <div className="pt-4 flex justify-end">
-                        <Button type="submit" disabled={isLoading}>
+                        <Button type="submit" disabled={isLoading || createdAgentId !== null}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create Agent
+                            {createdAgentId ? "Agent Created ✓" : "Create Agent"}
                         </Button>
                     </div>
                 </form>
+
+                {createdAgentId && (
+                    <div className="space-y-4 bg-card p-6 rounded-lg border border-border">
+                        <div className="space-y-2">
+                            <h2 className="text-xl font-semibold">Upload Files (Optional)</h2>
+                            <p className="text-sm text-muted-foreground">
+                                Upload files or folders that your agent can access during conversations.
+                                You can skip this step and add files later.
+                            </p>
+                        </div>
+
+                        <FileUploader
+                            uploadUrl="/agents/upload"
+                            agentId={createdAgentId}
+                            onCompleteUpload={handleFileUploadComplete}
+                        />
+
+                        {uploadedFilesCount > 0 && (
+                            <p className="text-sm text-green-600">
+                                ✓ {uploadedFilesCount} file(s) uploaded successfully
+                            </p>
+                        )}
+
+                        <div className="pt-4 flex justify-end gap-2">
+                            <Button variant="outline" onClick={handleFinish}>
+                                Skip & Finish
+                            </Button>
+                            <Button onClick={handleFinish} disabled={uploadedFilesCount === 0}>
+                                Finish
+                            </Button>
+                        </div>
+                    </div>
+                )}
+                </div>
             </div>
         </div>
     );

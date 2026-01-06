@@ -40,7 +40,8 @@ import {
   Plus,
   ChevronRight,
   ChevronDown,
-  MessageSquare
+  MessageSquare,
+  Settings
 } from "lucide-react";
 import { useStore } from "@nanostores/react";
 import { useNavigate } from "react-router-dom";
@@ -733,6 +734,11 @@ function AgentsSidebarSection() {
     navigate("/agent/new");
   };
 
+  const handleEditAgent = (e: React.MouseEvent, agentId: string) => {
+    e.stopPropagation();
+    navigate(`/agent/${agentId}/edit`);
+  };
+
   const handleAgentClick = async (agentId: string) => {
     setExpandedAgents(prev => {
       const isExpanded = !prev[agentId];
@@ -783,13 +789,22 @@ function AgentsSidebarSection() {
                     <Bot className="h-4 w-4 shrink-0 text-blue-500" />
                     <span className="truncate text-sm">{agent.name}</span>
                   </div>
-                  <button
-                    onClick={(e) => handleCreateSession(e, agent.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-background rounded transition-opacity"
-                    title="New Session"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => handleEditAgent(e, agent.id)}
+                      className="p-1 hover:bg-background rounded"
+                      title="Edit Agent"
+                    >
+                      <Settings className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={(e) => handleCreateSession(e, agent.id)}
+                      className="p-1 hover:bg-background rounded"
+                      title="New Session"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
                 </div>
 
                 {expandedAgents[agent.id] && (

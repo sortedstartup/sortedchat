@@ -267,6 +267,28 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		return fmt.Errorf("failed to create filesystem tools: %w", err)
 	}
 
+	// Load agent files into workspace before starting the session
+	agentFiles, err := s.dao.GetAgentFiles(agentRow.ID)
+	if err != nil {
+		slog.Warn("Failed to get agent files", "error", err, "agentID", agentRow.ID)
+	} else if len(agentFiles) > 0 {
+		// Convert to AgentFileInfo for loading
+		var fileInfos []agents.AgentFileInfo
+		for _, f := range agentFiles {
+			fileInfos = append(fileInfos, agents.AgentFileInfo{
+				DocsID:   f.DocsID,
+				FilePath: f.FilePath,
+			})
+		}
+
+		// Load files into workspace
+		if err := agents.LoadAgentFilesIntoWorkspace(fileInfos, workspacePath, "filestore"); err != nil {
+			slog.Warn("Failed to load agent files into workspace", "error", err, "agentID", agentRow.ID)
+		} else {
+			slog.Info("Loaded agent files into workspace", "count", len(fileInfos), "agentID", agentRow.ID, "workspace", workspacePath)
+		}
+	}
+
 	// Get filesystem tools for agent
 	fileSystemTools, err := fsTools.GetTools()
 	if err != nil {
@@ -329,10 +351,11 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 			switch msg.Type {
 			case "text":
 				event.Content = &genai.Content{
-					Role: msg.Role,
-					Parts: []*genai.Part{
-						{Text: msg.Content},
-					},
+					Role:  msg.Role,
+					Parts: []*genai.Part{{Text: msg.Content}},
+				}
+				if msg.Role == "assistant" {
+					event.Author = agentRow.Name
 				}
 			case "tool_call":
 				// Parse tool args
@@ -349,32 +372,23 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 				}
 				event.Content = &genai.Content{
 					Role: "model",
-					Parts: []*genai.Part{
-						{FunctionCall: &genai.FunctionCall{
-							Name: getStringValue(msg.ToolName),
-							Args: args,
-						}},
-					},
+					Parts: []*genai.Part{{FunctionCall: &genai.FunctionCall{
+						Name: getStringValue(msg.ToolName),
+						Args: args,
+					}}},
 				}
+				event.Author = agentRow.Name
 			case "tool_result":
-				// Parse tool result
 				var result map[string]any
 				if err := json.Unmarshal([]byte(msg.Content), &result); err != nil {
-					slog.Warn("Failed to unmarshal tool_result content, skipping message",
-						"error", err,
-						"sequence", msg.SequenceNumber,
-						"tool_name", getStringValue(msg.ToolName),
-						"tool_call_id", msg.ToolCallID)
 					continue
 				}
 				event.Content = &genai.Content{
 					Role: "function",
-					Parts: []*genai.Part{
-						{FunctionResponse: &genai.FunctionResponse{
-							Name:     getStringValue(msg.ToolName),
-							Response: result,
-						}},
-					},
+					Parts: []*genai.Part{{FunctionResponse: &genai.FunctionResponse{
+						Name:     getStringValue(msg.ToolName),
+						Response: result,
+					}}},
 				}
 			}
 
@@ -575,8 +589,31 @@ type toolCallState struct {
 // createBeforeModelCallback creates a callback that fires before LLM calls
 func (s *AgentServiceAPI) createBeforeModelCallback(stream pb.AgentService_AgentChatServer, modelName string) llmagent.BeforeModelCallback {
 	return func(ctx agent.CallbackContext, req *model.LLMRequest) (*model.LLMResponse, error) {
-		// Just log for debugging, don't stream to UI (it's noise for the user)
-		slog.Debug("[Callback] BeforeModel triggered", "agent", ctx.AgentName(), "contents_count", len(req.Contents))
+		// Log the request being sent to Gemini
+		slog.Info("[Callback] BeforeModel triggered", "agent", ctx.AgentName(), "model", modelName, "contents_count", len(req.Contents))
+
+		// Log conversation history being sent to Gemini
+		for i, content := range req.Contents {
+			partTypes := []string{}
+			for _, part := range content.Parts {
+				if part.Text != "" {
+					partTypes = append(partTypes, "text")
+				}
+				if part.FunctionCall != nil {
+					partTypes = append(partTypes, fmt.Sprintf("function_call(%s)", part.FunctionCall.Name))
+				}
+				if part.FunctionResponse != nil {
+					partTypes = append(partTypes, fmt.Sprintf("function_response(%s)", part.FunctionResponse.Name))
+				}
+			}
+			slog.Info("[Callback] Content being sent to Gemini",
+				"index", i,
+				"role", content.Role,
+				"parts_count", len(content.Parts),
+				"parts", partTypes,
+			)
+		}
+
 		return nil, nil // Proceed with original request
 	}
 }
@@ -750,4 +787,13 @@ func getTimestamp(ctx tool.Context, args *GetTimestampArgs) (TimestampResponse, 
 		Unix:      now.Unix(),
 		UnixMilli: now.UnixMilli(),
 	}, nil
+}
+
+// getMapKeys returns the keys of a map as a slice
+func getMapKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }

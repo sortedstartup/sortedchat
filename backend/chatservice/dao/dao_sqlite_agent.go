@@ -126,3 +126,55 @@ func (s *SQLiteAgentsDAO) GetAgentMessages(sessionID string) ([]AgentMessageRow,
 	}
 	return messages, nil
 }
+
+// Agent File Operations
+func (s *SQLiteAgentsDAO) SaveAgentFile(agentID, docsID, fileName, filePath string, fileSize int64, userID string) error {
+	_, err := s.db.Exec(`
+		INSERT INTO agent_docs (id, agent_id, docs_id, file_name, file_path, file_size, uploaded_by, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	`, docsID, agentID, docsID, fileName, filePath, fileSize, userID)
+	if err != nil {
+		slog.Error("dao_sqlite:SaveAgentFile", "message", "failed to save agent file", "error", err, "agentID", agentID, "docsID", docsID)
+		return fmt.Errorf("failed to save agent file")
+	}
+	return nil
+}
+
+func (s *SQLiteAgentsDAO) GetAgentFiles(agentID string) ([]AgentDocumentRow, error) {
+	var files []AgentDocumentRow
+	err := s.db.Select(&files, `
+		SELECT * FROM agent_docs 
+		WHERE agent_id = ? 
+		ORDER BY created_at DESC
+	`, agentID)
+	if err != nil {
+		slog.Error("dao_sqlite:GetAgentFiles", "message", "failed to get agent files", "error", err, "agentID", agentID)
+		return nil, fmt.Errorf("failed to get agent files")
+	}
+	return files, nil
+}
+
+func (s *SQLiteAgentsDAO) GetAgentFileByPath(agentID, filePath string) (*AgentDocumentRow, error) {
+	var file AgentDocumentRow
+	err := s.db.Get(&file, `
+		SELECT * FROM agent_docs 
+		WHERE agent_id = ? AND file_path = ?
+	`, agentID, filePath)
+	if err != nil {
+		slog.Error("dao_sqlite:GetAgentFileByPath", "message", "failed to get agent file by path", "error", err, "agentID", agentID, "filePath", filePath)
+		return nil, fmt.Errorf("failed to get agent file by path")
+	}
+	return &file, nil
+}
+
+func (s *SQLiteAgentsDAO) DeleteAgentFile(agentID, docsID string) error {
+	_, err := s.db.Exec(`
+		DELETE FROM agent_docs 
+		WHERE agent_id = ? AND docs_id = ?
+	`, agentID, docsID)
+	if err != nil {
+		slog.Error("dao_sqlite:DeleteAgentFile", "message", "failed to delete agent file", "error", err, "agentID", agentID, "docsID", docsID)
+		return fmt.Errorf("failed to delete agent file")
+	}
+	return nil
+}

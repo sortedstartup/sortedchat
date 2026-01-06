@@ -1,11 +1,12 @@
 import { useStore } from "@nanostores/react";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { $currentProjectId } from "@/store/chat";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { File, Folder, RotateCcw } from "lucide-react";
 import { getJWTToken } from "@/lib/auth";
+import { getUIConfig } from "@/lib/config";
 import * as pdfjsLib from "pdfjs-dist";
 import PdfWorker from "pdfjs-dist/build/pdf.worker?worker";
 
@@ -23,12 +24,16 @@ export type FileItem = {
 
 type FileUploaderProps = {
   uploadUrl: string;
+  projectId?: string;  // For project uploads
+  agentId?: string;    // For agent uploads
   onFileUpload?: (file: FileItem) => void;
   onCompleteUpload?: (allFiles: FileItem[]) => void;
 };
 
 export const FileUploader: React.FC<FileUploaderProps> = ({
   uploadUrl,
+  projectId,
+  agentId,
   onFileUpload,
   onCompleteUpload,
 }) => {
@@ -36,6 +41,15 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const currentProjectId = useStore($currentProjectId);
+  const [fullUploadUrl, setFullUploadUrl] = useState<string>("");
+
+  // Get full API URL from config
+  useEffect(() => {
+    const config = getUIConfig();
+    if (config) {
+      setFullUploadUrl(config.API_UPLOAD_URL + uploadUrl);
+    }
+  }, [uploadUrl]);
 
   const updateStatus = (
     id: string,
@@ -52,7 +66,15 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
     const formData = new FormData();
     formData.append("file", fileItem.file, fileItem.path);
-    formData.append("project_id", currentProjectId.toString());
+    
+    // Add either project_id or agent_id based on what's provided
+    if (agentId) {
+      formData.append("agent_id", agentId);
+      formData.append("file_path", fileItem.path); // Send full path for agent uploads
+    } else {
+      const targetProjectId = projectId || currentProjectId.toString();
+      formData.append("project_id", targetProjectId);
+    }
 
     // Prepare headers with JWT token
     const headers: Record<string, string> = {};
@@ -64,7 +86,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       console.debug('No JWT token available for file upload request');
     }
 
-      const res = await fetch(uploadUrl, {
+    try {
+      const res = await fetch(fullUploadUrl, {
         method: "POST",
         headers,
         body: formData,
@@ -76,7 +99,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         onFileUpload?.(updated);
         return updated;
       } else {
-        const errorMsg = `Upload failed`;
+        const errorText = await res.text();
+        const errorMsg = `Upload failed: ${res.status} ${errorText}`;
+        console.error("Upload failed:", errorMsg);
         const updated: FileItem = {
           ...fileItem,
           status: "failed",
@@ -86,6 +111,18 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         onFileUpload?.(updated);
         return updated;
       }
+    } catch (error) {
+      const errorMsg = `Upload failed: ${error}`;
+      console.error("Upload error:", error);
+      const updated: FileItem = {
+        ...fileItem,
+        status: "failed",
+        error: errorMsg,
+      };
+      updateStatus(fileItem.id, "failed", errorMsg);
+      onFileUpload?.(updated);
+      return updated;
+    }
   };
 
   const processFileForUpload = async (file: File, path: string): Promise<FileItem> => {
@@ -152,7 +189,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     setFileList(updatedList);
 
     Promise.all(newItems.map(uploadFile)).then((uploadedFiles) => {
-      onCompleteUpload?.(uploadedFiles);
+      // Only pass successfully uploaded files to callback
+      const successfulFiles = uploadedFiles.filter(f => f.status === "success");
+      onCompleteUpload?.(successfulFiles);
     });
   };
 

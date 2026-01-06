@@ -25,6 +25,7 @@ package agents
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -71,13 +72,65 @@ type sandboxedFileSystem struct {
 	basePath string
 }
 
+// AgentFileInfo represents a file associated with an agent
+type AgentFileInfo struct {
+	DocsID   string
+	FilePath string
+}
+
+// LoadAgentFilesIntoWorkspace copies all agent files from the object store into the session workspace
+func LoadAgentFilesIntoWorkspace(files []AgentFileInfo, workspacePath, filestorePath string) error {
+	if len(files) == 0 {
+		return nil // No files to load
+	}
+
+	// Copy each file from object store to workspace
+	for _, file := range files {
+		// Source: filestore/objects/{docs_id}
+		sourcePath := filepath.Join(filestorePath, "objects", file.DocsID)
+
+		// Destination: workspace/{file_path}
+		destPath := filepath.Join(workspacePath, file.FilePath)
+
+		// Ensure parent directory exists
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			return fmt.Errorf("failed to create directory for %s: %w", file.FilePath, err)
+		}
+
+		// Copy file
+		if err := copyFile(sourcePath, destPath); err != nil {
+			return fmt.Errorf("failed to copy %s: %w", file.FilePath, err)
+		}
+	}
+
+	return nil
+}
+
+// copyFile copies a file from src to dst
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
+}
+
 const agentsSubPath = "agents"
 
 // NewFileSystemTools creates a new sandboxed file system tools instance
 // All operations are restricted to basePath - no path traversal allowed
 func NewFileSystemTools(agentID string, basePath string) (FileSystemTools, error) {
 	// Clean and make absolute
-	absPath, err := filepath.Abs(filepath.Join(basePath, agentsSubPath))
+	absPath, err := filepath.Abs(filepath.Join(basePath))
 	if err != nil {
 		return nil, fmt.Errorf("invalid base path: %w", err)
 	}
@@ -547,9 +600,13 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 	// List Directory Tool
 	listDirTool, err := functiontool.New(functiontool.Config{
 		Name:        "list_dir",
-		Description: "Lists files and directories in the specified path within the agent's workspace. Returns array of file information including name, type (file/dir), and size.",
-	}, func(ctx tool.Context, args *ListDirArgs) ([]FileInfo, error) {
-		return fs.ListDir(args.Path)
+		Description: "Lists files and directories in the specified path within the agent's workspace. Returns object with 'files' array containing file information (name, type, size).",
+	}, func(ctx tool.Context, args *ListDirArgs) (map[string]any, error) {
+		files, err := fs.ListDir(args.Path)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"files": files}, nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create list_dir tool: %w", err)

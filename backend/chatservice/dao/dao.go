@@ -73,4 +73,10 @@ type AgentDAO interface {
 
 	AddAgentMessage(message AgentMessageRow) error
 	GetAgentMessages(sessionID string) ([]AgentMessageRow, error)
+
+	// Agent file operations
+	SaveAgentFile(agentID, docsID, fileName, filePath string, fileSize int64, userID string) error
+	GetAgentFiles(agentID string) ([]AgentDocumentRow, error)
+	GetAgentFileByPath(agentID, filePath string) (*AgentDocumentRow, error)
+	DeleteAgentFile(agentID, docsID string) error
 }

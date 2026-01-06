@@ -176,3 +176,15 @@ type AgentFSOperationRow struct {
 	FileSize     *int64  `db:"file_size" json:"file_size"`
 	CreatedAt    string  `db:"created_at" json:"created_at"`
 }
+
+type AgentDocumentRow struct {
+	ID         string `db:"id" json:"id"`
+	AgentID    string `db:"agent_id" json:"agent_id"`
+	DocsID     string `db:"docs_id" json:"docs_id"`
+	FileName   string `db:"file_name" json:"file_name"`
+	FilePath   string `db:"file_path" json:"file_path"`
+	FileSize   int64  `db:"file_size" json:"file_size"`
+	UploadedBy string `db:"uploaded_by" json:"uploaded_by"`
+	CreatedAt  string `db:"created_at" json:"created_at"`
+	UpdatedAt  string `db:"updated_at" json:"updated_at"`
+}

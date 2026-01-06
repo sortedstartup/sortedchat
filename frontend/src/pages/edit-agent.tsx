@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Loader2, Trash2, Download, File, ChevronRight, ChevronDown, FileText } from "lucide-react";
+import { ChevronLeft, Loader2, Trash2, Download, File, ChevronRight, ChevronDown, FileText, Code2 } from "lucide-react";
 import { FileUploader } from "@/components/FileUploader";
 import { getAgentClient } from "@/store/agents";
 import { GetAgentsRequest } from "../../proto/chatservice";
@@ -14,6 +14,7 @@ import { githubLight, githubDark } from '@uiw/codemirror-theme-github';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
 import { html } from '@codemirror/lang-html';
+import { markdown as codeMirrorMarkdown } from '@codemirror/lang-markdown';
 import { EditorState } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import { defaultMarkdownParser, defaultMarkdownSerializer, schema as markdownSchema } from 'prosemirror-markdown';
@@ -172,6 +173,7 @@ export function EditAgentPage() {
     const [loadingContent, setLoadingContent] = useState(false);
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [isRawMode, setIsRawMode] = useState(false);
 
     // Detect dark mode
     useEffect(() => {
@@ -296,6 +298,7 @@ export function EditAgentPage() {
     const loadFileContent = async (file: AgentFile) => {
         try {
             setLoadingContent(true);
+            setIsRawMode(false); // Reset to preview mode when loading a new file
             const config = getUIConfig();
             if (!config) {
                 toast.error("Configuration not loaded");
@@ -519,6 +522,9 @@ export function EditAgentPage() {
             case 'html':
             case 'htm':
                 return [html()];
+            case 'md':
+            case 'markdown':
+                return [codeMirrorMarkdown()];
             default:
                 return [];
         }
@@ -729,9 +735,20 @@ export function EditAgentPage() {
                                 {selectedFile ? (
                                     <>
                                         <div className="px-4 py-2 border-b border-border bg-card">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-3">
                                                 <FileText className="h-4 w-4" />
                                                 <span className="text-sm font-medium">{selectedFile.file_name}</span>
+                                                {isMarkdownFile(selectedFile.file_name) && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setIsRawMode(!isRawMode)}
+                                                        className="h-7 gap-1 ml-2"
+                                                    >
+                                                        <Code2 className="h-3 w-3" />
+                                                        <span className="text-xs">{isRawMode ? 'Preview' : 'Raw'}</span>
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex-1 overflow-hidden">
@@ -739,7 +756,7 @@ export function EditAgentPage() {
                                                 <div className="flex items-center justify-center h-full">
                                                     <Loader2 className="h-6 w-6 animate-spin" />
                                                 </div>
-                                            ) : isMarkdownFile(selectedFile.file_name) ? (
+                                            ) : isMarkdownFile(selectedFile.file_name) && !isRawMode ? (
                                                 <MarkdownEditor
                                                     content={fileContent}
                                                     isDark={isDarkMode}

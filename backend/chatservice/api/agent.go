@@ -5,26 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
-	"google.golang.org/adk/agent"
-	"google.golang.org/adk/agent/llmagent"
-	"google.golang.org/adk/model"
-	"google.golang.org/adk/model/gemini"
-	"google.golang.org/adk/runner"
-	"google.golang.org/adk/session"
-	"google.golang.org/adk/tool"
-	"google.golang.org/adk/tool/functiontool"
-	"google.golang.org/genai"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"sortedstartup/chatservice/agents"
 	db "sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
+	"sortedstartup/chatservice/sortedagents"
 	"sortedstartup/common/auth"
 )
 
@@ -220,7 +211,7 @@ func (s *AgentServiceAPI) AgentChat(req *pb.AgentChatRequest, stream pb.AgentSer
 	return nil
 }
 
-// runAgentWithCallbacks creates an agent with callbacks and executes it
+// runAgentWithCallbacks creates an agent and executes it using sortedagents
 func (s *AgentServiceAPI) runAgentWithCallbacks(
 	ctx context.Context,
 	userID string,
@@ -231,34 +222,8 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 	stream pb.AgentService_AgentChatServer,
 	nextSeq *int,
 ) error {
-	// Create Gemini model
-	apiKey := os.Getenv("GOOGLE_API_KEY")
-	if apiKey == "" {
-		return fmt.Errorf("GOOGLE_API_KEY environment variable not set")
-	}
-
-	// Hardcode model for now (temporary)
-	modelName := "gemini-3-flash-preview"
-	slog.Info("Creating agent with model (hardcoded)", "model", modelName, "agent", agentRow.Name)
-
-	geminiModel, err := gemini.NewModel(ctx, modelName, &genai.ClientConfig{
-		APIKey: apiKey,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create model: %w", err)
-	}
-
-	// Create streaming callbacks with shared state
-	toolCallIDCounter := 0
-	toolState := make(map[string]toolCallState)
-
-	beforeModelCallback := s.createBeforeModelCallback(stream, modelName)
-	afterModelCallback := s.createAfterModelCallback(stream, modelName)
-	beforeToolCallback := s.createBeforeToolCallback(stream, modelName, toolState, &toolCallIDCounter)
-	afterToolCallback := s.createAfterToolCallback(stream, modelName, toolState)
-
-	// Parse local tools (if any)
-	var tools []tool.Tool
+	modelName := agentRow.Model
+	slog.Info("Creating agent with sortedagents", "model", modelName, "agent", agentRow.Name)
 
 	// Create filesystem tools with sandboxed path: ./agentid/sessionid
 	workspacePath := filepath.Join(".", agentRow.ID, sessionID)
@@ -289,208 +254,193 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		}
 	}
 
-	// Get filesystem tools for agent
-	fileSystemTools, err := fsTools.GetTools()
-	if err != nil {
-		return fmt.Errorf("failed to get filesystem tools: %w", err)
-	}
-	tools = append(tools, fileSystemTools...)
-	slog.Debug("Added filesystem tools to agent", "count", len(fileSystemTools), "workspace", workspacePath)
-
+	// Build tools using sortedagents ToolBuilder
+	toolBuilder := sortedagents.NewToolBuilder()
+	
+	// Add filesystem tools
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("read_file", "Reads the contents of a file from the agent's workspace. Optionally show line numbers. Returns the file content as a string.", fsTools.ReadFile))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("write_file", "Writes content to a file in the agent's workspace. Creates parent directories if needed. Returns success message.", fsTools.WriteFile))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("list_dir", "Lists files and directories in the specified path within the agent's workspace. Returns object with 'files' array containing file information (name, type, size).", fsTools.ListDir))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("create_dir", "Creates a directory in the agent's workspace. Creates parent directories if needed. Returns success message.", fsTools.CreateDir))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("file_exists", "Checks if a file or directory exists in the agent's workspace. Returns true if exists, false otherwise.", fsTools.FileExists))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("move_file", "Moves or renames a file within the agent's workspace. Can move files between directories. Returns success message.", fsTools.MoveFile))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("append_to_file", "Appends content to the end of a file in the agent's workspace. Creates the file if it doesn't exist. Returns success message.", fsTools.AppendToFile))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("read_lines", "Reads specific lines from a file (1-indexed, inclusive). Useful for reading large files partially. Returns lines with line numbers.", fsTools.ReadLines))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("delete_lines", "Deletes specific lines from a file (1-indexed, inclusive). Rewrites the file without the deleted lines. Returns success message.", fsTools.DeleteLines))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("replace_lines", "Replaces specific lines in a file with new content (1-indexed, inclusive). Useful for precise file editing. Returns success message.", fsTools.ReplaceLines))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("search_regex", "Searches for a regex pattern in a file. Returns array of matches with line numbers, line content, and matched text.", fsTools.SearchRegex))
+	toolBuilder.AddTypedFunc(sortedagents.NewTool("regex_replace_all", "Replaces all occurrences of a regex pattern in a file with replacement text. Supports capture groups. Returns success message with count.", fsTools.RegexReplaceAll))
+	
 	// Add timestamp tool
-	timestampTool, err := functiontool.New(functiontool.Config{
-		Name:        "get_timestamp",
-		Description: "Returns the current timestamp in RFC3339 format (ISO 8601). Useful for getting the current date and time.",
-	}, getTimestamp)
-	if err != nil {
-		return fmt.Errorf("failed to create timestamp tool: %w", err)
-	}
-	tools = append(tools, timestampTool)
+	toolBuilder.AddFunc("get_timestamp", "Returns the current timestamp in RFC3339 format (ISO 8601). Useful for getting the current date and time.", getTimestamp)
+	
+	tools := toolBuilder.Build()
+	slog.Debug("Added tools to agent", "count", len(tools), "workspace", workspacePath)
 
-	// Create agent with callbacks
-	llmAgent, err := llmagent.New(llmagent.Config{
-		Name:                 agentRow.Name,
-		Model:                geminiModel,
-		Description:          agentRow.Description,
-		Instruction:          agentRow.SystemPrompt,
-		Tools:                tools,
-		BeforeModelCallbacks: []llmagent.BeforeModelCallback{beforeModelCallback},
-		AfterModelCallbacks:  []llmagent.AfterModelCallback{afterModelCallback},
-		BeforeToolCallbacks:  []llmagent.BeforeToolCallback{beforeToolCallback},
-		AfterToolCallbacks:   []llmagent.AfterToolCallback{afterToolCallback},
+	// Create sortedagents session and load message history
+	session := sortedagents.NewSessionWithID(sessionID)
+	
+	// Always add system prompt as the first message
+	session.AddMessage(sortedagents.Message{
+		Role:    "system",
+		Content: agentRow.SystemPrompt,
 	})
-	if err != nil {
-		return fmt.Errorf("failed to create agent: %w", err)
-	}
-
-	// Create session service (in-memory for now)
-	sessionService := session.InMemoryService()
-
-	// Create the session in ADK session service with our database session ID
-	createResp, err := sessionService.Create(ctx, &session.CreateRequest{
-		AppName:   "sortedchat",
-		UserID:    userID,
-		SessionID: sessionID, // Use our database session ID
-		State:     make(map[string]any),
-	})
-	if err != nil {
-		// Session might already exist, which is fine - just log it
-		slog.Debug("Session creation in ADK", "sessionID", sessionID, "note", "may already exist")
-	}
-
-	// Populate session history from messageHistory
-	// This ensures the LLM has context of previous messages in this session
-	if createResp != nil && len(messageHistory) > 0 {
-		adkSession := createResp.Session
+	
+	// Load message history if exists
+	if len(messageHistory) > 0 {
 		for _, msg := range messageHistory {
-			event := session.NewEvent(fmt.Sprintf("history_%d", msg.SequenceNumber))
-			// Set the Author field to match our agent name - this is required by ADK runner
-			event.Author = agentRow.Name
-
-			// Convert our message types to genai.Content
-			switch msg.Type {
-			case "text":
-				event.Content = &genai.Content{
-					Role:  msg.Role,
-					Parts: []*genai.Part{{Text: msg.Content}},
-				}
-				if msg.Role == "assistant" {
-					event.Author = agentRow.Name
-				}
-			case "tool_call":
-				// Parse tool args
-				var args map[string]any
-				if msg.ToolArgs != nil {
-					if err := json.Unmarshal([]byte(*msg.ToolArgs), &args); err != nil {
-						slog.Warn("Failed to unmarshal tool_call arguments, skipping message",
-							"error", err,
-							"sequence", msg.SequenceNumber,
-							"tool_name", getStringValue(msg.ToolName),
-							"tool_call_id", msg.ToolCallID)
-						continue
-					}
-				}
-				event.Content = &genai.Content{
-					Role: "model",
-					Parts: []*genai.Part{{FunctionCall: &genai.FunctionCall{
-						Name: getStringValue(msg.ToolName),
-						Args: args,
-					}}},
-				}
-				event.Author = agentRow.Name
-			case "tool_result":
-				var result map[string]any
-				if err := json.Unmarshal([]byte(msg.Content), &result); err != nil {
-					continue
-				}
-				event.Content = &genai.Content{
-					Role: "function",
-					Parts: []*genai.Part{{FunctionResponse: &genai.FunctionResponse{
-						Name:     getStringValue(msg.ToolName),
-						Response: result,
-					}}},
-				}
-			}
-
-			if event.Content != nil {
-				if err := sessionService.AppendEvent(ctx, adkSession, event); err != nil {
-					slog.Warn("Failed to append history event", "error", err, "seq", msg.SequenceNumber)
-				}
-			}
+			session.AddMessage(convertDBMessageToSortedAgentsMessage(msg))
 		}
-		slog.Debug("Loaded message history into ADK session", "count", len(messageHistory))
+		slog.Debug("Loaded message history into sortedagents session", "count", len(messageHistory))
 	}
+
+	// Create agent
+	agent := sortedagents.NewAgent(
+		agentRow.Name,
+		agentRow.SystemPrompt,
+		modelName,
+		tools,
+	)
 
 	// Create runner
-	r, err := runner.New(runner.Config{
-		AppName:        "sortedchat",
-		Agent:          llmAgent,
-		SessionService: sessionService,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create runner: %w", err)
-	}
+	runner := sortedagents.NewRunner()
 
-	// Create user message content
-	userContent := &genai.Content{
-		Role: "user",
-		Parts: []*genai.Part{
-			{Text: userMessage},
-		},
-	}
+	// Execute agent with streaming
+	maxTurns := 15
+	eventChan := runner.RunStream(ctx, agent, userMessage, maxTurns, session)
 
-	// Execute agent and stream events
+	// Track tool call IDs and accumulated text
+	idCounter := newToolCallIDCounter()
 	var accumulatedText string
+	var toolCallStartTimes = make(map[string]time.Time)
 
-	// Use the actual database session ID
-	// StreamingModeSSE enables token-by-token streaming from the LLM
-	for event, err := range r.Run(ctx, userID, sessionID, userContent, agent.RunConfig{
-		StreamingMode: agent.StreamingModeSSE,
-	}) {
-		if err != nil {
-			slog.Error("Agent execution error", "error", err)
-			return fmt.Errorf("agent execution error: %w", err)
-		}
-
-		// Stream to client (text is streamed here for true token-by-token streaming)
-		if err := s.streamEventToClient(event, stream, modelName); err != nil {
-			return err
-		}
-
-		// Accumulate and Save to DB
-		if event.Content != nil {
-			for _, part := range event.Content.Parts {
-				// Text
-				if part.Text != "" {
-					accumulatedText += part.Text
-				}
-
-				// Tool Call
-				if part.FunctionCall != nil {
-					// Flush pending text
-					if accumulatedText != "" {
-						s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
-						*nextSeq++
-						accumulatedText = ""
-					}
-					// Save Tool Call
-					argsBytes, _ := json.Marshal(part.FunctionCall.Args)
-					argsStr := string(argsBytes)
-					// Look up tool call ID from state (generated in BeforeToolCallback)
-					var toolCallIDPtr *string
-					if state, ok := toolState[part.FunctionCall.Name]; ok {
-						toolCallIDPtr = &state.id
-					}
-					s.saveAgentMessage(sessionID, *nextSeq, "assistant", "tool_call", "", strPtr(part.FunctionCall.Name), toolCallIDPtr, &argsStr)
-					*nextSeq++
-				}
-
-				// Tool Result
-				if part.FunctionResponse != nil {
-					// Flush pending text (safety)
-					if accumulatedText != "" {
-						s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
-						*nextSeq++
-						accumulatedText = ""
-					}
-					// Save Tool Result
-					resBytes, _ := json.Marshal(part.FunctionResponse.Response)
-					resStr := string(resBytes)
-					// Look up tool call ID from state (generated in BeforeToolCallback)
-					var toolCallIDPtr *string
-					if state, ok := toolState[part.FunctionResponse.Name]; ok {
-						toolCallIDPtr = &state.id
-						// Clean up after saving - no longer needed
-						delete(toolState, part.FunctionResponse.Name)
-					}
-					s.saveAgentMessage(sessionID, *nextSeq, "tool", "tool_result", resStr, strPtr(part.FunctionResponse.Name), toolCallIDPtr, nil)
-					*nextSeq++
-				}
+	// Process events and stream to client
+	for event := range eventChan {
+		switch e := event.(type) {
+		case *sortedagents.TextChunkEvent:
+			// Stream text chunk to client
+			accumulatedText += e.Chunk
+			if err := stream.Send(&pb.AgentChatResponse{
+				Response: &pb.AgentChatResponse_Content{
+					Content: &pb.ContentEvent{
+						Type:  "text",
+						Text:  e.Chunk,
+						Model: modelName,
+					},
+				},
+			}); err != nil {
+				slog.Error("Failed to send text chunk", "error", err)
+				return err
 			}
+
+		case *sortedagents.ToolCallStartEvent:
+			// Flush any accumulated text before tool call
+			if accumulatedText != "" {
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
+				*nextSeq++
+				accumulatedText = ""
+			}
+
+			// Generate unique tool call ID
+			toolCallID := idCounter.getOrCreateID(e.ToolName)
+			toolCallStartTimes[toolCallID] = time.Now()
+
+			// Marshal arguments
+			argsJSON, _ := json.Marshal(e.Args)
+			argsStr := string(argsJSON)
+
+			// Save tool call to DB
+			s.saveAgentMessage(sessionID, *nextSeq, "assistant", "tool_call", "", strPtr(e.ToolName), strPtr(toolCallID), &argsStr)
+			*nextSeq++
+
+			// Stream tool call to client
+			if err := stream.Send(&pb.AgentChatResponse{
+				Response: &pb.AgentChatResponse_ToolCall{
+					ToolCall: &pb.ToolCall{
+						Id:            toolCallID,
+						Name:          e.ToolName,
+						ArgumentsJson: string(argsJSON),
+					},
+				},
+			}); err != nil {
+				slog.Error("Failed to send tool call", "error", err)
+				return err
+			}
+
+		case *sortedagents.ToolCallEndEvent:
+			// Get tool call ID
+			toolCallID := idCounter.getOrCreateID(e.ToolName)
+			
+			// Calculate duration
+			var durationMs int64
+			if startTime, exists := toolCallStartTimes[toolCallID]; exists {
+				durationMs = time.Since(startTime).Milliseconds()
+				delete(toolCallStartTimes, toolCallID)
+			}
+
+			// Marshal result
+			resultJSON, _ := json.Marshal(e.Result)
+			resultStr := string(resultJSON)
+
+			// Save tool result to DB
+			success := e.Error == nil
+			s.saveAgentMessage(sessionID, *nextSeq, "tool", "tool_result", resultStr, strPtr(e.ToolName), strPtr(toolCallID), nil)
+			*nextSeq++
+
+			// Stream tool result to client
+			errorMessage := ""
+			if e.Error != nil {
+				errorMessage = e.Error.Error()
+			}
+
+			if err := stream.Send(&pb.AgentChatResponse{
+				Response: &pb.AgentChatResponse_ToolResult{
+					ToolResult: &pb.ToolResult{
+						Id:           toolCallID,
+						Name:         e.ToolName,
+						ResultJson:   resultStr,
+						Success:      success,
+						ErrorMessage: errorMessage,
+						DurationMs:   durationMs,
+					},
+				},
+			}); err != nil {
+				slog.Error("Failed to send tool result", "error", err)
+				return err
+			}
+
+			// Clear the tool call ID after completion
+			idCounter.clearID(e.ToolName)
+
+		case *sortedagents.CompleteEvent:
+			// Save any final accumulated text
+			if accumulatedText != "" {
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
+				*nextSeq++
+			}
+			slog.Info("Agent execution completed", "agent", agentRow.Name)
+			return nil
+
+		case *sortedagents.ErrorEvent:
+			// Flush any accumulated text before error
+			if accumulatedText != "" {
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
+				*nextSeq++
+			}
+
+			// Stream error to client
+			if err := stream.Send(&pb.AgentChatResponse{
+				Response: &pb.AgentChatResponse_Error{
+					Error: e.Error.Error(),
+				},
+			}); err != nil {
+				slog.Error("Failed to send error message", "error", err)
+			}
+			return e.Error
 		}
 	}
 
-	// Final flush of accumulated text
+	// Save any remaining accumulated text
 	if accumulatedText != "" {
 		s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
 		*nextSeq++
@@ -499,53 +449,6 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 	return nil
 }
 
-// streamEventToClient streams agent events to the client
-// Text is streamed here (from event loop) for true token-by-token streaming
-// Tool calls and results are handled by callbacks (beforeToolCallback, afterToolCallback)
-func (s *AgentServiceAPI) streamEventToClient(event *session.Event, stream pb.AgentService_AgentChatServer, modelName string) error {
-	// Handle errors
-	if event.ErrorMessage != "" {
-		if err := stream.Send(&pb.AgentChatResponse{
-			Response: &pb.AgentChatResponse_Error{
-				Error: event.ErrorMessage,
-			},
-		}); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// Only stream text from PARTIAL events (streaming chunks)
-	// Skip non-partial events to avoid duplicating the complete response
-	// With SSE streaming: Partial=true means streaming chunk, Partial=false means final complete response
-	if !event.Partial {
-		return nil
-	}
-
-	// Stream text content (this gives us true streaming, token by token)
-	if event.Content != nil {
-		for _, part := range event.Content.Parts {
-			if part.Text != "" {
-				if err := stream.Send(&pb.AgentChatResponse{
-					Response: &pb.AgentChatResponse_Content{
-						Content: &pb.ContentEvent{
-							Type:  "text",
-							Text:  part.Text,
-							Model: modelName,
-						},
-					},
-				}); err != nil {
-					slog.Error("Failed to send text message", "error", err)
-					return err
-				}
-			}
-			// Note: FunctionCall and FunctionResponse are handled by callbacks
-			// to provide better UX (tool_call before execution, tool_result after)
-		}
-	}
-
-	return nil
-}
 
 // Helper to save agent message to DB
 func (s *AgentServiceAPI) saveAgentMessage(
@@ -578,133 +481,6 @@ func (s *AgentServiceAPI) saveAgentMessage(
 // Helper for string pointer
 func strPtr(s string) *string {
 	return &s
-}
-
-// toolCallState tracks state for a tool call (ID and start time)
-type toolCallState struct {
-	id        string
-	startTime time.Time
-}
-
-// createBeforeModelCallback creates a callback that fires before LLM calls
-func (s *AgentServiceAPI) createBeforeModelCallback(stream pb.AgentService_AgentChatServer, modelName string) llmagent.BeforeModelCallback {
-	return func(ctx agent.CallbackContext, req *model.LLMRequest) (*model.LLMResponse, error) {
-		// Log the request being sent to Gemini
-		slog.Info("[Callback] BeforeModel triggered", "agent", ctx.AgentName(), "model", modelName, "contents_count", len(req.Contents))
-
-		// Log conversation history being sent to Gemini
-		for i, content := range req.Contents {
-			partTypes := []string{}
-			for _, part := range content.Parts {
-				if part.Text != "" {
-					partTypes = append(partTypes, "text")
-				}
-				if part.FunctionCall != nil {
-					partTypes = append(partTypes, fmt.Sprintf("function_call(%s)", part.FunctionCall.Name))
-				}
-				if part.FunctionResponse != nil {
-					partTypes = append(partTypes, fmt.Sprintf("function_response(%s)", part.FunctionResponse.Name))
-				}
-			}
-			slog.Info("[Callback] Content being sent to Gemini",
-				"index", i,
-				"role", content.Role,
-				"parts_count", len(content.Parts),
-				"parts", partTypes,
-			)
-		}
-
-		return nil, nil // Proceed with original request
-	}
-}
-
-// createAfterModelCallback creates a callback that fires after LLM responds
-// Note: Text streaming is handled by streamEventToClient (event loop), not here
-func (s *AgentServiceAPI) createAfterModelCallback(stream pb.AgentService_AgentChatServer, modelName string) llmagent.AfterModelCallback {
-	return func(ctx agent.CallbackContext, resp *model.LLMResponse, respErr error) (*model.LLMResponse, error) {
-		if respErr != nil {
-			slog.Error("[Callback] LLM error", "error", respErr)
-			return nil, respErr
-		}
-
-		// Just log for debugging - text streaming is handled by event loop
-		slog.Debug("[Callback] AfterModel triggered", "agent", ctx.AgentName())
-
-		return nil, nil // Proceed with original response
-	}
-}
-
-// createBeforeToolCallback creates a callback that fires before tool execution
-func (s *AgentServiceAPI) createBeforeToolCallback(stream pb.AgentService_AgentChatServer, modelName string, toolState map[string]toolCallState, toolCallIDCounter *int) llmagent.BeforeToolCallback {
-	return func(ctx tool.Context, t tool.Tool, args map[string]any) (map[string]any, error) {
-		// Generate unique tool call ID and track start time
-		*toolCallIDCounter++
-		toolCallID := fmt.Sprintf("call_%d", *toolCallIDCounter)
-		toolState[t.Name()] = toolCallState{
-			id:        toolCallID,
-			startTime: time.Now(),
-		}
-
-		// Stream tool call notification (this is the ONLY place we send ToolCall)
-		argsJSON, _ := json.Marshal(args)
-
-		if err := stream.Send(&pb.AgentChatResponse{
-			Response: &pb.AgentChatResponse_ToolCall{
-				ToolCall: &pb.ToolCall{
-					Id:            toolCallID,
-					Name:          t.Name(),
-					ArgumentsJson: string(argsJSON),
-				},
-			},
-		}); err != nil {
-			slog.Error("Failed to send tool call message", "error", err)
-		}
-
-		return nil, nil // Proceed with original args
-	}
-}
-
-// createAfterToolCallback creates a callback that fires after tool execution
-func (s *AgentServiceAPI) createAfterToolCallback(stream pb.AgentService_AgentChatServer, modelName string, toolState map[string]toolCallState) llmagent.AfterToolCallback {
-	return func(ctx tool.Context, t tool.Tool, args, result map[string]any, err error) (map[string]any, error) {
-		// Get the tool call ID and calculate duration from stored state
-		var toolCallID string
-		var durationMs int64
-		if state, ok := toolState[t.Name()]; ok {
-			toolCallID = state.id
-			durationMs = time.Since(state.startTime).Milliseconds()
-			// Don't delete yet - the main loop needs it to save FunctionResponse with the ID
-		} else {
-			toolCallID = "unknown"
-		}
-
-		// Stream tool result
-		resultJSON, _ := json.Marshal(result)
-
-		success := err == nil
-		errorMessage := ""
-		if err != nil {
-			errorMessage = err.Error()
-			slog.Error("[Callback] Tool execution error", "tool", t.Name(), "error", err)
-		}
-
-		if streamErr := stream.Send(&pb.AgentChatResponse{
-			Response: &pb.AgentChatResponse_ToolResult{
-				ToolResult: &pb.ToolResult{
-					Id:           toolCallID,
-					Name:         t.Name(),
-					ResultJson:   string(resultJSON),
-					Success:      success,
-					ErrorMessage: errorMessage,
-					DurationMs:   durationMs,
-				},
-			},
-		}); streamErr != nil {
-			slog.Error("Failed to send tool result message", "error", streamErr)
-		}
-
-		return nil, nil // Proceed with original result
-	}
 }
 
 func (s *AgentServiceAPI) GetAgentMessages(ctx context.Context, req *pb.GetAgentMessagesRequest) (*pb.GetAgentMessagesResponse, error) {
@@ -743,57 +519,73 @@ func getStringValue(s *string) string {
 	return *s
 }
 
-// Debug tools for testing
-
-// AddArgs defines arguments for the add tool
-type AddArgs struct {
-	A float64 `json:"a" jsonschema:"First number to add"`
-	B float64 `json:"b" jsonschema:"Second number to add"`
-}
-
-// add is a debug tool that adds two numbers
-func add(ctx tool.Context, args *AddArgs) (float64, error) {
-	result := args.A + args.B
-	return result, nil
-}
-
-// SubArgs defines arguments for the subtract tool
-type SubArgs struct {
-	A float64 `json:"a" jsonschema:"First number (minuend)"`
-	B float64 `json:"b" jsonschema:"Second number to subtract (subtrahend)"`
-}
-
-// subtract is a debug tool that subtracts two numbers
-func subtract(ctx tool.Context, args *SubArgs) (float64, error) {
-	result := args.A - args.B
-	return result, nil
-}
-
-// GetTimestampArgs defines arguments for the timestamp tool (empty - no args needed)
-type GetTimestampArgs struct{}
-
-// TimestampResponse contains the current timestamp information
-type TimestampResponse struct {
-	Timestamp string `json:"timestamp" jsonschema:"Current timestamp in RFC3339 format (ISO 8601)"`
-	Unix      int64  `json:"unix" jsonschema:"Unix timestamp in seconds since epoch"`
-	UnixMilli int64  `json:"unix_milli" jsonschema:"Unix timestamp in milliseconds since epoch"`
-}
-
-// getTimestamp returns the current timestamp
-func getTimestamp(ctx tool.Context, args *GetTimestampArgs) (TimestampResponse, error) {
+// getTimestamp returns the current timestamp (sortedagents format)
+func getTimestamp(ctx context.Context, args map[string]interface{}) (interface{}, error) {
 	now := time.Now()
-	return TimestampResponse{
-		Timestamp: now.Format(time.RFC3339),
-		Unix:      now.Unix(),
-		UnixMilli: now.UnixMilli(),
+	return map[string]interface{}{
+		"timestamp":  now.Format(time.RFC3339),
+		"unix":       now.Unix(),
+		"unix_milli": now.UnixMilli(),
 	}, nil
 }
 
-// getMapKeys returns the keys of a map as a slice
-func getMapKeys(m map[string]any) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
+// convertDBMessageToSortedAgentsMessage converts a DB message to sortedagents.Message format
+func convertDBMessageToSortedAgentsMessage(msg db.AgentMessageRow) sortedagents.Message {
+	switch msg.Type {
+	case "text":
+		return sortedagents.Message{
+			Role:    msg.Role,
+			Content: msg.Content,
+		}
+	case "tool_call":
+		return sortedagents.Message{
+			Role: "assistant",
+			ToolCalls: []sortedagents.ToolCall{{
+				ID:   getStringValue(msg.ToolCallID),
+				Type: "function",
+				Function: sortedagents.Function{
+					Name:      getStringValue(msg.ToolName),
+					Arguments: getStringValue(msg.ToolArgs),
+				},
+			}},
+		}
+	case "tool_result":
+		return sortedagents.Message{
+			Role:       "tool",
+			Content:    msg.Content,
+			ToolCallID: getStringValue(msg.ToolCallID),
+		}
+	default:
+		return sortedagents.Message{
+			Role:    msg.Role,
+			Content: msg.Content,
+		}
 	}
-	return keys
+}
+
+// toolCallIDCounter generates unique tool call IDs for streaming
+type toolCallIDCounter struct {
+	counter     int
+	callToIDMap map[string]string // toolName -> toolCallID
+}
+
+func newToolCallIDCounter() *toolCallIDCounter {
+	return &toolCallIDCounter{
+		counter:     0,
+		callToIDMap: make(map[string]string),
+	}
+}
+
+func (tc *toolCallIDCounter) getOrCreateID(toolName string) string {
+	if id, exists := tc.callToIDMap[toolName]; exists {
+		return id
+	}
+	tc.counter++
+	id := fmt.Sprintf("call_%d", tc.counter)
+	tc.callToIDMap[toolName] = id
+	return id
+}
+
+func (tc *toolCallIDCounter) clearID(toolName string) {
+	delete(tc.callToIDMap, toolName)
 }

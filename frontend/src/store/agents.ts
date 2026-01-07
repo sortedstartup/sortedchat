@@ -22,7 +22,7 @@ import type { ClientReadableStream } from "grpc-web";
 
 // Stream event types matching the new proto structure
 export interface StreamEvent {
-    type: 'text' | 'thinking' | 'tool_call' | 'tool_result' | 'error' | 'image' | 'video' | 'audio';
+    type: 'text' | 'thinking' | 'tool_call' | 'tool_result' | 'error' | 'image' | 'video' | 'audio' | 'write_file';
     timestamp: number;
     // For content events (text, thinking, image, etc.)
     text?: string;
@@ -39,6 +39,11 @@ export interface StreamEvent {
     success?: boolean;
     errorMessage?: string;
     durationMs?: number;
+    // For write_file events
+    fileName?: string;
+    filePath?: string;
+    fileContent?: string;
+    fileSize?: number;
 }
 
 let _agentClient: AgentServiceClient | undefined;

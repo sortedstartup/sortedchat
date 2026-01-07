@@ -6,13 +6,14 @@ import {
     Loader2,
     Square,
     BotIcon,
-    Wrench,
     CheckCircle2,
     XCircle,
     ChevronDown,
     ChevronRight,
     Brain,
-    Clock
+    FileText,
+    Code2,
+    ExternalLink
 } from "lucide-react";
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useStore } from "@nanostores/react";
@@ -225,6 +226,115 @@ function ThinkingCard({ event }: { event: StreamEvent }) {
     );
 }
 
+// HTML File Preview Component
+function HtmlFilePreview({ event }: { event: StreamEvent }) {
+    const [showPreview, setShowPreview] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [enableScripts, setEnableScripts] = useState(true);
+    
+    const formatFileSize = (bytes?: number) => {
+        if (!bytes) return '';
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    };
+
+    const openInNewTab = () => {
+        const blob = new Blob([event.fileContent || ''], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        // Clean up after a delay
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    };
+
+    const sandboxPermissions = enableScripts 
+        ? "allow-same-origin allow-scripts" 
+        : "allow-same-origin";
+    
+    return (
+        <div className="my-2 border border-border rounded-lg overflow-hidden bg-card">
+            {/* Header */}
+            <div className="flex items-center justify-between p-3 bg-muted/50">
+                <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm font-medium">{event.fileName}</span>
+                    {event.fileSize && (
+                        <span className="text-xs text-muted-foreground">
+                            ({formatFileSize(event.fileSize)})
+                        </span>
+                    )}
+                    <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
+                        HTML
+                    </span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={openInNewTab}
+                        className="h-7 gap-1"
+                        title="Open in new tab"
+                    >
+                        <ExternalLink className="w-3 h-3" />
+                    </Button>
+                    <Button
+                        variant={showPreview ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowPreview(!showPreview)}
+                        className="h-7"
+                    >
+                        {showPreview ? 'Hide Preview' : 'Preview'}
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="h-7 gap-1"
+                    >
+                        <Code2 className="w-3 h-3" />
+                        {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                    </Button>
+                </div>
+            </div>
+            
+            {/* Preview iframe */}
+            {showPreview && (
+                <div className="border-t border-border">
+                    <div className="flex items-center justify-between px-3 py-2 bg-yellow-50 dark:bg-yellow-950/30 border-b border-yellow-200 dark:border-yellow-800">
+                        <span className="text-xs text-yellow-800 dark:text-yellow-200">
+                            Preview is sandboxed for security
+                        </span>
+                        <label className="flex items-center gap-2 text-xs cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={enableScripts}
+                                onChange={(e) => setEnableScripts(e.target.checked)}
+                                className="rounded"
+                            />
+                            <span className="text-yellow-800 dark:text-yellow-200">Enable JavaScript</span>
+                        </label>
+                    </div>
+                    <iframe
+                        key={enableScripts ? 'with-scripts' : 'no-scripts'}
+                        srcDoc={event.fileContent}
+                        sandbox={sandboxPermissions}
+                        className="w-full h-96 bg-white"
+                        title={`Preview: ${event.fileName}`}
+                    />
+                </div>
+            )}
+            
+            {/* Code view (collapsible) */}
+            {isExpanded && (
+                <div className="border-t border-border p-3 bg-muted/20">
+                    <div className="text-xs text-muted-foreground mb-2">HTML Source:</div>
+                    <ExpandableCode content={event.fileContent || ''} defaultLines={20} />
+                </div>
+            )}
+        </div>
+    );
+}
+
 function Message({
     message,
     streamEvents,
@@ -260,6 +370,32 @@ function Message({
     const toolEvents = eventsToRender.filter(e => e.type === 'tool_call' || e.type === 'tool_result');
     const errorEvents = eventsToRender.filter(e => e.type === 'error');
     const imageEvents = eventsToRender.filter(e => e.type === 'image');
+    
+    // Extract HTML files from write_file tool calls
+    const htmlFileEvents: StreamEvent[] = [];
+    toolEvents.forEach(event => {
+        if (event.toolName === 'write_file' && event.type === 'tool_call') {
+            try {
+                const args = event.argumentsJson ? JSON.parse(event.argumentsJson) : {};
+                const filePath = args.path || args.file_path || '';
+                const content = args.content || '';
+                const ext = filePath.split('.').pop()?.toLowerCase();
+                
+                if ((ext === 'html' || ext === 'htm') && content) {
+                    htmlFileEvents.push({
+                        type: 'write_file',
+                        timestamp: event.timestamp,
+                        fileName: filePath.split('/').pop() || filePath,
+                        filePath: filePath,
+                        fileContent: content,
+                        fileSize: content.length,
+                    });
+                }
+            } catch (e) {
+                // Ignore parse errors
+            }
+        }
+    });
 
     // Combine tool_call and tool_result events into unified executions
     const toolExecutions = useMemo(() => {
@@ -353,6 +489,15 @@ function Message({
                                         className="max-w-md rounded-lg border border-border"
                                     />
                                 </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* HTML File Events */}
+                    {!isUser && htmlFileEvents.length > 0 && (
+                        <div className="space-y-2 mb-4">
+                            {htmlFileEvents.map((event, idx) => (
+                                <HtmlFilePreview key={idx} event={event} />
                             ))}
                         </div>
                     )}

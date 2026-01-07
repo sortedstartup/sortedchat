@@ -24,6 +24,7 @@ package agents
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -37,18 +38,18 @@ import (
 
 // FileSystemTools defines the interface for sandboxed file system operations
 type FileSystemTools interface {
-	ReadFile(path string, showLineNumbers bool) (string, error)
-	WriteFile(path string, content string) (string, error)
-	ListDir(path string) ([]FileInfo, error)
-	CreateDir(path string) (string, error)
-	FileExists(path string) (bool, error)
-	MoveFile(sourcePath string, destPath string) (string, error)
-	AppendToFile(path string, content string) (string, error)
-	ReadLines(path string, start int, end int) (string, error)
-	DeleteLines(path string, start int, end int) (string, error)
-	ReplaceLines(path string, start int, end int, newContent string) (string, error)
-	SearchRegex(path string, pattern string) ([]RegexMatch, error)
-	RegexReplaceAll(path string, pattern string, replacement string) (string, error)
+	ReadFile(ctx context.Context, args ReadFileArgs) (any, error)
+	WriteFile(ctx context.Context, args WriteFileArgs) (any, error)
+	ListDir(ctx context.Context, args ListDirArgs) (any, error)
+	CreateDir(ctx context.Context, args CreateDirArgs) (any, error)
+	FileExists(ctx context.Context, args FileExistsArgs) (any, error)
+	MoveFile(ctx context.Context, args MoveFileArgs) (any, error)
+	AppendToFile(ctx context.Context, args AppendToFileArgs) (any, error)
+	ReadLines(ctx context.Context, args ReadLinesArgs) (any, error)
+	DeleteLines(ctx context.Context, args DeleteLinesArgs) (any, error)
+	ReplaceLines(ctx context.Context, args ReplaceLinesArgs) (any, error)
+	SearchRegex(ctx context.Context, args SearchRegexArgs) (any, error)
+	RegexReplaceAll(ctx context.Context, args RegexReplaceAllArgs) (any, error)
 	GetTools() ([]tool.Tool, error)
 }
 
@@ -57,6 +58,10 @@ type FileInfo struct {
 	Name  string `json:"name"`
 	IsDir bool   `json:"is_dir"`
 	Size  int64  `json:"size"`
+}
+
+type ListDirResponse struct {
+	Files []FileInfo `json:"files"`
 }
 
 // RegexMatch represents a regex search match with line number
@@ -174,8 +179,8 @@ func (fs *sandboxedFileSystem) validatePath(path string) (string, error) {
 }
 
 // ReadFile reads a file from the sandboxed directory
-func (fs *sandboxedFileSystem) ReadFile(path string, showLineNumbers bool) (string, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) ReadFile(ctx context.Context, args ReadFileArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return "", err
 	}
@@ -185,7 +190,7 @@ func (fs *sandboxedFileSystem) ReadFile(path string, showLineNumbers bool) (stri
 		return "", fmt.Errorf("failed to read file: %w", err)
 	}
 
-	if !showLineNumbers {
+	if !args.ShowLineNumbers {
 		return string(content), nil
 	}
 
@@ -199,8 +204,8 @@ func (fs *sandboxedFileSystem) ReadFile(path string, showLineNumbers bool) (stri
 }
 
 // WriteFile writes content to a file in the sandboxed directory
-func (fs *sandboxedFileSystem) WriteFile(path string, content string) (string, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) WriteFile(ctx context.Context, args WriteFileArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return "", err
 	}
@@ -210,16 +215,16 @@ func (fs *sandboxedFileSystem) WriteFile(path string, content string) (string, e
 		return "", fmt.Errorf("failed to create parent directory: %w", err)
 	}
 
-	if err := os.WriteFile(validPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(validPath, []byte(args.Content), 0644); err != nil {
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 
-	return fmt.Sprintf("Successfully wrote %d bytes to %s", len(content), path), nil
+	return fmt.Sprintf("Successfully wrote %d bytes to %s", len(args.Content), args.Path), nil
 }
 
 // ListDir lists files and directories in the sandboxed directory
-func (fs *sandboxedFileSystem) ListDir(path string) ([]FileInfo, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) ListDir(ctx context.Context, args ListDirArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -242,12 +247,12 @@ func (fs *sandboxedFileSystem) ListDir(path string) ([]FileInfo, error) {
 		})
 	}
 
-	return files, nil
+	return ListDirResponse{Files: files}, nil
 }
 
 // CreateDir creates a directory in the sandboxed directory
-func (fs *sandboxedFileSystem) CreateDir(path string) (string, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) CreateDir(ctx context.Context, args CreateDirArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return "", err
 	}
@@ -256,12 +261,12 @@ func (fs *sandboxedFileSystem) CreateDir(path string) (string, error) {
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	return fmt.Sprintf("Successfully created directory %s", path), nil
+	return fmt.Sprintf("Successfully created directory %s", args.Path), nil
 }
 
 // FileExists checks if a file exists in the sandboxed directory
-func (fs *sandboxedFileSystem) FileExists(path string) (bool, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) FileExists(ctx context.Context, args FileExistsArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return false, err
 	}
@@ -278,13 +283,13 @@ func (fs *sandboxedFileSystem) FileExists(path string) (bool, error) {
 }
 
 // MoveFile moves/renames a file within the sandboxed directory
-func (fs *sandboxedFileSystem) MoveFile(sourcePath string, destPath string) (string, error) {
-	validSrc, err := fs.validatePath(sourcePath)
+func (fs *sandboxedFileSystem) MoveFile(ctx context.Context, args MoveFileArgs) (any, error) {
+	validSrc, err := fs.validatePath(args.SourcePath)
 	if err != nil {
 		return "", fmt.Errorf("invalid source path: %w", err)
 	}
 
-	validDest, err := fs.validatePath(destPath)
+	validDest, err := fs.validatePath(args.DestPath)
 	if err != nil {
 		return "", fmt.Errorf("invalid destination path: %w", err)
 	}
@@ -298,12 +303,12 @@ func (fs *sandboxedFileSystem) MoveFile(sourcePath string, destPath string) (str
 		return "", fmt.Errorf("failed to move file: %w", err)
 	}
 
-	return fmt.Sprintf("Successfully moved %s to %s", sourcePath, destPath), nil
+	return fmt.Sprintf("Successfully moved %s to %s", args.SourcePath, args.DestPath), nil
 }
 
 // AppendToFile appends content to a file in the sandboxed directory
-func (fs *sandboxedFileSystem) AppendToFile(path string, content string) (string, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) AppendToFile(ctx context.Context, args AppendToFileArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return "", err
 	}
@@ -315,16 +320,16 @@ func (fs *sandboxedFileSystem) AppendToFile(path string, content string) (string
 	}
 	defer file.Close()
 
-	if _, err := file.WriteString(content); err != nil {
+	if _, err := file.WriteString(args.Content); err != nil {
 		return "", fmt.Errorf("failed to append to file: %w", err)
 	}
 
-	return fmt.Sprintf("Successfully appended %d bytes to %s", len(content), path), nil
+	return fmt.Sprintf("Successfully appended %d bytes to %s", len(args.Content), args.Path), nil
 }
 
 // ReadLines reads specific lines from a file (1-indexed, inclusive)
-func (fs *sandboxedFileSystem) ReadLines(path string, start int, end int) (string, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) ReadLines(ctx context.Context, args ReadLinesArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return "", err
 	}
@@ -341,10 +346,10 @@ func (fs *sandboxedFileSystem) ReadLines(path string, start int, end int) (strin
 
 	for scanner.Scan() {
 		lineNum++
-		if lineNum >= start && lineNum <= end {
+		if lineNum >= args.Start && lineNum <= args.End {
 			result.WriteString(fmt.Sprintf("%4d | %s\n", lineNum, scanner.Text()))
 		}
-		if lineNum > end {
+		if lineNum > args.End {
 			break
 		}
 	}
@@ -357,8 +362,8 @@ func (fs *sandboxedFileSystem) ReadLines(path string, start int, end int) (strin
 }
 
 // DeleteLines deletes specific lines from a file (1-indexed, inclusive)
-func (fs *sandboxedFileSystem) DeleteLines(path string, start int, end int) (string, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) DeleteLines(ctx context.Context, args DeleteLinesArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return "", err
 	}
@@ -372,14 +377,14 @@ func (fs *sandboxedFileSystem) DeleteLines(path string, start int, end int) (str
 	lines := strings.Split(string(content), "\n")
 
 	// Validate range
-	if start < 1 || end > len(lines) || start > end {
-		return "", fmt.Errorf("invalid line range: %d-%d (file has %d lines)", start, end, len(lines))
+	if args.Start < 1 || args.End > len(lines) || args.Start > args.End {
+		return "", fmt.Errorf("invalid line range: %d-%d (file has %d lines)", args.Start, args.End, len(lines))
 	}
 
 	// Build new content without deleted lines (convert to 0-indexed)
 	var newLines []string
-	newLines = append(newLines, lines[:start-1]...)
-	newLines = append(newLines, lines[end:]...)
+	newLines = append(newLines, lines[:args.Start-1]...)
+	newLines = append(newLines, lines[args.End:]...)
 
 	// Write back
 	newContent := strings.Join(newLines, "\n")
@@ -387,13 +392,13 @@ func (fs *sandboxedFileSystem) DeleteLines(path string, start int, end int) (str
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 
-	deletedCount := end - start + 1
-	return fmt.Sprintf("Successfully deleted %d lines (%d-%d) from %s", deletedCount, start, end, path), nil
+	deletedCount := args.End - args.Start + 1
+	return fmt.Sprintf("Successfully deleted %d lines (%d-%d) from %s", deletedCount, args.Start, args.End, args.Path), nil
 }
 
 // ReplaceLines replaces specific lines in a file with new content (1-indexed, inclusive)
-func (fs *sandboxedFileSystem) ReplaceLines(path string, start int, end int, newContent string) (string, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) ReplaceLines(ctx context.Context, args ReplaceLinesArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return "", err
 	}
@@ -407,15 +412,15 @@ func (fs *sandboxedFileSystem) ReplaceLines(path string, start int, end int, new
 	lines := strings.Split(string(content), "\n")
 
 	// Validate range
-	if start < 1 || end > len(lines) || start > end {
-		return "", fmt.Errorf("invalid line range: %d-%d (file has %d lines)", start, end, len(lines))
+	if args.Start < 1 || args.End > len(lines) || args.Start > args.End {
+		return "", fmt.Errorf("invalid line range: %d-%d (file has %d lines)", args.Start, args.End, len(lines))
 	}
 
 	// Build new content with replaced lines (convert to 0-indexed)
 	var newLines []string
-	newLines = append(newLines, lines[:start-1]...)
-	newLines = append(newLines, newContent)
-	newLines = append(newLines, lines[end:]...)
+	newLines = append(newLines, lines[:args.Start-1]...)
+	newLines = append(newLines, args.NewContent)
+	newLines = append(newLines, lines[args.End:]...)
 
 	// Write back
 	finalContent := strings.Join(newLines, "\n")
@@ -423,19 +428,19 @@ func (fs *sandboxedFileSystem) ReplaceLines(path string, start int, end int, new
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 
-	replacedCount := end - start + 1
-	return fmt.Sprintf("Successfully replaced %d lines (%d-%d) in %s", replacedCount, start, end, path), nil
+	replacedCount := args.End - args.Start + 1
+	return fmt.Sprintf("Successfully replaced %d lines (%d-%d) in %s", replacedCount, args.Start, args.End, args.Path), nil
 }
 
 // SearchRegex searches for a regex pattern in a file and returns matches with line numbers
-func (fs *sandboxedFileSystem) SearchRegex(path string, pattern string) ([]RegexMatch, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) SearchRegex(ctx context.Context, args SearchRegexArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return nil, err
 	}
 
 	// Compile regex
-	re, err := regexp.Compile(pattern)
+	re, err := regexp.Compile(args.Pattern)
 	if err != nil {
 		return nil, fmt.Errorf("invalid regex pattern: %w", err)
 	}
@@ -472,14 +477,14 @@ func (fs *sandboxedFileSystem) SearchRegex(path string, pattern string) ([]Regex
 }
 
 // RegexReplaceAll replaces all regex matches in a file with replacement text
-func (fs *sandboxedFileSystem) RegexReplaceAll(path string, pattern string, replacement string) (string, error) {
-	validPath, err := fs.validatePath(path)
+func (fs *sandboxedFileSystem) RegexReplaceAll(ctx context.Context, args RegexReplaceAllArgs) (any, error) {
+	validPath, err := fs.validatePath(args.Path)
 	if err != nil {
 		return "", err
 	}
 
 	// Compile regex
-	re, err := regexp.Compile(pattern)
+	re, err := regexp.Compile(args.Pattern)
 	if err != nil {
 		return "", fmt.Errorf("invalid regex pattern: %w", err)
 	}
@@ -492,7 +497,7 @@ func (fs *sandboxedFileSystem) RegexReplaceAll(path string, pattern string, repl
 
 	// Replace all matches
 	originalContent := string(content)
-	newContent := re.ReplaceAllString(originalContent, replacement)
+	newContent := re.ReplaceAllString(originalContent, args.Replacement)
 
 	// Count replacements
 	matchCount := len(re.FindAllString(originalContent, -1))
@@ -502,7 +507,7 @@ func (fs *sandboxedFileSystem) RegexReplaceAll(path string, pattern string, repl
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 
-	return fmt.Sprintf("Successfully replaced %d matches in %s", matchCount, path), nil
+	return fmt.Sprintf("Successfully replaced %d matches in %s", matchCount, args.Path), nil
 }
 
 // Tool argument types for Gemini function calling
@@ -578,7 +583,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "read_file",
 		Description: "Reads the contents of a file from the agent's workspace. Optionally show line numbers. Returns the file content as a string.",
 	}, func(ctx tool.Context, args *ReadFileArgs) (string, error) {
-		return fs.ReadFile(args.Path, args.ShowLineNumbers)
+		res, err := fs.ReadFile(ctx, *args)
+		if err != nil {
+			return "", err
+		}
+		return res.(string), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create read_file tool: %w", err)
@@ -590,7 +599,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "write_file",
 		Description: "Writes content to a file in the agent's workspace. Creates parent directories if needed. Returns success message.",
 	}, func(ctx tool.Context, args *WriteFileArgs) (string, error) {
-		return fs.WriteFile(args.Path, args.Content)
+		res, err := fs.WriteFile(ctx, *args)
+		if err != nil {
+			return "", err
+		}
+		return res.(string), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create write_file tool: %w", err)
@@ -601,12 +614,12 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 	listDirTool, err := functiontool.New(functiontool.Config{
 		Name:        "list_dir",
 		Description: "Lists files and directories in the specified path within the agent's workspace. Returns object with 'files' array containing file information (name, type, size).",
-	}, func(ctx tool.Context, args *ListDirArgs) (map[string]any, error) {
-		files, err := fs.ListDir(args.Path)
+	}, func(ctx tool.Context, args *ListDirArgs) (ListDirResponse, error) {
+		res, err := fs.ListDir(ctx, *args)
 		if err != nil {
-			return nil, err
+			return ListDirResponse{}, err
 		}
-		return map[string]any{"files": files}, nil
+		return res.(ListDirResponse), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create list_dir tool: %w", err)
@@ -618,7 +631,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "create_dir",
 		Description: "Creates a directory in the agent's workspace. Creates parent directories if needed. Returns success message.",
 	}, func(ctx tool.Context, args *CreateDirArgs) (string, error) {
-		return fs.CreateDir(args.Path)
+		res, err := fs.CreateDir(ctx, *args)
+		if err != nil {
+			return "", err
+		}
+		return res.(string), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create create_dir tool: %w", err)
@@ -630,7 +647,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "file_exists",
 		Description: "Checks if a file or directory exists in the agent's workspace. Returns true if exists, false otherwise.",
 	}, func(ctx tool.Context, args *FileExistsArgs) (bool, error) {
-		return fs.FileExists(args.Path)
+		res, err := fs.FileExists(ctx, *args)
+		if err != nil {
+			return false, err
+		}
+		return res.(bool), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file_exists tool: %w", err)
@@ -642,7 +663,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "move_file",
 		Description: "Moves or renames a file within the agent's workspace. Can move files between directories. Returns success message.",
 	}, func(ctx tool.Context, args *MoveFileArgs) (string, error) {
-		return fs.MoveFile(args.SourcePath, args.DestPath)
+		res, err := fs.MoveFile(ctx, *args)
+		if err != nil {
+			return "", err
+		}
+		return res.(string), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create move_file tool: %w", err)
@@ -654,7 +679,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "append_to_file",
 		Description: "Appends content to the end of a file in the agent's workspace. Creates the file if it doesn't exist. Returns success message.",
 	}, func(ctx tool.Context, args *AppendToFileArgs) (string, error) {
-		return fs.AppendToFile(args.Path, args.Content)
+		res, err := fs.AppendToFile(ctx, *args)
+		if err != nil {
+			return "", err
+		}
+		return res.(string), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create append_to_file tool: %w", err)
@@ -666,7 +695,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "read_lines",
 		Description: "Reads specific lines from a file (1-indexed, inclusive). Useful for reading large files partially. Returns lines with line numbers.",
 	}, func(ctx tool.Context, args *ReadLinesArgs) (string, error) {
-		return fs.ReadLines(args.Path, args.Start, args.End)
+		res, err := fs.ReadLines(ctx, *args)
+		if err != nil {
+			return "", err
+		}
+		return res.(string), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create read_lines tool: %w", err)
@@ -678,7 +711,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "delete_lines",
 		Description: "Deletes specific lines from a file (1-indexed, inclusive). Rewrites the file without the deleted lines. Returns success message.",
 	}, func(ctx tool.Context, args *DeleteLinesArgs) (string, error) {
-		return fs.DeleteLines(args.Path, args.Start, args.End)
+		res, err := fs.DeleteLines(ctx, *args)
+		if err != nil {
+			return "", err
+		}
+		return res.(string), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create delete_lines tool: %w", err)
@@ -690,7 +727,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "replace_lines",
 		Description: "Replaces specific lines in a file with new content (1-indexed, inclusive). Useful for precise file editing. Returns success message.",
 	}, func(ctx tool.Context, args *ReplaceLinesArgs) (string, error) {
-		return fs.ReplaceLines(args.Path, args.Start, args.End, args.NewContent)
+		res, err := fs.ReplaceLines(ctx, *args)
+		if err != nil {
+			return "", err
+		}
+		return res.(string), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create replace_lines tool: %w", err)
@@ -702,7 +743,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "search_regex",
 		Description: "Searches for a regex pattern in a file. Returns array of matches with line numbers, line content, and matched text.",
 	}, func(ctx tool.Context, args *SearchRegexArgs) ([]RegexMatch, error) {
-		return fs.SearchRegex(args.Path, args.Pattern)
+		res, err := fs.SearchRegex(ctx, *args)
+		if err != nil {
+			return nil, err
+		}
+		return res.([]RegexMatch), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create search_regex tool: %w", err)
@@ -714,7 +759,11 @@ func (fs *sandboxedFileSystem) GetTools() ([]tool.Tool, error) {
 		Name:        "regex_replace_all",
 		Description: "Replaces all occurrences of a regex pattern in a file with replacement text. Supports capture groups. Returns success message with count.",
 	}, func(ctx tool.Context, args *RegexReplaceAllArgs) (string, error) {
-		return fs.RegexReplaceAll(args.Path, args.Pattern, args.Replacement)
+		res, err := fs.RegexReplaceAll(ctx, *args)
+		if err != nil {
+			return "", err
+		}
+		return res.(string), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create regex_replace_all tool: %w", err)

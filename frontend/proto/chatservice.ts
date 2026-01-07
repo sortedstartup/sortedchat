@@ -7857,6 +7857,255 @@ export class GetAgentsResponse extends pb_1.Message {
         return GetAgentsResponse.deserialize(bytes);
     }
 }
+export class UpdateAgentRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        agent_id?: string;
+        name?: string;
+        description?: string;
+        system_prompt?: string;
+        provider?: string;
+        model?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("agent_id" in data && data.agent_id != undefined) {
+                this.agent_id = data.agent_id;
+            }
+            if ("name" in data && data.name != undefined) {
+                this.name = data.name;
+            }
+            if ("description" in data && data.description != undefined) {
+                this.description = data.description;
+            }
+            if ("system_prompt" in data && data.system_prompt != undefined) {
+                this.system_prompt = data.system_prompt;
+            }
+            if ("provider" in data && data.provider != undefined) {
+                this.provider = data.provider;
+            }
+            if ("model" in data && data.model != undefined) {
+                this.model = data.model;
+            }
+        }
+    }
+    get agent_id() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set agent_id(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get name() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set name(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get description() {
+        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
+    }
+    set description(value: string) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    get system_prompt() {
+        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+    }
+    set system_prompt(value: string) {
+        pb_1.Message.setField(this, 4, value);
+    }
+    get provider() {
+        return pb_1.Message.getFieldWithDefault(this, 5, "") as string;
+    }
+    set provider(value: string) {
+        pb_1.Message.setField(this, 5, value);
+    }
+    get model() {
+        return pb_1.Message.getFieldWithDefault(this, 6, "") as string;
+    }
+    set model(value: string) {
+        pb_1.Message.setField(this, 6, value);
+    }
+    static fromObject(data: {
+        agent_id?: string;
+        name?: string;
+        description?: string;
+        system_prompt?: string;
+        provider?: string;
+        model?: string;
+    }): UpdateAgentRequest {
+        const message = new UpdateAgentRequest({});
+        if (data.agent_id != null) {
+            message.agent_id = data.agent_id;
+        }
+        if (data.name != null) {
+            message.name = data.name;
+        }
+        if (data.description != null) {
+            message.description = data.description;
+        }
+        if (data.system_prompt != null) {
+            message.system_prompt = data.system_prompt;
+        }
+        if (data.provider != null) {
+            message.provider = data.provider;
+        }
+        if (data.model != null) {
+            message.model = data.model;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            agent_id?: string;
+            name?: string;
+            description?: string;
+            system_prompt?: string;
+            provider?: string;
+            model?: string;
+        } = {};
+        if (this.agent_id != null) {
+            data.agent_id = this.agent_id;
+        }
+        if (this.name != null) {
+            data.name = this.name;
+        }
+        if (this.description != null) {
+            data.description = this.description;
+        }
+        if (this.system_prompt != null) {
+            data.system_prompt = this.system_prompt;
+        }
+        if (this.provider != null) {
+            data.provider = this.provider;
+        }
+        if (this.model != null) {
+            data.model = this.model;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.agent_id.length)
+            writer.writeString(1, this.agent_id);
+        if (this.name.length)
+            writer.writeString(2, this.name);
+        if (this.description.length)
+            writer.writeString(3, this.description);
+        if (this.system_prompt.length)
+            writer.writeString(4, this.system_prompt);
+        if (this.provider.length)
+            writer.writeString(5, this.provider);
+        if (this.model.length)
+            writer.writeString(6, this.model);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): UpdateAgentRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new UpdateAgentRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.agent_id = reader.readString();
+                    break;
+                case 2:
+                    message.name = reader.readString();
+                    break;
+                case 3:
+                    message.description = reader.readString();
+                    break;
+                case 4:
+                    message.system_prompt = reader.readString();
+                    break;
+                case 5:
+                    message.provider = reader.readString();
+                    break;
+                case 6:
+                    message.model = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): UpdateAgentRequest {
+        return UpdateAgentRequest.deserialize(bytes);
+    }
+}
+export class UpdateAgentResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message?: string;
+    }): UpdateAgentResponse {
+        const message = new UpdateAgentResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): UpdateAgentResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new UpdateAgentResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): UpdateAgentResponse {
+        return UpdateAgentResponse.deserialize(bytes);
+    }
+}
 export class CreateSessionRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -9781,6 +10030,10 @@ export class AgentServiceClient {
     private static CreateAgent = new grpc_web_1.MethodDescriptor<CreateAgentRequest, CreateAgentResponse>("/sortedchat.AgentService/CreateAgent", grpc_web_1.MethodType.UNARY, CreateAgentRequest, CreateAgentResponse, (message: CreateAgentRequest) => message.serialize(), CreateAgentResponse.deserialize);
     CreateAgent(message: CreateAgentRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<CreateAgentRequest, CreateAgentResponse>(this._address + "/sortedchat.AgentService/CreateAgent", message, metadata || {}, AgentServiceClient.CreateAgent);
+    }
+    private static UpdateAgent = new grpc_web_1.MethodDescriptor<UpdateAgentRequest, UpdateAgentResponse>("/sortedchat.AgentService/UpdateAgent", grpc_web_1.MethodType.UNARY, UpdateAgentRequest, UpdateAgentResponse, (message: UpdateAgentRequest) => message.serialize(), UpdateAgentResponse.deserialize);
+    UpdateAgent(message: UpdateAgentRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<UpdateAgentRequest, UpdateAgentResponse>(this._address + "/sortedchat.AgentService/UpdateAgent", message, metadata || {}, AgentServiceClient.UpdateAgent);
     }
     private static GetAgents = new grpc_web_1.MethodDescriptor<GetAgentsRequest, GetAgentsResponse>("/sortedchat.AgentService/GetAgents", grpc_web_1.MethodType.UNARY, GetAgentsRequest, GetAgentsResponse, (message: GetAgentsRequest) => message.serialize(), GetAgentsResponse.deserialize);
     GetAgents(message: GetAgentsRequest, metadata: grpc_web_1.Metadata | null) {

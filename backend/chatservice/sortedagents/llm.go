@@ -21,7 +21,7 @@ type LLM interface {
 // Message represents a chat message
 type Message struct {
 	Role       string     `json:"role"`
-	Content    string     `json:"content,omitempty"`
+	Content    string     `json:"content"`
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 }
@@ -89,6 +89,10 @@ type OpenAILLM struct {
 func NewOpenAILLM() *OpenAILLM {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
+		// Just warn or allow empty if it's going to be set later?
+		// For backward compatibility, we panic if env is missing, or we can change this behavior.
+		// Given the user wants to move away from env vars, let's just use empty string or panic.
+		// But existing code might rely on panic.
 		panic("OPENAI_API_KEY environment variable is required")
 	}
 
@@ -96,6 +100,37 @@ func NewOpenAILLM() *OpenAILLM {
 		apiKey:  apiKey,
 		baseURL: "https://api.openai.com/v1",
 		model:   "gpt-4o-mini", // Default model
+	}
+}
+
+// NewOpenAILLMWithKey creates a new OpenAI LLM instance with a specific API key and model
+func NewOpenAILLMWithKey(apiKey string, model string) *OpenAILLM {
+	return &OpenAILLM{
+		apiKey:  apiKey,
+		baseURL: "https://api.openai.com/v1",
+		model:   model,
+	}
+}
+
+// NewOpenAILLMWithConfig creates a new OpenAI LLM instance with a specific API key, base URL and model
+func NewOpenAILLMWithConfig(apiKey string, baseURL string, model string) *OpenAILLM {
+	if baseURL == "" {
+		baseURL = "https://api.openai.com/v1"
+	}
+
+	// Normalize Base URL: remove trailing slash
+	baseURL = strings.TrimSuffix(baseURL, "/")
+
+	// Remove "/chat/completions" if present to avoid duplication
+	baseURL = strings.TrimSuffix(baseURL, "/chat/completions")
+
+	// Remove trailing slash again in case it was ".../chat/completions/"
+	baseURL = strings.TrimSuffix(baseURL, "/")
+
+	return &OpenAILLM{
+		apiKey:  apiKey,
+		baseURL: baseURL,
+		model:   model,
 	}
 }
 

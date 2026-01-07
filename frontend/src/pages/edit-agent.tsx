@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Loader2, Trash2, Download, File, ChevronRight, ChevronDown, FileText, Code2, Save, AlertCircle } from "lucide-react";
 import { FileUploader } from "@/components/FileUploader";
-import { getAgentClient } from "@/store/agents";
+import { getAgentClient, updateAgent } from "@/store/agents";
 import { GetAgentsRequest } from "../../proto/chatservice";
 import { toast } from "sonner";
 import { getJWTToken } from "@/lib/auth";
@@ -277,16 +277,20 @@ export function EditAgentPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
+        if (!agentId) return;
+
         try {
-            // TODO: Implement update agent API
-            toast.info("Update agent API not yet implemented");
-            // For now just show success and go back
-            setTimeout(() => {
-                navigate("/");
-            }, 1000);
+            await updateAgent(
+                agentId,
+                formData.name,
+                formData.description,
+                formData.systemPrompt,
+                formData.model,
+                formData.provider
+            );
+            // navigate("/");
         } catch (error) {
             console.error("Failed to update agent", error);
-            toast.error("Failed to update agent");
         } finally {
             setIsSaving(false);
         }

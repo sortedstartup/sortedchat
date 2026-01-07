@@ -1140,6 +1140,7 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 
 const (
 	AgentService_CreateAgent_FullMethodName      = "/sortedchat.AgentService/CreateAgent"
+	AgentService_UpdateAgent_FullMethodName      = "/sortedchat.AgentService/UpdateAgent"
 	AgentService_GetAgents_FullMethodName        = "/sortedchat.AgentService/GetAgents"
 	AgentService_CreateSession_FullMethodName    = "/sortedchat.AgentService/CreateSession"
 	AgentService_GetSession_FullMethodName       = "/sortedchat.AgentService/GetSession"
@@ -1156,6 +1157,7 @@ const (
 // ------- Agent Service -------
 type AgentServiceClient interface {
 	CreateAgent(ctx context.Context, in *CreateAgentRequest, opts ...grpc.CallOption) (*CreateAgentResponse, error)
+	UpdateAgent(ctx context.Context, in *UpdateAgentRequest, opts ...grpc.CallOption) (*UpdateAgentResponse, error)
 	// rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
 	GetAgents(ctx context.Context, in *GetAgentsRequest, opts ...grpc.CallOption) (*GetAgentsResponse, error)
 	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error)
@@ -1183,6 +1185,16 @@ func (c *agentServiceClient) CreateAgent(ctx context.Context, in *CreateAgentReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateAgentResponse)
 	err := c.cc.Invoke(ctx, AgentService_CreateAgent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) UpdateAgent(ctx context.Context, in *UpdateAgentRequest, opts ...grpc.CallOption) (*UpdateAgentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateAgentResponse)
+	err := c.cc.Invoke(ctx, AgentService_UpdateAgent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1275,6 +1287,7 @@ func (c *agentServiceClient) GetAgentMessage(ctx context.Context, in *GetAgentMe
 // ------- Agent Service -------
 type AgentServiceServer interface {
 	CreateAgent(context.Context, *CreateAgentRequest) (*CreateAgentResponse, error)
+	UpdateAgent(context.Context, *UpdateAgentRequest) (*UpdateAgentResponse, error)
 	// rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
 	GetAgents(context.Context, *GetAgentsRequest) (*GetAgentsResponse, error)
 	CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error)
@@ -1300,6 +1313,9 @@ type UnimplementedAgentServiceServer struct{}
 
 func (UnimplementedAgentServiceServer) CreateAgent(context.Context, *CreateAgentRequest) (*CreateAgentResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateAgent not implemented")
+}
+func (UnimplementedAgentServiceServer) UpdateAgent(context.Context, *UpdateAgentRequest) (*UpdateAgentResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAgent not implemented")
 }
 func (UnimplementedAgentServiceServer) GetAgents(context.Context, *GetAgentsRequest) (*GetAgentsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAgents not implemented")
@@ -1357,6 +1373,24 @@ func _AgentService_CreateAgent_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AgentServiceServer).CreateAgent(ctx, req.(*CreateAgentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_UpdateAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAgentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).UpdateAgent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_UpdateAgent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).UpdateAgent(ctx, req.(*UpdateAgentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1490,6 +1524,10 @@ var AgentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateAgent",
 			Handler:    _AgentService_CreateAgent_Handler,
+		},
+		{
+			MethodName: "UpdateAgent",
+			Handler:    _AgentService_UpdateAgent_Handler,
 		},
 		{
 			MethodName: "GetAgents",

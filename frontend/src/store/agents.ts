@@ -7,6 +7,7 @@ import {
     AgentMessage,
     AgentServiceClient,
     CreateAgentRequest,
+    UpdateAgentRequest,
     CreateSessionRequest,
     GetAgentMessagesRequest,
     GetAgentsRequest,
@@ -120,6 +121,29 @@ export const createAgent = async (name: string, description: string, systemPromp
     } catch (error) {
         console.error("Failed to create agent:", error);
         toast.error("Failed to create agent");
+        throw error;
+    }
+};
+
+export const updateAgent = async (agentId: string, name: string, description: string, systemPrompt: string, model: string, provider: string) => {
+    try {
+        const response = await getAgentClient().UpdateAgent(
+            UpdateAgentRequest.fromObject({
+                agent_id: agentId,
+                name,
+                description,
+                system_prompt: systemPrompt,
+                model,
+                provider,
+            }),
+            {}
+        );
+        toast.success("Agent updated successfully");
+        await getAgents();
+        return response.message;
+    } catch (error) {
+        console.error("Failed to update agent:", error);
+        toast.error("Failed to update agent");
         throw error;
     }
 };

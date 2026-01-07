@@ -33,6 +33,24 @@ func (s *SQLiteAgentsDAO) CreateAgent(agent AgentRow) error {
 	return nil
 }
 
+func (s *SQLiteAgentsDAO) UpdateAgent(agent AgentRow) error {
+	_, err := s.db.NamedExec(`
+		UPDATE agents 
+		SET name = :name, 
+			description = :description, 
+			system_prompt = :system_prompt, 
+			provider = :provider, 
+			model = :model, 
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = :id
+	`, agent)
+	if err != nil {
+		slog.Error("dao_sqlite:UpdateAgent", "message", "failed to update agent", "error", err, "agentID", agent.ID)
+		return fmt.Errorf("failed to update agent")
+	}
+	return nil
+}
+
 func (s *SQLiteAgentsDAO) GetAgents() ([]AgentRow, error) {
 	var agents []AgentRow
 	err := s.db.Select(&agents, `SELECT * FROM agents ORDER BY created_at DESC`)

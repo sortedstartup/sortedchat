@@ -28,6 +28,24 @@ func (p *PostgresAgentsDAO) CreateAgent(agent AgentRow) error {
 	return nil
 }
 
+func (p *PostgresAgentsDAO) UpdateAgent(agent AgentRow) error {
+	_, err := p.db.NamedExec(`
+		UPDATE agents 
+		SET name = :name, 
+			description = :description, 
+			system_prompt = :system_prompt, 
+			provider = :provider, 
+			model = :model, 
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = :id
+	`, agent)
+	if err != nil {
+		slog.Error("dao_postgres:UpdateAgent", "message", "failed to update agent", "error", err, "agentID", agent.ID)
+		return fmt.Errorf("failed to update agent")
+	}
+	return nil
+}
+
 func (p *PostgresAgentsDAO) GetAgents() ([]AgentRow, error) {
 	var agents []AgentRow
 	err := p.db.Select(&agents, `SELECT * FROM agents ORDER BY created_at DESC`)

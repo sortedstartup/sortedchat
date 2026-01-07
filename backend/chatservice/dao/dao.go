@@ -73,6 +73,7 @@ type SettingsDAO interface {
 
 type AgentDAO interface {
 	CreateAgent(agent AgentRow) error
+	UpdateAgent(agent AgentRow) error
 	GetAgents() ([]AgentRow, error)
 	GetAgent(agentID string) (*AgentRow, error)
 

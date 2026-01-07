@@ -15,21 +15,23 @@ import (
 	"sortedstartup/chatservice/agents"
 	db "sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
+	"sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/sortedagents"
 	"sortedstartup/common/auth"
 )
 
 type AgentServiceAPI struct {
 	pb.UnimplementedAgentServiceServer
-	dao db.AgentDAO
+	dao             db.AgentDAO
+	settingsManager *settings.SettingsManager
 }
 
-func NewAgentService(daoFactory db.DAOFactory) (*AgentServiceAPI, error) {
+func NewAgentService(daoFactory db.DAOFactory, settingsManager *settings.SettingsManager) (*AgentServiceAPI, error) {
 	dao, err := daoFactory.CreateAgentDAO()
 	if err != nil {
 		return nil, err
 	}
-	return &AgentServiceAPI{dao: dao}, nil
+	return &AgentServiceAPI{dao: dao, settingsManager: settingsManager}, nil
 }
 
 func (s *AgentServiceAPI) CreateAgent(ctx context.Context, req *pb.CreateAgentRequest) (*pb.CreateAgentResponse, error) {
@@ -62,6 +64,28 @@ func (s *AgentServiceAPI) CreateAgent(ctx context.Context, req *pb.CreateAgentRe
 	return &pb.CreateAgentResponse{
 		Message: "Agent created successfully",
 		AgentId: agentID,
+	}, nil
+}
+
+func (s *AgentServiceAPI) UpdateAgent(ctx context.Context, req *pb.UpdateAgentRequest) (*pb.UpdateAgentResponse, error) {
+	slog.Info("api:UpdateAgent", "agentID", req.AgentId)
+
+	agent := db.AgentRow{
+		ID:           req.AgentId,
+		Name:         req.Name,
+		Description:  req.Description,
+		SystemPrompt: req.SystemPrompt,
+		Provider:     req.Provider,
+		Model:        req.Model,
+	}
+
+	if err := s.dao.UpdateAgent(agent); err != nil {
+		slog.Error("api:UpdateAgent", "error", err)
+		return nil, status.Error(codes.Internal, "failed to update agent")
+	}
+
+	return &pb.UpdateAgentResponse{
+		Message: "Agent updated successfully",
 	}, nil
 }
 
@@ -225,6 +249,20 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 	modelName := agentRow.Model
 	slog.Info("Creating agent with sortedagents", "model", modelName, "agent", agentRow.Name)
 
+	// Get provider settings
+	providerSettings, err := s.settingsManager.GetProviderSetting(agentRow.Provider)
+	if err != nil {
+		slog.Error("Failed to get provider settings", "error", err, "provider", agentRow.Provider)
+		return status.Error(codes.Internal, "failed to get provider settings")
+	}
+	if providerSettings == nil {
+		slog.Error("Provider settings not found", "provider", agentRow.Provider)
+		return status.Error(codes.NotFound, fmt.Sprintf("provider settings for %s not found", agentRow.Provider))
+	}
+
+	apiKey := providerSettings.ApiKey
+	apiURL := providerSettings.ApiUrl
+
 	// Create filesystem tools with sandboxed path: ./agentid/sessionid
 	workspacePath := filepath.Join(".", agentRow.ID, sessionID)
 	fsTools, err := agents.NewFileSystemTools(agentRow.ID, workspacePath)
@@ -302,8 +340,9 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		tools,
 	)
 
-	// Create runner
-	runner := sortedagents.NewRunner()
+	// Create runner with configured LLM
+	llm := sortedagents.NewOpenAILLMWithConfig(apiKey, apiURL, modelName)
+	runner := sortedagents.NewRunnerWithLLM(llm)
 
 	// Execute agent with streaming
 	maxTurns := 15

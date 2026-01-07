@@ -479,6 +479,7 @@ message ListModelsResponse {
 // ------- Agent Service -------
 service AgentService {
   rpc CreateAgent(CreateAgentRequest) returns (CreateAgentResponse);
+  rpc UpdateAgent(UpdateAgentRequest) returns (UpdateAgentResponse);
  // rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
   rpc GetAgents(GetAgentsRequest) returns (GetAgentsResponse);
 
@@ -585,6 +586,19 @@ message GetAgentsRequest {}
 
 message GetAgentsResponse {
   repeated Agent agents = 1;
+}
+
+message UpdateAgentRequest {
+  string agent_id = 1;
+  string name = 2;
+  string description = 3;
+  string system_prompt = 4;
+  string provider = 5;
+  string model = 6;
+}
+
+message UpdateAgentResponse {
+  string message = 1;
 }
 
 message CreateSessionRequest {

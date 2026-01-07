@@ -17,12 +17,16 @@ interface ProviderViewProps {
     providerName: string;
     displayName?: string;
     defaultApiUrl?: string;
+    onApiKeyChange?: (key: string) => void;
+    onApiUrlChange?: (url: string) => void;
 }
 
 export const ProviderView = ({
     providerName,
     displayName,
-    defaultApiUrl = ''
+    defaultApiUrl = '',
+    onApiKeyChange,
+    onApiUrlChange
 }: ProviderViewProps) => {
     const modelsByProvider = useStore($modelsByProvider);
     const providerSettings = useStore($providerSettings);
@@ -44,6 +48,16 @@ export const ProviderView = ({
         setApiUrl(settings?.api_url || defaultApiUrl);
         setApiKey(settings?.api_key || '');
     }, [providerName, providerSettings, defaultApiUrl]);
+
+    const handleApiUrlChange = (value: string) => {
+        setApiUrl(value);
+        onApiUrlChange?.(value);
+    };
+
+    const handleApiKeyChange = (value: string) => {
+        setApiKey(value);
+        onApiKeyChange?.(value);
+    };
 
     const handleSaveProvider = async () => {
         setIsSaving(true);
@@ -119,7 +133,7 @@ export const ProviderView = ({
                             <input
                                 type="text"
                                 value={apiUrl}
-                                onChange={(e) => setApiUrl(e.target.value)}
+                                onChange={(e) => handleApiUrlChange(e.target.value)}
                                 className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                 placeholder={defaultApiUrl}
                             />
@@ -132,7 +146,7 @@ export const ProviderView = ({
                             <input
                                 type="password"
                                 value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
+                                onChange={(e) => handleApiKeyChange(e.target.value)}
                                 className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                 placeholder="Enter API Key"
                             />

@@ -31,11 +31,20 @@ export function StepRemote() {
   const renderProviderContent = () => {
     switch (selectedProvider) {
       case 'openai':
-        return <OpenaiProvider />;
+        return <OpenaiProvider
+          onApiKeyChange={onboardingActions.setOpenaiApiKey}
+          onApiUrlChange={onboardingActions.setOpenaiApiUrl}
+        />;
       case 'claude':
-        return <ClaudeProvider />;
+        return <ClaudeProvider
+          onApiKeyChange={onboardingActions.setClaudeApiKey}
+          onApiUrlChange={onboardingActions.setClaudeApiUrl}
+        />;
       case 'gemini':
-        return <GeminiProvider />;
+        return <GeminiProvider
+          onApiKeyChange={onboardingActions.setGeminiApiKey}
+          onApiUrlChange={onboardingActions.setGeminiApiUrl}
+        />;
       default:
         return null;
     }

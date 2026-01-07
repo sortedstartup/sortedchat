@@ -126,35 +126,26 @@ export const onboardingActions = {
   completeOnboarding: async (): Promise<void> => {
     try {
       const data = $onboardingData.get();
-      
-      // Collect all provider settings into a map
-      const providerSettingsMap = new Map<string, ProviderSettings>();
-      
-      const providers = [
-        { name: 'openai', apiKey: data.OPENAI_API_KEY, apiUrl: data.OPENAI_API_URL },
-        { name: 'claude', apiKey: data.CLAUDE_API_KEY, apiUrl: data.CLAUDE_API_URL },
-        { name: 'gemini', apiKey: data.GEMINI_API_KEY, apiUrl: data.GEMINI_API_URL },
-      ];
 
-      for (const provider of providers) {
-        if (provider.apiKey || provider.apiUrl) {
-          providerSettingsMap.set(provider.name, new ProviderSettings({
-            api_key: provider.apiKey,
-            api_url: provider.apiUrl,
-            is_enabled: true,
-          }));
-        }
-      }
+      const settings = new Map<string, ProviderSettings>();
+      settings.set('openai', new ProviderSettings({
+        api_key: data.OPENAI_API_KEY,
+        api_url: data.OPENAI_API_URL,
+        is_enabled: true
+      }));
+      settings.set('claude', new ProviderSettings({
+        api_key: data.CLAUDE_API_KEY,
+        api_url: data.CLAUDE_API_URL,
+        is_enabled: true
+      }));
+      settings.set('gemini', new ProviderSettings({
+        api_key: data.GEMINI_API_KEY,
+        api_url: data.GEMINI_API_URL,
+        is_enabled: true
+      }));
 
-      // Save all provider settings at once using SetAllProviderSettings
-      if (providerSettingsMap.size > 0) {
-        const setAllReq = new SetAllProviderSettingsRequest({
-          settings: providerSettingsMap,
-        });
-        await getClient().SetAllProviderSettings(setAllReq, {});
-      }
+      await getClient().SetAllProviderSettings(new SetAllProviderSettingsRequest({ settings }), {});
 
-      // Force a full page reload to ensure isFirstBoot check runs fresh
       window.location.replace("/");
     } catch (error) {
       console.error("Failed to complete onboarding:", error);

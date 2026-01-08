@@ -212,6 +212,7 @@ func TestAddChatMessageWithTokens(t *testing.T) {
 						chatID,
 						tc.role,
 						tc.message,
+						"",
 						model.model,
 						tc.inputTokens,
 						tc.outputTokens,

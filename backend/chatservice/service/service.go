@@ -49,6 +49,7 @@ type RAGDocumentJSON struct {
 type ChatService struct {
 	dao                dao.DAO
 	settingsDAO        dao.SettingsDAO
+	agentDAO           dao.AgentDAO
 	store              *store.DiskObjectStore
 	queue              queue.Queue
 	pipeline           rag.RAGIndexingPipeline
@@ -91,6 +92,11 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 		return nil, fmt.Errorf("failed to initialize settings DAO: %v", err)
 	}
 
+	agentDAOInstance, err := daoFactory.CreateAgentDAO()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize agent DAO: %v", err)
+	}
+
 	storeInstance, err := store.NewDiskObjectStore("filestore")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize object store: %v", err)
@@ -111,6 +117,7 @@ func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager
 	return &ChatService{
 		dao:                daoInstance,
 		settingsDAO:        settingsDAOInstance,
+		agentDAO:           agentDAOInstance,
 		store:              storeInstance,
 		queue:              queue,
 		pipeline:           pipeline,
@@ -993,6 +1000,65 @@ func (s *ChatService) UploadFile(ctx context.Context, userID string, projectID s
 	}
 
 	return objectID, nil
+}
+
+// UploadAgentFile handles file upload for agents with folder structure support
+func (s *ChatService) UploadAgentFile(
+	ctx context.Context,
+	userID string,
+	agentID string,
+	file multipart.File,
+	header *multipart.FileHeader,
+	filePath string,
+	maxFileSize int64,
+) (string, error) {
+	if agentID == "" {
+		slog.Error("service:UploadAgentFile", "message", "agent_id is required", "userID", userID, "agentID", agentID)
+		return "", fmt.Errorf("agent_id is required")
+	}
+
+	fileSize := header.Size
+	if fileSize > maxFileSize {
+		slog.Error("service:UploadAgentFile", "error", "file exceeds limit", "userID", userID, "agentID", agentID, "fileSize", fileSize, "maxFileSize", maxFileSize)
+		return "", fmt.Errorf("file exceeds %d MB limit", maxFileSize/(1024*1024))
+	}
+
+	// Generate object ID and store file
+	objectID := uuid.New().String()
+
+	if err := s.store.StoreObject(ctx, objectID, file); err != nil {
+		slog.Error("service:UploadAgentFile", "message", "failed to store file", "error", err, "userID", userID, "agentID", agentID, "objectID", objectID)
+		return "", fmt.Errorf("failed to store file, please try again")
+	}
+
+	// Use filePath if provided, otherwise fall back to filename
+	if filePath == "" {
+		filePath = header.Filename
+	}
+
+	// Save file metadata to database with path
+	if err := s.agentDAO.SaveAgentFile(agentID, objectID, header.Filename, filePath, fileSize, userID); err != nil {
+		slog.Error("service:UploadAgentFile", "message", "failed to save metadata", "error", err, "userID", userID, "agentID", agentID, "objectID", objectID)
+		return "", fmt.Errorf("error while processing request, please try again")
+	}
+
+	slog.Info("service:UploadAgentFile", "message", "file uploaded successfully", "agentID", agentID, "objectID", objectID, "filePath", filePath)
+	return objectID, nil
+}
+
+// GetAgentFiles retrieves all files for an agent
+func (s *ChatService) GetAgentFiles(ctx context.Context, agentID string) ([]dao.AgentDocumentRow, error) {
+	return s.agentDAO.GetAgentFiles(agentID)
+}
+
+// GetAgentFileByPath retrieves a specific file by path
+func (s *ChatService) GetAgentFileByPath(ctx context.Context, agentID, filePath string) (*dao.AgentDocumentRow, error) {
+	return s.agentDAO.GetAgentFileByPath(agentID, filePath)
+}
+
+// DeleteAgentFile deletes an agent file
+func (s *ChatService) DeleteAgentFile(ctx context.Context, agentID, docsID string) error {
+	return s.agentDAO.DeleteAgentFile(agentID, docsID)
 }
 
 func (s *ChatService) retrieveSimilarChunks(ctx context.Context, userID string, projectID string, query string) (*rag.Response, error) {

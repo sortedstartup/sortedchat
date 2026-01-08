@@ -31,6 +31,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  AgentsSidebarSection,
 } from "@/components/ui/sidebar";
 import {
   $chatList,
@@ -376,6 +377,11 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+
+          <SidebarSeparator />
+
+          <AgentsSidebarSection />
 
           <SidebarSeparator />
 

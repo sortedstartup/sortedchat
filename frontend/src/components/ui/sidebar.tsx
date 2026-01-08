@@ -1,7 +1,7 @@
 
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { cva} from "class-variance-authority"
+import { cva } from "class-variance-authority"
 import type { VariantProps } from "class-variance-authority"
 
 import { PanelLeftIcon } from "lucide-react"
@@ -25,6 +25,26 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  $agents,
+  $sessions,
+  $currentAgentId,
+  $currentSessionId,
+  getAgents,
+  createAgent,
+  getSessions,
+  createSession
+} from "@/store/agents";
+import {
+  Bot,
+  Plus,
+  ChevronRight,
+  ChevronDown,
+  MessageSquare,
+  Settings
+} from "lucide-react";
+import { useStore } from "@nanostores/react";
+import { useNavigate } from "react-router-dom";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -570,7 +590,7 @@ function SidebarMenuAction({
         "peer-data-[size=lg]/menu-button:top-2.5",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&
-          "peer-data-[active=true]/menu-button:text-sidebar-accent-foreground group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 md:opacity-0",
+        "peer-data-[active=true]/menu-button:text-sidebar-accent-foreground group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 md:opacity-0",
         className
       )}
       {...props}
@@ -699,7 +719,123 @@ function SidebarMenuSubButton({
   )
 }
 
+function AgentsSidebarSection() {
+  const agents = useStore($agents);
+  const sessions = useStore($sessions);
+  const currentSessionId = useStore($currentSessionId);
+  const [expandedAgents, setExpandedAgents] = React.useState<Record<string, boolean>>({});
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    getAgents();
+  }, []);
+
+  const handleCreateAgent = async () => {
+    navigate("/agent/new");
+  };
+
+  const handleEditAgent = (e: React.MouseEvent, agentId: string) => {
+    e.stopPropagation();
+    navigate(`/agent/${agentId}/edit`);
+  };
+
+  const handleAgentClick = async (agentId: string) => {
+    setExpandedAgents(prev => {
+      const isExpanded = !prev[agentId];
+      if (isExpanded) {
+        getSessions(agentId);
+      }
+      return { ...prev, [agentId]: isExpanded };
+    });
+  };
+
+  const handleCreateSession = async (e: React.MouseEvent, agentId: string) => {
+    e.stopPropagation();
+    try {
+      const sessionId = await createSession(agentId);
+      if (sessionId) {
+        setExpandedAgents(prev => ({ ...prev, [agentId]: true }));
+        // Navigate to the new session
+        navigate(`/agent/${agentId}/session/${sessionId}`);
+      }
+    } catch (err) {
+      console.error("Failed to create session", err);
+    }
+  };
+
+  const handleSessionClick = (agentId: string, sessionId: string) => {
+    navigate(`/agent/${agentId}/session/${sessionId}`);
+  };
+
+  return (
+    <SidebarGroup>
+      <div className="flex items-center justify-between px-2">
+        <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground">AGENTS</SidebarGroupLabel>
+        <button onClick={handleCreateAgent} className="p-1 hover:bg-muted rounded" title="Create Agent">
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {agents.map((agent) => (
+            <SidebarMenuItem key={agent.id}>
+              <div className="flex flex-col w-full">
+                <div
+                  className="flex items-center justify-between w-full p-2 hover:bg-muted rounded-md cursor-pointer group"
+                  onClick={() => handleAgentClick(agent.id)}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    {expandedAgents[agent.id] ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+                    <Bot className="h-4 w-4 shrink-0 text-blue-500" />
+                    <span className="truncate text-sm">{agent.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => handleEditAgent(e, agent.id)}
+                      className="p-1 hover:bg-background rounded"
+                      title="Edit Agent"
+                    >
+                      <Settings className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={(e) => handleCreateSession(e, agent.id)}
+                      className="p-1 hover:bg-background rounded"
+                      title="New Session"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {expandedAgents[agent.id] && (
+                  <div className="pl-6 border-l ml-3 border-border space-y-1 mt-1">
+                    {(sessions[agent.id] || []).length === 0 ? (
+                      <div className="text-xs text-muted-foreground p-2">No sessions</div>
+                    ) : (
+                      sessions[agent.id].map(session => (
+                        <div
+                          key={session.id}
+                          className={`flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-muted text-xs ${currentSessionId === session.id ? 'bg-muted font-medium' : ''}`}
+                          onClick={() => handleSessionClick(agent.id, session.id)}
+                        >
+                          <MessageSquare className="h-3 w-3 shrink-0" />
+                          <span className="truncate">Session {session.id.substring(0, 8)}...</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 export {
+  AgentsSidebarSection,
   Sidebar,
   SidebarContent,
   SidebarFooter,

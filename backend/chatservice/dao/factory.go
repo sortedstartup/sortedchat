@@ -11,6 +11,7 @@ import (
 type DAOFactory interface {
 	CreateDAO() (DAO, error)
 	CreateSettingsDAO() (SettingsDAO, error)
+	CreateAgentDAO() (AgentDAO, error)
 	Close() error
 }
 
@@ -86,6 +87,10 @@ func (f *SQLiteDAOFactory) CreateSettingsDAO() (SettingsDAO, error) {
 	return NewSQLiteSettingsDAO(f.config.Database.SQLite.URL), nil
 }
 
+func (f *SQLiteDAOFactory) CreateAgentDAO() (AgentDAO, error) {
+	return NewSQLiteAgentsDAO(f.config.Database.SQLite.URL), nil
+}
+
 func (f *SQLiteDAOFactory) Close() error {
 	// SQLite connections are closed by individual DAOs
 	return nil
@@ -99,6 +104,10 @@ func (f *PostgresDAOFactory) CreateDAO() (DAO, error) {
 
 func (f *PostgresDAOFactory) CreateSettingsDAO() (SettingsDAO, error) {
 	return NewPostgresSettingsDAOWithDB(f.db)
+}
+
+func (f *PostgresDAOFactory) CreateAgentDAO() (AgentDAO, error) {
+	return NewPostgresAgentsDAO(f.db), nil
 }
 
 func (f *PostgresDAOFactory) Close() error {

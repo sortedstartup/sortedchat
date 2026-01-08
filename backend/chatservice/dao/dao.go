@@ -70,3 +70,23 @@ type SettingsDAO interface {
 	// }
 	GetSettingsByPrefix(prefix string) (map[string]string, error)
 }
+
+type AgentDAO interface {
+	CreateAgent(agent AgentRow) error
+	UpdateAgent(agent AgentRow) error
+	GetAgents() ([]AgentRow, error)
+	GetAgent(agentID string) (*AgentRow, error)
+
+	CreateSession(session AgentSessionRow) error
+	GetSession(sessionID string) (*AgentSessionRow, error)
+	GetAgentSessions(agentID string) ([]AgentSessionRow, error)
+
+	AddAgentMessage(message AgentMessageRow) error
+	GetAgentMessages(sessionID string) ([]AgentMessageRow, error)
+
+	// Agent file operations
+	SaveAgentFile(agentID, docsID, fileName, filePath string, fileSize int64, userID string) error
+	GetAgentFiles(agentID string) ([]AgentDocumentRow, error)
+	GetAgentFileByPath(agentID, filePath string) (*AgentDocumentRow, error)
+	DeleteAgentFile(agentID, docsID string) error
+}

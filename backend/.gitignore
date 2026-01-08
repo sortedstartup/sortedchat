@@ -7,3 +7,4 @@ __debug*
 /db.sqlite-wal
 **/filestore/**
 /mono/frontend-build-wails/dist
+llamaserver/

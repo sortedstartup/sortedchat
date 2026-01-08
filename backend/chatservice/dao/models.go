@@ -128,3 +128,64 @@ func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error
 		Realtime: caps.Realtime,
 	}, nil
 }
+
+type AgentRow struct {
+	ID           string `db:"id" json:"id"`
+	Name         string `db:"name" json:"name"`
+	Description  string `db:"description" json:"description"`
+	SystemPrompt string `db:"system_prompt" json:"system_prompt"`
+	Provider     string `db:"provider" json:"provider"`
+	Model        string `db:"model" json:"model"`
+	LocalTools   string `db:"local_tools" json:"local_tools"`
+	CreatedAt    string `db:"created_at" json:"created_at"`
+	UpdatedAt    string `db:"updated_at" json:"updated_at"`
+}
+
+type AgentSessionRow struct {
+	ID              string  `db:"id" json:"id"`
+	AgentID         string  `db:"agent_id" json:"agent_id"`
+	UserID          string  `db:"user_id" json:"user_id"`
+	Status          string  `db:"status" json:"status"`
+	Title           *string `db:"title" json:"title"`
+	ParentSessionID *string `db:"parent_session_id" json:"parent_session_id"`
+	CreatedAt       string  `db:"created_at" json:"created_at"`
+	UpdatedAt       string  `db:"updated_at" json:"updated_at"`
+}
+
+type AgentMessageRow struct {
+	ID               string  `db:"id" json:"id"`
+	SessionID        string  `db:"session_id" json:"session_id"`
+	SequenceNumber   int     `db:"sequence_number" json:"sequence_number"`
+	Role             string  `db:"role" json:"role"`
+	Type             string  `db:"type" json:"type"`
+	Content          string  `db:"content" json:"content"`
+	ToolName         *string `db:"tool_name" json:"tool_name"`
+	ToolCallID       *string `db:"tool_call_id" json:"tool_call_id"`
+	ToolArgs         *string `db:"tool_args" json:"tool_args"`
+	ThoughtSignature *string `db:"thought_signature" json:"thought_signature"`
+	CreatedAt        string  `db:"created_at" json:"created_at"`
+}
+
+type AgentFSOperationRow struct {
+	ID           string  `db:"id" json:"id"`
+	AgentID      string  `db:"agent_id" json:"agent_id"`
+	SessionID    *string `db:"session_id" json:"session_id"`
+	Operation    string  `db:"operation" json:"operation"`
+	Path         string  `db:"path" json:"path"`
+	Success      bool    `db:"success" json:"success"`
+	ErrorMessage *string `db:"error_message" json:"error_message"`
+	FileSize     *int64  `db:"file_size" json:"file_size"`
+	CreatedAt    string  `db:"created_at" json:"created_at"`
+}
+
+type AgentDocumentRow struct {
+	ID         string `db:"id" json:"id"`
+	AgentID    string `db:"agent_id" json:"agent_id"`
+	DocsID     string `db:"docs_id" json:"docs_id"`
+	FileName   string `db:"file_name" json:"file_name"`
+	FilePath   string `db:"file_path" json:"file_path"`
+	FileSize   int64  `db:"file_size" json:"file_size"`
+	UploadedBy string `db:"uploaded_by" json:"uploaded_by"`
+	CreatedAt  string `db:"created_at" json:"created_at"`
+	UpdatedAt  string `db:"updated_at" json:"updated_at"`
+}

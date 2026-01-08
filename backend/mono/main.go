@@ -256,8 +256,16 @@ func main() {
 
 	settingServiceApi := api.NewSettingService(queue, daoFactory)
 	settingServiceApi.Init()
+
+	agentsServiceApi, err := api.NewAgentService(daoFactory, settingsManager)
+	if err != nil {
+		log.Fatalf("Failed to create agent service: %v", err)
+	}
+	// agentsServiceApi.Init()
 	proto.RegisterSettingServiceServer(grpcServer, settingServiceApi)
 	proto.RegisterSettingServiceServer(internalGrpcServer, settingServiceApi)
+	proto.RegisterAgentServiceServer(grpcServer, agentsServiceApi)
+	proto.RegisterAgentServiceServer(internalGrpcServer, agentsServiceApi)
 
 	// Run both servers in parallel
 	serverErr := make(chan error)

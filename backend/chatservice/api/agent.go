@@ -263,8 +263,8 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 	apiKey := providerSettings.ApiKey
 	apiURL := providerSettings.ApiUrl
 
-	// Create filesystem tools with sandboxed path: ./agentid/sessionid
-	workspacePath := filepath.Join(".", agentRow.ID, sessionID)
+	// Create filesystem tools with sandboxed path: sortedchat-data/agents/agentid/sessionid
+	workspacePath := filepath.Join("sortedchat-data", "agents", agentRow.ID, sessionID)
 	fsTools, err := agents.NewFileSystemTools(agentRow.ID, workspacePath)
 	if err != nil {
 		return fmt.Errorf("failed to create filesystem tools: %w", err)
@@ -375,7 +375,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		case *sortedagents.ToolCallStartEvent:
 			// Flush any accumulated text before tool call
 			if accumulatedText != "" {
-				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil)
 				*nextSeq++
 				accumulatedText = ""
 			}
@@ -389,7 +389,11 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 			argsStr := string(argsJSON)
 
 			// Save tool call to DB
-			s.saveAgentMessage(sessionID, *nextSeq, "assistant", "tool_call", "", strPtr(e.ToolName), strPtr(toolCallID), &argsStr)
+			var thoughtSigPtr *string
+			if e.ThoughtSignature != "" {
+				thoughtSigPtr = strPtr(e.ThoughtSignature)
+			}
+			s.saveAgentMessage(sessionID, *nextSeq, "assistant", "tool_call", "", strPtr(e.ToolName), strPtr(toolCallID), &argsStr, thoughtSigPtr)
 			*nextSeq++
 
 			// Stream tool call to client
@@ -423,7 +427,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 
 			// Save tool result to DB
 			success := e.Error == nil
-			s.saveAgentMessage(sessionID, *nextSeq, "tool", "tool_result", resultStr, strPtr(e.ToolName), strPtr(toolCallID), nil)
+			s.saveAgentMessage(sessionID, *nextSeq, "tool", "tool_result", resultStr, strPtr(e.ToolName), strPtr(toolCallID), nil, nil)
 			*nextSeq++
 
 			// Stream tool result to client
@@ -454,7 +458,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		case *sortedagents.CompleteEvent:
 			// Save any final accumulated text
 			if accumulatedText != "" {
-				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil)
 				*nextSeq++
 			}
 			slog.Info("Agent execution completed", "agent", agentRow.Name)
@@ -463,7 +467,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		case *sortedagents.ErrorEvent:
 			// Flush any accumulated text before error
 			if accumulatedText != "" {
-				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil)
 				*nextSeq++
 			}
 
@@ -481,7 +485,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 
 	// Save any remaining accumulated text
 	if accumulatedText != "" {
-		s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil)
+		s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil)
 		*nextSeq++
 	}
 
@@ -499,18 +503,20 @@ func (s *AgentServiceAPI) saveAgentMessage(
 	toolName *string,
 	toolCallID *string,
 	toolArgs *string,
+	thoughtSignature *string,
 ) {
 	msgID := uuid.New().String()
 	msg := db.AgentMessageRow{
-		ID:             msgID,
-		SessionID:      sessionID,
-		SequenceNumber: seq,
-		Role:           role,
-		Type:           msgType,
-		Content:        content,
-		ToolName:       toolName,
-		ToolCallID:     toolCallID,
-		ToolArgs:       toolArgs,
+		ID:               msgID,
+		SessionID:        sessionID,
+		SequenceNumber:   seq,
+		Role:             role,
+		Type:             msgType,
+		Content:          content,
+		ToolName:         toolName,
+		ToolCallID:       toolCallID,
+		ToolArgs:         toolArgs,
+		ThoughtSignature: thoughtSignature,
 	}
 	if err := s.dao.AddAgentMessage(msg); err != nil {
 		slog.Error("Failed to save agent message", "error", err)
@@ -577,15 +583,27 @@ func convertDBMessageToSortedAgentsMessage(msg db.AgentMessageRow) sortedagents.
 			Content: msg.Content,
 		}
 	case "tool_call":
+		sig := getStringValue(msg.ThoughtSignature)
+		var extra *sortedagents.ExtraContent
+		if sig != "" {
+			extra = &sortedagents.ExtraContent{
+				Google: &sortedagents.GoogleExtra{
+					ThoughtSignature: sig,
+				},
+			}
+		}
 		return sortedagents.Message{
 			Role: "assistant",
 			ToolCalls: []sortedagents.ToolCall{{
 				ID:   getStringValue(msg.ToolCallID),
 				Type: "function",
 				Function: sortedagents.Function{
-					Name:      getStringValue(msg.ToolName),
-					Arguments: getStringValue(msg.ToolArgs),
+					Name:             getStringValue(msg.ToolName),
+					Arguments:        getStringValue(msg.ToolArgs),
+					ThoughtSignature: sig,
 				},
+				ThoughtSignature: sig,
+				ExtraContent:     extra,
 			}},
 		}
 	case "tool_result":

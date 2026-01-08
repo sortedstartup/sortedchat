@@ -22,8 +22,9 @@ func (e *TextChunkEvent) EventType() string { return "text_chunk" }
 
 // ToolCallStartEvent represents the start of a tool call
 type ToolCallStartEvent struct {
-	ToolName string
-	Args     map[string]interface{}
+	ToolName         string
+	Args             map[string]interface{}
+	ThoughtSignature string
 }
 
 func (e *ToolCallStartEvent) EventType() string { return "tool_call_start" }
@@ -293,6 +294,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 			// Accumulate the response
 			var contentBuilder strings.Builder
 			var role string
+			var extraContent *ExtraContent
 			toolCallsMap := make(map[int]*ToolCall) // index -> partial tool call
 
 			// Process stream chunks
@@ -322,6 +324,19 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 						eventChan <- &TextChunkEvent{Chunk: delta.Content}
 					}
 
+					// Handle top-level ExtraContent (Message level)
+					if delta.ExtraContent != nil {
+						if extraContent == nil {
+							extraContent = delta.ExtraContent
+						} else if delta.ExtraContent.Google != nil {
+							if extraContent.Google == nil {
+								extraContent.Google = delta.ExtraContent.Google
+							} else {
+								extraContent.Google.ThoughtSignature += delta.ExtraContent.Google.ThoughtSignature
+							}
+						}
+					}
+
 					// Handle tool calls (accumulate deltas)
 					for _, tcDelta := range delta.ToolCalls {
 						tc, exists := toolCallsMap[tcDelta.Index]
@@ -342,6 +357,24 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 						if tcDelta.Function.Arguments != "" {
 							tc.Function.Arguments += tcDelta.Function.Arguments
 						}
+						if tcDelta.Function.ThoughtSignature != "" {
+							tc.Function.ThoughtSignature += tcDelta.Function.ThoughtSignature
+						}
+						if tcDelta.ThoughtSignature != "" {
+							tc.ThoughtSignature += tcDelta.ThoughtSignature
+						}
+						// Handle ToolCall level ExtraContent
+						if tcDelta.ExtraContent != nil {
+							if tc.ExtraContent == nil {
+								tc.ExtraContent = tcDelta.ExtraContent
+							} else if tcDelta.ExtraContent.Google != nil {
+								if tc.ExtraContent.Google == nil {
+									tc.ExtraContent.Google = tcDelta.ExtraContent.Google
+								} else {
+									tc.ExtraContent.Google.ThoughtSignature += tcDelta.ExtraContent.Google.ThoughtSignature
+								}
+							}
+						}
 					}
 
 				case err := <-errChan:
@@ -354,8 +387,9 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 
 			// Build the complete assistant message
 			assistantMessage := Message{
-				Role:    role,
-				Content: contentBuilder.String(),
+				Role:         role,
+				Content:      contentBuilder.String(),
+				ExtraContent: extraContent,
 			}
 
 			// Convert toolCallsMap to slice
@@ -363,6 +397,14 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 				toolCalls := make([]ToolCall, 0, len(toolCallsMap))
 				for i := 0; i < len(toolCallsMap); i++ {
 					if tc, exists := toolCallsMap[i]; exists {
+						// Ensure ThoughtSignature is synchronized across possible locations
+						// If we have it in ExtraContent, propagate it to standard fields for easier handling
+						if tc.ExtraContent != nil && tc.ExtraContent.Google != nil && tc.ExtraContent.Google.ThoughtSignature != "" {
+							tc.ThoughtSignature = tc.ExtraContent.Google.ThoughtSignature
+							tc.Function.ThoughtSignature = tc.ExtraContent.Google.ThoughtSignature
+						} else if tc.ThoughtSignature != "" && tc.Function.ThoughtSignature == "" {
+							tc.Function.ThoughtSignature = tc.ThoughtSignature
+						}
 						toolCalls = append(toolCalls, *tc)
 					}
 				}
@@ -405,8 +447,9 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 
 				// Emit tool call start event
 				eventChan <- &ToolCallStartEvent{
-					ToolName: toolCall.Function.Name,
-					Args:     args,
+					ToolName:         toolCall.Function.Name,
+					Args:             args,
+					ThoughtSignature: toolCall.Function.ThoughtSignature,
 				}
 
 				// Execute tool

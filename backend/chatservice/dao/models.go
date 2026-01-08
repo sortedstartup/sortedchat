@@ -153,16 +153,17 @@ type AgentSessionRow struct {
 }
 
 type AgentMessageRow struct {
-	ID             string  `db:"id" json:"id"`
-	SessionID      string  `db:"session_id" json:"session_id"`
-	SequenceNumber int     `db:"sequence_number" json:"sequence_number"`
-	Role           string  `db:"role" json:"role"`
-	Type           string  `db:"type" json:"type"`
-	Content        string  `db:"content" json:"content"`
-	ToolName       *string `db:"tool_name" json:"tool_name"`
-	ToolCallID     *string `db:"tool_call_id" json:"tool_call_id"`
-	ToolArgs       *string `db:"tool_args" json:"tool_args"`
-	CreatedAt      string  `db:"created_at" json:"created_at"`
+	ID               string  `db:"id" json:"id"`
+	SessionID        string  `db:"session_id" json:"session_id"`
+	SequenceNumber   int     `db:"sequence_number" json:"sequence_number"`
+	Role             string  `db:"role" json:"role"`
+	Type             string  `db:"type" json:"type"`
+	Content          string  `db:"content" json:"content"`
+	ToolName         *string `db:"tool_name" json:"tool_name"`
+	ToolCallID       *string `db:"tool_call_id" json:"tool_call_id"`
+	ToolArgs         *string `db:"tool_args" json:"tool_args"`
+	ThoughtSignature *string `db:"thought_signature" json:"thought_signature"`
+	CreatedAt        string  `db:"created_at" json:"created_at"`
 }
 
 type AgentFSOperationRow struct {

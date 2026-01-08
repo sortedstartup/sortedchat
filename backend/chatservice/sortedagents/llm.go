@@ -19,63 +19,157 @@ type LLM interface {
 }
 
 // Message represents a chat message
+
 type Message struct {
-	Role       string     `json:"role"`
-	Content    string     `json:"content"`
-	ToolCallID string     `json:"tool_call_id,omitempty"`
-	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+
+	Role         string        `json:"role"`
+
+	Content      string        `json:"content"`
+
+	ToolCallID   string        `json:"tool_call_id,omitempty"`
+
+	ToolCalls    []ToolCall    `json:"tool_calls,omitempty"`
+
+	ExtraContent *ExtraContent `json:"extra_content,omitempty"`
+
 }
+
+
 
 // ToolCall represents a tool call from the assistant
+
 type ToolCall struct {
-	ID       string   `json:"id"`
-	Type     string   `json:"type"`
-	Function Function `json:"function"`
+
+	ID               string        `json:"id"`
+
+	Type             string        `json:"type"`
+
+	Function         Function      `json:"function"`
+
+	ThoughtSignature string        `json:"thought_signature,omitempty"`
+
+	ExtraContent     *ExtraContent `json:"extra_content,omitempty"`
+
 }
+
+
+
+// ExtraContent represents non-standard fields for Gemini/Vertex
+
+type ExtraContent struct {
+
+	Google *GoogleExtra `json:"google,omitempty"`
+
+}
+
+
+
+// GoogleExtra contains Google-specific fields like thought_signature
+
+type GoogleExtra struct {
+
+	ThoughtSignature string `json:"thought_signature,omitempty"`
+
+}
+
+
 
 // Function represents a function call
+
 type Function struct {
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
+
+	Name             string `json:"name"`
+
+	Arguments        string `json:"arguments"`
+
+	ThoughtSignature string `json:"thought_signature,omitempty"`
+
 }
+
+
 
 // ToolDefinition represents a tool definition for OpenAI
+
 type ToolDefinition struct {
+
 	Type     string `json:"type"`
+
 	Function struct {
+
 		Name        string      `json:"name"`
+
 		Description string      `json:"description"`
+
 		Parameters  *JSONSchema `json:"parameters"`
+
 		Strict      bool        `json:"strict"`
+
 	} `json:"function"`
+
 }
+
+
 
 // ChatResponse represents the response from OpenAI
+
 type ChatResponse struct {
+
 	Choices []struct {
+
 		Message      Message `json:"message"`
+
 		FinishReason string  `json:"finish_reason"`
+
 	} `json:"choices"`
+
 }
 
+
+
 // StreamChunk represents a chunk from the streaming API
+
 type StreamChunk struct {
+
 	Choices []struct {
+
 		Delta struct {
-			Role      string `json:"role,omitempty"`
-			Content   string `json:"content,omitempty"`
-			ToolCalls []struct {
+
+			Role         string        `json:"role,omitempty"`
+
+			Content      string        `json:"content,omitempty"`
+
+			ExtraContent *ExtraContent `json:"extra_content,omitempty"`
+
+			ToolCalls    []struct {
+
 				Index    int    `json:"index"`
+
 				ID       string `json:"id,omitempty"`
+
 				Type     string `json:"type,omitempty"`
+
 				Function struct {
-					Name      string `json:"name,omitempty"`
-					Arguments string `json:"arguments,omitempty"`
+
+					Name             string `json:"name,omitempty"`
+
+					Arguments        string `json:"arguments,omitempty"`
+
+					ThoughtSignature string `json:"thought_signature,omitempty"`
+
 				} `json:"function,omitempty"`
+
+				ThoughtSignature string        `json:"thought_signature,omitempty"`
+
+				ExtraContent     *ExtraContent `json:"extra_content,omitempty"`
+
 			} `json:"tool_calls,omitempty"`
+
 		} `json:"delta"`
+
 		FinishReason *string `json:"finish_reason"`
+
 	} `json:"choices"`
+
 }
 
 // OpenAILLM implements the LLM interface using OpenAI's API
@@ -177,9 +271,26 @@ func (llm *OpenAILLM) Call(ctx context.Context, messages []Message, tools []Tool
 		return nil, fmt.Errorf("API request failed with status: %d, body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	
 	var chatResponse ChatResponse
-	if err := json.NewDecoder(resp.Body).Decode(&chatResponse); err != nil {
+	if err := json.NewDecoder(bytes.NewBuffer(bodyBytes)).Decode(&chatResponse); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %v", err)
+	}
+
+	// Synchronize ExtraContent to ThoughtSignature for easier replay
+	for i := range chatResponse.Choices {
+		msg := &chatResponse.Choices[i].Message
+		if msg.ExtraContent != nil && msg.ExtraContent.Google != nil && msg.ExtraContent.Google.ThoughtSignature != "" {
+			// If we ever need message-level signature
+		}
+		for j := range msg.ToolCalls {
+			tc := &msg.ToolCalls[j]
+			if tc.ExtraContent != nil && tc.ExtraContent.Google != nil && tc.ExtraContent.Google.ThoughtSignature != "" {
+				tc.ThoughtSignature = tc.ExtraContent.Google.ThoughtSignature
+				tc.Function.ThoughtSignature = tc.ExtraContent.Google.ThoughtSignature
+			}
+		}
 	}
 
 	return &chatResponse, nil

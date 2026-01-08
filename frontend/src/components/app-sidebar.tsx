@@ -390,7 +390,7 @@ export function AppSidebar() {
               <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
                 Projects
               </SidebarGroupLabel>
-              <Button className="h-6 w-6 p-0" onClick={() => setIsProjectDialogOpen(true)}><Plus /></Button>
+              <Button variant="ghost" onClick={() => setIsProjectDialogOpen(true)}><Plus /></Button>
             </div>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -441,7 +441,7 @@ export function AppSidebar() {
                 {showSoftDeleted ? "Trash Chats" : "Chats"}
               </SidebarGroupLabel>
               <div className="flex items-center gap-2">
-                <Button className="h-6 w-6 p-0" onClick={handleNewChat}>
+                <Button variant="ghost" onClick={handleNewChat}>
                   <Plus />
                 </Button>
                 <Button

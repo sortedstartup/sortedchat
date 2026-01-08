@@ -185,7 +185,7 @@ func (s *SettingService) GetProviderSetting(ctx context.Context, name string) (*
 	return &ps, nil
 }
 
-func (s *SettingService) SetProviderSetting(ctx context.Context, name string, settings *pb.ProviderSettings) error {
+func (s *SettingService) SetProviderSetting(ctx context.Context, name string, settings *pb.ProviderSettings, completeOnboarding bool) error {
 	key := "provider." + name
 	bytes, err := json.Marshal(settings)
 	if err != nil {
@@ -194,6 +194,13 @@ func (s *SettingService) SetProviderSetting(ctx context.Context, name string, se
 
 	if err := s.dao.SetSettingValue(key, string(bytes)); err != nil {
 		return err
+	}
+
+	if completeOnboarding {
+		err = s.dao.SetSettingValue("is_first_boot", "1")
+		if err != nil {
+			slog.Error("settings_service:SetProviderSetting", "step", "failed to set is_first_boot", "error", err)
+		}
 	}
 
 	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
@@ -220,9 +227,9 @@ func (s *SettingService) GetAllProviderSettings(ctx context.Context) (map[string
 	return result, nil
 }
 
-func (s *SettingService) SetAllProviderSettings(ctx context.Context, settingsMap map[string]*pb.ProviderSettings) error {
+func (s *SettingService) SetAllProviderSettings(ctx context.Context, settingsMap map[string]*pb.ProviderSettings, completeOnboarding bool) error {
 	for name, ps := range settingsMap {
-		if err := s.SetProviderSetting(ctx, name, ps); err != nil {
+		if err := s.SetProviderSetting(ctx, name, ps, true); err != nil {
 			return err
 		}
 	}

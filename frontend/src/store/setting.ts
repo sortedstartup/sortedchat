@@ -1,7 +1,6 @@
 // store/setting.ts
 import {
   Settings,
-  SetSettingRequest,
   SettingServiceClient,
   IsFirstBootRequest,
   TestConnectionRequest,
@@ -9,6 +8,7 @@ import {
   ConnectionType,
   GetAllProviderSettingsRequest,
   GetAllProviderSettingsResponse,
+  SetAllProviderSettingsRequest,
   SetProviderSettingRequest,
   SetProviderSettingResponse,
   ProviderSettings,
@@ -97,7 +97,7 @@ export const onboardingActions = {
 
   nextStep: () => {
     const current = $onboardingStep.get();
-    if (current < 1) {
+    if (current < 2) {
       $onboardingStep.set(current + 1);
     }
   },
@@ -126,15 +126,26 @@ export const onboardingActions = {
   completeOnboarding: async (): Promise<void> => {
     try {
       const data = $onboardingData.get();
-      const settings = new Settings(data);
 
-      // Save settings
-      const setReq = new SetSettingRequest({ settings });
-      await getClient().SetSetting(setReq, {});
+      const settings = new Map<string, ProviderSettings>();
+      settings.set('openai', new ProviderSettings({
+        api_key: data.OPENAI_API_KEY,
+        api_url: data.OPENAI_API_URL,
+        is_enabled: true
+      }));
+      settings.set('claude', new ProviderSettings({
+        api_key: data.CLAUDE_API_KEY,
+        api_url: data.CLAUDE_API_URL,
+        is_enabled: true
+      }));
+      settings.set('gemini', new ProviderSettings({
+        api_key: data.GEMINI_API_KEY,
+        api_url: data.GEMINI_API_URL,
+        is_enabled: true
+      }));
 
-      $settings.set(settings);
+      await getClient().SetAllProviderSettings(new SetAllProviderSettingsRequest({ settings }), {});
 
-      // Force a full page reload to ensure isFirstBoot check runs fresh
       window.location.replace("/");
     } catch (error) {
       console.error("Failed to complete onboarding:", error);

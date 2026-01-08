@@ -72,7 +72,7 @@ func (s *SettingServiceAPI) GetProviderSetting(ctx context.Context, req *pb.GetP
 }
 
 func (s *SettingServiceAPI) SetProviderSetting(ctx context.Context, req *pb.SetProviderSettingRequest) (*pb.SetProviderSettingResponse, error) {
-	err := s.service.SetProviderSetting(ctx, req.Name, req.Settings)
+	err := s.service.SetProviderSetting(ctx, req.Name, req.Settings, true)
 	if err != nil {
 		slog.Error("api:SetProviderSetting", "failed to set provider settings", "error", err)
 		return nil, err
@@ -90,7 +90,7 @@ func (s *SettingServiceAPI) GetAllProviderSettings(ctx context.Context, req *pb.
 }
 
 func (s *SettingServiceAPI) SetAllProviderSettings(ctx context.Context, req *pb.SetAllProviderSettingsRequest) (*pb.SetAllProviderSettingsResponse, error) {
-	err := s.service.SetAllProviderSettings(ctx, req.Settings)
+	err := s.service.SetAllProviderSettings(ctx, req.Settings, true)
 	if err != nil {
 		slog.Error("api:SetAllProviderSettings", "failed to set all provider settings", "error", err)
 		return nil, err

@@ -1,11 +1,8 @@
-import { useState } from "react";
 import { DownloadStatus, Model as ModelType } from '../../proto/inferenceservice';
 import { downloadModel, cancelDownload, deleteModel } from "@/store/inference";
-
+import { Download, X, Trash2, Bot, Box, FileText, ArrowUp, ArrowDown } from "lucide-react";
 
 export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLocal?: boolean }) => {
-  const [showUrl, setShowUrl] = useState(false);
-
   const isDownloaded = model.is_downloaded;
   // For local models, treat as downloadable even if flag is not set
   const isDownloadable = isLocal ? true : model.is_downloadable;
@@ -57,201 +54,118 @@ export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLoca
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(2)} KB`;
-    if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(2)} MB`;
-    if (bytes < 1024 ** 4) return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
-    return `${(bytes / 1024 ** 4).toFixed(2)} TB`;
+    if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+    if (bytes < 1024 ** 4) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+    return `${(bytes / 1024 ** 4).toFixed(1)} TB`;
   };
 
-  const formatSpeed = (kbps: number): string => {
-    if (kbps === 0) return '0 KB/s';
-    if (kbps < 1024) {
-      return parseFloat(kbps.toFixed(1)) + ' KB/s';
-    }
-    const mbps = kbps / 1024;
-    return parseFloat(mbps.toFixed(1)) + ' MB/s';
-  };
-
-  const getButtonState = () => {
-    const isActivelyDownloading = progressData?.status === DownloadStatus.DOWNLOADING;
-
-    if (isActivelyDownloading) {
-      return {
-        text: 'Cancel',
-        disabled: false,
-        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer',
-        onClick: handleCancel
-      };
-    }
-
-    if (isDownloaded || progressData?.status === DownloadStatus.COMPLETED) {
-      return {
-        text: 'Delete',
-        disabled: false,
-        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer',
-        onClick: handleDelete
-      };
-    }
-
-    if (progressData?.status === DownloadStatus.FAILED) {
-      return {
-        text: 'Failed - Retry',
-        disabled: false,
-        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer',
-        onClick: handleDownload
-      };
-    }
-
-    if (progressData?.status === DownloadStatus.CANCELLING) {
-      return {
-        text: 'Cancelling...',
-        disabled: true,
-        className: 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
-      };
-    }
-
-
-    if (!isDownloadable) {
-      return null;
-    }
-
-    return {
-      text: 'Download',
-      disabled: false,
-      className: 'bg-green-500 hover:bg-green-600 text-white cursor-pointer'
-    };
-  };
-
-  const buttonState = getButtonState();
+  const isDownloading = progressData?.status === DownloadStatus.DOWNLOADING;
+  const isEmbedding = model.is_embedding_model;
 
   return (
-    <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-shadow">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-foreground mb-2">{model.name}</h3>
-          <div className="space-y-1 text-sm text-muted-foreground">
-            <p><span className="font-medium">Provider:</span> {model.provider}</p>
-            <p><span className="font-medium">ID:</span> {model.id}</p>
-            {model.url && (
-              <div>
-                <button
-                  onClick={() => setShowUrl(!showUrl)}
-                  className="text-primary hover:text-primary/80 text-sm font-medium"
-                >
-                  {showUrl ? 'Hide URL' : 'Show URL'}
-                </button>
-                {showUrl && (
-                  <p className="mt-1">
-                    <span className="font-medium">URL:</span>
-                    <span className="ml-1 text-muted-foreground break-all font-mono text-xs">
-                      {model.url}
-                    </span>
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+    <div className="bg-card rounded-xl shadow-sm border border-border p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+      {/* Left Side */}
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-muted/50 flex items-center justify-center border border-border/50">
+          {isEmbedding ? (
+            <Box className="w-6 h-6 text-foreground/70" />
+          ) : (
+            <Bot className="w-6 h-6 text-foreground/70" />
+          )}
         </div>
 
-        <div className="ml-4 flex flex-col items-end space-y-2">
-          {/* Show download/delete buttons only for local models */}
-          {isLocal && buttonState && (
-            <button
-              onClick={buttonState.onClick || handleDownload}
-              disabled={buttonState.disabled}
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${buttonState.className}`}
-            >
-              {buttonState.text}
-            </button>
+        <div className="flex flex-col justify-center">
+          {isEmbedding && (
+            <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 px-1.5 py-0.5 rounded w-fit mb-0.5 uppercase tracking-wider">
+              Embedding
+            </span>
           )}
-
-          {progressData && progressData.status === 2 && (
-            <div className="w-48">
-              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                <span>{progressData.progress}%</span>
-                <span>{formatFileSize(progressData.filesize)}</span>
-                {progressData.speed > 0 && (
-                  <span>{formatSpeed(progressData.speed)}</span>
-                )}
-              </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progressData.progress}%` }}
-                />
-              </div>
-            </div>
-          )}
+          <h3 className="font-bold text-base text-foreground leading-tight">{model.name}</h3>
+          <p className="text-xs text-muted-foreground font-medium">{model.provider}</p>
         </div>
       </div>
 
-      {(model.input_token_cost > 0 || model.output_token_cost > 0) && (
-        <div className="border-t border-border pt-4 mt-4">
-          <h4 className="text-sm font-medium text-foreground mb-2">Token Costs</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Input:</span>
-              <span className="ml-2 font-mono text-foreground">${model.input_token_cost.toFixed(6)}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Output:</span>
-              <span className="ml-2 font-mono text-foreground">${model.output_token_cost.toFixed(6)}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="border-t border-border pt-4 mt-4">
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center space-x-2 flex-wrap">
-            {/* Show downloadable/local status for downloadable models */}
-            {isDownloadable && (
-              <>
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                  Local
-                </span>
-                {isDownloaded && (
-                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400">
-                    Downloaded
-                  </span>
-                )}
-              </>
-            )}
-
-            {!isDownloadable && (
-              <div className="flex items-center space-x-2">
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                  Remote
-                </span>
-                {model.status !== 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    Model Status: {model.status}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {model.is_embedding_model && (
-              <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                Embedding Model
+      {/* Right Side */}
+      <div className="flex items-center gap-4">
+        {/* Stats / Progress */}
+        {isDownloading ? (
+          <div className="flex flex-col items-end min-w-[120px]">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
+                FETCHING
               </span>
-            )}
-            
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              model.is_enabled 
-                ? 'bg-green-500/10 text-green-600 dark:text-green-400' 
-                : 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
-            }`}>
-              {model.is_enabled ? 'Enabled' : 'Disabled'}
-            </span>
+              <span className="text-xs font-bold text-foreground">
+                {progressData?.progress}%
+              </span>
+            </div>
+            <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-purple-600 dark:bg-purple-400 transition-all duration-300 ease-out"
+                style={{ width: `${progressData?.progress}%` }}
+              />
+            </div>
+            <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground font-mono">
+              <span>{formatFileSize(progressData?.filesize || 0)}</span>
+              {progressData?.speed ? (
+                <span>/ {(progressData.speed / 1024).toFixed(1)} MB/s</span>
+              ) : null}
+            </div>
           </div>
+        ) : (
+          <div className="flex flex-col items-end mr-2">
+            {/* {(model.input_token_cost > 0 || model.output_token_cost > 0) && ( */}
+            <div className="flex flex-col items-end gap-0.5">
+              <div className="flex items-center gap-1.5" title="Input Token Cost">
+                <ArrowUp className="w-3 h-3 text-muted-foreground/70" />
+                <span className="text-xs font-mono font-medium text-foreground">
+                  ${model.input_token_cost}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5" title="Output Token Cost">
+                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
+                <span className="text-xs font-mono font-medium text-foreground">
+                  ${model.output_token_cost}
+                </span>
+              </div>
+            </div>
+            {/* )} */}
+          </div>
+        )}
 
-          {progressData && progressData.filesize > 0 && progressData.status !== 2 && (
-            <span className="text-muted-foreground">{formatFileSize(progressData.filesize)}</span>
-          )}
-        </div>
+        {/* Action Button */}
+        {isDownloadable && (
+          <button
+            onClick={
+              isDownloading ? handleCancel :
+                isDownloaded ? handleDelete :
+                  handleDownload
+            }
+            className={`
+              w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200
+              ${isDownloading
+                ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm hover:shadow-purple-500/25'
+                : isDownloaded
+                  ? 'bg-muted hover:bg-destructive hover:text-destructive-foreground text-muted-foreground'
+                  : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow-primary/25'
+              }
+            `}
+            title={
+              isDownloading ? "Cancel Download" :
+                isDownloaded ? "Delete Model" :
+                  "Download Model"
+            }
+          >
+            {isDownloading ? (
+              <X className="w-5 h-5" />
+            ) : isDownloaded ? (
+              <Trash2 className="w-5 h-5" />
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
-
 };

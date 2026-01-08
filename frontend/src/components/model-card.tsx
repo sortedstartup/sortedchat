@@ -165,18 +165,6 @@ export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLoca
             )}
           </button>
         )}
-
-        {!isDownloadable && model.url && (
-          <a
-            href={model.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors"
-            title="View Model URL"
-          >
-            <FileText className="w-5 h-5" />
-          </a>
-        )}
       </div>
     </div>
   );

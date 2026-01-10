@@ -442,6 +442,8 @@ function Message({
         return executions;
     }, [toolEvents]);
 
+    const hasActiveTool = toolExecutions.some(e => !e.isComplete);
+
     return (
         <div
             className={`w-full ${isUser
@@ -510,7 +512,7 @@ function Message({
                                 <span className="inline-block w-1.5 h-4 bg-primary/40 animate-pulse ml-1 align-middle" />
                             )}
                         </div>
-                    ) : message.isStreaming && toolExecutions.length === 0 && (
+                    ) : message.isStreaming && !hasActiveTool && (
                         <div className="flex items-center gap-2 text-muted-foreground text-sm italic py-2">
                             <Loader2 className="w-4 h-4 animate-spin" />
                             <span>Agent is thinking...</span>

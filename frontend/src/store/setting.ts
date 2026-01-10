@@ -146,7 +146,10 @@ export const onboardingActions = {
 
       await getClient().SetAllProviderSettings(new SetAllProviderSettingsRequest({ settings }), {});
 
-      window.location.replace("/");
+      // Delay navigation to allow confetti animation to play
+      setTimeout(() => {
+        window.location.replace("/");
+      }, 1000);
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
       throw new Error("Failed to complete onboarding");

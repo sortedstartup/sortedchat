@@ -26,8 +26,8 @@ export function StepLocal() {
             </p>
           </div>
 
-          <div className="border rounded-2xl bg-background/50 backdrop-blur-sm shadow-inner mb-3 sm:mb-4 overflow-auto max-h-[35vh]">
-            <LocalProvider />
+          <div className="border rounded-2xl bg-background/50 backdrop-blur-sm shadow-inner mb-3 sm:mb-4 overflow-auto">
+            <LocalProvider compact={true} />
           </div>
 
           <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-xl p-2 sm:p-3 shadow-sm">

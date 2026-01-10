@@ -88,10 +88,10 @@ export const ProviderView = ({
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground capitalize">
+                    <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground capitalize">
                         {displayTitle} Models
                     </h1>
-                    <p className="text-muted-foreground mt-2">
+                    <p className="text-sm text-muted-foreground mt-1">
                         {filteredModels.length} models available
                     </p>
                 </div>

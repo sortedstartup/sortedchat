@@ -23,7 +23,12 @@ INSERT INTO shared_models_metadata (id, name, url, provider, input_token_cost, o
   ('gemma-3-270m-it-GGUF', 'gemma-3-270m-it-GGUF','https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q8_0.gguf?download=true', 'local', 0.01, 0.01,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.01,TRUE),
   ('embeddinggemma-300M-Q8_0', 'embeddinggemma-300M-Q8_0','https://huggingface.co/ggml-org/embeddinggemma-300M-GGUF/resolve/main/embeddinggemma-300M-Q8_0.gguf', 'local', 0.01, 0.01,'',FALSE,TRUE,0,NULL,TRUE,'{}',0.01,TRUE),
   ('nomic-embed-text-v1.5.Q8_0', 'nomic-embed-text-v1.5.Q8_0','https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.Q8_0.gguf', 'local', 0.01, 0.01,'',FALSE,TRUE,0,NULL,TRUE,'{}',0.01,TRUE),
-  ('tinyLLama-1.1B-Chat-v1.0-GGUF','tinyLLama-1.1B-Chat-v1.0-GGUF', 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q8_0.gguf?download=true', 'local', 0.01, 0.01,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.01,TRUE)
+  ('tinyLLama-1.1B-Chat-v1.0-GGUF','tinyLLama-1.1B-Chat-v1.0-GGUF', 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q8_0.gguf?download=true', 'local', 0.01, 0.01,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.01,TRUE),
+
+  ('functiongemma-270m-it-q8_0','functiongemma-270m-it-q8_0', 'https://huggingface.co/ggml-org/functiongemma-270m-it-GGUF/resolve/main/functiongemma-270m-it-q8_0.gguf', 'local', 0.01, 0.01,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.00,TRUE),
+  ('granite-4.0-h-small-Q4_K_M','granite-4.0-h-small-Q4_K_M', 'https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q4_K_M.gguf', 'local', 0.01, 0.01,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.00,TRUE),
+  ('granite-4.0-h-small-Q8_0','granite-4.0-h-small-Q8_0', 'https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q8_0.gguf', 'local', 0.01, 0.01,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.00,TRUE),
+  ('granite-4.0-1b-Q8_0','granite-4.0-1b-Q8_0', 'https://huggingface.co/ibm-granite/granite-4.0-1b-GGUF/resolve/main/granite-4.0-1b-Q8_0.gguf', 'local', 0.01, 0.01,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.01,TRUE)
 
 ON CONFLICT(id) DO UPDATE SET
   name=excluded.name,

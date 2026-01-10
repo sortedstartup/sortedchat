@@ -21,10 +21,16 @@ INSERT INTO shared_models_metadata (id, name, url, provider, input_token_cost, o
   ('gpt-realtime-mini', 'GPT-realtime-mini', 'https://api.openai.com/v1/realtime', 'openai', 10.00, 20.00, '', FALSE, FALSE, 0, NULL, FALSE, '{"text":{"input":true,"output":true},"audio":{"input":true,"output":true},"video":{"input":false,"output":false},"image":{"input":true,"output":false},"realtime":true}', 0.30, TRUE),
   ('gpt-4o-realtime', 'GPT-4o-realtime', 'https://api.openai.com/v1/realtime', 'openai', 40.00, 80.00, '', FALSE, FALSE, 0, NULL, FALSE, '{"text":{"input":true,"output":true},"audio":{"input":true,"output":true},"video":{"input":false,"output":false},"image":{"input":false,"output":false},"realtime":true}', 2.50, TRUE),
   ('gpt-4o-mini-realtime', 'GPT-4o-mini-realtime', 'https://api.openai.com/v1/realtime', 'openai', 10.00, 20.00, '', FALSE, FALSE, 0, NULL, FALSE, '{"text":{"input":true,"output":true},"audio":{"input":true,"output":true},"video":{"input":false,"output":false},"image":{"input":false,"output":false},"realtime":true}', 0.30, TRUE),
-  ('gemma-3-270m-it-GGUF', 'gemma-3-270m-it-GGUF','https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q8_0.gguf?download=true', 'local', 0.00, 0.00,'',FALSE,TRUE,0,NULL,FALSE,'',0.01,TRUE),
-  ('embeddinggemma-300M-Q8_0', 'embeddinggemma-300M-Q8_0','https://huggingface.co/ggml-org/embeddinggemma-300M-GGUF/resolve/main/embeddinggemma-300M-Q8_0.gguf', 'local', 0.00, 0.00,'',FALSE,TRUE,0,NULL,TRUE,'',0.01,TRUE),
-  ('nomic-embed-text-v1.5.Q8_0', 'nomic-embed-text-v1.5.Q8_0','https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.Q8_0.gguf', 'local', 0.00, 0.00,'',FALSE,TRUE,0,NULL,TRUE,'',0.01,TRUE),
-  ('tinyLLama-1.1B-Chat-v1.0-GGUF','tinyLLama-1.1B-Chat-v1.0-GGUF', 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q8_0.gguf?download=true', 'local', 0.00, 0.00,'',FALSE,TRUE,0,NULL,FALSE,'',0.01,TRUE)
+  ('gemma-3-270m-it-GGUF', 'gemma-3-270m-it-GGUF','https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q8_0.gguf?download=true', 'local', 0.00, 0.00,'',FALSE,TRUE,0,NULL,FALSE,'',0.00,TRUE),
+  ('embeddinggemma-300M-Q8_0', 'embeddinggemma-300M-Q8_0','https://huggingface.co/ggml-org/embeddinggemma-300M-GGUF/resolve/main/embeddinggemma-300M-Q8_0.gguf', 'local', 0.00, 0.00,'',FALSE,TRUE,0,NULL,TRUE,'',0.00,TRUE),
+  ('nomic-embed-text-v1.5.Q8_0', 'nomic-embed-text-v1.5.Q8_0','https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.Q8_0.gguf', 'local', 0.00, 0.00,'',FALSE,TRUE,0,NULL,TRUE,'',0.00,TRUE),
+  ('tinyLLama-1.1B-Chat-v1.0-GGUF','tinyLLama-1.1B-Chat-v1.0-GGUF', 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q8_0.gguf?download=true', 'local', 0.00, 0.00,'',FALSE,TRUE,0,NULL,FALSE,'',0.00,TRUE),
+
+  ('functiongemma-270m-it-q8_0','functiongemma-270m-it-q8_0', 'https://huggingface.co/ggml-org/functiongemma-270m-it-GGUF/resolve/main/functiongemma-270m-it-q8_0.gguf', 'local', 0, 0,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.00,TRUE),
+  ('granite-4.0-h-small-Q4_K_M','granite-4.0-h-small-Q4_K_M', 'https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q4_K_M.gguf', 'local', 0, 0,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.00,TRUE),
+  ('granite-4.0-h-small-Q8_0','granite-4.0-h-small-Q8_0', 'https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q8_0.gguf', 'local', 0, 0,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.00,TRUE),
+  ('granite-4.0-1b-Q8_0','granite-4.0-1b-Q8_0', 'https://huggingface.co/ibm-granite/granite-4.0-1b-GGUF/resolve/main/granite-4.0-1b-Q8_0.gguf', 'local', 0, 0,'',FALSE,TRUE,0,NULL,FALSE,'{}',0,TRUE)
+
 ON CONFLICT(id) DO UPDATE SET
   name=excluded.name,
   url=excluded.url,

@@ -25,8 +25,6 @@ type Client struct {
 	templates       map[string]*template.Template
 }
 
-const LOCAL_MODEL_URL = constants.LOCAL_LLAMA_PROXY_BASE_URL + "/v1/chat/completions"
-
 func NewClient(settingsManager *settings.SettingsManager) *Client {
 	// Parse templates once during initialization
 	funcMap := template.FuncMap{
@@ -74,18 +72,19 @@ func (c *Client) Call(ctx context.Context, req types.ChatCompletionRequest, prov
 	var url string
 	var apiKey string
 
-	if provider == constants.LOCAL_PROVIDER {
-		url = LOCAL_MODEL_URL
-		apiKey = "x"
-	} else {
-		providerSettings, err := c.settingsManager.GetProviderSetting(provider)
-		if err != nil {
-			slog.Error("llm:Call", "error", err)
-			return nil, fmt.Errorf("failed to get provider setting: %v", err)
-		}
-		url = providerSettings.ApiUrl
-		apiKey = providerSettings.ApiKey
+	providerSettings, err := c.settingsManager.GetProviderSetting(provider)
+	if err != nil {
+		slog.Error("llm:Call", "error", err)
+		return nil, fmt.Errorf("failed to get provider setting: %v", err)
 	}
+	// For local provider, if settings don't exist yet, we might want to fail or handle it.
+	// But since we are seeding it, it should exist.
+	if providerSettings == nil {
+		slog.Error("llm:Call", "error", "provider settings not found", "provider", provider)
+		return nil, fmt.Errorf("provider settings not found for: %s", provider)
+	}
+	url = providerSettings.ApiUrl
+	apiKey = providerSettings.ApiKey
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {

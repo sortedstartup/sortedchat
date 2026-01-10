@@ -45,7 +45,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { useStore } from "@nanostores/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -726,10 +726,19 @@ function AgentsSidebarSection() {
   const currentSessionId = useStore($currentSessionId);
   const [expandedAgents, setExpandedAgents] = React.useState<Record<string, boolean>>({});
   const navigate = useNavigate();
+  const params = useParams<{ agentId?: string }>();
 
   React.useEffect(() => {
     getAgents();
   }, []);
+
+  // Auto-expand agent when navigating to a session
+  React.useEffect(() => {
+    if (params.agentId && !expandedAgents[params.agentId]) {
+      setExpandedAgents(prev => ({ ...prev, [params.agentId!]: true }));
+      getSessions(params.agentId);
+    }
+  }, [params.agentId]);
 
   const handleCreateAgent = async () => {
     navigate("/agent/new");

@@ -503,9 +503,17 @@ function Message({
                     )}
 
                     {/* Main message content */}
-                    {message.content && (
+                    {message.content ? (
                         <div className="space-y-2">
                             <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
+                            {message.isStreaming && (
+                                <span className="inline-block w-1.5 h-4 bg-primary/40 animate-pulse ml-1 align-middle" />
+                            )}
+                        </div>
+                    ) : message.isStreaming && toolExecutions.length === 0 && (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm italic py-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Agent is thinking...</span>
                         </div>
                     )}
 
@@ -760,7 +768,7 @@ export function AgentChat() {
                         ))}
 
                         {/* Streaming Message */}
-                        {isStreaming && (streamingMessage || streamingEvents.length > 0) && (
+                        {isStreaming && (
                             <Message
                                 message={{
                                     role: "assistant",
@@ -768,8 +776,9 @@ export function AgentChat() {
                                     type: "text",
                                     id: "streaming",
                                     sequence_number: 0,
-                                    created_at: 0
-                                } as unknown as AgentMessage}
+                                    created_at: 0,
+                                    isStreaming: true
+                                } as any}
                                 streamEvents={streamingEvents}
                                 onCopyMessage={() => { }}
                                 isCopied={false}

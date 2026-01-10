@@ -9512,6 +9512,9 @@ export class AgentMessage extends pb_1.Message {
         tool_name?: string;
         tool_call_id?: string;
         tool_args?: string;
+        success?: boolean;
+        error_message?: string;
+        run_time_ms?: number;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -9542,6 +9545,15 @@ export class AgentMessage extends pb_1.Message {
             }
             if ("tool_args" in data && data.tool_args != undefined) {
                 this.tool_args = data.tool_args;
+            }
+            if ("success" in data && data.success != undefined) {
+                this.success = data.success;
+            }
+            if ("error_message" in data && data.error_message != undefined) {
+                this.error_message = data.error_message;
+            }
+            if ("run_time_ms" in data && data.run_time_ms != undefined) {
+                this.run_time_ms = data.run_time_ms;
             }
         }
     }
@@ -9599,6 +9611,24 @@ export class AgentMessage extends pb_1.Message {
     set tool_args(value: string) {
         pb_1.Message.setField(this, 9, value);
     }
+    get success() {
+        return pb_1.Message.getFieldWithDefault(this, 10, false) as boolean;
+    }
+    set success(value: boolean) {
+        pb_1.Message.setField(this, 10, value);
+    }
+    get error_message() {
+        return pb_1.Message.getFieldWithDefault(this, 11, "") as string;
+    }
+    set error_message(value: string) {
+        pb_1.Message.setField(this, 11, value);
+    }
+    get run_time_ms() {
+        return pb_1.Message.getFieldWithDefault(this, 12, 0) as number;
+    }
+    set run_time_ms(value: number) {
+        pb_1.Message.setField(this, 12, value);
+    }
     static fromObject(data: {
         id?: string;
         session_id?: string;
@@ -9609,6 +9639,9 @@ export class AgentMessage extends pb_1.Message {
         tool_name?: string;
         tool_call_id?: string;
         tool_args?: string;
+        success?: boolean;
+        error_message?: string;
+        run_time_ms?: number;
     }): AgentMessage {
         const message = new AgentMessage({});
         if (data.id != null) {
@@ -9638,6 +9671,15 @@ export class AgentMessage extends pb_1.Message {
         if (data.tool_args != null) {
             message.tool_args = data.tool_args;
         }
+        if (data.success != null) {
+            message.success = data.success;
+        }
+        if (data.error_message != null) {
+            message.error_message = data.error_message;
+        }
+        if (data.run_time_ms != null) {
+            message.run_time_ms = data.run_time_ms;
+        }
         return message;
     }
     toObject() {
@@ -9651,6 +9693,9 @@ export class AgentMessage extends pb_1.Message {
             tool_name?: string;
             tool_call_id?: string;
             tool_args?: string;
+            success?: boolean;
+            error_message?: string;
+            run_time_ms?: number;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -9679,6 +9724,15 @@ export class AgentMessage extends pb_1.Message {
         if (this.tool_args != null) {
             data.tool_args = this.tool_args;
         }
+        if (this.success != null) {
+            data.success = this.success;
+        }
+        if (this.error_message != null) {
+            data.error_message = this.error_message;
+        }
+        if (this.run_time_ms != null) {
+            data.run_time_ms = this.run_time_ms;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -9703,6 +9757,12 @@ export class AgentMessage extends pb_1.Message {
             writer.writeString(8, this.tool_call_id);
         if (this.tool_args.length)
             writer.writeString(9, this.tool_args);
+        if (this.success != false)
+            writer.writeBool(10, this.success);
+        if (this.error_message.length)
+            writer.writeString(11, this.error_message);
+        if (this.run_time_ms != 0)
+            writer.writeInt64(12, this.run_time_ms);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -9738,6 +9798,15 @@ export class AgentMessage extends pb_1.Message {
                     break;
                 case 9:
                     message.tool_args = reader.readString();
+                    break;
+                case 10:
+                    message.success = reader.readBool();
+                    break;
+                case 11:
+                    message.error_message = reader.readString();
+                    break;
+                case 12:
+                    message.run_time_ms = reader.readInt64();
                     break;
                 default: reader.skipField();
             }

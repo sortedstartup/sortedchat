@@ -218,6 +218,7 @@ func (s *AgentServiceAPI) AgentChat(req *pb.AgentChatRequest, stream pb.AgentSer
 		Role:           "user",
 		Type:           "text",
 		Content:        req.Message,
+		Success:        true,
 	}
 
 	if err := s.dao.AddAgentMessage(userMsg); err != nil {
@@ -375,7 +376,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		case *sortedagents.ToolCallStartEvent:
 			// Flush any accumulated text before tool call
 			if accumulatedText != "" {
-				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil)
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil, true, nil, 0)
 				*nextSeq++
 				accumulatedText = ""
 			}
@@ -393,7 +394,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 			if e.ThoughtSignature != "" {
 				thoughtSigPtr = strPtr(e.ThoughtSignature)
 			}
-			s.saveAgentMessage(sessionID, *nextSeq, "assistant", "tool_call", "", strPtr(e.ToolName), strPtr(toolCallID), &argsStr, thoughtSigPtr)
+			s.saveAgentMessage(sessionID, *nextSeq, "assistant", "tool_call", "", strPtr(e.ToolName), strPtr(toolCallID), &argsStr, thoughtSigPtr, true, nil, 0)
 			*nextSeq++
 
 			// Stream tool call to client
@@ -427,7 +428,18 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 
 			// Save tool result to DB
 			success := e.Error == nil
-			s.saveAgentMessage(sessionID, *nextSeq, "tool", "tool_result", resultStr, strPtr(e.ToolName), strPtr(toolCallID), nil, nil)
+			var content string
+			if success {
+				content = resultStr
+			} else {
+				content = fmt.Sprintf("Error: %v", e.Error)
+			}
+			var errMsg *string
+			if !success {
+				msg := e.Error.Error()
+				errMsg = &msg
+			}
+			s.saveAgentMessage(sessionID, *nextSeq, "tool", "tool_result", content, strPtr(e.ToolName), strPtr(toolCallID), nil, nil, success, errMsg, durationMs)
 			*nextSeq++
 
 			// Stream tool result to client
@@ -458,7 +470,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		case *sortedagents.CompleteEvent:
 			// Save any final accumulated text
 			if accumulatedText != "" {
-				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil)
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil, true, nil, 0)
 				*nextSeq++
 			}
 			slog.Info("Agent execution completed", "agent", agentRow.Name)
@@ -467,7 +479,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		case *sortedagents.ErrorEvent:
 			// Flush any accumulated text before error
 			if accumulatedText != "" {
-				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil)
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil, true, nil, 0)
 				*nextSeq++
 			}
 
@@ -485,7 +497,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 
 	// Save any remaining accumulated text
 	if accumulatedText != "" {
-		s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil)
+		s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil, true, nil, 0)
 		*nextSeq++
 	}
 
@@ -504,6 +516,9 @@ func (s *AgentServiceAPI) saveAgentMessage(
 	toolCallID *string,
 	toolArgs *string,
 	thoughtSignature *string,
+	success bool,
+	errorMessage *string,
+	runTimeMs int64,
 ) {
 	msgID := uuid.New().String()
 	msg := db.AgentMessageRow{
@@ -517,6 +532,9 @@ func (s *AgentServiceAPI) saveAgentMessage(
 		ToolCallID:       toolCallID,
 		ToolArgs:         toolArgs,
 		ThoughtSignature: thoughtSignature,
+		Success:          success,
+		ErrorMessage:     errorMessage,
+		RunTimeMs:        runTimeMs,
 	}
 	if err := s.dao.AddAgentMessage(msg); err != nil {
 		slog.Error("Failed to save agent message", "error", err)
@@ -547,6 +565,9 @@ func (s *AgentServiceAPI) GetAgentMessages(ctx context.Context, req *pb.GetAgent
 			ToolName:       getStringValue(m.ToolName),
 			ToolCallId:     getStringValue(m.ToolCallID),
 			ToolArgs:       getStringValue(m.ToolArgs),
+			Success:        m.Success,
+			ErrorMessage:   getStringValue(m.ErrorMessage),
+			RunTimeMs:      m.RunTimeMs,
 		})
 	}
 

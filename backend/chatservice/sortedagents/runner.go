@@ -425,13 +425,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 			slog.Debug("%s -> %d tools", agent.Model(), len(assistantMessage.ToolCalls))
 
 			for _, toolCall := range assistantMessage.ToolCalls {
-				tool, exists := toolMap[toolCall.Function.Name]
-				if !exists {
-					eventChan <- &ErrorEvent{Error: fmt.Errorf("unknown tool: %s", toolCall.Function.Name)}
-					return
-				}
-
-				// Parse tool arguments
+			// Parse tool arguments
 				var args map[string]interface{}
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
 					eventChan <- &ErrorEvent{Error: fmt.Errorf("failed to parse tool arguments: %v", err)}
@@ -452,6 +446,25 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 					ThoughtSignature: toolCall.Function.ThoughtSignature,
 				}
 
+				tool, exists := toolMap[toolCall.Function.Name]
+				if !exists {
+					err := fmt.Errorf("unknown tool: %s", toolCall.Function.Name)
+					eventChan <- &ToolCallEndEvent{
+						ToolName: toolCall.Function.Name,
+						Result:   nil,
+						Error:    err,
+					}
+					// Add error message and continue
+					toolMessage := Message{
+						Role:       "tool",
+						Content:    fmt.Sprintf("Error: %v", err),
+						ToolCallID: toolCall.ID,
+					}
+					messages = append(messages, toolMessage)
+					session.AddMessage(toolMessage)
+					continue
+				}
+
 				// Execute tool
 				result, err := tool.Execute(ctx, args)
 
@@ -462,28 +475,28 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 					Error:    err,
 				}
 
+				var content string
 				if err != nil {
 					slog.Debug("  <- %s [FAIL] %v", toolCall.Function.Name, err)
-					eventChan <- &ErrorEvent{Error: fmt.Errorf("tool execution failed: %v", err)}
-					return
+					content = fmt.Sprintf("Error: %v", err)
+				} else {
+					// Convert result to JSON string and log it
+					resultJSON, jsonErr := json.Marshal(result)
+					if jsonErr != nil {
+						slog.Debug("  <- %s [OK] (marshal error: %v)", toolCall.Function.Name, jsonErr)
+						content = fmt.Sprintf("Error marshaling result: %v", jsonErr)
+					} else {
+						content = string(resultJSON)
+						// Format output as key=value pairs in parentheses
+						formattedOutput := formatToolOutput(result)
+						slog.Debug("  <- %s %s", toolCall.Function.Name, formattedOutput)
+					}
 				}
-
-				// Convert result to JSON string and log it
-				resultJSON, err := json.Marshal(result)
-				if err != nil {
-					slog.Debug("  <- %s [OK] (marshal error: %v)", toolCall.Function.Name, err)
-					eventChan <- &ErrorEvent{Error: fmt.Errorf("failed to marshal tool result: %v", err)}
-					return
-				}
-
-				// Format output as key=value pairs in parentheses
-				formattedOutput := formatToolOutput(result)
-				slog.Debug("  <- %s %s", toolCall.Function.Name, formattedOutput)
 
 				// Add tool result message
 				toolMessage := Message{
 					Role:       "tool",
-					Content:    string(resultJSON),
+					Content:    content,
 					ToolCallID: toolCall.ID,
 				}
 				messages = append(messages, toolMessage)

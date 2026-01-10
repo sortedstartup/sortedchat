@@ -701,7 +701,9 @@ export function AgentChat() {
                     toolCallId: msg.tool_call_id || undefined,
                     toolName: msg.tool_name || 'Unknown',
                     resultJson: msg.content || undefined,
-                    success: true,
+                    success: msg.success !== undefined ? msg.success : true,
+                    errorMessage: msg.error_message || undefined,
+                    durationMs: msg.run_time_ms || undefined,
                 });
             } else {
                 // Regular message (user or assistant text)

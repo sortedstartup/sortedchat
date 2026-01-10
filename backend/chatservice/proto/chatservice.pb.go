@@ -5485,6 +5485,9 @@ type AgentMessage struct {
 	ToolName       string                 `protobuf:"bytes,7,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
 	ToolCallId     string                 `protobuf:"bytes,8,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
 	ToolArgs       string                 `protobuf:"bytes,9,opt,name=tool_args,json=toolArgs,proto3" json:"tool_args,omitempty"`
+	Success        bool                   `protobuf:"varint,10,opt,name=success,proto3" json:"success,omitempty"`
+	ErrorMessage   string                 `protobuf:"bytes,11,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	RunTimeMs      int64                  `protobuf:"varint,12,opt,name=run_time_ms,json=runTimeMs,proto3" json:"run_time_ms,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -5580,6 +5583,27 @@ func (x *AgentMessage) GetToolArgs() string {
 		return x.ToolArgs
 	}
 	return ""
+}
+
+func (x *AgentMessage) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *AgentMessage) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *AgentMessage) GetRunTimeMs() int64 {
+	if x != nil {
+		return x.RunTimeMs
+	}
+	return 0
 }
 
 type GetAgentMessageRequest struct {
@@ -6188,7 +6212,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"P\n" +
 	"\x18GetAgentMessagesResponse\x124\n" +
-	"\bmessages\x18\x01 \x03(\v2\x18.sortedchat.AgentMessageR\bmessages\"\x84\x02\n" +
+	"\bmessages\x18\x01 \x03(\v2\x18.sortedchat.AgentMessageR\bmessages\"\xe3\x02\n" +
 	"\fAgentMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -6200,7 +6224,11 @@ const file_chatservice_proto_rawDesc = "" +
 	"\ttool_name\x18\a \x01(\tR\btoolName\x12 \n" +
 	"\ftool_call_id\x18\b \x01(\tR\n" +
 	"toolCallId\x12\x1b\n" +
-	"\ttool_args\x18\t \x01(\tR\btoolArgs\"7\n" +
+	"\ttool_args\x18\t \x01(\tR\btoolArgs\x12\x18\n" +
+	"\asuccess\x18\n" +
+	" \x01(\bR\asuccess\x12#\n" +
+	"\rerror_message\x18\v \x01(\tR\ferrorMessage\x12\x1e\n" +
+	"\vrun_time_ms\x18\f \x01(\x03R\trunTimeMs\"7\n" +
 	"\x16GetAgentMessageRequest\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\"M\n" +

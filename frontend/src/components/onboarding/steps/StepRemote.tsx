@@ -58,55 +58,49 @@ export function StepRemote() {
         <h2 className="text-3xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-500">
           Connect Remote Providers
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed mb-8">
-          You can use any of these remote models by getting their API keys from their respective providers.
-        </p>
 
         {/* API Key Links */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-          <a 
-            href="https://aistudio.google.com/api-keys" 
-            target="_blank" 
+          <a
+            href="https://aistudio.google.com/api-keys"
+            target="_blank"
             rel="noopener noreferrer"
             className="group p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-card hover:border-blue-500 transition-all text-left shadow-sm hover:shadow-md"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-sm text-foreground">Google Gemini</span>
+              <span className="font-bold text-sm text-foreground">Get Gemini API Key</span>
               <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </div>
-            <p className="text-xs text-muted-foreground">Get your Gemini API key from Google AI Studio.</p>
           </a>
 
-          <a 
-            href="https://platform.openai.com/api-keys" 
-            target="_blank" 
+          <a
+            href="https://platform.openai.com/api-keys"
+            target="_blank"
             rel="noopener noreferrer"
             className="group p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-card hover:border-emerald-500 transition-all text-left shadow-sm hover:shadow-md"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-sm text-foreground">OpenAI</span>
+              <span className="font-bold text-sm text-foreground">Get OpenAI API Key</span>
               <svg className="w-4 h-4 text-gray-400 group-hover:text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </div>
-            <p className="text-xs text-muted-foreground">Access GPT-4o, o1, and more via OpenAI platform.</p>
           </a>
 
-          <a 
-            href="https://platform.claude.com/dashboard" 
-            target="_blank" 
+          <a
+            href="https://platform.claude.com/dashboard"
+            target="_blank"
             rel="noopener noreferrer"
             className="group p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-card hover:border-orange-500 transition-all text-left shadow-sm hover:shadow-md"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-sm text-foreground">Anthropic Claude</span>
+              <span className="font-bold text-sm text-foreground">Get Claude API Key</span>
               <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </div>
-            <p className="text-xs text-muted-foreground">Use Claude 3.5 Sonnet and Opus models.</p>
           </a>
         </div>
       </div>

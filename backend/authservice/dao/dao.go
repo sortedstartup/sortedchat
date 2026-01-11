@@ -36,12 +36,14 @@ func NewUserSqliteDAO(sqliteUrl string) (*UserSqliteDAO, error) {
 	_, err = db.Exec("PRAGMA busy_timeout = 30000;")
 	if err != nil {
 		slog.Error("dao_auth:NewUserSqliteDAO", "message", "failed to set busy timeout", "error", err)
+		return nil, err
 	}
 
 	// Enable WAL mode
 	_, err = db.Exec("PRAGMA journal_mode = WAL;")
 	if err != nil {
 		slog.Error("dao_auth:NewUserSqliteDAO", "message", "failed to set WAL mode", "error", err)
+		return nil, err
 	}
 
 	return &UserSqliteDAO{db: db}, nil

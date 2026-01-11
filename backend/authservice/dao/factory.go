@@ -42,7 +42,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 			return nil, err
 		}
 
-		// Set busy timeout to 10 seconds
+		// Set busy timeout to 30 seconds
 		_, err = db.Exec("PRAGMA busy_timeout = 30000;")
 		if err != nil {
 			slog.Error("authservice:dao:NewDAOFactory", "message", "failed to set busy timeout", "error", err)

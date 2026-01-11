@@ -26,7 +26,7 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 		return nil, fmt.Errorf("failed to open SQLite database")
 	}
 
-	// Set busy timeout to 10 seconds
+	// Set busy timeout to 30 seconds
 	_, err = db.Exec("PRAGMA busy_timeout = 30000;")
 	if err != nil {
 		slog.Error("RealtimeService:dao_sqlite:NewSQLiteDAO", "message", "failed to set busy timeout", "error", err)

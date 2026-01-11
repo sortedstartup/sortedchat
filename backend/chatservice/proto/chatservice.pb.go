@@ -5475,21 +5475,22 @@ func (x *GetAgentMessagesResponse) GetMessages() []*AgentMessage {
 }
 
 type AgentMessage struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	SessionId      string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	SequenceNumber int32                  `protobuf:"varint,3,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
-	Role           string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
-	Type           string                 `protobuf:"bytes,5,opt,name=type,proto3" json:"type,omitempty"`
-	Content        string                 `protobuf:"bytes,6,opt,name=content,proto3" json:"content,omitempty"`
-	ToolName       string                 `protobuf:"bytes,7,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
-	ToolCallId     string                 `protobuf:"bytes,8,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
-	ToolArgs       string                 `protobuf:"bytes,9,opt,name=tool_args,json=toolArgs,proto3" json:"tool_args,omitempty"`
-	Success        bool                   `protobuf:"varint,10,opt,name=success,proto3" json:"success,omitempty"`
-	ErrorMessage   string                 `protobuf:"bytes,11,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
-	RunTimeMs      int64                  `protobuf:"varint,12,opt,name=run_time_ms,json=runTimeMs,proto3" json:"run_time_ms,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	SessionId        string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	SequenceNumber   int32                  `protobuf:"varint,3,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
+	Role             string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
+	Type             string                 `protobuf:"bytes,5,opt,name=type,proto3" json:"type,omitempty"`
+	Content          string                 `protobuf:"bytes,6,opt,name=content,proto3" json:"content,omitempty"`
+	ToolName         string                 `protobuf:"bytes,7,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
+	ToolCallId       string                 `protobuf:"bytes,8,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	ToolArgs         string                 `protobuf:"bytes,9,opt,name=tool_args,json=toolArgs,proto3" json:"tool_args,omitempty"`
+	Success          bool                   `protobuf:"varint,10,opt,name=success,proto3" json:"success,omitempty"`
+	ErrorMessage     string                 `protobuf:"bytes,11,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	RunTimeMs        int64                  `protobuf:"varint,12,opt,name=run_time_ms,json=runTimeMs,proto3" json:"run_time_ms,omitempty"`
+	ThoughtSignature string                 `protobuf:"bytes,13,opt,name=thought_signature,json=thoughtSignature,proto3" json:"thought_signature,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *AgentMessage) Reset() {
@@ -5604,6 +5605,13 @@ func (x *AgentMessage) GetRunTimeMs() int64 {
 		return x.RunTimeMs
 	}
 	return 0
+}
+
+func (x *AgentMessage) GetThoughtSignature() string {
+	if x != nil {
+		return x.ThoughtSignature
+	}
+	return ""
 }
 
 type GetAgentMessageRequest struct {
@@ -6212,7 +6220,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"P\n" +
 	"\x18GetAgentMessagesResponse\x124\n" +
-	"\bmessages\x18\x01 \x03(\v2\x18.sortedchat.AgentMessageR\bmessages\"\xe3\x02\n" +
+	"\bmessages\x18\x01 \x03(\v2\x18.sortedchat.AgentMessageR\bmessages\"\x90\x03\n" +
 	"\fAgentMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -6228,7 +6236,8 @@ const file_chatservice_proto_rawDesc = "" +
 	"\asuccess\x18\n" +
 	" \x01(\bR\asuccess\x12#\n" +
 	"\rerror_message\x18\v \x01(\tR\ferrorMessage\x12\x1e\n" +
-	"\vrun_time_ms\x18\f \x01(\x03R\trunTimeMs\"7\n" +
+	"\vrun_time_ms\x18\f \x01(\x03R\trunTimeMs\x12+\n" +
+	"\x11thought_signature\x18\r \x01(\tR\x10thoughtSignature\"7\n" +
 	"\x16GetAgentMessageRequest\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\"M\n" +

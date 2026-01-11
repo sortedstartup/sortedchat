@@ -536,6 +536,7 @@ func (s *AgentServiceAPI) saveAgentMessage(
 		ErrorMessage:     errorMessage,
 		RunTimeMs:        runTimeMs,
 	}
+
 	if err := s.dao.AddAgentMessage(msg); err != nil {
 		slog.Error("Failed to save agent message", "error", err)
 	}
@@ -556,11 +557,11 @@ func (s *AgentServiceAPI) GetAgentMessages(ctx context.Context, req *pb.GetAgent
 	var pbMsgs []*pb.AgentMessage
 	for _, m := range msgs {
 		pbMsgs = append(pbMsgs, &pb.AgentMessage{
-			Id:             m.ID,
+			Id:               m.ID,
 			SessionId:      m.SessionID,
-			SequenceNumber: int32(m.SequenceNumber),
-			Role:           m.Role,
-			Type:           m.Type,
+			SequenceNumber:   int32(m.SequenceNumber),
+			Role:             m.Role,
+			Type:             m.Type,
 			Content:        m.Content,
 			ToolName:       getStringValue(m.ToolName),
 			ToolCallId:     getStringValue(m.ToolCallID),
@@ -568,6 +569,7 @@ func (s *AgentServiceAPI) GetAgentMessages(ctx context.Context, req *pb.GetAgent
 			Success:        m.Success,
 			ErrorMessage:   getStringValue(m.ErrorMessage),
 			RunTimeMs:      m.RunTimeMs,
+			ThoughtSignature: getStringValue(m.ThoughtSignature),
 		})
 	}
 

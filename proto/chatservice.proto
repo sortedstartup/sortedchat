@@ -693,6 +693,7 @@ message AgentMessage {
   bool success = 10;
   string error_message = 11;
   int64 run_time_ms = 12;
+  string thought_signature = 13;
 }
 
 message GetAgentMessageRequest {

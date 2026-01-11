@@ -9515,6 +9515,7 @@ export class AgentMessage extends pb_1.Message {
         success?: boolean;
         error_message?: string;
         run_time_ms?: number;
+        thought_signature?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -9554,6 +9555,9 @@ export class AgentMessage extends pb_1.Message {
             }
             if ("run_time_ms" in data && data.run_time_ms != undefined) {
                 this.run_time_ms = data.run_time_ms;
+            }
+            if ("thought_signature" in data && data.thought_signature != undefined) {
+                this.thought_signature = data.thought_signature;
             }
         }
     }
@@ -9629,6 +9633,12 @@ export class AgentMessage extends pb_1.Message {
     set run_time_ms(value: number) {
         pb_1.Message.setField(this, 12, value);
     }
+    get thought_signature() {
+        return pb_1.Message.getFieldWithDefault(this, 13, "") as string;
+    }
+    set thought_signature(value: string) {
+        pb_1.Message.setField(this, 13, value);
+    }
     static fromObject(data: {
         id?: string;
         session_id?: string;
@@ -9642,6 +9652,7 @@ export class AgentMessage extends pb_1.Message {
         success?: boolean;
         error_message?: string;
         run_time_ms?: number;
+        thought_signature?: string;
     }): AgentMessage {
         const message = new AgentMessage({});
         if (data.id != null) {
@@ -9680,6 +9691,9 @@ export class AgentMessage extends pb_1.Message {
         if (data.run_time_ms != null) {
             message.run_time_ms = data.run_time_ms;
         }
+        if (data.thought_signature != null) {
+            message.thought_signature = data.thought_signature;
+        }
         return message;
     }
     toObject() {
@@ -9696,6 +9710,7 @@ export class AgentMessage extends pb_1.Message {
             success?: boolean;
             error_message?: string;
             run_time_ms?: number;
+            thought_signature?: string;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -9733,6 +9748,9 @@ export class AgentMessage extends pb_1.Message {
         if (this.run_time_ms != null) {
             data.run_time_ms = this.run_time_ms;
         }
+        if (this.thought_signature != null) {
+            data.thought_signature = this.thought_signature;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -9763,6 +9781,8 @@ export class AgentMessage extends pb_1.Message {
             writer.writeString(11, this.error_message);
         if (this.run_time_ms != 0)
             writer.writeInt64(12, this.run_time_ms);
+        if (this.thought_signature.length)
+            writer.writeString(13, this.thought_signature);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -9807,6 +9827,9 @@ export class AgentMessage extends pb_1.Message {
                     break;
                 case 12:
                     message.run_time_ms = reader.readInt64();
+                    break;
+                case 13:
+                    message.thought_signature = reader.readString();
                     break;
                 default: reader.skipField();
             }

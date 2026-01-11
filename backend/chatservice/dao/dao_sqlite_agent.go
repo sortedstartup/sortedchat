@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -17,6 +18,23 @@ func NewSQLiteAgentsDAO(sqliteUrl string) *SQLiteAgentsDAO {
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
+
+	// Set busy timeout to 30 seconds
+	_, err = db.Exec("PRAGMA busy_timeout = 30000;")
+	if err != nil {
+		slog.Error("dao_sqlite_agent:NewSQLiteAgentsDAO", "message", "failed to set busy timeout", "error", err)
+	}
+
+	// Enable WAL mode
+	_, err = db.Exec("PRAGMA journal_mode = WAL;")
+	if err != nil {
+		slog.Error("dao_sqlite_agent:NewSQLiteAgentsDAO", "message", "failed to set WAL mode", "error", err)
+	}
+
+	return &SQLiteAgentsDAO{db: db}
+}
+
+func NewSQLiteAgentsDAOWithDB(db *sqlx.DB) *SQLiteAgentsDAO {
 	return &SQLiteAgentsDAO{db: db}
 }
 
@@ -115,22 +133,36 @@ func (s *SQLiteAgentsDAO) GetAgentSessions(agentID string) ([]AgentSessionRow, e
 
 // Message CRUD
 func (s *SQLiteAgentsDAO) AddAgentMessage(message AgentMessageRow) error {
-	_, err := s.db.NamedExec(`
-		INSERT INTO agent_messages (
-			id, session_id, sequence_number, role, type, 
-			content, tool_name, tool_call_id, tool_args, thought_signature, 
-			success, error_message, run_time_ms, created_at
-		) VALUES (
-			:id, :session_id, :sequence_number, :role, :type,
-			:content, :tool_name, :tool_call_id, :tool_args, :thought_signature,
-			:success, :error_message, :run_time_ms, CURRENT_TIMESTAMP
-		)
-	`, message)
-	if err != nil {
-		slog.Error("dao_sqlite:AddAgentMessage", "message", "failed to add agent message", "error", err, "messageID", message.ID)
-		return fmt.Errorf("failed to add agent message")
+	// Retry logic for transient database errors (e.g. locking)
+	maxRetries := 3
+	var lastErr error
+
+	for i := 0; i < maxRetries; i++ {
+		_, err := s.db.NamedExec(`
+			INSERT INTO agent_messages (
+				id, session_id, sequence_number, role, type, 
+				content, tool_name, tool_call_id, tool_args, thought_signature, 
+				success, error_message, run_time_ms, created_at
+			) VALUES (
+				:id, :session_id, :sequence_number, :role, :type,
+				:content, :tool_name, :tool_call_id, :tool_args, :thought_signature,
+				:success, :error_message, :run_time_ms, CURRENT_TIMESTAMP
+			)
+		`, message)
+		if err == nil {
+			return nil
+		}
+		
+		lastErr = err
+		slog.Warn("dao_sqlite:AddAgentMessage", "message", "failed to add agent message, retrying...", "attempt", i+1, "error", err)
+		
+		if i < maxRetries-1 {
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
-	return nil
+
+	slog.Error("dao_sqlite:AddAgentMessage", "message", "failed to add agent message after retries", "error", lastErr, "messageID", message.ID)
+	return fmt.Errorf("failed to add agent message: %w", lastErr)
 }
 
 func (s *SQLiteAgentsDAO) GetAgentMessages(sessionID string) ([]AgentMessageRow, error) {

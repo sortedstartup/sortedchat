@@ -94,7 +94,7 @@ html starter template
         <h1 class="text-3xl font-bold underline">Hello world!</h1>
     </body>
 </html>
-', 'openai', 'gpt-5-mini', '[]')
+', 'openai', 'gemini-3-flash-preview', '[]')
 ON CONFLICT(id) DO UPDATE SET
   name=excluded.name,
   description=excluded.description,

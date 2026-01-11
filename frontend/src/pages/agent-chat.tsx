@@ -456,8 +456,12 @@ function Message({
                 className={`w-full max-w-none px-4 flex items-start space-x-4 ${isUser ? "justify-end" : "justify-start"}`}
             >
                 {!isUser && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
-                        <BotIcon className="w-5 h-5" />
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full ${message.isStreaming ? 'bg-purple-600' : 'bg-blue-600'} text-white flex items-center justify-center text-sm font-medium transition-colors relative`}>
+                        {message.isStreaming ? (
+                            <Brain className="w-5 h-5 animate-pulse" />
+                        ) : (
+                            <BotIcon className="w-5 h-5" />
+                        )}
                     </div>
                 )}
 

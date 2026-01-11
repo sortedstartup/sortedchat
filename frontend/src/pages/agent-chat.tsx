@@ -23,6 +23,7 @@ import {
     $isAgentStreaming,
     $agentStreamingMessage,
     $agentStreamingEvents,
+    $currentSessionId,
     getAgentMessages,
     sendAgentMessage,
     agentStream,
@@ -442,6 +443,8 @@ function Message({
         return executions;
     }, [toolEvents]);
 
+    const hasActiveTool = toolExecutions.some(e => !e.isComplete);
+
     return (
         <div
             className={`w-full ${isUser
@@ -503,9 +506,17 @@ function Message({
                     )}
 
                     {/* Main message content */}
-                    {message.content && (
+                    {message.content ? (
                         <div className="space-y-2">
                             <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
+                            {message.isStreaming && (
+                                <span className="inline-block w-1.5 h-4 bg-primary/40 animate-pulse ml-1 align-middle" />
+                            )}
+                        </div>
+                    ) : message.isStreaming && !hasActiveTool && (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm italic py-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Agent is thinking...</span>
                         </div>
                     )}
 
@@ -636,8 +647,25 @@ export function AgentChat() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (sessionId) {
-            getAgentMessages(sessionId);
+        if (sessionId && sessionId !== $currentSessionId.get()) {
+            $currentSessionId.set(sessionId);
+        } else if (sessionId) {
+            // Ensure messages are loaded if we navigated back to same session or store was cleared
+            // But relying on listener is safer.
+            // If store already has this sessionId, listener won't fire if value didn't change?
+            // Nanostores .set() triggers listeners even if value is same? 
+            // Default atom does check equality.
+            // So if we are already on this session, we might not refetch.
+            // But if we navigated away, unmounted, and came back? 
+            // The store persists in memory (single page app).
+            // If we want to ensure fresh data, we might want to fetch anyway or rely on store state.
+            // Let's assume store state is valid if set.
+            // But for initial load/refresh, we might need to force fetch?
+            // Actually, if we just mounted, we might want to refresh.
+            // Let's call getAgentMessages if data is empty?
+            if ($agentMessages.get().data.length === 0) {
+                 getAgentMessages(sessionId);
+            }
         }
     }, [sessionId]);
 
@@ -673,7 +701,9 @@ export function AgentChat() {
                     toolCallId: msg.tool_call_id || undefined,
                     toolName: msg.tool_name || 'Unknown',
                     resultJson: msg.content || undefined,
-                    success: true,
+                    success: msg.success !== undefined ? msg.success : true,
+                    errorMessage: msg.error_message || undefined,
+                    durationMs: msg.run_time_ms || undefined,
                 });
             } else {
                 // Regular message (user or assistant text)
@@ -760,7 +790,7 @@ export function AgentChat() {
                         ))}
 
                         {/* Streaming Message */}
-                        {isStreaming && (streamingMessage || streamingEvents.length > 0) && (
+                        {isStreaming && (
                             <Message
                                 message={{
                                     role: "assistant",
@@ -768,8 +798,9 @@ export function AgentChat() {
                                     type: "text",
                                     id: "streaming",
                                     sequence_number: 0,
-                                    created_at: 0
-                                } as unknown as AgentMessage}
+                                    created_at: 0,
+                                    isStreaming: true
+                                } as any}
                                 streamEvents={streamingEvents}
                                 onCopyMessage={() => { }}
                                 isCopied={false}

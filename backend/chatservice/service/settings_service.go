@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"sortedstartup/chatservice/constants"
 	"sortedstartup/chatservice/dao"
 	"sortedstartup/chatservice/events"
 	pb "sortedstartup/chatservice/proto"
@@ -42,6 +43,22 @@ func (s *SettingService) Init() {
 	if err != nil {
 		slog.Error("settings_service:Init", "step", "failed to check if this is first boot", "error", err)
 		return
+	}
+
+	// Check if local provider settings exist, if not seed them (for backward compatibility)
+	localProviderSettings, err := s.GetProviderSetting(context.Background(), constants.LOCAL_PROVIDER)
+	if err != nil && err != sql.ErrNoRows {
+		slog.Error("settings_service:Init", "step", "failed to check local provider settings", "error", err)
+	} else if localProviderSettings == nil || localProviderSettings.ApiUrl == "" {
+		slog.Info("settings_service:Init", "step", "seeding default local provider settings")
+		defaultLocalSettings := &pb.ProviderSettings{
+			ApiUrl:    constants.LOCAL_LLAMA_PROXY_BASE_URL + "/v1/chat/completions",
+			ApiKey:    "NOT_NEEDED",
+			IsEnabled: true,
+		}
+		if err := s.SetProviderSetting(context.Background(), constants.LOCAL_PROVIDER, defaultLocalSettings, false); err != nil {
+			slog.Error("settings_service:Init", "step", "failed to seed local provider settings", "error", err)
+		}
 	}
 
 	if isFirstBoot {

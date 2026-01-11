@@ -690,6 +690,9 @@ message AgentMessage {
   string tool_name = 7;
   string tool_call_id = 8;
   string tool_args = 9;
+  bool success = 10;
+  string error_message = 11;
+  int64 run_time_ms = 12;
 }
 
 message GetAgentMessageRequest {

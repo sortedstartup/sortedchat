@@ -113,10 +113,12 @@ func (p *PostgresAgentsDAO) AddAgentMessage(message AgentMessageRow) error {
 	_, err := p.db.NamedExec(`
 		INSERT INTO agent_messages (
 			id, session_id, sequence_number, role, type, 
-			content, tool_name, tool_call_id, tool_args, thought_signature, created_at
+			content, tool_name, tool_call_id, tool_args, thought_signature,
+			success, error_message, run_time_ms, created_at
 		) VALUES (
 			:id, :session_id, :sequence_number, :role, :type,
-			:content, :tool_name, :tool_call_id, :tool_args, :thought_signature, CURRENT_TIMESTAMP
+			:content, :tool_name, :tool_call_id, :tool_args, :thought_signature,
+			:success, :error_message, :run_time_ms, CURRENT_TIMESTAMP
 		)
 	`, message)
 	if err != nil {

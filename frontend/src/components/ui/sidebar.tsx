@@ -41,10 +41,11 @@ import {
   ChevronRight,
   ChevronDown,
   MessageSquare,
-  Settings
+  Settings,
+  Sparkles
 } from "lucide-react";
 import { useStore } from "@nanostores/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -725,10 +726,19 @@ function AgentsSidebarSection() {
   const currentSessionId = useStore($currentSessionId);
   const [expandedAgents, setExpandedAgents] = React.useState<Record<string, boolean>>({});
   const navigate = useNavigate();
+  const params = useParams<{ agentId?: string }>();
 
   React.useEffect(() => {
     getAgents();
   }, []);
+
+  // Auto-expand agent when navigating to a session
+  React.useEffect(() => {
+    if (params.agentId && !expandedAgents[params.agentId]) {
+      setExpandedAgents(prev => ({ ...prev, [params.agentId!]: true }));
+      getSessions(params.agentId);
+    }
+  }, [params.agentId]);
 
   const handleCreateAgent = async () => {
     navigate("/agent/new");
@@ -769,14 +779,22 @@ function AgentsSidebarSection() {
 
   return (
     <SidebarGroup>
-      <div className="flex items-center justify-between px-2">
-        <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground">AGENTS</SidebarGroupLabel>
-        <button onClick={handleCreateAgent} className="p-1 hover:bg-muted rounded" title="Create Agent">
-          <Plus className="h-4 w-4" />
-        </button>
-      </div>
+      <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground px-2">
+        AGENTS
+        <div className="ml-1 flex items-center">
+          <Sparkles className="size-3.5 text-yellow-500" />
+        </div>
+      </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <button onClick={handleCreateAgent}>
+                <Plus />
+                <span>New Agent</span>
+              </button>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           {agents.map((agent) => (
             <SidebarMenuItem key={agent.id}>
               <div className="flex flex-col w-full">

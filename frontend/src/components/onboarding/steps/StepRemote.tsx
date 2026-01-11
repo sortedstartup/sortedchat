@@ -15,6 +15,7 @@ export function StepRemote() {
   const handleNext = async () => {
     setIsValidating(true);
     setError('');
+
     try {
       await onboardingActions.completeOnboarding();
     } catch (error) {

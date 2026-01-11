@@ -56,8 +56,8 @@ function ExpandableCode({ content, defaultLines = 50 }: { content: string; defau
     const [isFullyExpanded, setIsFullyExpanded] = useState(false);
     const lines = content.split('\n');
     const needsTruncation = lines.length > defaultLines;
-    
-    const displayContent = needsTruncation && !isFullyExpanded 
+
+    const displayContent = needsTruncation && !isFullyExpanded
         ? lines.slice(0, defaultLines).join('\n') + '\n...'
         : content;
 
@@ -79,8 +79,8 @@ function ExpandableCode({ content, defaultLines = 50 }: { content: string; defau
 }
 
 // Compact inline tool chip - clickable to expand
-function ToolChip({ execution, isExpanded, onToggle }: { 
-    execution: ToolExecution; 
+function ToolChip({ execution, isExpanded, onToggle }: {
+    execution: ToolExecution;
     isExpanded: boolean;
     onToggle: () => void;
 }) {
@@ -134,7 +134,7 @@ function ToolDetailPanel({ execution }: { execution: ToolExecution }) {
             args = JSON.parse(execution.argumentsJson);
         }
     } catch (e) { /* ignore */ }
-    
+
     try {
         if (execution.resultJson) {
             result = JSON.parse(execution.resultJson);
@@ -146,13 +146,13 @@ function ToolDetailPanel({ execution }: { execution: ToolExecution }) {
     return (
         <div className="mt-2 p-2 border border-border rounded-lg bg-muted/20 text-left">
             <div className="text-xs font-medium mb-1">{execution.toolName}</div>
-            
+
             {/* Arguments */}
             <div className="mb-2">
                 <div className="text-[10px] text-muted-foreground mb-0.5">Arguments:</div>
                 <ExpandableCode content={JSON.stringify(args, null, 2)} defaultLines={50} />
             </div>
-            
+
             {/* Result (if complete) */}
             {execution.isComplete && (
                 <div>
@@ -160,7 +160,7 @@ function ToolDetailPanel({ execution }: { execution: ToolExecution }) {
                     <ExpandableCode content={JSON.stringify(result, null, 2)} defaultLines={50} />
                 </div>
             )}
-            
+
             {/* Error message */}
             {execution.errorMessage && (
                 <div className="mt-1 text-xs text-red-600 dark:text-red-400">
@@ -192,7 +192,7 @@ function ToolExecutionsRow({ executions }: { executions: ToolExecution[] }) {
                     />
                 ))}
             </div>
-            
+
             {/* Expanded detail panel (shown below chips) */}
             {expandedIndex !== null && executions[expandedIndex] && (
                 <ToolDetailPanel execution={executions[expandedIndex]} />
@@ -232,7 +232,7 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
     const [showPreview, setShowPreview] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [enableScripts, setEnableScripts] = useState(true);
-    
+
     const formatFileSize = (bytes?: number) => {
         if (!bytes) return '';
         if (bytes < 1024) return bytes + " B";
@@ -248,10 +248,10 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
         setTimeout(() => URL.revokeObjectURL(url), 100);
     };
 
-    const sandboxPermissions = enableScripts 
-        ? "allow-same-origin allow-scripts" 
+    const sandboxPermissions = enableScripts
+        ? "allow-same-origin allow-scripts"
         : "allow-same-origin";
-    
+
     return (
         <div className="my-2 border border-border rounded-lg overflow-hidden bg-card">
             {/* Header */}
@@ -297,7 +297,7 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
                     </Button>
                 </div>
             </div>
-            
+
             {/* Preview iframe */}
             {showPreview && (
                 <div className="border-t border-border">
@@ -324,7 +324,7 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
                     />
                 </div>
             )}
-            
+
             {/* Code view (collapsible) */}
             {isExpanded && (
                 <div className="border-t border-border p-3 bg-muted/20">
@@ -346,7 +346,7 @@ function Message({
 
     // Prepare events to render: either from streamEvents or from message fields (for persisted messages)
     const eventsToRender: StreamEvent[] = [...(streamEvents || [])];
-    
+
     // If no stream events but it's a tool-related message, create a synthetic event
     if (eventsToRender.length === 0) {
         if (message.type === 'tool_call') {
@@ -371,7 +371,7 @@ function Message({
     const toolEvents = eventsToRender.filter(e => e.type === 'tool_call' || e.type === 'tool_result');
     const errorEvents = eventsToRender.filter(e => e.type === 'error');
     const imageEvents = eventsToRender.filter(e => e.type === 'image');
-    
+
     // Extract HTML files from write_file tool calls
     const htmlFileEvents: StreamEvent[] = [];
     toolEvents.forEach(event => {
@@ -381,7 +381,7 @@ function Message({
                 const filePath = args.path || args.file_path || '';
                 const content = args.content || '';
                 const ext = filePath.split('.').pop()?.toLowerCase();
-                
+
                 if ((ext === 'html' || ext === 'htm') && content) {
                     htmlFileEvents.push({
                         type: 'write_file',
@@ -402,10 +402,10 @@ function Message({
     const toolExecutions = useMemo(() => {
         const executions: ToolExecution[] = [];
         const callMap = new Map<string, ToolExecution>();
-        
+
         for (const event of toolEvents) {
             const key = event.toolCallId || event.toolName || 'unknown';
-            
+
             if (event.type === 'tool_call') {
                 const execution: ToolExecution = {
                     toolCallId: event.toolCallId,
@@ -439,7 +439,7 @@ function Message({
                 }
             }
         }
-        
+
         return executions;
     }, [toolEvents]);
 
@@ -486,9 +486,9 @@ function Message({
                         <div className="space-y-2 mb-4">
                             {imageEvents.map((event, idx) => (
                                 <div key={idx} className="my-2">
-                                    <img 
-                                        src={event.url} 
-                                        alt="Generated image" 
+                                    <img
+                                        src={event.url}
+                                        alt="Generated image"
                                         className="max-w-md rounded-lg border border-border"
                                     />
                                 </div>
@@ -680,10 +680,10 @@ export function AgentChat() {
     const processedMessages = useMemo(() => {
         const result: Array<typeof messages[0] & { streamEvents?: StreamEvent[] }> = [];
         let pendingToolEvents: StreamEvent[] = [];
-        
+
         for (let i = 0; i < messages.length; i++) {
             const msg = messages[i];
-            
+
             if (msg.type === 'tool_call') {
                 // Add to pending tool events
                 pendingToolEvents.push({
@@ -732,7 +732,7 @@ export function AgentChat() {
                 }
             }
         }
-        
+
         // Handle any remaining tool events (show at the end)
         if (pendingToolEvents.length > 0) {
             result.push({
@@ -745,7 +745,7 @@ export function AgentChat() {
                 streamEvents: pendingToolEvents,
             } as typeof messages[0] & { streamEvents?: StreamEvent[] });
         }
-        
+
         return result;
     }, [messages]);
 
@@ -766,9 +766,9 @@ export function AgentChat() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] md:h-screen w-full bg-background">
+        <div className="flex flex-col h-full w-full bg-background">
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto w-full">
+            <div className="flex-1 overflow-y-auto w-full min-h-0">
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />

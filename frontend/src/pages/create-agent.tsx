@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createAgent } from "@/store/agents";
+import { createAgent, createSession } from "@/store/agents";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { FileUploader } from "@/components/FileUploader";
 import { ModelSelector } from "@/components/ModelSelector";
@@ -47,8 +47,17 @@ export function CreateAgentPage() {
         setUploadedFilesCount(prev => prev + files.length);
     };
 
-    const handleFinish = () => {
-        navigate("/");
+    const handleFinish = async () => {
+        if (!createdAgentId) return;
+        setIsLoading(true);
+        try {
+            const sessionId = await createSession(createdAgentId);
+            navigate(`/agent/${createdAgentId}/session/${sessionId}`);
+        } catch (error) {
+            console.error("Failed to create session", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -69,87 +78,89 @@ export function CreateAgentPage() {
             <div className="flex-1 overflow-y-auto min-h-0 bg-background">
                 <div className="max-w-2xl mx-auto w-full space-y-8 p-6 pb-12">
 
-                <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-lg border border-border">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Name</label>
-                        <Input
-                            required
-                            placeholder="e.g. Coding Assistant"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Description</label>
-                        <Input
-                            placeholder="Brief description of what this agent does"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">System Prompt</label>
-                        <textarea
-                            className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            placeholder="You are a helpful assistant..."
-                            value={formData.systemPrompt}
-                            onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Model</label>
-                        <ModelSelector
-                            selectedModelId={formData.model}
-                            onSelectModel={(modelId, provider) => {
-                                setFormData({ ...formData, model: modelId, provider });
-                            }}
-                            className="w-full"
-                        />
-                    </div>
-
-                    <div className="pt-4 flex justify-end">
-                        <Button type="submit" disabled={isLoading || createdAgentId !== null}>
-                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {createdAgentId ? "Agent Created ✓" : "Create Agent"}
-                        </Button>
-                    </div>
-                </form>
-
-                {createdAgentId && (
-                    <div className="space-y-4 bg-card p-6 rounded-lg border border-border">
+                    <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-lg border border-border">
                         <div className="space-y-2">
-                            <h2 className="text-xl font-semibold">Upload Files (Optional)</h2>
-                            <p className="text-sm text-muted-foreground">
-                                Upload files or folders that your agent can access during conversations.
-                                You can skip this step and add files later.
-                            </p>
+                            <label className="text-sm font-medium">Name</label>
+                            <Input
+                                required
+                                placeholder="e.g. Coding Assistant"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            />
                         </div>
 
-                        <FileUploader
-                            uploadUrl="/agents/upload"
-                            agentId={createdAgentId}
-                            onCompleteUpload={handleFileUploadComplete}
-                        />
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Description</label>
+                            <Input
+                                placeholder="Brief description of what this agent does"
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            />
+                        </div>
 
-                        {uploadedFilesCount > 0 && (
-                            <p className="text-sm text-green-600">
-                                ✓ {uploadedFilesCount} file(s) uploaded successfully
-                            </p>
-                        )}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">System Prompt</label>
+                            <textarea
+                                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                placeholder="You are a helpful assistant..."
+                                value={formData.systemPrompt}
+                                onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
+                            />
+                        </div>
 
-                        <div className="pt-4 flex justify-end gap-2">
-                            <Button variant="outline" onClick={handleFinish}>
-                                Skip & Finish
-                            </Button>
-                            <Button onClick={handleFinish} disabled={uploadedFilesCount === 0}>
-                                Finish
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Model</label>
+                            <ModelSelector
+                                selectedModelId={formData.model}
+                                onSelectModel={(modelId, provider) => {
+                                    setFormData({ ...formData, model: modelId, provider });
+                                }}
+                                className="w-full"
+                            />
+                        </div>
+
+                        <div className="pt-4 flex justify-end">
+                            <Button type="submit" disabled={isLoading || createdAgentId !== null}>
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {createdAgentId ? "Agent Created ✓" : "Create Agent"}
                             </Button>
                         </div>
-                    </div>
-                )}
+                    </form>
+
+                    {createdAgentId && (
+                        <div className="space-y-4 bg-card p-6 rounded-lg border border-border">
+                            <div className="space-y-2">
+                                <h2 className="text-xl font-semibold">Upload Files (Optional)</h2>
+                                <p className="text-sm text-muted-foreground">
+                                    Upload files or folders that your agent can access during conversations.
+                                    You can skip this step and add files later.
+                                </p>
+                            </div>
+
+                            <FileUploader
+                                uploadUrl="/agents/upload"
+                                agentId={createdAgentId}
+                                onCompleteUpload={handleFileUploadComplete}
+                            />
+
+                            {uploadedFilesCount > 0 && (
+                                <p className="text-sm text-green-600">
+                                    ✓ {uploadedFilesCount} file(s) uploaded successfully
+                                </p>
+                            )}
+
+                            <div className="pt-4 flex justify-end gap-2">
+                                <Button variant="outline" onClick={handleFinish} disabled={isLoading}>
+                                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Skip & Start Chat
+                                </Button>
+                                <Button onClick={handleFinish} disabled={isLoading || uploadedFilesCount === 0}>
+                                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Start Chat
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

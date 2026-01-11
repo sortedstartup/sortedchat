@@ -19,6 +19,7 @@ interface ProviderViewProps {
     defaultApiUrl?: string;
     onApiKeyChange?: (key: string) => void;
     onApiUrlChange?: (url: string) => void;
+    compact?: boolean;
 }
 
 export const ProviderView = ({
@@ -26,7 +27,8 @@ export const ProviderView = ({
     displayName,
     defaultApiUrl = '',
     onApiKeyChange,
-    onApiUrlChange
+    onApiUrlChange,
+    compact = false
 }: ProviderViewProps) => {
     const modelsByProvider = useStore($modelsByProvider);
     const providerSettings = useStore($providerSettings);
@@ -84,9 +86,9 @@ export const ProviderView = ({
     const displayTitle = displayName || providerName.charAt(0).toUpperCase() + providerName.slice(1);
 
     return (
-        <div className="container mx-auto px-6 py-8">
+        <div className={`container mx-auto ${compact ? 'px-3 py-3' : 'px-6 py-8'}`}>
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className={`flex items-center justify-between ${compact ? 'mb-3' : 'mb-6'}`}>
                 <div>
                     <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground capitalize">
                         {displayTitle} Models

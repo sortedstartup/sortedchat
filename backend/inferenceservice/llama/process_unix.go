@@ -9,6 +9,6 @@ import (
 
 func setSysProcAttr(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
+		Setpgid: false,
 	}
 }

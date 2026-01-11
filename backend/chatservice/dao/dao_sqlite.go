@@ -29,7 +29,26 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 		return nil, err
 	}
 
+	// Set busy timeout to 30 seconds
+	_, err = db.Exec("PRAGMA busy_timeout = 30000;")
+	if err != nil {
+		slog.Error("dao_sqlite:NewSQLiteDAO", "message", "failed to set busy timeout", "error", err)
+		return nil, err
+	}
+
+	// Enable WAL mode
+	_, err = db.Exec("PRAGMA journal_mode = WAL;")
+	if err != nil {
+		slog.Error("dao_sqlite:NewSQLiteDAO", "message", "failed to set WAL mode", "error", err)
+		return nil, err
+	}
+
 	return &SQLiteDAO{db: db}, nil
+}
+
+// NewSQLiteDAOWithDB creates a new SQLite DAO instance with an existing connection
+func NewSQLiteDAOWithDB(db *sqlx.DB) *SQLiteDAO {
+	return &SQLiteDAO{db: db}
 }
 
 func NewSQLiteInMemoryDAO(dbConn *sql.DB) (*SQLiteDAO, error) {
@@ -774,6 +793,23 @@ func NewSQLiteSettingsDAO(sqliteUrl string) *SQLiteSettingsDAO {
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
+
+	// Set busy timeout to 30 seconds
+	_, err = db.Exec("PRAGMA busy_timeout = 30000;")
+	if err != nil {
+		slog.Error("dao_sqlite:NewSQLiteSettingsDAO", "message", "failed to set busy timeout", "error", err)
+	}
+
+	// Enable WAL mode
+	_, err = db.Exec("PRAGMA journal_mode = WAL;")
+	if err != nil {
+		slog.Error("dao_sqlite:NewSQLiteSettingsDAO", "message", "failed to set WAL mode", "error", err)
+	}
+
+	return &SQLiteSettingsDAO{db: db}
+}
+
+func NewSQLiteSettingsDAOWithDB(db *sqlx.DB) *SQLiteSettingsDAO {
 	return &SQLiteSettingsDAO{db: db}
 }
 

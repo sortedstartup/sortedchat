@@ -28,7 +28,12 @@ INSERT INTO shared_models_metadata (id, name, url, provider, input_token_cost, o
   ('functiongemma-270m-it-q8_0','functiongemma-270m-it-q8_0', 'https://huggingface.co/ggml-org/functiongemma-270m-it-GGUF/resolve/main/functiongemma-270m-it-q8_0.gguf', 'local', 0, 0,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.00,TRUE),
   ('granite-4.0-h-small-Q4_K_M','granite-4.0-h-small-Q4_K_M', 'https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q4_K_M.gguf', 'local', 0, 0,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.00,TRUE),
   ('granite-4.0-h-small-Q8_0','granite-4.0-h-small-Q8_0', 'https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q8_0.gguf', 'local', 0, 0,'',FALSE,TRUE,0,NULL,FALSE,'{}',0.00,TRUE),
-  ('granite-4.0-1b-Q8_0','granite-4.0-1b-Q8_0', 'https://huggingface.co/ibm-granite/granite-4.0-1b-GGUF/resolve/main/granite-4.0-1b-Q8_0.gguf', 'local', 0, 0,'',FALSE,TRUE,0,NULL,FALSE,'{}',0,TRUE)
+  ('granite-4.0-1b-Q8_0','granite-4.0-1b-Q8_0', 'https://huggingface.co/ibm-granite/granite-4.0-1b-GGUF/resolve/main/granite-4.0-1b-Q8_0.gguf', 'local', 0, 0,'',FALSE,TRUE,0,NULL,FALSE,'{}',0,TRUE),
+  ('granite-3.3-8b-instruct-Q8_0', 'granite-3.3-8b-instruct-Q8_0', 'https://huggingface.co/ibm-granite/granite-3.3-8b-instruct-GGUF/resolve/main/granite-3.3-8b-instruct-Q8_0.gguf', 'local', 0.00, 0.00, '', FALSE, TRUE, 0, NULL, FALSE, '{}', 0.00, TRUE),
+  ('qwen2.5-coder-7b-instruct-q8_0', 'qwen2.5-coder-7b-instruct-q8_0', 'https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF/resolve/main/qwen2.5-coder-7b-instruct-q8_0.gguf', 'local', 0.00, 0.00, '', FALSE, TRUE, 0, NULL, FALSE, '{}', 0.00, TRUE),
+  ('Devstral-Small-2-24B-Instruct-2512-Q4_0', 'Devstral-Small-2-24B-Instruct-2512-Q4_0', 'https://huggingface.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF/resolve/main/Devstral-Small-2-24B-Instruct-2512-Q4_0.gguf', 'local', 0.00, 0.00, '', FALSE, TRUE, 0, NULL, FALSE, '{}', 0.00, TRUE),
+  ('Devstral-Small-2-24B-Instruct-2512-Q8_0', 'Devstral-Small-2-24B-Instruct-2512-Q8_0', 'https://huggingface.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF/resolve/main/Devstral-Small-2-24B-Instruct-2512-Q8_0.gguf', 'local', 0.00, 0.00, '', FALSE, TRUE, 0, NULL, FALSE, '{}', 0.00, TRUE),
+  ('granite-4.0-h-tiny-Q8_0', 'granite-4.0-h-tiny-Q8_0', 'https://huggingface.co/unsloth/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q8_0.gguf', 'local', 0.00, 0.00, '', FALSE, TRUE, 0, NULL, FALSE, '{}', 0.00, TRUE)
 
 ON CONFLICT(id) DO UPDATE SET
   name=excluded.name,

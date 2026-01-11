@@ -30,6 +30,7 @@ import {
   $sessions,
   $currentAgentId,
   $currentSessionId,
+  $streamingStates,
   getAgents,
   createAgent,
   getSessions,
@@ -42,7 +43,8 @@ import {
   ChevronDown,
   MessageSquare,
   Settings,
-  Sparkles
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import { useStore } from "@nanostores/react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -724,6 +726,7 @@ function AgentsSidebarSection() {
   const agents = useStore($agents);
   const sessions = useStore($sessions);
   const currentSessionId = useStore($currentSessionId);
+  const streamingStates = useStore($streamingStates);
   const [expandedAgents, setExpandedAgents] = React.useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const params = useParams<{ agentId?: string }>();
@@ -833,11 +836,16 @@ function AgentsSidebarSection() {
                       sessions[agent.id].map(session => (
                         <div
                           key={session.id}
-                          className={`flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-muted text-xs ${currentSessionId === session.id ? 'bg-muted font-medium' : ''}`}
+                          className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted text-xs ${currentSessionId === session.id ? 'bg-muted font-medium shadow-sm' : ''}`}
                           onClick={() => handleSessionClick(agent.id, session.id)}
                         >
-                          <MessageSquare className="h-3 w-3 shrink-0" />
-                          <span className="truncate">Session {session.id.substring(0, 8)}...</span>
+                          <div className="flex items-center gap-2 overflow-hidden flex-1">
+                            <MessageSquare className="h-3 w-3 shrink-0" />
+                            <span className="truncate">Session {session.id.substring(0, 8)}...</span>
+                          </div>
+                          {streamingStates[session.id]?.isStreaming && (
+                            <Loader2 className="h-3 w-3 shrink-0 animate-spin text-purple-500 ml-2" />
+                          )}
                         </div>
                       ))
                     )}

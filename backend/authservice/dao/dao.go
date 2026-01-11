@@ -32,6 +32,25 @@ func NewUserSqliteDAO(sqliteUrl string) (*UserSqliteDAO, error) {
 		return nil, err
 	}
 
+	// Set busy timeout to 30 seconds
+	_, err = db.Exec("PRAGMA busy_timeout = 30000;")
+	if err != nil {
+		slog.Error("dao_auth:NewUserSqliteDAO", "message", "failed to set busy timeout", "error", err)
+		return nil, err
+	}
+
+	// Enable WAL mode
+	_, err = db.Exec("PRAGMA journal_mode = WAL;")
+	if err != nil {
+		slog.Error("dao_auth:NewUserSqliteDAO", "message", "failed to set WAL mode", "error", err)
+		return nil, err
+	}
+
+	return &UserSqliteDAO{db: db}, nil
+}
+
+// NewUserSqliteDAOWithDB creates a new SQLite DAO instance using a shared database connection
+func NewUserSqliteDAOWithDB(db *sqlx.DB) (*UserSqliteDAO, error) {
 	return &UserSqliteDAO{db: db}, nil
 }
 

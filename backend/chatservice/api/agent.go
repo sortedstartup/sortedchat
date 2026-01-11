@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,6 +20,8 @@ import (
 	"sortedstartup/chatservice/sortedagents"
 	"sortedstartup/common/auth"
 )
+
+const GenericConnectionError = "[ API/Connection Error ]"
 
 type AgentServiceAPI struct {
 	pb.UnimplementedAgentServiceServer
@@ -201,6 +204,35 @@ func (s *AgentServiceAPI) AgentChat(req *pb.AgentChatRequest, stream pb.AgentSer
 	if err != nil {
 		slog.Error("api:AgentChat", "error", "failed to get message history", "details", err)
 		return status.Error(codes.Internal, "failed to get message history")
+	}
+
+	// Repair DB state: If the last message was from a user (indicating a previous failure),
+	// insert a blank assistant message to close the turn and maintain User -> Assistant alternation.
+	if len(messages) > 0 && messages[len(messages)-1].Role == "user" {
+		lastMsg := messages[len(messages)-1]
+		repairSeq := lastMsg.SequenceNumber + 1
+		
+		slog.Info("api:AgentChat", "info", "Repairing dangling user message", "lastMsgID", lastMsg.ID)
+		
+		// Insert placeholder assistant message
+		placeholderMsg := db.AgentMessageRow{
+			ID:             uuid.New().String(),
+			SessionID:      req.SessionId,
+			SequenceNumber: repairSeq,
+			Role:           "assistant",
+			Type:           "text",
+			Content:        " ", // Blank content as requested
+			Success:        false,
+			ErrorMessage:   strPtr("System: Conversation turn repaired"),
+		}
+		
+		if err := s.dao.AddAgentMessage(placeholderMsg); err != nil {
+			slog.Error("api:AgentChat", "error", "failed to save repair message", "details", err)
+			// Continue anyway, as the next user message might still be saved, but we tried.
+		}
+		
+		// Append to local messages slice so context sent to LLM is correct
+		messages = append(messages, placeholderMsg)
 	}
 
 	// Determine sequence number
@@ -481,12 +513,39 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 			if accumulatedText != "" {
 				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil, true, nil, 0)
 				*nextSeq++
+			} else {
+				// If no text was accumulated, save a generic error message to the DB
+				// so the user sees something went wrong and the conversation role is preserved.
+				// The real error is logged to the server logs.
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", GenericConnectionError, nil, nil, nil, nil, false, strPtr(e.Error.Error()), 0)
+				*nextSeq++
 			}
 
-			// Stream error to client
+			// Determine error type
+			errText := e.Error.Error()
+			errType := pb.AgentChatError_UNKNOWN
+			errCode := int32(0)
+
+			if strings.Contains(strings.ToLower(errText), "loading model") {
+				errType = pb.AgentChatError_MODEL_LOADING
+				// Extract code if possible (e.g., from "status: 503")
+				if strings.Contains(errText, "503") {
+					errCode = 503
+				} else if strings.Contains(errText, "500") {
+					errCode = 500
+				}
+			} else if strings.Contains(strings.ToLower(errText), "api request failed") {
+				errType = pb.AgentChatError_PROVIDER_ERROR
+			}
+
+			// Stream structured error to client
 			if err := stream.Send(&pb.AgentChatResponse{
 				Response: &pb.AgentChatResponse_Error{
-					Error: e.Error.Error(),
+					Error: &pb.AgentChatError{
+						Type:    errType,
+						Message: errText,
+						Code:    errCode,
+					},
 				},
 			}); err != nil {
 				slog.Error("Failed to send error message", "error", err)
@@ -536,6 +595,7 @@ func (s *AgentServiceAPI) saveAgentMessage(
 		ErrorMessage:     errorMessage,
 		RunTimeMs:        runTimeMs,
 	}
+
 	if err := s.dao.AddAgentMessage(msg); err != nil {
 		slog.Error("Failed to save agent message", "error", err)
 	}
@@ -556,11 +616,11 @@ func (s *AgentServiceAPI) GetAgentMessages(ctx context.Context, req *pb.GetAgent
 	var pbMsgs []*pb.AgentMessage
 	for _, m := range msgs {
 		pbMsgs = append(pbMsgs, &pb.AgentMessage{
-			Id:             m.ID,
+			Id:               m.ID,
 			SessionId:      m.SessionID,
-			SequenceNumber: int32(m.SequenceNumber),
-			Role:           m.Role,
-			Type:           m.Type,
+			SequenceNumber:   int32(m.SequenceNumber),
+			Role:             m.Role,
+			Type:             m.Type,
 			Content:        m.Content,
 			ToolName:       getStringValue(m.ToolName),
 			ToolCallId:     getStringValue(m.ToolCallID),
@@ -568,6 +628,7 @@ func (s *AgentServiceAPI) GetAgentMessages(ctx context.Context, req *pb.GetAgent
 			Success:        m.Success,
 			ErrorMessage:   getStringValue(m.ErrorMessage),
 			RunTimeMs:      m.RunTimeMs,
+			ThoughtSignature: getStringValue(m.ThoughtSignature),
 		})
 	}
 

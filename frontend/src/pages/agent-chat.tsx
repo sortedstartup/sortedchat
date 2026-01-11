@@ -20,17 +20,14 @@ import { useStore } from "@nanostores/react";
 import { useParams } from "react-router-dom";
 import {
     $agentMessages,
-    $isAgentStreaming,
-    $agentStreamingMessage,
-    $agentStreamingEvents,
+    $streamingStates,
     $currentSessionId,
     getAgentMessages,
     sendAgentMessage,
-    agentStream,
     type StreamEvent
 } from "@/store/agents";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
-import type { AgentMessage } from "../../proto/chatservice";
+import { type AgentMessage, AgentChatErrorType } from "../../proto/chatservice";
 
 interface MessageProps {
     message: AgentMessage & { isStreaming?: boolean };
@@ -222,6 +219,44 @@ function ThinkingCard({ event }: { event: StreamEvent }) {
                         [{event.model}]
                     </span>
                 )}
+            </div>
+        </div>
+    );
+}
+
+function ModelLoadingNotice() {
+    const [status, setStatus] = useState<'visible' | 'fading' | 'hidden'>('visible');
+
+    useEffect(() => {
+        const fadeTimer = setTimeout(() => setStatus('fading'), 4000);
+        const hideTimer = setTimeout(() => setStatus('hidden'), 5000);
+        return () => {
+            clearTimeout(fadeTimer);
+            clearTimeout(hideTimer);
+        };
+    }, []);
+
+    if (status === 'hidden') return null;
+
+    return (
+        <div className={`
+            my-2 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl 
+            transition-all duration-1000 ease-in-out overflow-hidden
+            ${status === 'fading' ? 'opacity-0 max-h-0 py-0 my-0 border-transparent' : 'opacity-100 max-h-40'}
+            ${status === 'visible' ? 'animate-in fade-in slide-in-from-top-2 duration-500' : ''}
+        `}>
+            <div className="flex items-center space-x-3 min-w-max">
+                <div className="flex-shrink-0">
+                    <Loader2 className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                        Initializing Model
+                    </span>
+                    <span className="text-xs text-blue-700 dark:text-blue-300">
+                        The AI model is being loaded. This usually takes a few seconds.
+                    </span>
+                </div>
             </div>
         </div>
     );
@@ -456,8 +491,12 @@ function Message({
                 className={`w-full max-w-none px-4 flex items-start space-x-4 ${isUser ? "justify-end" : "justify-start"}`}
             >
                 {!isUser && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
-                        <BotIcon className="w-5 h-5" />
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full ${message.isStreaming ? 'bg-purple-600' : 'bg-blue-600'} text-white flex items-center justify-center text-sm font-medium transition-colors relative`}>
+                        {message.isStreaming ? (
+                            <Brain className="w-5 h-5 animate-pulse" />
+                        ) : (
+                            <BotIcon className="w-5 h-5" />
+                        )}
                     </div>
                 )}
 
@@ -470,14 +509,24 @@ function Message({
                     {/* Error Events */}
                     {!isUser && errorEvents.length > 0 && (
                         <div className="space-y-2 mb-4">
-                            {errorEvents.map((event, idx) => (
-                                <div key={idx} className="my-2 px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
-                                    <div className="flex items-center space-x-2 text-xs text-red-700 dark:text-red-300">
-                                        <XCircle className="w-4 h-4" />
-                                        <span>{event.text}</span>
+                            {errorEvents.map((event, idx) => {
+                                const isModelLoading = event.errorType === AgentChatErrorType.MODEL_LOADING || 
+                                                     (event.text?.toLowerCase().includes("500") && 
+                                                      event.text?.toLowerCase().includes("loading model"));
+                                
+                                if (isModelLoading) {
+                                    return <ModelLoadingNotice key={idx} />;
+                                }
+
+                                return (
+                                    <div key={idx} className="my-2 px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                                        <div className="flex items-center space-x-2 text-xs text-red-700 dark:text-red-300">
+                                            <XCircle className="w-4 h-4" />
+                                            <span>{event.text}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 
@@ -578,8 +627,8 @@ function ChatInputBox({
     };
 
     const handleStop = () => {
-        if (agentStream) {
-            agentStream.cancel();
+        if (sessionState?.stream) {
+            sessionState.stream.cancel();
         }
     };
 
@@ -640,9 +689,14 @@ export function AgentChat() {
     const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
 
     const { data: messages, loading } = useStore($agentMessages);
-    const isStreaming = useStore($isAgentStreaming);
-    const streamingMessage = useStore($agentStreamingMessage);
-    const streamingEvents = useStore($agentStreamingEvents);
+    
+    // Get streaming state for current session
+    const streamingStates = useStore($streamingStates);
+    const sessionState = sessionId ? streamingStates[sessionId] : null;
+    
+    const isStreaming = sessionState?.isStreaming || false;
+    const streamingMessage = sessionState?.message || "";
+    const streamingEvents = sessionState?.events || [];
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 

@@ -18,6 +18,7 @@ type DAOFactory interface {
 // SQLiteDAOFactory implements DAOFactory for SQLite
 type SQLiteDAOFactory struct {
 	config *Config
+	db     *sqlx.DB // Shared connection pool
 }
 
 // PostgresDAOFactory implements DAOFactory for PostgreSQL
@@ -35,7 +36,28 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 	switch config.Database.Type {
 	case DatabaseTypeSQLite:
 		slog.Debug("Creating SQLite DAO factory", "url", config.Database.SQLite.URL)
-		return &SQLiteDAOFactory{config: config}, nil
+		
+		// Create shared connection pool for SQLite
+		db, err := sqlx.Open("sqlite3", config.Database.SQLite.URL)
+		if err != nil {
+			slog.Error("Failed to open SQLite connection", "error", err)
+			return nil, fmt.Errorf("failed to open SQLite connection: %w", err)
+		}
+
+		// Enable WAL mode and busy timeout for concurrency
+		if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
+			slog.Error("Failed to enable WAL mode", "error", err)
+			return nil, err
+		}
+		if _, err := db.Exec("PRAGMA busy_timeout=30000;"); err != nil {
+			slog.Error("Failed to set busy_timeout", "error", err)
+			return nil, err
+		}
+
+		return &SQLiteDAOFactory{
+			config: config,
+			db:     db,
+		}, nil
 	case DatabaseTypePostgres:
 		slog.Debug("Creating PostgreSQL DAO factory",
 			"host", config.Database.Postgres.Host,
@@ -80,19 +102,21 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 // SQLiteDAOFactory implementation
 
 func (f *SQLiteDAOFactory) CreateDAO() (DAO, error) {
-	return NewSQLiteDAO(f.config.Database.SQLite.URL)
+	return NewSQLiteDAOWithDB(f.db), nil
 }
 
 func (f *SQLiteDAOFactory) CreateSettingsDAO() (SettingsDAO, error) {
-	return NewSQLiteSettingsDAO(f.config.Database.SQLite.URL), nil
+	return NewSQLiteSettingsDAOWithDB(f.db), nil
 }
 
 func (f *SQLiteDAOFactory) CreateAgentDAO() (AgentDAO, error) {
-	return NewSQLiteAgentsDAO(f.config.Database.SQLite.URL), nil
+	return NewSQLiteAgentsDAOWithDB(f.db), nil
 }
 
 func (f *SQLiteDAOFactory) Close() error {
-	// SQLite connections are closed by individual DAOs
+	if f.db != nil {
+		return f.db.Close()
+	}
 	return nil
 }
 

@@ -8374,7 +8374,7 @@ export class AgentChatResponse extends pb_1.Message {
         content?: never;
         tool_call?: never;
         tool_result?: never;
-        error?: string;
+        error?: AgentChatError;
     })))) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -8421,10 +8421,10 @@ export class AgentChatResponse extends pb_1.Message {
         return pb_1.Message.getField(this, 3) != null;
     }
     get error() {
-        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
+        return pb_1.Message.getWrapperField(this, AgentChatError, 4) as AgentChatError;
     }
-    set error(value: string) {
-        pb_1.Message.setOneofField(this, 4, this.#one_of_decls[0], value);
+    set error(value: AgentChatError) {
+        pb_1.Message.setOneofWrapperField(this, 4, this.#one_of_decls[0], value);
     }
     get has_error() {
         return pb_1.Message.getField(this, 4) != null;
@@ -8445,7 +8445,7 @@ export class AgentChatResponse extends pb_1.Message {
         content?: ReturnType<typeof ContentEvent.prototype.toObject>;
         tool_call?: ReturnType<typeof ToolCall.prototype.toObject>;
         tool_result?: ReturnType<typeof ToolResult.prototype.toObject>;
-        error?: string;
+        error?: ReturnType<typeof AgentChatError.prototype.toObject>;
     }): AgentChatResponse {
         const message = new AgentChatResponse({});
         if (data.content != null) {
@@ -8458,7 +8458,7 @@ export class AgentChatResponse extends pb_1.Message {
             message.tool_result = ToolResult.fromObject(data.tool_result);
         }
         if (data.error != null) {
-            message.error = data.error;
+            message.error = AgentChatError.fromObject(data.error);
         }
         return message;
     }
@@ -8467,7 +8467,7 @@ export class AgentChatResponse extends pb_1.Message {
             content?: ReturnType<typeof ContentEvent.prototype.toObject>;
             tool_call?: ReturnType<typeof ToolCall.prototype.toObject>;
             tool_result?: ReturnType<typeof ToolResult.prototype.toObject>;
-            error?: string;
+            error?: ReturnType<typeof AgentChatError.prototype.toObject>;
         } = {};
         if (this.content != null) {
             data.content = this.content.toObject();
@@ -8479,7 +8479,7 @@ export class AgentChatResponse extends pb_1.Message {
             data.tool_result = this.tool_result.toObject();
         }
         if (this.error != null) {
-            data.error = this.error;
+            data.error = this.error.toObject();
         }
         return data;
     }
@@ -8494,7 +8494,7 @@ export class AgentChatResponse extends pb_1.Message {
         if (this.has_tool_result)
             writer.writeMessage(3, this.tool_result, () => this.tool_result.serialize(writer));
         if (this.has_error)
-            writer.writeString(4, this.error);
+            writer.writeMessage(4, this.error, () => this.error.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -8514,7 +8514,7 @@ export class AgentChatResponse extends pb_1.Message {
                     reader.readMessage(message.tool_result, () => message.tool_result = ToolResult.deserialize(reader));
                     break;
                 case 4:
-                    message.error = reader.readString();
+                    reader.readMessage(message.error, () => message.error = AgentChatError.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -8527,6 +8527,124 @@ export class AgentChatResponse extends pb_1.Message {
     static deserializeBinary(bytes: Uint8Array): AgentChatResponse {
         return AgentChatResponse.deserialize(bytes);
     }
+}
+export class AgentChatError extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        type?: AgentChatErrorType;
+        message?: string;
+        code?: number;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("type" in data && data.type != undefined) {
+                this.type = data.type;
+            }
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+            if ("code" in data && data.code != undefined) {
+                this.code = data.code;
+            }
+        }
+    }
+    get type() {
+        return pb_1.Message.getFieldWithDefault(this, 1, AgentChatErrorType.UNKNOWN) as AgentChatErrorType;
+    }
+    set type(value: AgentChatErrorType) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get code() {
+        return pb_1.Message.getFieldWithDefault(this, 3, 0) as number;
+    }
+    set code(value: number) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    static fromObject(data: {
+        type?: AgentChatErrorType;
+        message?: string;
+        code?: number;
+    }): AgentChatError {
+        const message = new AgentChatError({});
+        if (data.type != null) {
+            message.type = data.type;
+        }
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        if (data.code != null) {
+            message.code = data.code;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            type?: AgentChatErrorType;
+            message?: string;
+            code?: number;
+        } = {};
+        if (this.type != null) {
+            data.type = this.type;
+        }
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        if (this.code != null) {
+            data.code = this.code;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.type != AgentChatErrorType.UNKNOWN)
+            writer.writeEnum(1, this.type);
+        if (this.message.length)
+            writer.writeString(2, this.message);
+        if (this.code != 0)
+            writer.writeInt32(3, this.code);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): AgentChatError {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new AgentChatError();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.type = reader.readEnum();
+                    break;
+                case 2:
+                    message.message = reader.readString();
+                    break;
+                case 3:
+                    message.code = reader.readInt32();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): AgentChatError {
+        return AgentChatError.deserialize(bytes);
+    }
+}
+export enum AgentChatErrorType {
+    UNKNOWN = 0,
+    MODEL_LOADING = 1,
+    PROVIDER_ERROR = 2
 }
 export class ContentEvent extends pb_1.Message {
     #one_of_decls: number[][] = [];
@@ -9515,6 +9633,7 @@ export class AgentMessage extends pb_1.Message {
         success?: boolean;
         error_message?: string;
         run_time_ms?: number;
+        thought_signature?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -9554,6 +9673,9 @@ export class AgentMessage extends pb_1.Message {
             }
             if ("run_time_ms" in data && data.run_time_ms != undefined) {
                 this.run_time_ms = data.run_time_ms;
+            }
+            if ("thought_signature" in data && data.thought_signature != undefined) {
+                this.thought_signature = data.thought_signature;
             }
         }
     }
@@ -9629,6 +9751,12 @@ export class AgentMessage extends pb_1.Message {
     set run_time_ms(value: number) {
         pb_1.Message.setField(this, 12, value);
     }
+    get thought_signature() {
+        return pb_1.Message.getFieldWithDefault(this, 13, "") as string;
+    }
+    set thought_signature(value: string) {
+        pb_1.Message.setField(this, 13, value);
+    }
     static fromObject(data: {
         id?: string;
         session_id?: string;
@@ -9642,6 +9770,7 @@ export class AgentMessage extends pb_1.Message {
         success?: boolean;
         error_message?: string;
         run_time_ms?: number;
+        thought_signature?: string;
     }): AgentMessage {
         const message = new AgentMessage({});
         if (data.id != null) {
@@ -9680,6 +9809,9 @@ export class AgentMessage extends pb_1.Message {
         if (data.run_time_ms != null) {
             message.run_time_ms = data.run_time_ms;
         }
+        if (data.thought_signature != null) {
+            message.thought_signature = data.thought_signature;
+        }
         return message;
     }
     toObject() {
@@ -9696,6 +9828,7 @@ export class AgentMessage extends pb_1.Message {
             success?: boolean;
             error_message?: string;
             run_time_ms?: number;
+            thought_signature?: string;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -9733,6 +9866,9 @@ export class AgentMessage extends pb_1.Message {
         if (this.run_time_ms != null) {
             data.run_time_ms = this.run_time_ms;
         }
+        if (this.thought_signature != null) {
+            data.thought_signature = this.thought_signature;
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -9763,6 +9899,8 @@ export class AgentMessage extends pb_1.Message {
             writer.writeString(11, this.error_message);
         if (this.run_time_ms != 0)
             writer.writeInt64(12, this.run_time_ms);
+        if (this.thought_signature.length)
+            writer.writeString(13, this.thought_signature);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -9807,6 +9945,9 @@ export class AgentMessage extends pb_1.Message {
                     break;
                 case 12:
                     message.run_time_ms = reader.readInt64();
+                    break;
+                case 13:
+                    message.thought_signature = reader.readString();
                     break;
                 default: reader.skipField();
             }

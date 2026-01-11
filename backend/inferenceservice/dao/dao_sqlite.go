@@ -25,8 +25,8 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 		return nil, err
 	}
 
-	// Set busy timeout to 10 seconds
-	_, err = db.Exec("PRAGMA busy_timeout = 10000;")
+	// Set busy timeout to 30 seconds
+	_, err = db.Exec("PRAGMA busy_timeout = 30000;")
 	if err != nil {
 		slog.Error("inferenceservice:dao_sqlite:NewSQLiteDAO", "message", "failed to set busy timeout", "error", err)
 		return nil, err
@@ -39,6 +39,12 @@ func NewSQLiteDAO(sqliteUrl string) (*SQLiteDAO, error) {
 		return nil, err
 	}
 
+	return &SQLiteDAO{db: db}, nil
+}
+
+// NewSQLiteDAOWithDB creates a new SQLite DAO instance using a shared database connection
+func NewSQLiteDAOWithDB(db *sqlx.DB) (*SQLiteDAO, error) {
+	slog.Debug("inferenceservice:dao_sqlite:NewSQLiteDAOWithDB")
 	return &SQLiteDAO{db: db}, nil
 }
 

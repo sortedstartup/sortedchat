@@ -40,7 +40,7 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 		db, err := sqlx.Open("sqlite3", config.Database.SQLite.URL)
 		if err != nil {
 			slog.Error("RealtimeService:dao:NewDAOFactory", "message", "failed to open SQLite database", "error", err)
-			return nil, fmt.Errorf("failed to open SQLite database")
+			return nil, fmt.Errorf("failed to open SQLite database: %w", err)
 		}
 
 		// Set busy timeout to 30 seconds

@@ -20,13 +20,10 @@ import { useStore } from "@nanostores/react";
 import { useParams } from "react-router-dom";
 import {
     $agentMessages,
-    $isAgentStreaming,
-    $agentStreamingMessage,
-    $agentStreamingEvents,
+    $streamingStates,
     $currentSessionId,
     getAgentMessages,
     sendAgentMessage,
-    agentStream,
     type StreamEvent
 } from "@/store/agents";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
@@ -228,18 +225,27 @@ function ThinkingCard({ event }: { event: StreamEvent }) {
 }
 
 function ModelLoadingNotice() {
-    const [isVisible, setIsVisible] = useState(true);
+    const [status, setStatus] = useState<'visible' | 'fading' | 'hidden'>('visible');
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsVisible(false), 5000);
-        return () => clearTimeout(timer);
+        const fadeTimer = setTimeout(() => setStatus('fading'), 4000);
+        const hideTimer = setTimeout(() => setStatus('hidden'), 5000);
+        return () => {
+            clearTimeout(fadeTimer);
+            clearTimeout(hideTimer);
+        };
     }, []);
 
-    if (!isVisible) return null;
+    if (status === 'hidden') return null;
 
     return (
-        <div className="my-2 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl animate-in fade-in slide-in-from-top-2 duration-500">
-            <div className="flex items-center space-x-3">
+        <div className={`
+            my-2 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl 
+            transition-all duration-1000 ease-in-out overflow-hidden
+            ${status === 'fading' ? 'opacity-0 max-h-0 py-0 my-0 border-transparent' : 'opacity-100 max-h-40'}
+            ${status === 'visible' ? 'animate-in fade-in slide-in-from-top-2 duration-500' : ''}
+        `}>
+            <div className="flex items-center space-x-3 min-w-max">
                 <div className="flex-shrink-0">
                     <Loader2 className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
                 </div>
@@ -621,8 +627,8 @@ function ChatInputBox({
     };
 
     const handleStop = () => {
-        if (agentStream) {
-            agentStream.cancel();
+        if (sessionState?.stream) {
+            sessionState.stream.cancel();
         }
     };
 
@@ -683,9 +689,14 @@ export function AgentChat() {
     const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
 
     const { data: messages, loading } = useStore($agentMessages);
-    const isStreaming = useStore($isAgentStreaming);
-    const streamingMessage = useStore($agentStreamingMessage);
-    const streamingEvents = useStore($agentStreamingEvents);
+    
+    // Get streaming state for current session
+    const streamingStates = useStore($streamingStates);
+    const sessionState = sessionId ? streamingStates[sessionId] : null;
+    
+    const isStreaming = sessionState?.isStreaming || false;
+    const streamingMessage = sessionState?.message || "";
+    const streamingEvents = sessionState?.events || [];
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 

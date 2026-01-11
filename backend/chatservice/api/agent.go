@@ -21,6 +21,8 @@ import (
 	"sortedstartup/common/auth"
 )
 
+const GenericConnectionError = "[ API/Connection Error ]"
+
 type AgentServiceAPI struct {
 	pb.UnimplementedAgentServiceServer
 	dao             db.AgentDAO
@@ -515,8 +517,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 				// If no text was accumulated, save a generic error message to the DB
 				// so the user sees something went wrong and the conversation role is preserved.
 				// The real error is logged to the server logs.
-				genericError := "Some connection/api error happened"
-				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", genericError, nil, nil, nil, nil, false, strPtr(e.Error.Error()), 0)
+				s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", GenericConnectionError, nil, nil, nil, nil, false, strPtr(e.Error.Error()), 0)
 				*nextSeq++
 			}
 

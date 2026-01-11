@@ -164,6 +164,9 @@ type AgentMessageRow struct {
 	ToolArgs         *string `db:"tool_args" json:"tool_args"`
 	ThoughtSignature *string `db:"thought_signature" json:"thought_signature"`
 	CreatedAt        string  `db:"created_at" json:"created_at"`
+	Success          bool    `db:"success" json:"success"`
+	ErrorMessage     *string `db:"error_message" json:"error_message"`
+	RunTimeMs        int64   `db:"run_time_ms" json:"run_time_ms"`
 }
 
 type AgentFSOperationRow struct {

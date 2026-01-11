@@ -30,7 +30,7 @@ import {
     type StreamEvent
 } from "@/store/agents";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
-import type { AgentMessage } from "../../proto/chatservice";
+import { type AgentMessage, AgentChatErrorType } from "../../proto/chatservice";
 
 interface MessageProps {
     message: AgentMessage & { isStreaming?: boolean };
@@ -222,6 +222,35 @@ function ThinkingCard({ event }: { event: StreamEvent }) {
                         [{event.model}]
                     </span>
                 )}
+            </div>
+        </div>
+    );
+}
+
+function ModelLoadingNotice() {
+    const [isVisible, setIsVisible] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsVisible(false), 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (!isVisible) return null;
+
+    return (
+        <div className="my-2 px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl animate-in fade-in slide-in-from-top-2 duration-500">
+            <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                    <Loader2 className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                        Initializing Model
+                    </span>
+                    <span className="text-xs text-blue-700 dark:text-blue-300">
+                        The AI model is being loaded. This usually takes a few seconds.
+                    </span>
+                </div>
             </div>
         </div>
     );
@@ -474,14 +503,24 @@ function Message({
                     {/* Error Events */}
                     {!isUser && errorEvents.length > 0 && (
                         <div className="space-y-2 mb-4">
-                            {errorEvents.map((event, idx) => (
-                                <div key={idx} className="my-2 px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
-                                    <div className="flex items-center space-x-2 text-xs text-red-700 dark:text-red-300">
-                                        <XCircle className="w-4 h-4" />
-                                        <span>{event.text}</span>
+                            {errorEvents.map((event, idx) => {
+                                const isModelLoading = event.errorType === AgentChatErrorType.MODEL_LOADING || 
+                                                     (event.text?.toLowerCase().includes("500") && 
+                                                      event.text?.toLowerCase().includes("loading model"));
+                                
+                                if (isModelLoading) {
+                                    return <ModelLoadingNotice key={idx} />;
+                                }
+
+                                return (
+                                    <div key={idx} className="my-2 px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                                        <div className="flex items-center space-x-2 text-xs text-red-700 dark:text-red-300">
+                                            <XCircle className="w-4 h-4" />
+                                            <span>{event.text}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 

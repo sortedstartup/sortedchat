@@ -45,6 +45,9 @@ export interface StreamEvent {
     filePath?: string;
     fileContent?: string;
     fileSize?: number;
+    // For structured error events
+    errorType?: number;
+    errorCode?: number;
 }
 
 let _agentClient: AgentServiceClient | undefined;
@@ -305,10 +308,13 @@ export const sendAgentMessage = async (sessionId: string, message: string) => {
             
             // Handle Error
             if (res.has_error) {
+                const err = res.error;
                 events.push({
                     type: 'error',
                     timestamp: Date.now(),
-                    text: res.error,
+                    text: err.message,
+                    errorType: err.type,
+                    errorCode: err.code,
                 });
                 $agentStreamingEvents.set([...events]);
             }
@@ -365,6 +371,16 @@ export const sendAgentMessage = async (sessionId: string, message: string) => {
 // });
 
 $currentSessionId.listen((sessionId) => {
+    // Reset streaming state when switching sessions
+    $isAgentStreaming.set(false);
+    $agentStreamingMessage.set("");
+    $agentStreamingEvents.set([]);
+    
+    if (agentStream) {
+        agentStream.cancel();
+        agentStream = null;
+    }
+
     if (sessionId) {
         getAgentMessages(sessionId);
     } else {

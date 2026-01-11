@@ -620,8 +620,19 @@ message AgentChatResponse {
     ContentEvent content = 1;
     ToolCall tool_call = 2;
     ToolResult tool_result = 3;
-    string error = 4;
+    AgentChatError error = 4;
   }
+}
+
+message AgentChatError {
+  enum Type {
+    UNKNOWN = 0;
+    MODEL_LOADING = 1;
+    PROVIDER_ERROR = 2;
+  }
+  Type type = 1;
+  string message = 2;
+  int32 code = 3;
 }
 
 // Generic content output (text, thinking, images, video, etc.)

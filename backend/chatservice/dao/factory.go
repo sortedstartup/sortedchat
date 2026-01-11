@@ -47,9 +47,11 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 		// Enable WAL mode and busy timeout for concurrency
 		if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
 			slog.Error("Failed to enable WAL mode", "error", err)
+			return nil, err
 		}
 		if _, err := db.Exec("PRAGMA busy_timeout=30000;"); err != nil {
 			slog.Error("Failed to set busy_timeout", "error", err)
+			return nil, err
 		}
 
 		return &SQLiteDAOFactory{

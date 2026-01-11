@@ -264,7 +264,7 @@ export function Project() {
                   <DialogTitle>Upload Files or Folder</DialogTitle>
                 </DialogHeader>
                 <FileUploader
-                  uploadUrl={`${apiUploadUrl}/upload`}
+                  uploadUrl="/upload"
                   onFileUpload={(file) => console.log("Uploaded:", file)}
                   onCompleteUpload={handleUploadComplete}
                 />

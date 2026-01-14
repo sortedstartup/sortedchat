@@ -15,13 +15,13 @@ const KaTeXRenderer: React.FC<KaTeXRendererProps> = ({ formula }) => {
   }
 
   return (
-    <div 
+    <span
       className="katex-container inline-block align-middle my-0"
       style={{
         isolation: 'isolate',
         contain: 'layout style',
       }}
-      dangerouslySetInnerHTML={{ __html: html }} 
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 };

@@ -80,16 +80,17 @@ export const EnhancedMarkdown = memo(({ children }: EnhancedMarkdownProps) => {
   return (
     <div className="prose prose-sm max-w-none dark:prose-invert">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm,remarkMath]}
+        remarkPlugins={[remarkGfm, remarkMath]}
         components={{
+          pre: ({ children }: any) => <>{children}</>,
           code: ({ className, children, ...props }) => {
             const codeString = String(children || '');
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : 'text';
-            if ( language === 'mermaid') {
+            if (language === 'mermaid') {
               return <MermaidChart chart={codeString} className="my-4 flex justify-center" />;
             }
-            if ( language === 'math') {
+            if (language === 'math') {
               return <KaTeXRenderer formula={codeString} />;
             }
             return (

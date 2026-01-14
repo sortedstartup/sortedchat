@@ -18,7 +18,7 @@ import {
   ImageIcon,
   X,
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -176,7 +176,7 @@ function formatCostAndTokens(
   return { costDisplay, cachedTokensDisplay };
 }
 
-function Message({
+const Message = React.memo(function Message({
   message,
   onCopyMessage,
   onViewRAGDetails,
@@ -193,10 +193,13 @@ function Message({
   const isUser = message.role === "user";
   const isProgress = message.isProgress;
 
-  const { costDisplay, cachedTokensDisplay } = formatCostAndTokens(
-    messageSummary?.cost ?? message?.cost,
-    messageSummary?.cached_tokens ?? message.cached_tokens,
-    true
+  const { costDisplay, cachedTokensDisplay } = useMemo(
+    () => formatCostAndTokens(
+      messageSummary?.cost ?? message?.cost,
+      messageSummary?.cached_tokens ?? message.cached_tokens,
+      true
+    ),
+    [messageSummary?.cost, message?.cost, messageSummary?.cached_tokens, message.cached_tokens]
   );
 
   return (
@@ -369,9 +372,9 @@ function Message({
       </div>
     </div>
   );
-}
+});
 
-function ChatInputBox({
+const ChatInputBox = React.memo(function ChatInputBox({
   projectId,
   onSendMessage,
 }: {
@@ -677,7 +680,7 @@ function ChatInputBox({
       </div>
     </>
   );
-}
+});
 
 export function Chat() {
   const { projectId, chatId } = useParams();
@@ -706,11 +709,18 @@ export function Chat() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const shouldAutoScroll = !isUserScrolledUp;
+  const isAutoScrollingRef = useRef(false);
 
   // Show progress as assistant message when there's progress but no streaming content yet
-  const showProgressAsMessage = chatProgress && !streamingMessage?.trim();
+  const showProgressAsMessage = useMemo(() => 
+    chatProgress && !streamingMessage?.trim(), 
+    [chatProgress, streamingMessage]
+  );
 
+  const chatIdRef = useRef(chatId);
+  
   useEffect(() => {
+    chatIdRef.current = chatId;
     if (chatId) {
       $currentChatId.set(chatId);
     }
@@ -718,12 +728,12 @@ export function Chat() {
 
   useEffect(() => {
     const unsub = $currentChatId.listen((newId) => {
-      if (newId && newId !== chatId) {
+      if (newId && newId !== chatIdRef.current) {
         navigate(`/chat/${newId}`, { replace: true });
       }
     });
     return () => unsub();
-  }, [chatId, navigate]);
+  }, [navigate]);
 
   useEffect(() => {
     if (projectId) {
@@ -738,43 +748,65 @@ export function Chat() {
     const container = messagesContainerRef.current;
     if (!container) return;
 
+    let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
-      const {
-        scrollTop: scrollFromTop, //how far you’ve scrolled from the very top.
-        scrollHeight: totalContentHeight, //total content height (like the full length of a long chat).
-        clientHeight: viewportHeight, //visible window height (the viewport).
-      } = container;
-      const isAtBottom = totalContentHeight - scrollFromTop - viewportHeight < 100;
-      //if user is at bottom of the chat, it will autoscroll, else it will not.
+      // Ignore scroll events triggered by auto-scroll
+      if (isAutoScrollingRef.current) {
+        return;
+      }
 
-      setIsUserScrolledUp(!isAtBottom);
+      // Debounce to avoid excessive state updates
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const {
+          scrollTop: scrollFromTop,
+          scrollHeight: totalContentHeight,
+          clientHeight: viewportHeight,
+        } = container;
+        const isAtBottom = totalContentHeight - scrollFromTop - viewportHeight < 100;
+        
+        setIsUserScrolledUp(!isAtBottom);
+      }, 100);
     };
 
-    container.addEventListener("scroll", handleScroll);
-    return () => container.removeEventListener("scroll", handleScroll);
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      clearTimeout(scrollTimeout);
+      container.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   // Auto-scroll only when user is at bottom and content changes
   useEffect(() => {
     if (shouldAutoScroll && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      // Set flag to ignore scroll events during auto-scroll
+      isAutoScrollingRef.current = true;
+      
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        
+        // Clear flag after scroll animation completes (roughly 500ms for smooth scroll)
+        setTimeout(() => {
+          isAutoScrollingRef.current = false;
+        }, 600);
+      });
     }
   }, [data, streamingMessage, currentChatMessage, shouldAutoScroll]);
 
 
 
-  const handleSendMessage = (message: string, images?: File[], imageDetail?: string) => {
+  const handleSendMessage = useCallback((message: string, images?: File[], imageDetail?: string) => {
     setIsUserScrolledUp(false);
     doChat(message, projectId, images, imageDetail);
-  };
+  }, [projectId]);
 
-  const handleCopyMessage = async (content: string, messageId: string) => {
+  const handleCopyMessage = useCallback(async (content: string, messageId: string) => {
     await navigator.clipboard.writeText(content);
     setCopiedMessageId(messageId);
     setTimeout(() => setCopiedMessageId(null), 2000);
-  };
+  }, []);
 
-  const handleViewRAGDetails = async (
+  const handleViewRAGDetails = useCallback(async (
     messageId: string,
     docId: string,
     fileName: string
@@ -783,17 +815,17 @@ export function Chat() {
 
     setSelectedDocumentForDetails({ messageId, docId, fileName });
     await fetchRAGDocumentReference(messageId, projectId, docId);
-  };
+  }, [projectId]);
 
-  const goToChatBranch = (chatId: string) => {
+  const goToChatBranch = useCallback((chatId: string) => {
     navigate(`/chat/${chatId}`);
-  };
+  }, [navigate]);
 
-  const handleToggleExpand = () => {
+  const handleToggleExpand = useCallback(() => {
     setIsExpanded((prev) => !prev);
-  };
+  }, []);
 
-  const combinedMessages = [
+  const combinedMessages = useMemo(() => [
     ...(data || []),
     ...(currentChatMessage?.trim() ? [{ message_id: currentUserMessageId, role: "user", content: currentChatMessage }] : []),
     ...(showProgressAsMessage ? [{
@@ -804,7 +836,7 @@ export function Chat() {
       isProgress: true
     }] : []),
     ...(streamingMessage?.trim() ? [{ message_id: currentAssistantMessageId, role: "assistant", content: streamingMessage }] : []),
-  ];
+  ], [data, currentChatMessage, currentUserMessageId, showProgressAsMessage, streamingMessage, currentAssistantMessageId]);
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -834,7 +866,7 @@ export function Chat() {
 
               return (
                 <Message
-                  key={index}
+                  key={message.message_id || `msg-${index}`}
                   message={message as ChatMessage & { isProgress?: boolean }}
                   onCopyMessage={handleCopyMessage}
                   onViewRAGDetails={handleViewRAGDetails}

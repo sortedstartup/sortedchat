@@ -707,9 +707,8 @@ export function Chat() {
   const currentChatError = useStore($currentChatError);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
-  const shouldAutoScroll = !isUserScrolledUp;
-  const isAutoScrollingRef = useRef(false);
+  // Use ref instead of state to avoid re-renders
+  const isUserScrolledUpRef = useRef(false);
 
   // Show progress as assistant message when there's progress but no streaming content yet
   const showProgressAsMessage = useMemo(() => 
@@ -743,60 +742,58 @@ export function Chat() {
     }
   }, [projectId]);
 
-  // Scroll handler to detect when user scrolls up
+  // IntersectionObserver to detect if user is at bottom (no re-renders!)
   useEffect(() => {
+    const target = messagesEndRef.current;
     const container = messagesContainerRef.current;
-    if (!container) return;
+    if (!target || !container) return;
 
-    let scrollTimeout: NodeJS.Timeout;
-    const handleScroll = () => {
-      // Ignore scroll events triggered by auto-scroll
-      if (isAutoScrollingRef.current) {
-        return;
+    // Initial check - assume user is at bottom on mount
+    isUserScrolledUpRef.current = false;
+
+    // IntersectionObserver to detect when bottom element is visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        // If bottom element is intersecting (visible), user is at bottom
+        // If not intersecting, user has scrolled up
+        isUserScrolledUpRef.current = !entry.isIntersecting;
+      },
+      {
+        root: container,
+        threshold: 0.1,
+        rootMargin: "0px",
       }
+    );
 
-      // Debounce to avoid excessive state updates
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        const {
-          scrollTop: scrollFromTop,
-          scrollHeight: totalContentHeight,
-          clientHeight: viewportHeight,
-        } = container;
-        const isAtBottom = totalContentHeight - scrollFromTop - viewportHeight < 100;
-        
-        setIsUserScrolledUp(!isAtBottom);
-      }, 100);
-    };
+    observer.observe(target);
 
-    container.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
-      clearTimeout(scrollTimeout);
-      container.removeEventListener("scroll", handleScroll);
+      observer.disconnect();
     };
   }, []);
 
-  // Auto-scroll only when user is at bottom and content changes
+  // Auto-scroll when content changes if user is at bottom
   useEffect(() => {
-    if (shouldAutoScroll && messagesEndRef.current) {
-      // Set flag to ignore scroll events during auto-scroll
-      isAutoScrollingRef.current = true;
-      
+    const target = messagesEndRef.current;
+    if (!target) return;
+
+    // Only auto-scroll if user hasn't scrolled up
+    if (!isUserScrolledUpRef.current) {
+      // Use double RAF to ensure DOM has updated
       requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        
-        // Clear flag after scroll animation completes (roughly 500ms for smooth scroll)
-        setTimeout(() => {
-          isAutoScrollingRef.current = false;
-        }, 600);
+        requestAnimationFrame(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "end" });
+        });
       });
     }
-  }, [data, streamingMessage, currentChatMessage, shouldAutoScroll]);
+  }, [data, streamingMessage, currentChatMessage]);
 
 
 
   const handleSendMessage = useCallback((message: string, images?: File[], imageDetail?: string) => {
-    setIsUserScrolledUp(false);
+    // Reset scroll position when sending a message
+    isUserScrolledUpRef.current = false;
     doChat(message, projectId, images, imageDetail);
   }, [projectId]);
 

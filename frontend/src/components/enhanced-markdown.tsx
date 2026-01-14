@@ -82,7 +82,6 @@ export const EnhancedMarkdown = memo(({ children }: EnhancedMarkdownProps) => {
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         components={{
-          pre: ({ children }: any) => <>{children}</>,
           code: ({ className, children, ...props }) => {
             const codeString = String(children || '');
             const match = /language-(\w+)/.exec(className || '');

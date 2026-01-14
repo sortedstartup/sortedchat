@@ -167,7 +167,6 @@ export class Model extends pb_1.Message {
         filestore_id?: string;
         is_embedding_model?: boolean;
         is_enabled?: boolean;
-        model_info?: ModelInfo;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -210,9 +209,6 @@ export class Model extends pb_1.Message {
             }
             if ("is_enabled" in data && data.is_enabled != undefined) {
                 this.is_enabled = data.is_enabled;
-            }
-            if ("model_info" in data && data.model_info != undefined) {
-                this.model_info = data.model_info;
             }
         }
     }
@@ -297,15 +293,6 @@ export class Model extends pb_1.Message {
     set is_enabled(value: boolean) {
         pb_1.Message.setField(this, 14, value);
     }
-    get model_info() {
-        return pb_1.Message.getWrapperField(this, ModelInfo, 15) as ModelInfo;
-    }
-    set model_info(value: ModelInfo) {
-        pb_1.Message.setWrapperField(this, 15, value);
-    }
-    get has_model_info() {
-        return pb_1.Message.getField(this, 15) != null;
-    }
     static fromObject(data: {
         id?: string;
         name?: string;
@@ -320,7 +307,6 @@ export class Model extends pb_1.Message {
         filestore_id?: string;
         is_embedding_model?: boolean;
         is_enabled?: boolean;
-        model_info?: ReturnType<typeof ModelInfo.prototype.toObject>;
     }): Model {
         const message = new Model({});
         if (data.id != null) {
@@ -362,9 +348,6 @@ export class Model extends pb_1.Message {
         if (data.is_enabled != null) {
             message.is_enabled = data.is_enabled;
         }
-        if (data.model_info != null) {
-            message.model_info = ModelInfo.fromObject(data.model_info);
-        }
         return message;
     }
     toObject() {
@@ -382,7 +365,6 @@ export class Model extends pb_1.Message {
             filestore_id?: string;
             is_embedding_model?: boolean;
             is_enabled?: boolean;
-            model_info?: ReturnType<typeof ModelInfo.prototype.toObject>;
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -423,9 +405,6 @@ export class Model extends pb_1.Message {
         if (this.is_enabled != null) {
             data.is_enabled = this.is_enabled;
         }
-        if (this.model_info != null) {
-            data.model_info = this.model_info.toObject();
-        }
         return data;
     }
     serialize(): Uint8Array;
@@ -458,8 +437,6 @@ export class Model extends pb_1.Message {
             writer.writeBool(12, this.is_embedding_model);
         if (this.is_enabled != false)
             writer.writeBool(14, this.is_enabled);
-        if (this.has_model_info)
-            writer.writeMessage(15, this.model_info, () => this.model_info.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -508,9 +485,6 @@ export class Model extends pb_1.Message {
                 case 14:
                     message.is_enabled = reader.readBool();
                     break;
-                case 15:
-                    reader.readMessage(message.model_info, () => message.model_info = ModelInfo.deserialize(reader));
-                    break;
                 default: reader.skipField();
             }
         }
@@ -521,142 +495,6 @@ export class Model extends pb_1.Message {
     }
     static deserializeBinary(bytes: Uint8Array): Model {
         return Model.deserialize(bytes);
-    }
-}
-export class ModelInfo extends pb_1.Message {
-    #one_of_decls: number[][] = [];
-    constructor(data?: any[] | {
-        creator_name?: string;
-        home_page_url?: string;
-        quantization?: string;
-        download_size?: string;
-    }) {
-        super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
-        if (!Array.isArray(data) && typeof data == "object") {
-            if ("creator_name" in data && data.creator_name != undefined) {
-                this.creator_name = data.creator_name;
-            }
-            if ("home_page_url" in data && data.home_page_url != undefined) {
-                this.home_page_url = data.home_page_url;
-            }
-            if ("quantization" in data && data.quantization != undefined) {
-                this.quantization = data.quantization;
-            }
-            if ("download_size" in data && data.download_size != undefined) {
-                this.download_size = data.download_size;
-            }
-        }
-    }
-    get creator_name() {
-        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
-    }
-    set creator_name(value: string) {
-        pb_1.Message.setField(this, 1, value);
-    }
-    get home_page_url() {
-        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
-    }
-    set home_page_url(value: string) {
-        pb_1.Message.setField(this, 2, value);
-    }
-    get quantization() {
-        return pb_1.Message.getFieldWithDefault(this, 3, "") as string;
-    }
-    set quantization(value: string) {
-        pb_1.Message.setField(this, 3, value);
-    }
-    get download_size() {
-        return pb_1.Message.getFieldWithDefault(this, 4, "") as string;
-    }
-    set download_size(value: string) {
-        pb_1.Message.setField(this, 4, value);
-    }
-    static fromObject(data: {
-        creator_name?: string;
-        home_page_url?: string;
-        quantization?: string;
-        download_size?: string;
-    }): ModelInfo {
-        const message = new ModelInfo({});
-        if (data.creator_name != null) {
-            message.creator_name = data.creator_name;
-        }
-        if (data.home_page_url != null) {
-            message.home_page_url = data.home_page_url;
-        }
-        if (data.quantization != null) {
-            message.quantization = data.quantization;
-        }
-        if (data.download_size != null) {
-            message.download_size = data.download_size;
-        }
-        return message;
-    }
-    toObject() {
-        const data: {
-            creator_name?: string;
-            home_page_url?: string;
-            quantization?: string;
-            download_size?: string;
-        } = {};
-        if (this.creator_name != null) {
-            data.creator_name = this.creator_name;
-        }
-        if (this.home_page_url != null) {
-            data.home_page_url = this.home_page_url;
-        }
-        if (this.quantization != null) {
-            data.quantization = this.quantization;
-        }
-        if (this.download_size != null) {
-            data.download_size = this.download_size;
-        }
-        return data;
-    }
-    serialize(): Uint8Array;
-    serialize(w: pb_1.BinaryWriter): void;
-    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
-        const writer = w || new pb_1.BinaryWriter();
-        if (this.creator_name.length)
-            writer.writeString(1, this.creator_name);
-        if (this.home_page_url.length)
-            writer.writeString(2, this.home_page_url);
-        if (this.quantization.length)
-            writer.writeString(3, this.quantization);
-        if (this.download_size.length)
-            writer.writeString(4, this.download_size);
-        if (!w)
-            return writer.getResultBuffer();
-    }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ModelInfo {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ModelInfo();
-        while (reader.nextField()) {
-            if (reader.isEndGroup())
-                break;
-            switch (reader.getFieldNumber()) {
-                case 1:
-                    message.creator_name = reader.readString();
-                    break;
-                case 2:
-                    message.home_page_url = reader.readString();
-                    break;
-                case 3:
-                    message.quantization = reader.readString();
-                    break;
-                case 4:
-                    message.download_size = reader.readString();
-                    break;
-                default: reader.skipField();
-            }
-        }
-        return message;
-    }
-    serializeBinary(): Uint8Array {
-        return this.serialize();
-    }
-    static deserializeBinary(bytes: Uint8Array): ModelInfo {
-        return ModelInfo.deserialize(bytes);
     }
 }
 export class DownloadModelRequest extends pb_1.Message {

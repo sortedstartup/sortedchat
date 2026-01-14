@@ -19,6 +19,7 @@ type ModelMetadata struct {
 	IsEmbeddingModel bool    `db:"is_embedding_model"`
 	CachedTokenCost  float64 `db:"cached_token_cost"`
 	IsEnabled        bool    `db:"is_enabled"`
+	ModelInfo        string  `db:"model_info"`
 }
 
 // Status constants - using proto enum values

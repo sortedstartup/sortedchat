@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
@@ -89,6 +90,22 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 				filestoreID = *model.FileStoreID
 			}
 
+			// Parse model_info JSON to proto structure
+			var modelInfoProto *pb.ModelInfo
+			if model.ModelInfo != "" && model.ModelInfo != "{}" {
+				var modelInfo map[string]string
+				if err := json.Unmarshal([]byte(model.ModelInfo), &modelInfo); err == nil {
+					modelInfoProto = &pb.ModelInfo{
+						CreatorName:  modelInfo["creator_name"],
+						HomePageUrl:  modelInfo["homepage_url"],
+						Quantization: modelInfo["quantization"],
+						DownloadSize: modelInfo["download_size"],
+					}
+				} else {
+					slog.Error("inferenceservice:api:GetLLMModels", "message", "failed to parse model_info JSON", "error", err)
+				}
+			}
+
 			pbModels[i] = &pb.Model{
 				Id:               model.ID,
 				Name:             model.Name,
@@ -103,6 +120,7 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 				FilestoreId:      filestoreID,
 				IsEmbeddingModel: model.IsEmbeddingModel,
 				IsEnabled:        model.IsEnabled,
+				ModelInfo:        modelInfoProto,
 			}
 		}
 		slog.Info("inferenceservice:api:GetLLMModels", "message", "Sending LLM models")

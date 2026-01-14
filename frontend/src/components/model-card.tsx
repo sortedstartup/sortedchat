@@ -62,6 +62,7 @@ export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLoca
 
   const isDownloading = progressData?.status === DownloadStatus.DOWNLOADING;
   const isEmbedding = model.is_embedding_model;
+  const hasModelInfo = model.provider === 'local' && model.model_info;
 
   return (
     <div className="bg-card rounded-xl shadow-sm border border-border p-4 flex items-center justify-between hover:shadow-md transition-shadow">
@@ -82,7 +83,24 @@ export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLoca
             </span>
           )}
           <h3 className="font-bold text-base text-foreground leading-tight">{model.name}</h3>
-          <p className="text-xs text-muted-foreground font-medium">{model.provider}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground font-medium">{model.provider}</p>
+            {hasModelInfo && model.model_info?.quantization && (
+              <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+                {model.model_info.quantization}
+              </span>
+            )}
+          </div>
+          {hasModelInfo && (model.model_info?.download_size || model.model_info?.creator_name) && (
+            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+              {model.model_info?.download_size && (
+                <span>{model.model_info.download_size}</span>
+              )}
+              {model.model_info?.creator_name && (
+                <span>• {model.model_info.creator_name}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

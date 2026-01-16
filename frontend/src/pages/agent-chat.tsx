@@ -59,9 +59,9 @@ function ExpandableCode({ content, defaultLines = 50 }: { content: string; defau
         : content;
 
     return (
-        <div>
-            <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto max-h-[300px] overflow-y-auto">
-                <code>{displayContent}</code>
+        <div className="w-full overflow-hidden">
+            <pre className="text-xs bg-muted/50 p-2 rounded max-h-[300px] overflow-y-auto overflow-x-auto whitespace-pre-wrap break-words w-full">
+                <code className="break-all">{displayContent}</code>
             </pre>
             {needsTruncation && (
                 <button
@@ -141,7 +141,7 @@ function ToolDetailPanel({ execution }: { execution: ToolExecution }) {
     }
 
     return (
-        <div className="mt-2 p-2 border border-border rounded-lg bg-muted/20 text-left">
+        <div className="mt-2 p-2 border border-border rounded-lg bg-muted/20 text-left w-full overflow-hidden">
             <div className="text-xs font-medium mb-1">{execution.toolName}</div>
 
             {/* Arguments */}
@@ -160,7 +160,7 @@ function ToolDetailPanel({ execution }: { execution: ToolExecution }) {
 
             {/* Error message */}
             {execution.errorMessage && (
-                <div className="mt-1 text-xs text-red-600 dark:text-red-400">
+                <div className="mt-1 text-xs text-red-600 dark:text-red-400 break-words">
                     Error: {execution.errorMessage}
                 </div>
             )}
@@ -177,7 +177,7 @@ function ToolExecutionsRow({ executions }: { executions: ToolExecution[] }) {
     };
 
     return (
-        <div className="mb-3">
+        <div className="mb-3 w-full overflow-hidden">
             {/* Horizontal row of chips */}
             <div className="flex flex-wrap gap-1.5">
                 {executions.map((execution, idx) => (
@@ -362,7 +362,7 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
 
             {/* Code view (collapsible) */}
             {isExpanded && (
-                <div className="border-t border-border p-3 bg-muted/20">
+                <div className="border-t border-border p-3 bg-muted/20 w-full overflow-hidden">
                     <div className="text-xs text-muted-foreground mb-2">HTML Source:</div>
                     <ExpandableCode content={event.fileContent || ''} defaultLines={20} />
                 </div>

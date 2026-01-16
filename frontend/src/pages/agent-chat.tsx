@@ -28,6 +28,7 @@ import {
 } from "@/store/agents";
 import { EnhancedMarkdown } from "@/components/enhanced-markdown";
 import { type AgentMessage, AgentChatErrorType } from "../../proto/chatservice";
+import { FilePreviewModal } from "@/components/file-preview-modal";
 
 interface MessageProps {
     message: AgentMessage & { isStreaming?: boolean };
@@ -59,9 +60,9 @@ function ExpandableCode({ content, defaultLines = 50 }: { content: string; defau
         : content;
 
     return (
-        <div>
-            <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto max-h-[300px] overflow-y-auto">
-                <code>{displayContent}</code>
+        <div className="w-full overflow-hidden">
+            <pre className="text-xs bg-muted/50 p-2 rounded max-h-[300px] overflow-y-auto overflow-x-auto whitespace-pre-wrap break-words w-full">
+                <code className="break-all">{displayContent}</code>
             </pre>
             {needsTruncation && (
                 <button
@@ -141,7 +142,7 @@ function ToolDetailPanel({ execution }: { execution: ToolExecution }) {
     }
 
     return (
-        <div className="mt-2 p-2 border border-border rounded-lg bg-muted/20 text-left">
+        <div className="mt-2 p-2 border border-border rounded-lg bg-muted/20 text-left w-full overflow-hidden">
             <div className="text-xs font-medium mb-1">{execution.toolName}</div>
 
             {/* Arguments */}
@@ -160,7 +161,7 @@ function ToolDetailPanel({ execution }: { execution: ToolExecution }) {
 
             {/* Error message */}
             {execution.errorMessage && (
-                <div className="mt-1 text-xs text-red-600 dark:text-red-400">
+                <div className="mt-1 text-xs text-red-600 dark:text-red-400 break-words">
                     Error: {execution.errorMessage}
                 </div>
             )}
@@ -177,7 +178,7 @@ function ToolExecutionsRow({ executions }: { executions: ToolExecution[] }) {
     };
 
     return (
-        <div className="mb-3">
+        <div className="mb-3 w-full overflow-hidden">
             {/* Horizontal row of chips */}
             <div className="flex flex-wrap gap-1.5">
                 {executions.map((execution, idx) => (
@@ -267,6 +268,7 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
     const [showPreview, setShowPreview] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [enableScripts, setEnableScripts] = useState(true);
+    const [showModal, setShowModal] = useState(false);
 
     const formatFileSize = (bytes?: number) => {
         if (!bytes) return '';
@@ -275,63 +277,66 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
         return (bytes / (1024 * 1024)).toFixed(1) + " MB";
     };
 
-    const openInNewTab = () => {
-        const blob = new Blob([event.fileContent || ''], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        // Clean up after a delay
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-    };
-
     const sandboxPermissions = enableScripts
         ? "allow-same-origin allow-scripts"
         : "allow-same-origin";
 
     return (
-        <div className="my-2 border border-border rounded-lg overflow-hidden bg-card">
-            {/* Header */}
-            <div className="flex items-center justify-between p-3 bg-muted/50">
-                <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-medium">{event.fileName}</span>
-                    {event.fileSize && (
-                        <span className="text-xs text-muted-foreground">
-                            ({formatFileSize(event.fileSize)})
+        <>
+            <FilePreviewModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                fileName={event.fileName || 'preview.html'}
+                fileContent={event.fileContent || ''}
+                fileType="html"
+                enableScripts={enableScripts}
+                onScriptsToggle={setEnableScripts}
+            />
+            
+            <div className="my-2 border border-border rounded-lg overflow-hidden bg-card">
+                {/* Header */}
+                <div className="flex items-center justify-between p-3 bg-muted/50">
+                    <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <span className="text-sm font-medium">{event.fileName}</span>
+                        {event.fileSize && (
+                            <span className="text-xs text-muted-foreground">
+                                ({formatFileSize(event.fileSize)})
+                            </span>
+                        )}
+                        <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
+                            HTML
                         </span>
-                    )}
-                    <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
-                        HTML
-                    </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowModal(true)}
+                            className="h-7 gap-1"
+                            title="Open in full screen"
+                        >
+                            <ExternalLink className="w-3 h-3" />
+                        </Button>
+                        <Button
+                            variant={showPreview ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setShowPreview(!showPreview)}
+                            className="h-7"
+                        >
+                            {showPreview ? 'Hide Preview' : 'Preview'}
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="h-7 gap-1"
+                        >
+                            <Code2 className="w-3 h-3" />
+                            {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={openInNewTab}
-                        className="h-7 gap-1"
-                        title="Open in new tab"
-                    >
-                        <ExternalLink className="w-3 h-3" />
-                    </Button>
-                    <Button
-                        variant={showPreview ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setShowPreview(!showPreview)}
-                        className="h-7"
-                    >
-                        {showPreview ? 'Hide Preview' : 'Preview'}
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className="h-7 gap-1"
-                    >
-                        <Code2 className="w-3 h-3" />
-                        {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                    </Button>
-                </div>
-            </div>
 
             {/* Preview iframe */}
             {showPreview && (
@@ -362,12 +367,13 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
 
             {/* Code view (collapsible) */}
             {isExpanded && (
-                <div className="border-t border-border p-3 bg-muted/20">
+                <div className="border-t border-border p-3 bg-muted/20 w-full overflow-hidden">
                     <div className="text-xs text-muted-foreground mb-2">HTML Source:</div>
                     <ExpandableCode content={event.fileContent || ''} defaultLines={20} />
                 </div>
             )}
-        </div>
+            </div>
+        </>
     );
 }
 

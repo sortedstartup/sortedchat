@@ -839,7 +839,13 @@ function AgentsSidebarSection() {
                   {expandedAgents[agent.id] && (
                     <div className="pl-6 border-l ml-3 border-border space-y-1 mt-1">
                       {(sessions[agent.id] || []).length === 0 ? (
-                        <div className="text-xs text-muted-foreground p-2">No sessions</div>
+                        <button
+                          onClick={(e) => handleCreateSession(e, agent.id)}
+                          className="flex items-center gap-2 w-full p-2 text-xs text-muted-foreground hover:bg-muted rounded-md transition-colors"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>Create New Session</span>
+                        </button>
                       ) : (
                         sessions[agent.id].map(session => (
                           <div

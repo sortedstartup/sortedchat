@@ -1,6 +1,6 @@
 import { DownloadStatus, Model as ModelType } from '../../proto/inferenceservice';
 import { downloadModel, cancelDownload, deleteModel } from "@/store/inference";
-import { Download, X, Trash2, Bot, Box, FileText, ArrowUp, ArrowDown } from "lucide-react";
+import { Download, X, Trash2, Bot, Box, ArrowUp, ArrowDown } from "lucide-react";
 
 export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLocal?: boolean }) => {
   const isDownloaded = model.is_downloaded;
@@ -62,6 +62,7 @@ export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLoca
 
   const isDownloading = progressData?.status === DownloadStatus.DOWNLOADING;
   const isEmbedding = model.is_embedding_model;
+  const hasModelInfo = model.provider === 'local' && model.model_info;
 
   return (
     <div className="bg-card rounded-xl shadow-sm border border-border p-4 flex items-center justify-between hover:shadow-md transition-shadow">
@@ -82,7 +83,40 @@ export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLoca
             </span>
           )}
           <h3 className="font-bold text-base text-foreground leading-tight">{model.name}</h3>
-          <p className="text-xs text-muted-foreground font-medium">{model.provider}</p>
+
+          {/* Provider and Quantization */}
+          <div className="flex items-center gap-2 mt-0.5">
+            {hasModelInfo && model.model_info?.quantization && (
+              <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded">
+                {model.model_info.quantization}
+              </span>
+            )}
+            {hasModelInfo && model.model_info?.download_size && (
+              <span className="text-[10px] text-muted-foreground font-medium">{model.model_info.download_size}</span>
+            )}
+          </div>
+
+          {/* Creator and Modified By */}
+          {(model.creator_name || model.modified_by) && (
+            <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
+              {model.creator_name && model.provider === 'local' && (
+                <span className="font-medium">{model.creator_name}</span>
+              )}
+              {model.creator_name && model.modified_by && (
+                <span>•</span>
+              )}
+              {model.modified_by && (
+                <span className="italic">modified by {model.modified_by}</span>
+              )}
+            </div>
+          )}
+
+          {/* Description */}
+          {model.description && (
+            <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2 max-w-md">
+              {model.description}
+            </p>
+          )}
         </div>
       </div>
 

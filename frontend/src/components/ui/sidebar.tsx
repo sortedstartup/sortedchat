@@ -728,6 +728,7 @@ function AgentsSidebarSection() {
   const currentSessionId = useStore($currentSessionId);
   const streamingStates = useStore($streamingStates);
   const [expandedAgents, setExpandedAgents] = React.useState<Record<string, boolean>>({});
+  const [isAgentsExpanded, setIsAgentsExpanded] = React.useState(true);
   const navigate = useNavigate();
   const params = useParams<{ agentId?: string }>();
 
@@ -781,81 +782,89 @@ function AgentsSidebarSection() {
   };
 
   return (
-    <SidebarGroup className="flex-1 min-h-0 flex flex-col">
-      <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground px-2 shrink-0">
-        AGENTS
-        <div className="ml-1 flex items-center">
-          <Sparkles className="size-3.5 text-yellow-500" />
-        </div>
-      </SidebarGroupLabel>
-      <SidebarGroupContent className="flex-1 min-h-0 flex flex-col">
-        <SidebarMenu className="overflow-y-auto flex-1 min-h-0">
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <button onClick={handleCreateAgent}>
-                <Plus />
-                <span>New Agent</span>
-              </button>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          {agents.map((agent) => (
-            <SidebarMenuItem key={agent.id}>
-              <div className="flex flex-col w-full">
-                <div
-                  className="flex items-center justify-between w-full p-2 hover:bg-muted rounded-md cursor-pointer group"
-                  onClick={() => handleAgentClick(agent.id)}
-                >
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    {expandedAgents[agent.id] ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
-                    <Bot className="h-4 w-4 shrink-0 text-blue-500" />
-                    <span className="truncate text-sm">{agent.name}</span>
-                  </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => handleEditAgent(e, agent.id)}
-                      className="p-1 hover:bg-background rounded"
-                      title="Edit Agent"
-                    >
-                      <Settings className="h-3 w-3" />
-                    </button>
-                    <button
-                      onClick={(e) => handleCreateSession(e, agent.id)}
-                      className="p-1 hover:bg-background rounded"
-                      title="New Session"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-
-                {expandedAgents[agent.id] && (
-                  <div className="pl-6 border-l ml-3 border-border space-y-1 mt-1">
-                    {(sessions[agent.id] || []).length === 0 ? (
-                      <div className="text-xs text-muted-foreground p-2">No sessions</div>
-                    ) : (
-                      sessions[agent.id].map(session => (
-                        <div
-                          key={session.id}
-                          className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted text-xs ${currentSessionId === session.id ? 'bg-muted font-medium shadow-sm' : ''}`}
-                          onClick={() => handleSessionClick(agent.id, session.id)}
-                        >
-                          <div className="flex items-center gap-2 overflow-hidden flex-1">
-                            <MessageSquare className="h-3 w-3 shrink-0" />
-                            <span className="truncate">Session {session.id.substring(0, 8)}...</span>
-                          </div>
-                          {streamingStates[session.id]?.isStreaming && (
-                            <Loader2 className="h-3 w-3 shrink-0 animate-spin text-purple-500 ml-2" />
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
+    <SidebarGroup className={isAgentsExpanded ? "flex-1 min-h-0 flex flex-col" : "flex-none"}>
+      <div
+        className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors px-2 py-1"
+        onClick={() => setIsAgentsExpanded(!isAgentsExpanded)}
+      >
+        {isAgentsExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground shrink-0 cursor-pointer p-0">
+          AGENTS
+          <div className="ml-1 flex items-center">
+            <Sparkles className="size-3.5 text-yellow-500" />
+          </div>
+        </SidebarGroupLabel>
+      </div>
+      {isAgentsExpanded && (
+        <SidebarGroupContent className="flex-1 min-h-0 flex flex-col">
+          <SidebarMenu className="overflow-y-auto flex-1 min-h-0">
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <button onClick={handleCreateAgent}>
+                  <Plus />
+                  <span>New Agent</span>
+                </button>
+              </SidebarMenuButton>
             </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
+            {agents.map((agent) => (
+              <SidebarMenuItem key={agent.id}>
+                <div className="flex flex-col w-full">
+                  <div
+                    className="flex items-center justify-between w-full p-2 hover:bg-muted rounded-md cursor-pointer group"
+                    onClick={() => handleAgentClick(agent.id)}
+                  >
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      {expandedAgents[agent.id] ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+                      <Bot className="h-4 w-4 shrink-0 text-blue-500" />
+                      <span className="truncate text-sm">{agent.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => handleEditAgent(e, agent.id)}
+                        className="p-1 hover:bg-background rounded"
+                        title="Edit Agent"
+                      >
+                        <Settings className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={(e) => handleCreateSession(e, agent.id)}
+                        className="p-1 hover:bg-background rounded"
+                        title="New Session"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {expandedAgents[agent.id] && (
+                    <div className="pl-6 border-l ml-3 border-border space-y-1 mt-1">
+                      {(sessions[agent.id] || []).length === 0 ? (
+                        <div className="text-xs text-muted-foreground p-2">No sessions</div>
+                      ) : (
+                        sessions[agent.id].map(session => (
+                          <div
+                            key={session.id}
+                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted text-xs ${currentSessionId === session.id ? 'bg-muted font-medium shadow-sm' : ''}`}
+                            onClick={() => handleSessionClick(agent.id, session.id)}
+                          >
+                            <div className="flex items-center gap-2 overflow-hidden flex-1">
+                              <MessageSquare className="h-3 w-3 shrink-0" />
+                              <span className="truncate">Session {session.id.substring(0, 8)}...</span>
+                            </div>
+                            {streamingStates[session.id]?.isStreaming && (
+                              <Loader2 className="h-3 w-3 shrink-0 animate-spin text-purple-500 ml-2" />
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      )}
     </SidebarGroup>
   );
 }

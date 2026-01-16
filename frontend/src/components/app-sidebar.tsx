@@ -1,5 +1,5 @@
 import {
-  Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2, AudioLines,
+  Search, Plus, Folder, MessageCircle, Settings, Brain, LogOut, MoreVertical, Trash2, Archive, ArchiveRestore, Edit2, AudioLines, ChevronDown, ChevronRight,
   //  AudioLines //temporarily hiding it for this release only
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -73,6 +73,8 @@ export function AppSidebar() {
   const [showSoftDeleted, setShowSoftDeleted] = useState(false);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false); // Add state for audio modal
   const [isLinuxDesktop, setIsLinuxDesktop] = useState(false);
+  const [isProjectsExpanded, setIsProjectsExpanded] = useState(true);
+  const [isChatsExpanded, setIsChatsExpanded] = useState(true);
 
   useEffect(() => {
     const checkEnv = async () => {
@@ -389,61 +391,75 @@ export function AppSidebar() {
 
           <SidebarSeparator />
 
-          <SidebarGroup className="flex-1 min-h-0 flex flex-col">
+          <SidebarGroup className={isProjectsExpanded ? "flex-1 min-h-0 flex flex-col" : "flex-none"}>
             <div className="flex items-center justify-between shrink-0">
-              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
-                Projects
-              </SidebarGroupLabel>
+              <div
+                className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors"
+                onClick={() => setIsProjectsExpanded(!isProjectsExpanded)}
+              >
+                {isProjectsExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1 cursor-pointer">
+                  Projects
+                </SidebarGroupLabel>
+              </div>
               <Button variant="ghost" onClick={() => setIsProjectDialogOpen(true)}><Plus /></Button>
             </div>
-            <SidebarGroupContent className="flex-1 min-h-0 flex flex-col">
-              <SidebarMenu className="overflow-y-auto flex-1 min-h-0">
-                {projectsList.map((project) => (
-                  <SidebarMenuItem key={project.name}>
-                    <div className="flex items-center justify-between w-full group">
-                      <SidebarMenuButton
-                        onClick={() => handleProjectClick(project.id)}
-                        className="flex-1"
-                      >
-                        <Folder />
-                        <span>{project.name}</span>
-                      </SidebarMenuButton>
+            {isProjectsExpanded && (
+              <SidebarGroupContent className="flex-1 min-h-0 flex flex-col">
+                <SidebarMenu className="overflow-y-auto flex-1 min-h-0">
+                  {projectsList.map((project) => (
+                    <SidebarMenuItem key={project.name}>
+                      <div className="flex items-center justify-between w-full group">
+                        <SidebarMenuButton
+                          onClick={() => handleProjectClick(project.id)}
+                          className="flex-1"
+                        >
+                          <Folder />
+                          <span>{project.name}</span>
+                        </SidebarMenuButton>
 
-                      {/* Dropdown menu for projects */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => handleRenameClick(project.id, project.name, "project")}
-                            className="focus:bg-blue-50 focus:text-blue-600"
-                          >
-                            <Edit2 className="h-4 w-4 mr-2" />
-                            Rename
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
+                        {/* Dropdown menu for projects */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleRenameClick(project.id, project.name, "project")}
+                              className="focus:bg-blue-50 focus:text-blue-600"
+                            >
+                              <Edit2 className="h-4 w-4 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            )}
           </SidebarGroup>
 
           <SidebarSeparator />
 
-          <SidebarGroup className="flex-1 min-h-0 flex flex-col">
+          <SidebarGroup className={isChatsExpanded ? "flex-1 min-h-0 flex flex-col" : "flex-none"}>
             <div className="flex items-center justify-between gap-2 shrink-0">
-              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
-                {showSoftDeleted ? "Trash Chats" : "Chats"}
-              </SidebarGroupLabel>
+              <div
+                className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors"
+                onClick={() => setIsChatsExpanded(!isChatsExpanded)}
+              >
+                {isChatsExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1 cursor-pointer">
+                  {showSoftDeleted ? "Trash Chats" : "Chats"}
+                </SidebarGroupLabel>
+              </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" onClick={handleNewChat}>
                   <Plus />
@@ -462,77 +478,79 @@ export function AppSidebar() {
                 </Button>
               </div>
             </div>
-            <SidebarGroupContent className="flex-1 min-h-0 flex flex-col">
-              <SidebarMenu className="overflow-y-auto flex-1 min-h-0">
-                {(showSoftDeleted ? trashChatList : chatsList).map((chat) => (
-                  <SidebarMenuItem key={chat.chatId}>
-                    <div className="flex items-center justify-between w-full group">
-                      <SidebarMenuButton
-                        onClick={() => handleChatSelect(chat.chatId)}
-                        className="flex-1"
-                      >
-                        <MessageCircle />
-                        <span className={`flex items-center ${showSoftDeleted ? "text-red-700" : ""}`}>
-                          {chat.name || "New Chat"}
-                        </span>
-                      </SidebarMenuButton>
+            {isChatsExpanded && (
+              <SidebarGroupContent className="flex-1 min-h-0 flex flex-col">
+                <SidebarMenu className="overflow-y-auto flex-1 min-h-0">
+                  {(showSoftDeleted ? trashChatList : chatsList).map((chat) => (
+                    <SidebarMenuItem key={chat.chatId}>
+                      <div className="flex items-center justify-between w-full group">
+                        <SidebarMenuButton
+                          onClick={() => handleChatSelect(chat.chatId)}
+                          className="flex-1"
+                        >
+                          <MessageCircle />
+                          <span className={`flex items-center ${showSoftDeleted ? "text-red-700" : ""}`}>
+                            {chat.name || "New Chat"}
+                          </span>
+                        </SidebarMenuButton>
 
-                      {showSoftDeleted ? (
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                            title="Restore"
-                            onClick={() => handleRestoreChat(chat.chatId)}
-                          >
-                            <ArchiveRestore className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            title="Delete Permanently"
-                            onClick={() => handleDeleteChat(chat.chatId)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        // Dropdown menu for normal chats
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                        {showSoftDeleted ? (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              title="Restore"
+                              onClick={() => handleRestoreChat(chat.chatId)}
                             >
-                              <MoreVertical className="h-4 w-4" />
+                              <ArchiveRestore className="h-4 w-4" />
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleRenameClick(chat.chatId, chat.name, "chat")}
-                              className="focus:bg-blue-50 focus:text-blue-600"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Delete Permanently"
+                              onClick={() => handleDeleteChat(chat.chatId)}
                             >
-                              <Edit2 className="h-4 w-4 mr-2" />
-                              Rename
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleMoveToTrash(chat.chatId)}
-                              className="text-red-600 focus:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Move to Trash
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          // Dropdown menu for normal chats
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleRenameClick(chat.chatId, chat.name, "chat")}
+                                className="focus:bg-blue-50 focus:text-blue-600"
+                              >
+                                <Edit2 className="h-4 w-4 mr-2" />
+                                Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleMoveToTrash(chat.chatId)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Move to Trash
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            )}
           </SidebarGroup>
         </div>
 

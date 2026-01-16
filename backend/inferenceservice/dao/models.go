@@ -20,6 +20,9 @@ type ModelMetadata struct {
 	CachedTokenCost  float64 `db:"cached_token_cost"`
 	IsEnabled        bool    `db:"is_enabled"`
 	ModelInfo        string  `db:"model_info"`
+	CreatorName      string  `db:"creator_name"`
+	ModifiedBy       string  `db:"modified_by"`
+	Description      string  `db:"description"`
 }
 
 // Status constants - using proto enum values

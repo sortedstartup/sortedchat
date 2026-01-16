@@ -96,7 +96,6 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 				var modelInfo map[string]string
 				if err := json.Unmarshal([]byte(model.ModelInfo), &modelInfo); err == nil {
 					modelInfoProto = &pb.ModelInfo{
-						CreatorName:  modelInfo["creator_name"],
 						HomePageUrl:  modelInfo["homepage_url"],
 						Quantization: modelInfo["quantization"],
 						DownloadSize: modelInfo["download_size"],
@@ -121,6 +120,9 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 				IsEmbeddingModel: model.IsEmbeddingModel,
 				IsEnabled:        model.IsEnabled,
 				ModelInfo:        modelInfoProto,
+				CreatorName:      model.CreatorName,
+				ModifiedBy:       model.ModifiedBy,
+				Description:      model.Description,
 			}
 		}
 		slog.Info("inferenceservice:api:GetLLMModels", "message", "Sending LLM models")

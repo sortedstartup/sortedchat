@@ -57,7 +57,7 @@ func (d *PostgresDAO) Infer(dummy string) error {
 
 func (d *PostgresDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
 	slog.Info("inferenceservice:dao_postgres:GetModelByName")
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, model_info FROM shared_models_metadata WHERE name = $1`
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, model_info, creator_name, modified_by, description FROM shared_models_metadata WHERE name = $1`
 
 	var model ModelMetadata
 	err := d.db.Get(&model, query, modelName)
@@ -71,7 +71,7 @@ func (d *PostgresDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
 
 func (d *PostgresDAO) GetAllModels() ([]*ModelMetadata, error) {
 	slog.Info("inferenceservice:dao_postgres:GetAllModels")
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, cached_token_cost, is_enabled, is_embedding_model, model_info FROM shared_models_metadata ORDER BY name`
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, cached_token_cost, is_enabled, is_embedding_model, model_info, creator_name, modified_by, description FROM shared_models_metadata ORDER BY name`
 
 	var models []*ModelMetadata
 	err := d.db.Select(&models, query)

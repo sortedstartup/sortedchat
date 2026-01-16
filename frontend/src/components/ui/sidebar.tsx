@@ -870,6 +870,7 @@ function AgentsSidebarSection() {
             ))}
           </SidebarMenu>
         </SidebarGroupContent>
+      )}
     </SidebarGroup>
   );
 }

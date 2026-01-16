@@ -93,12 +93,16 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 			// Parse model_info JSON to proto structure
 			var modelInfoProto *pb.ModelInfo
 			if model.ModelInfo != "" && model.ModelInfo != "{}" {
-				var modelInfo map[string]string
-				if err := json.Unmarshal([]byte(model.ModelInfo), &modelInfo); err == nil {
+				var modelInfoData struct {
+					HomePageURL  string `json:"home_page_url"`
+					Quantization string `json:"quantization"`
+					DownloadSize string `json:"download_size"`
+				}
+				if err := json.Unmarshal([]byte(model.ModelInfo), &modelInfoData); err == nil {
 					modelInfoProto = &pb.ModelInfo{
-						HomePageUrl:  modelInfo["homepage_url"],
-						Quantization: modelInfo["quantization"],
-						DownloadSize: modelInfo["download_size"],
+						HomePageUrl:  modelInfoData.HomePageURL,
+						Quantization: modelInfoData.Quantization,
+						DownloadSize: modelInfoData.DownloadSize,
 					}
 				} else {
 					slog.Error("inferenceservice:api:GetLLMModels", "message", "failed to parse model_info JSON", "error", err)

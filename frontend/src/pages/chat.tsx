@@ -18,7 +18,7 @@ import {
   ImageIcon,
   X,
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useStore } from "@nanostores/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -176,7 +176,7 @@ function formatCostAndTokens(
   return { costDisplay, cachedTokensDisplay };
 }
 
-function Message({
+const Message = React.memo(function Message({
   message,
   onCopyMessage,
   onViewRAGDetails,
@@ -193,10 +193,13 @@ function Message({
   const isUser = message.role === "user";
   const isProgress = message.isProgress;
 
-  const { costDisplay, cachedTokensDisplay } = formatCostAndTokens(
-    messageSummary?.cost ?? message?.cost,
-    messageSummary?.cached_tokens ?? message.cached_tokens,
-    true
+  const { costDisplay, cachedTokensDisplay } = useMemo(
+    () => formatCostAndTokens(
+      messageSummary?.cost ?? message?.cost,
+      messageSummary?.cached_tokens ?? message.cached_tokens,
+      true
+    ),
+    [messageSummary?.cost, message?.cost, messageSummary?.cached_tokens, message.cached_tokens]
   );
 
   return (
@@ -369,9 +372,9 @@ function Message({
       </div>
     </div>
   );
-}
+});
 
-function ChatInputBox({
+const ChatInputBox = React.memo(function ChatInputBox({
   projectId,
   onSendMessage,
 }: {
@@ -677,7 +680,7 @@ function ChatInputBox({
       </div>
     </>
   );
-}
+});
 
 export function Chat() {
   const { projectId, chatId } = useParams();
@@ -704,13 +707,19 @@ export function Chat() {
   const currentChatError = useStore($currentChatError);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
-  const shouldAutoScroll = !isUserScrolledUp;
+  // Use ref instead of state to avoid re-renders
+  const isUserScrolledUpRef = useRef(false);
 
   // Show progress as assistant message when there's progress but no streaming content yet
-  const showProgressAsMessage = chatProgress && !streamingMessage?.trim();
+  const showProgressAsMessage = useMemo(() => 
+    chatProgress && !streamingMessage?.trim(), 
+    [chatProgress, streamingMessage]
+  );
 
+  const chatIdRef = useRef(chatId);
+  
   useEffect(() => {
+    chatIdRef.current = chatId;
     if (chatId) {
       $currentChatId.set(chatId);
     }
@@ -718,12 +727,12 @@ export function Chat() {
 
   useEffect(() => {
     const unsub = $currentChatId.listen((newId) => {
-      if (newId && newId !== chatId) {
+      if (newId && newId !== chatIdRef.current) {
         navigate(`/chat/${newId}`, { replace: true });
       }
     });
     return () => unsub();
-  }, [chatId, navigate]);
+  }, [navigate]);
 
   useEffect(() => {
     if (projectId) {
@@ -733,48 +742,68 @@ export function Chat() {
     }
   }, [projectId]);
 
-  // Scroll handler to detect when user scrolls up
+  // IntersectionObserver to detect if user is at bottom (no re-renders!)
   useEffect(() => {
+    const target = messagesEndRef.current;
     const container = messagesContainerRef.current;
-    if (!container) return;
+    if (!target || !container) return;
 
-    const handleScroll = () => {
-      const {
-        scrollTop: scrollFromTop, //how far you’ve scrolled from the very top.
-        scrollHeight: totalContentHeight, //total content height (like the full length of a long chat).
-        clientHeight: viewportHeight, //visible window height (the viewport).
-      } = container;
-      const isAtBottom = totalContentHeight - scrollFromTop - viewportHeight < 100;
-      //if user is at bottom of the chat, it will autoscroll, else it will not.
+    // Initial check - assume user is at bottom on mount
+    isUserScrolledUpRef.current = false;
 
-      setIsUserScrolledUp(!isAtBottom);
+    // IntersectionObserver to detect when bottom element is visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        // If bottom element is intersecting (visible), user is at bottom
+        // If not intersecting, user has scrolled up
+        isUserScrolledUpRef.current = !entry.isIntersecting;
+      },
+      {
+        root: container,
+        threshold: 0.1,
+        rootMargin: "0px",
+      }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
     };
-
-    container.addEventListener("scroll", handleScroll);
-    return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Auto-scroll only when user is at bottom and content changes
+  // Auto-scroll when content changes if user is at bottom
   useEffect(() => {
-    if (shouldAutoScroll && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    const target = messagesEndRef.current;
+    if (!target) return;
+
+    // Only auto-scroll if user hasn't scrolled up
+    if (!isUserScrolledUpRef.current) {
+      // Use double RAF to ensure DOM has updated
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "end" });
+        });
+      });
     }
-  }, [data, streamingMessage, currentChatMessage, shouldAutoScroll]);
+  }, [data, streamingMessage, currentChatMessage]);
 
 
 
-  const handleSendMessage = (message: string, images?: File[], imageDetail?: string) => {
-    setIsUserScrolledUp(false);
+  const handleSendMessage = useCallback((message: string, images?: File[], imageDetail?: string) => {
+    // Reset scroll position when sending a message
+    isUserScrolledUpRef.current = false;
     doChat(message, projectId, images, imageDetail);
-  };
+  }, [projectId]);
 
-  const handleCopyMessage = async (content: string, messageId: string) => {
+  const handleCopyMessage = useCallback(async (content: string, messageId: string) => {
     await navigator.clipboard.writeText(content);
     setCopiedMessageId(messageId);
     setTimeout(() => setCopiedMessageId(null), 2000);
-  };
+  }, []);
 
-  const handleViewRAGDetails = async (
+  const handleViewRAGDetails = useCallback(async (
     messageId: string,
     docId: string,
     fileName: string
@@ -783,17 +812,17 @@ export function Chat() {
 
     setSelectedDocumentForDetails({ messageId, docId, fileName });
     await fetchRAGDocumentReference(messageId, projectId, docId);
-  };
+  }, [projectId]);
 
-  const goToChatBranch = (chatId: string) => {
+  const goToChatBranch = useCallback((chatId: string) => {
     navigate(`/chat/${chatId}`);
-  };
+  }, [navigate]);
 
-  const handleToggleExpand = () => {
+  const handleToggleExpand = useCallback(() => {
     setIsExpanded((prev) => !prev);
-  };
+  }, []);
 
-  const combinedMessages = [
+  const combinedMessages = useMemo(() => [
     ...(data || []),
     ...(currentChatMessage?.trim() ? [{ message_id: currentUserMessageId, role: "user", content: currentChatMessage }] : []),
     ...(showProgressAsMessage ? [{
@@ -804,7 +833,7 @@ export function Chat() {
       isProgress: true
     }] : []),
     ...(streamingMessage?.trim() ? [{ message_id: currentAssistantMessageId, role: "assistant", content: streamingMessage }] : []),
-  ];
+  ], [data, currentChatMessage, currentUserMessageId, showProgressAsMessage, streamingMessage, currentAssistantMessageId]);
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -834,7 +863,7 @@ export function Chat() {
 
               return (
                 <Message
-                  key={index}
+                  key={message.message_id || `msg-${index}`}
                   message={message as ChatMessage & { isProgress?: boolean }}
                   onCopyMessage={handleCopyMessage}
                   onViewRAGDetails={handleViewRAGDetails}

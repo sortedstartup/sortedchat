@@ -40,14 +40,31 @@ export const $modelsByProvider = computed($llmModels, (models) => {
 });
 
 export const downloadModel = async (modelName: string) => {
-
     try {
         const req = new DownloadModelRequest({
             model_name: modelName
         });
         const res = await getClient().DownloadModel(req, {});
 
-        await ListLLMModels();
+        // Wait for model list to refresh completely
+        await new Promise<void>((resolve, reject) => {
+            const req = new GetLLMModelsRequest({});
+            const stream = getClient().GetLLMModels(req, {});
+
+            stream.on('data', (data) => {
+                $llmModels.set(data.models);
+            });
+
+            stream.on('end', () => {
+                console.log('Models list loaded after download');
+                resolve();
+            });
+
+            stream.on('error', (err) => {
+                console.error('Error loading models after download:', err);
+                reject(err);
+            });
+        });
 
         return res;
     } catch (error) {

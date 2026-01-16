@@ -781,15 +781,15 @@ function AgentsSidebarSection() {
   };
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground px-2">
+    <SidebarGroup className="flex-1 min-h-0 flex flex-col">
+      <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground px-2 shrink-0">
         AGENTS
         <div className="ml-1 flex items-center">
           <Sparkles className="size-3.5 text-yellow-500" />
         </div>
       </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
+      <SidebarGroupContent className="flex-1 min-h-0 flex flex-col">
+        <SidebarMenu className="overflow-y-auto flex-1 min-h-0">
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <button onClick={handleCreateAgent}>

@@ -32,6 +32,8 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   AgentsSidebarSection,
+  SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import {
   $chatList,
@@ -244,139 +246,141 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="pl-4">
-      <SidebarContent className="overflow-y-auto overflow-x-hidden h-full flex flex-col">
-        <div className="flex-1">
-          <SidebarGroup>
-            <SidebarGroupLabel className="w-full h-[25%] text-2xl">
-              SortedChat
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <button onClick={handleNewChat}>
+      <SidebarHeader className="p-0">
+        <SidebarGroup>
+          <SidebarGroupLabel className="w-full h-[25%] text-2xl">
+            SortedChat
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <button onClick={handleNewChat}>
+                    <Plus />
+                    <span>New Chat</span>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <button
+                    onClick={() => !isLinuxDesktop && setIsAudioModalOpen(true)}
+                    disabled={isLinuxDesktop}
+                    className={isLinuxDesktop ? "opacity-50 cursor-not-allowed" : ""}
+                    title={isLinuxDesktop ? "Not available on Linux Desktop" : ""}
+                  >
+                    <AudioLines />
+                    <span>New Realtime Voice Chat</span>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
+                  <DialogTrigger asChild>
+                    <SidebarMenuButton>
+                      <Search />
+                      <span>Search Chats</span>
+                    </SidebarMenuButton>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] p-0">
+                    <DialogHeader className="px-6 pt-6 pb-4">
+                      <DialogTitle>Search Conversations</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="px-6">
+                      <Input
+                        type="text"
+                        placeholder="Search conversations..."
+                        value={localSearchText}
+                        onChange={(e) => setLocalSearchText(e.target.value)}
+                        autoFocus
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Search Results */}
+                    <div className="flex-1 overflow-y-auto px-6 pb-6 mt-4 space-y-2 max-h-96">
+                      {searchResults.length > 0 ? (
+                        searchResults.map((result, index) => (
+                          <div
+                            key={index}
+                            className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                            onClick={() => handleSearchResultClick(result.chat_id)}
+                          >
+                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                              Chat: {result.chat_name || "Unnamed Chat"}
+                            </div>
+                            <div className="text-gray-900 dark:text-white line-clamp-2">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {result.matched_text}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+                        ))
+                      ) : localSearchText.trim() ? (
+                        <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                          No results found for "{localSearchText}"
+                        </div>
+                      ) : (
+                        <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                          Start typing to search your conversations...
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
+                  <DialogTrigger asChild>
+                    <SidebarMenuButton>
                       <Plus />
-                      <span>New Chat</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <button
-                      onClick={() => !isLinuxDesktop && setIsAudioModalOpen(true)}
-                      disabled={isLinuxDesktop}
-                      className={isLinuxDesktop ? "opacity-50 cursor-not-allowed" : ""}
-                      title={isLinuxDesktop ? "Not available on Linux Desktop" : ""}
-                    >
-                      <AudioLines />
-                      <span>New Realtime Voice Chat</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-                    <DialogTrigger asChild>
-                      <SidebarMenuButton>
-                        <Search />
-                        <span>Search Chats</span>
-                      </SidebarMenuButton>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] p-0">
-                      <DialogHeader className="px-6 pt-6 pb-4">
-                        <DialogTitle>Search Conversations</DialogTitle>
-                      </DialogHeader>
-
-                      <div className="px-6">
+                      <span>Create Project</span>
+                    </SidebarMenuButton>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Project</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-3 items-center gap-4">
                         <Input
-                          type="text"
-                          placeholder="Search conversations..."
-                          value={localSearchText}
-                          onChange={(e) => setLocalSearchText(e.target.value)}
-                          autoFocus
-                          className="w-full"
+                          id="project-name"
+                          value={projectName}
+                          onChange={(e) => setProjectName(e.target.value)}
+                          placeholder="Enter project name"
+                          className="col-span-4"
                         />
                       </div>
-
-                      {/* Search Results */}
-                      <div className="flex-1 overflow-y-auto px-6 pb-6 mt-4 space-y-2 max-h-96">
-                        {searchResults.length > 0 ? (
-                          searchResults.map((result, index) => (
-                            <div
-                              key={index}
-                              className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                              onClick={() => handleSearchResultClick(result.chat_id)}
-                            >
-                              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                                Chat: {result.chat_name || "Unnamed Chat"}
-                              </div>
-                              <div className="text-gray-900 dark:text-white line-clamp-2">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {result.matched_text}
-                                </ReactMarkdown>
-                              </div>
-                            </div>
-                          ))
-                        ) : localSearchText.trim() ? (
-                          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                            No results found for "{localSearchText}"
-                          </div>
-                        ) : (
-                          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                            Start typing to search your conversations...
-                          </div>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
-                    <DialogTrigger asChild>
-                      <SidebarMenuButton>
-                        <Plus />
-                        <span>Create Project</span>
-                      </SidebarMenuButton>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Create New Project</DialogTitle>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Input
-                            id="project-name"
-                            value={projectName}
-                            onChange={(e) => setProjectName(e.target.value)}
-                            placeholder="Enter project name"
-                            className="col-span-4"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleCancelProject}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={handleCreateProject}
-                          disabled={!projectName.trim()}
-                        >
-                          Create
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCancelProject}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleCreateProject}
+                        disabled={!projectName.trim()}
+                      >
+                        Create
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarHeader>
+      <SidebarContent className="overflow-hidden h-full flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col">
 
 
           <SidebarSeparator />
@@ -385,15 +389,15 @@ export function AppSidebar() {
 
           <SidebarSeparator />
 
-          <SidebarGroup>
-            <div className="flex items-center justify-between">
+          <SidebarGroup className="flex-1 min-h-0 flex flex-col">
+            <div className="flex items-center justify-between shrink-0">
               <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
                 Projects
               </SidebarGroupLabel>
               <Button variant="ghost" onClick={() => setIsProjectDialogOpen(true)}><Plus /></Button>
             </div>
-            <SidebarGroupContent>
-              <SidebarMenu>
+            <SidebarGroupContent className="flex-1 min-h-0 flex flex-col">
+              <SidebarMenu className="overflow-y-auto flex-1 min-h-0">
                 {projectsList.map((project) => (
                   <SidebarMenuItem key={project.name}>
                     <div className="flex items-center justify-between w-full group">
@@ -435,8 +439,8 @@ export function AppSidebar() {
 
           <SidebarSeparator />
 
-          <SidebarGroup>
-            <div className="flex items-center justify-between gap-2">
+          <SidebarGroup className="flex-1 min-h-0 flex flex-col">
+            <div className="flex items-center justify-between gap-2 shrink-0">
               <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground mb-1">
                 {showSoftDeleted ? "Trash Chats" : "Chats"}
               </SidebarGroupLabel>
@@ -458,8 +462,8 @@ export function AppSidebar() {
                 </Button>
               </div>
             </div>
-            <SidebarGroupContent>
-              <SidebarMenu>
+            <SidebarGroupContent className="flex-1 min-h-0 flex flex-col">
+              <SidebarMenu className="overflow-y-auto flex-1 min-h-0">
                 {(showSoftDeleted ? trashChatList : chatsList).map((chat) => (
                   <SidebarMenuItem key={chat.chatId}>
                     <div className="flex items-center justify-between w-full group">
@@ -571,7 +575,10 @@ export function AppSidebar() {
           </DialogContent>
         </Dialog>
 
-        <div className="mt-auto border-t border-gray-200 dark:border-gray-700 pt-2">
+      </SidebarContent>
+
+      <SidebarFooter className="p-0">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -586,7 +593,7 @@ export function AppSidebar() {
           </SidebarGroup>
         </div>
 
-        <div className="mt-auto border-t border-gray-200 dark:border-gray-700 pt-2">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -606,7 +613,8 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </div>
-      </SidebarContent>
+      </SidebarFooter>
+
       <RealtimeAudioModal
         isOpen={isAudioModalOpen}
         onClose={() => setIsAudioModalOpen(false)}

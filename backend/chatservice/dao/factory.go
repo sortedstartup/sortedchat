@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -36,7 +37,9 @@ func NewDAOFactory(config *Config) (DAOFactory, error) {
 	switch config.Database.Type {
 	case DatabaseTypeSQLite:
 		slog.Debug("Creating SQLite DAO factory", "url", config.Database.SQLite.URL)
-		
+
+		sqlite_vec.Auto()
+
 		// Create shared connection pool for SQLite
 		db, err := sqlx.Open("sqlite3", config.Database.SQLite.URL)
 		if err != nil {

@@ -809,9 +809,9 @@ export function Chat() {
   return (
     <div className="flex flex-col h-full w-full">
       {projectId && currentProject && (
-        <div className="p-4 border-b border-gray-200 flex-shrink-0 bg-white">
+        <div className="p-4 border-b border-border flex-shrink-0 bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+            <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
               <FileText className="size-5 text-orange-500" />
             </div>
             <h1 className="text-xl font-bold">{currentProject}</h1>

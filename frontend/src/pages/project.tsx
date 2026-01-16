@@ -7,6 +7,8 @@ import {
   MessageSquare,
   RefreshCw,
   Trash2,
+  AlertCircle,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
@@ -36,6 +38,7 @@ import {
   setRagEnabledForProject, // Add set function
   deleteDocument,
 } from "@/store/chat";
+import { $llmModels, downloadModel } from "@/store/inference";
 import { useNavigate, useParams } from "react-router-dom";
 import { Embedding_Status } from "../../proto/chatservice";
 import { loadUIConfig } from "@/lib/config";
@@ -45,6 +48,7 @@ export function Project() {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isDocumentsDialogOpen, setIsDocumentsDialogOpen] = useState(false);
   const [apiUploadUrl, setApiUploadUrl] = useState("");
+  const [isDownloadingEmbedding, setIsDownloadingEmbedding] = useState(false);
   const documents = useStore($documents);
   const projectName = useStore($currentProject);
   const currentProjectId = useStore($currentProjectId);
@@ -52,6 +56,7 @@ export function Project() {
   const isErrorDocs = useStore($isErrorDocs);
   const isPolling = useStore($isPolling);
   const ragEnabled = useStore($ragEnabled); // Add RAG enabled state
+  const llmModels = useStore($llmModels);
 
   const navigate = useNavigate();
 
@@ -129,16 +134,57 @@ export function Project() {
     }
   };
 
+  const hasEmbeddingModel = () => {
+    return llmModels.some(model => model.name === "nomic-embed-text-v1.5.Q8_0" && model.is_downloaded);
+  };
+
+  const handleDownloadEmbeddingModel = async () => {
+    setIsDownloadingEmbedding(true);
+    
+    // Small delay to ensure UI updates before async operation
+    // await new Promise(resolve => setTimeout(resolve, 100));
+    
+    try {
+      //TODO:currently hardcoded, need to change to dynamic
+      await downloadModel("nomic-embed-text-v1.5.Q8_0");
+    } catch (error) {
+      console.error("Error downloading embedding model:", error);
+    } finally {
+      setIsDownloadingEmbedding(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full mx-4 max-h-full">
-      <div className="p-4 border-b border-gray-200 flex-shrink-0">
+      <div className="p-4 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+          <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
             <FileText className="size-5 text-orange-500" />
           </div>
           <h1 className="text-xl font-bold">{projectName}</h1>
         </div>
       </div>
+
+      {!hasEmbeddingModel() && (
+        <div className="mx-4 mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg flex items-start gap-3">
+          <AlertCircle className="size-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              Add an embedding model to enable document search (RAG). If not added, the project will run as a standard AI chat.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadEmbeddingModel}
+            disabled={isDownloadingEmbedding}
+            className="flex-shrink-0 gap-2 border-yellow-300 dark:border-yellow-700 hover:bg-yellow-100 dark:hover:bg-yellow-900/50"
+          >
+            <Download className="size-4" />
+            {isDownloadingEmbedding ? "Downloading..." : "Download nomic-embed-text-v1.5.Q8_0"}
+          </Button>
+        </div>
+      )}
 
       <div className="flex-1 flex items-center justify-center p-6 overflow-hidden">
         <div className="text-center max-w-md w-full">

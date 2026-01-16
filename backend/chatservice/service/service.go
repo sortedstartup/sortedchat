@@ -1276,20 +1276,31 @@ func (s *ChatService) EmbeddingSubscriber() {
 				for i := range result.Embeddings {
 					embeddingMap[result.Embeddings[i].ChunkID] = result.Embeddings[i]
 				}
+
+				hasError := false
 				for _, chunk := range result.Chunks {
 					err := s.dao.SaveRAGChunk(docMeta.User, chunk.ID, chunk.ProjectID, chunk.DocsID, chunk.StartByte, chunk.EndByte)
 					if err != nil {
+						hasError = true
 						slog.Error("service:EmbeddingSubscriber", "message", "failed to save chunk", "error", err, "chunkID", chunk.ID, "projectID", chunk.ProjectID, "docsID", chunk.DocsID)
+						continue // skip embedding if chunk save failed
 					}
 
 					if emb, ok := embeddingMap[chunk.ID]; ok {
 						if err := s.dao.SaveRAGChunkEmbedding(chunk.ID, emb.Vector); err != nil {
+							hasError = true
 							slog.Error("service:EmbeddingSubscriber", "message", "failed to save embedding", "error", err, "chunkID", chunk.ID)
 						}
 					}
 				}
-				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, int32(pb.Embedding_Status_STATUS_SUCCESS)); updateErr != nil {
-					slog.Error("service:EmbeddingSubscriber", "message", "failed to update embedding status to success", "error", updateErr, "docsID", payload.DocsID)
+
+				// Update status based on whether errors occurred
+				status := int32(pb.Embedding_Status_STATUS_SUCCESS)
+				if hasError {
+					status = int32(pb.Embedding_Status_STATUS_ERROR)
+				}
+				if updateErr := s.dao.UpdateEmbeddingStatus(payload.DocsID, status); updateErr != nil {
+					slog.Error("service:EmbeddingSubscriber", "message", "failed to update embedding status", "error", updateErr, "docsID", payload.DocsID)
 				}
 				if cerr := f.Close(); cerr != nil {
 					slog.Error("service:EmbeddingSubscriber", "message", "failed to close file", "error", cerr, "docsID", payload.DocsID)

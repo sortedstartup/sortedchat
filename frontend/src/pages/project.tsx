@@ -38,7 +38,7 @@ import {
   setRagEnabledForProject, // Add set function
   deleteDocument,
 } from "@/store/chat";
-import { $llmModels, downloadModel } from "@/store/inference";
+import { $llmModels, downloadModel, ListLLMModels } from "@/store/inference";
 import { useNavigate, useParams } from "react-router-dom";
 import { Embedding_Status } from "../../proto/chatservice";
 import { loadUIConfig } from "@/lib/config";
@@ -142,11 +142,13 @@ export function Project() {
     setIsDownloadingEmbedding(true);
     
     // Small delay to ensure UI updates before async operation
-    // await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     try {
       //TODO:currently hardcoded, need to change to dynamic
       await downloadModel("nomic-embed-text-v1.5.Q8_0");
+      // Refresh models list to ensure banner disappears
+      await ListLLMModels();
     } catch (error) {
       console.error("Error downloading embedding model:", error);
     } finally {

@@ -52,14 +52,14 @@ func (d *SQLiteDAO) Infer(dummy string) error {
 	return nil
 }
 
-func (d *SQLiteDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, model_info, creator_name, modified_by, description FROM shared_models_metadata WHERE name = ?`
+func (d *SQLiteDAO) GetModelByID(modelID string) (*ModelMetadata, error) {
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, model_info, creator_name, modified_by, description FROM shared_models_metadata WHERE id = ?`
 
 	var model ModelMetadata
-	err := d.db.Get(&model, query, modelName)
+	err := d.db.Get(&model, query, modelID)
 	if err != nil {
-		slog.Error("inferenceservice:dao_sqlite:GetModelByName", "message", "failed to get model by name", "error", err)
-		return nil, fmt.Errorf("failed to get model by name")
+		slog.Error("inferenceservice:dao_sqlite:GetModelByID", "message", "failed to get model by ID", "error", err)
+		return nil, fmt.Errorf("failed to get model by ID")
 	}
 
 	return &model, nil

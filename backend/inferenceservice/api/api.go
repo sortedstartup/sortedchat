@@ -41,7 +41,7 @@ func (s *InferenceServiceAPI) DownloadModel(ctx context.Context, req *pb.Downloa
 		slog.Error("inferenceservice:api:DownloadModel", "error", err)
 		return nil, err
 	}
-	err = s.service.DownloadModel(ctx, userID, req.GetModelName())
+	err = s.service.DownloadModel(ctx, userID, req.GetModelId())
 	if err != nil {
 		slog.Error("inferenceservice:api:DownloadModel", "error", err)
 		return nil, fmt.Errorf("failed to download model")
@@ -139,13 +139,12 @@ func (s *InferenceServiceAPI) GetLLMModels(req *pb.GetLLMModelsRequest, stream p
 }
 
 func (s *InferenceServiceAPI) CancelDownload(ctx context.Context, req *pb.CancelDownloadRequest) (*pb.CancelDownloadResponse, error) {
-	slog.Info("inferenceservice:api:CancelDownload", "modelName", req.GetModelName())
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("inferenceservice:api:CancelDownload", "message", "failed to get user ID", "error", err)
 		return nil, err
 	}
-	err = s.service.CancelDownload(ctx, userID, req.GetModelName())
+	err = s.service.CancelDownload(ctx, userID, req.GetModelId())
 	if err != nil {
 		slog.Error("inferenceservice:api:CancelDownload", "message", "failed to cancel download", "error", err)
 		return nil, fmt.Errorf("failed to cancel download")
@@ -158,13 +157,12 @@ func (s *InferenceServiceAPI) CancelDownload(ctx context.Context, req *pb.Cancel
 }
 
 func (s *InferenceServiceAPI) DeleteModel(ctx context.Context, req *pb.DeleteModelRequest) (*pb.DeleteModelResponse, error) {
-	slog.Info("inferenceservice:api:DeleteModel", "modelName", req.GetModelName())
 	userID, err := auth.GetUserIDFromContext_WithError(ctx)
 	if err != nil {
 		slog.Error("inferenceservice:api:DeleteModel", "message", "failed to get user ID", "error", err)
 		return nil, err
 	}
-	err = s.service.DeleteModel(ctx, userID, req.GetModelName())
+	err = s.service.DeleteModel(ctx, userID, req.GetModelId())
 	if err != nil {
 		slog.Error("inferenceservice:api:DeleteModel", "message", "failed to delete model", "error", err)
 		return nil, fmt.Errorf("failed to delete model")

@@ -82,6 +82,15 @@ export class Model extends jspb.Message {
   getModelInfo(): ModelInfo | undefined;
   setModelInfo(value?: ModelInfo): void;
 
+  getCreatorName(): string;
+  setCreatorName(value: string): void;
+
+  getModifiedBy(): string;
+  setModifiedBy(value: string): void;
+
+  getDescription(): string;
+  setDescription(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Model.AsObject;
   static toObject(includeInstance: boolean, msg: Model): Model.AsObject;
@@ -108,13 +117,13 @@ export namespace Model {
     isEmbeddingModel: boolean,
     isEnabled: boolean,
     modelInfo?: ModelInfo.AsObject,
+    creatorName: string,
+    modifiedBy: string,
+    description: string,
   }
 }
 
 export class ModelInfo extends jspb.Message {
-  getCreatorName(): string;
-  setCreatorName(value: string): void;
-
   getHomePageUrl(): string;
   setHomePageUrl(value: string): void;
 
@@ -136,7 +145,6 @@ export class ModelInfo extends jspb.Message {
 
 export namespace ModelInfo {
   export type AsObject = {
-    creatorName: string,
     homePageUrl: string,
     quantization: string,
     downloadSize: string,
@@ -144,8 +152,8 @@ export namespace ModelInfo {
 }
 
 export class DownloadModelRequest extends jspb.Message {
-  getModelName(): string;
-  setModelName(value: string): void;
+  getModelId(): string;
+  setModelId(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): DownloadModelRequest.AsObject;
@@ -159,7 +167,7 @@ export class DownloadModelRequest extends jspb.Message {
 
 export namespace DownloadModelRequest {
   export type AsObject = {
-    modelName: string,
+    modelId: string,
   }
 }
 
@@ -222,8 +230,8 @@ export namespace GetLLMModelsResponse {
 }
 
 export class CancelDownloadRequest extends jspb.Message {
-  getModelName(): string;
-  setModelName(value: string): void;
+  getModelId(): string;
+  setModelId(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): CancelDownloadRequest.AsObject;
@@ -237,7 +245,7 @@ export class CancelDownloadRequest extends jspb.Message {
 
 export namespace CancelDownloadRequest {
   export type AsObject = {
-    modelName: string,
+    modelId: string,
   }
 }
 
@@ -262,8 +270,8 @@ export namespace CancelDownloadResponse {
 }
 
 export class DeleteModelRequest extends jspb.Message {
-  getModelName(): string;
-  setModelName(value: string): void;
+  getModelId(): string;
+  setModelId(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): DeleteModelRequest.AsObject;
@@ -277,7 +285,7 @@ export class DeleteModelRequest extends jspb.Message {
 
 export namespace DeleteModelRequest {
   export type AsObject = {
-    modelName: string,
+    modelId: string,
   }
 }
 

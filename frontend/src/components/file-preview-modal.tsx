@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { FileText, XCircle, Download, Code2, FileType } from "lucide-react";
 import { useEffect, useState } from "react";
+import { SaveFile } from "../../wailsjs/go/main/App";
 
 export type FilePreviewType = 'html' | 'pdf' | 'text' | 'json' | 'markdown';
 
@@ -24,8 +25,6 @@ export function FilePreviewModal({
     onScriptsToggle,
 }: FilePreviewModalProps) {
     const [pdfUrl, setPdfUrl] = useState('');
-    const [isDesktop, setIsDesktop] = useState(false);
-
 
     useEffect(() => {
         if (isOpen && fileType === 'pdf') {
@@ -39,14 +38,6 @@ export function FilePreviewModal({
             };
         }
     }, [isOpen, fileType, fileContent]);
-
-    // Detect if running inside the Wails desktop app
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        if ((window as any).runtime || (window as any).go) {
-            setIsDesktop(true);
-        }
-    }, []);
 
     const [localEnableScripts, setLocalEnableScripts] = useState(enableScripts);
 
@@ -65,39 +56,30 @@ export function FilePreviewModal({
             json: 'application/json',
             markdown: 'text/markdown',
         };
-
+    
         const mimeType = mimeTypes[fileType];
-        const blob = new Blob([fileContent], { type: mimeType });
-
-        // In the desktop (Wails) app, regular browser downloads may not work.
-        // Instead, open a data URL in the system browser so the user can save the file.
-        if (isDesktop) {
+        
+        // Check if running in Wails
+        if ((window as any).runtime || (window as any).go) {
             try {
-                const { BrowserOpenURL } = await import("../../wailsjs/runtime/runtime");
-                const reader = new FileReader();
-
-                reader.onloadend = () => {
-                    const result = reader.result as string;
-                    // result is a data URL like "data:...;base64,XXXX"
-                    const base64 = result.split(',')[1] || '';
-                    const dataUrl = `data:${mimeType};base64,${base64}`;
-                    BrowserOpenURL(dataUrl);
-                };
-
-                reader.readAsDataURL(blob);
+                // Call Go backend to save file
+                await SaveFile(fileName, fileContent);
                 return;
             } catch (err) {
-                console.error("Desktop download failed, falling back to browser download:", err);
+                console.error("Desktop save failed:", err);
             }
         }
-
-        // Web fallback: use an anchor with a blob URL
+        
+        // Web fallback
+        const blob = new Blob([fileContent], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = fileName;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
     };
 
     const getFileIcon = () => {

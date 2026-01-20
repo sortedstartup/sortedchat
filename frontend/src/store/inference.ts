@@ -39,10 +39,10 @@ export const $modelsByProvider = computed($llmModels, (models) => {
     return groups;
 });
 
-export const downloadModel = async (modelName: string) => {
+export const downloadModel = async (modelId: string) => {
     try {
         const req = new DownloadModelRequest({
-            model_name: modelName
+            model_id: modelId
         });
         const res = await getClient().DownloadModel(req, {});
 
@@ -109,10 +109,10 @@ onMount($llmModels, () => {
     };
 });
 
-export const cancelDownload = async (modelName: string) => {
+export const cancelDownload = async (modelId: string) => {
     try {
         const req = new CancelDownloadRequest({
-            model_name: modelName
+            model_id: modelId
         });
         const res = await getClient().CancelDownload(req, {});
         console.log('CancelDownloadResponse', res.message);
@@ -124,10 +124,10 @@ export const cancelDownload = async (modelName: string) => {
     }
 }
 
-export const deleteModel = async (modelName: string) => {
+export const deleteModel = async (modelId: string) => {
     try {
         const req = new DeleteModelRequest({
-            model_name: modelName
+            model_id: modelId
         });
         const res = await getClient().DeleteModel(req, {});
         console.log('DeleteModelResponse', res.message);

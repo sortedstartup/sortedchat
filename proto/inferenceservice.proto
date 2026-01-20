@@ -56,7 +56,8 @@ message ModelInfo {
 }
 
 message DownloadModelRequest {
-  string model_name = 1;
+  // string model_name = 1;
+  string model_id = 2;
 }
 
 message DownloadModelResponse {
@@ -71,7 +72,8 @@ message GetLLMModelsResponse {
 }
 
 message CancelDownloadRequest {
-  string model_name = 1;
+  // string model_name = 1;
+  string model_id = 2;
 }
 
 message CancelDownloadResponse {
@@ -79,7 +81,8 @@ message CancelDownloadResponse {
 }
 
 message DeleteModelRequest {
-  string model_name = 1;
+  // string model_name = 1;
+  string model_id = 2;
 }
 
 message DeleteModelResponse {

@@ -78,7 +78,7 @@ export function Project() {
     if (projectId) {
       $currentProjectId.set(projectId);
       fetchDocuments(projectId);
-     
+
       setRagEnabledForProject(true);
     }
   }, [projectId]);
@@ -135,15 +135,15 @@ export function Project() {
   };
 
   const hasEmbeddingModel = () => {
-    return llmModels.some(model => model.name === "nomic-embed-text-v1.5.Q8_0" && model.is_downloaded);
+    return llmModels.some(model => model.id === "nomic-embed-text-v1.5.Q8_0" && model.is_downloaded);
   };
 
   const handleDownloadEmbeddingModel = async () => {
     setIsDownloadingEmbedding(true);
-    
+
     // Small delay to ensure UI updates before async operation
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     try {
       //TODO:currently hardcoded, need to change to dynamic
       await downloadModel("nomic-embed-text-v1.5.Q8_0");
@@ -183,7 +183,7 @@ export function Project() {
             className="flex-shrink-0 gap-2 border-yellow-300 dark:border-yellow-700 hover:bg-yellow-100 dark:hover:bg-yellow-900/50"
           >
             <Download className="size-4" />
-            {isDownloadingEmbedding ? "Downloading..." : "Download nomic-embed-text-v1.5.Q8_0"}
+            {isDownloadingEmbedding ? "Downloading..." : "Download Nomic Embed Text v1.5"}
           </Button>
         </div>
       )}
@@ -210,28 +210,28 @@ export function Project() {
                 <DialogHeader className="flex flex-row items-center justify-between space-y-0 mr-2">
                   <DialogTitle>Project Documents</DialogTitle>
                   <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { fetchDocuments(currentProjectId.toString()) }}
+                      disabled={isPolling}
+                      className="gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isPolling ? 'animate-spin' : ''}`} />
+                      {isPolling ? 'Refreshing...' : 'Refresh'}
+                    </Button>
+
+                    {isErrorDocs ? (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {fetchDocuments(currentProjectId.toString())}}
-                        disabled={isPolling}
+                        onClick={handleRetryEmbedding}
                         className="gap-2"
                       >
-                        <RefreshCw className={`h-4 w-4 ${isPolling ? 'animate-spin' : ''}`} />
-                        {isPolling ? 'Refreshing...' : 'Refresh'}
+                        <RefreshCw className="h-4 w-4" />
+                        Regenerate
                       </Button>
-                      
-                      {isErrorDocs ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleRetryEmbedding}
-                          className="gap-2"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                          Regenerate
-                        </Button>
-                      ) : null}
+                    ) : null}
                   </div>
                 </DialogHeader>
 
@@ -251,18 +251,18 @@ export function Project() {
                                 {doc.embedding_status === Embedding_Status.STATUS_ERROR
                                   ? "Indexing failed, Regenerate embeddings"
                                   : doc.embedding_status === Embedding_Status.STATUS_QUEUED
-                                  ? "Currently in queue"
-                                  : doc.embedding_status === Embedding_Status.STATUS_IN_PROGRESS
-                                  ? "Embedding in progress"
-                                  : ""}
+                                    ? "Currently in queue"
+                                    : doc.embedding_status === Embedding_Status.STATUS_IN_PROGRESS
+                                      ? "Embedding in progress"
+                                      : ""}
                               </span>
                             </div>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => {
                               window.open(
@@ -273,8 +273,8 @@ export function Project() {
                           >
                             <Eye className="size-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => {
                               handleDeleteDocument(doc.docs_id);
@@ -349,7 +349,7 @@ export function Project() {
                 </div>
               )}
             </div>
-        </div>
+          </div>
         </div>
       </div>
 
@@ -366,7 +366,7 @@ export function Project() {
             <span>Enable RAG (Retrieval-Augmented Generation)</span>
           </label>
         </div>
-        
+
         <div className="relative rounded-lg border border-border bg-muted focus-within:ring-1 focus-within:ring-ring p-1">
           <ChatInput
             placeholder="Type your message here..."

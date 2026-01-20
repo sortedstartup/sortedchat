@@ -11,7 +11,7 @@ export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLoca
     if (!isDownloadable || isDownloaded || model.status === DownloadStatus.DOWNLOADING) return;
 
     try {
-      await downloadModel(model.name);
+      await downloadModel(model.id);
     } catch (error) {
       console.error('Download failed:', error);
     }
@@ -19,7 +19,7 @@ export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLoca
 
   const handleCancel = async () => {
     try {
-      await cancelDownload(model.name);
+      await cancelDownload(model.id);
     } catch (error) {
       console.error('Cancel failed:', error);
     }
@@ -27,7 +27,7 @@ export const ModelCard = ({ model, isLocal = false }: { model: ModelType; isLoca
 
   const handleDelete = async () => {
     try {
-      await deleteModel(model.name);
+      await deleteModel(model.id);
     } catch (error) {
       console.error('Delete failed:', error);
     }

@@ -708,37 +708,37 @@ export class ModelInfo extends pb_1.Message {
 export class DownloadModelRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        model_name?: string;
+        model_id?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
-            if ("model_name" in data && data.model_name != undefined) {
-                this.model_name = data.model_name;
+            if ("model_id" in data && data.model_id != undefined) {
+                this.model_id = data.model_id;
             }
         }
     }
-    get model_name() {
-        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    get model_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
     }
-    set model_name(value: string) {
-        pb_1.Message.setField(this, 1, value);
+    set model_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
     }
     static fromObject(data: {
-        model_name?: string;
+        model_id?: string;
     }): DownloadModelRequest {
         const message = new DownloadModelRequest({});
-        if (data.model_name != null) {
-            message.model_name = data.model_name;
+        if (data.model_id != null) {
+            message.model_id = data.model_id;
         }
         return message;
     }
     toObject() {
         const data: {
-            model_name?: string;
+            model_id?: string;
         } = {};
-        if (this.model_name != null) {
-            data.model_name = this.model_name;
+        if (this.model_id != null) {
+            data.model_id = this.model_id;
         }
         return data;
     }
@@ -746,8 +746,8 @@ export class DownloadModelRequest extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.model_name.length)
-            writer.writeString(1, this.model_name);
+        if (this.model_id.length)
+            writer.writeString(2, this.model_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -757,8 +757,8 @@ export class DownloadModelRequest extends pb_1.Message {
             if (reader.isEndGroup())
                 break;
             switch (reader.getFieldNumber()) {
-                case 1:
-                    message.model_name = reader.readString();
+                case 2:
+                    message.model_id = reader.readString();
                     break;
                 default: reader.skipField();
             }
@@ -949,37 +949,37 @@ export class GetLLMModelsResponse extends pb_1.Message {
 export class CancelDownloadRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        model_name?: string;
+        model_id?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
-            if ("model_name" in data && data.model_name != undefined) {
-                this.model_name = data.model_name;
+            if ("model_id" in data && data.model_id != undefined) {
+                this.model_id = data.model_id;
             }
         }
     }
-    get model_name() {
-        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    get model_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
     }
-    set model_name(value: string) {
-        pb_1.Message.setField(this, 1, value);
+    set model_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
     }
     static fromObject(data: {
-        model_name?: string;
+        model_id?: string;
     }): CancelDownloadRequest {
         const message = new CancelDownloadRequest({});
-        if (data.model_name != null) {
-            message.model_name = data.model_name;
+        if (data.model_id != null) {
+            message.model_id = data.model_id;
         }
         return message;
     }
     toObject() {
         const data: {
-            model_name?: string;
+            model_id?: string;
         } = {};
-        if (this.model_name != null) {
-            data.model_name = this.model_name;
+        if (this.model_id != null) {
+            data.model_id = this.model_id;
         }
         return data;
     }
@@ -987,8 +987,8 @@ export class CancelDownloadRequest extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.model_name.length)
-            writer.writeString(1, this.model_name);
+        if (this.model_id.length)
+            writer.writeString(2, this.model_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -998,8 +998,8 @@ export class CancelDownloadRequest extends pb_1.Message {
             if (reader.isEndGroup())
                 break;
             switch (reader.getFieldNumber()) {
-                case 1:
-                    message.model_name = reader.readString();
+                case 2:
+                    message.model_id = reader.readString();
                     break;
                 default: reader.skipField();
             }
@@ -1083,37 +1083,37 @@ export class CancelDownloadResponse extends pb_1.Message {
 export class DeleteModelRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        model_name?: string;
+        model_id?: string;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
-            if ("model_name" in data && data.model_name != undefined) {
-                this.model_name = data.model_name;
+            if ("model_id" in data && data.model_id != undefined) {
+                this.model_id = data.model_id;
             }
         }
     }
-    get model_name() {
-        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    get model_id() {
+        return pb_1.Message.getFieldWithDefault(this, 2, "") as string;
     }
-    set model_name(value: string) {
-        pb_1.Message.setField(this, 1, value);
+    set model_id(value: string) {
+        pb_1.Message.setField(this, 2, value);
     }
     static fromObject(data: {
-        model_name?: string;
+        model_id?: string;
     }): DeleteModelRequest {
         const message = new DeleteModelRequest({});
-        if (data.model_name != null) {
-            message.model_name = data.model_name;
+        if (data.model_id != null) {
+            message.model_id = data.model_id;
         }
         return message;
     }
     toObject() {
         const data: {
-            model_name?: string;
+            model_id?: string;
         } = {};
-        if (this.model_name != null) {
-            data.model_name = this.model_name;
+        if (this.model_id != null) {
+            data.model_id = this.model_id;
         }
         return data;
     }
@@ -1121,8 +1121,8 @@ export class DeleteModelRequest extends pb_1.Message {
     serialize(w: pb_1.BinaryWriter): void;
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
-        if (this.model_name.length)
-            writer.writeString(1, this.model_name);
+        if (this.model_id.length)
+            writer.writeString(2, this.model_id);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -1132,8 +1132,8 @@ export class DeleteModelRequest extends pb_1.Message {
             if (reader.isEndGroup())
                 break;
             switch (reader.getFieldNumber()) {
-                case 1:
-                    message.model_name = reader.readString();
+                case 2:
+                    message.model_id = reader.readString();
                     break;
                 default: reader.skipField();
             }

@@ -31,7 +31,7 @@ func FromJSON(jsonStr string) (*DownloadProgress, error) {
 
 type DAO interface {
 	Infer(dummy string) error
-	GetModelByName(modelName string) (*ModelMetadata, error)
+	GetModelByID(modelID string) (*ModelMetadata, error)
 	GetAllModels() ([]*ModelMetadata, error)
 	UpdateModelProgress(id string, progress *DownloadProgress) error
 	UpdateModelFileStoreID(id string, filestoreID string) error

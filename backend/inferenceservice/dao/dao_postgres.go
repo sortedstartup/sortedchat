@@ -55,15 +55,15 @@ func (d *PostgresDAO) Infer(dummy string) error {
 	return nil
 }
 
-func (d *PostgresDAO) GetModelByName(modelName string) (*ModelMetadata, error) {
-	slog.Info("inferenceservice:dao_postgres:GetModelByName")
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, model_info, creator_name, modified_by, description FROM shared_models_metadata WHERE name = $1`
+func (d *PostgresDAO) GetModelByID(modelID string) (*ModelMetadata, error) {
+	slog.Info("inferenceservice:dao_postgres:GetModelByID")
+	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, model_info, creator_name, modified_by, description FROM shared_models_metadata WHERE id = $1`
 
 	var model ModelMetadata
-	err := d.db.Get(&model, query, modelName)
+	err := d.db.Get(&model, query, modelID)
 	if err != nil {
-		slog.Error("inferenceservice:dao_postgres:GetModelByName", "message", "failed to get model by name", "error", err)
-		return nil, fmt.Errorf("failed to get model by name")
+		slog.Error("inferenceservice:dao_postgres:GetModelByID", "message", "failed to get model by ID", "error", err)
+		return nil, fmt.Errorf("failed to get model by ID")
 	}
 
 	return &model, nil

@@ -269,6 +269,7 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [enableScripts, setEnableScripts] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [isCodeCopied, setIsCodeCopied] = useState(false);
 
     const formatFileSize = (bytes?: number) => {
         if (!bytes) return '';
@@ -368,7 +369,37 @@ function HtmlFilePreview({ event }: { event: StreamEvent }) {
             {/* Code view (collapsible) */}
             {isExpanded && (
                 <div className="border-t border-border p-3 bg-muted/20 w-full overflow-hidden">
-                    <div className="text-xs text-muted-foreground mb-2">HTML Source:</div>
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs text-muted-foreground">HTML Source:</div>
+                        <button
+                            type="button"
+                            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                            onClick={async () => {
+                                try {
+                                    if (event.fileContent) {
+                                        await navigator.clipboard.writeText(event.fileContent);
+                                        setIsCodeCopied(true);
+                                        setTimeout(() => setIsCodeCopied(false), 1500);
+                                    }
+                                } catch (err) {
+                                    console.error("Failed to copy HTML source:", err);
+                                }
+                            }}
+                            title="Copy full HTML to clipboard"
+                        >
+                            {isCodeCopied ? (
+                                <>
+                                    <Check className="w-3 h-3 text-green-500" />
+                                    <span>Copied</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Copy className="w-3 h-3" />
+                                    <span>Copy</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
                     <ExpandableCode content={event.fileContent || ''} defaultLines={20} />
                 </div>
             )}

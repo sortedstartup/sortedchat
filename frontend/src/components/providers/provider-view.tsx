@@ -1,5 +1,6 @@
 import { useStore } from '@nanostores/react';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
     $modelsByProvider,
     $isLoadingModels,
@@ -19,6 +20,7 @@ interface ProviderViewProps {
     defaultApiUrl?: string;
     onApiKeyChange?: (key: string) => void;
     onApiUrlChange?: (url: string) => void;
+    onSaveSuccess?: () => void;
     compact?: boolean;
 }
 
@@ -28,6 +30,7 @@ export const ProviderView = ({
     defaultApiUrl = '',
     onApiKeyChange,
     onApiUrlChange,
+    onSaveSuccess,
     compact = false
 }: ProviderViewProps) => {
     const modelsByProvider = useStore($modelsByProvider);
@@ -71,8 +74,14 @@ export const ProviderView = ({
             });
 
             await SetProviderSetting(providerName, settings);
+            if (onSaveSuccess) {
+                onSaveSuccess();
+            } else {
+                toast.success('API key has been successfully saved');
+            }
         } catch (error) {
             console.error('Failed to save provider settings:', error);
+            toast.error('Failed to save API key');
         } finally {
             setIsSaving(false);
         }

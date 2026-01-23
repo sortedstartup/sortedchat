@@ -3,9 +3,10 @@ import { ProviderView } from './provider-view';
 interface OpenaiProviderProps {
     onApiKeyChange?: (key: string) => void;
     onApiUrlChange?: (url: string) => void;
+    onSaveSuccess?: () => void;
 }
 
-export const OpenaiProvider = ({ onApiKeyChange, onApiUrlChange }: OpenaiProviderProps) => {
+export const OpenaiProvider = ({ onApiKeyChange, onApiUrlChange, onSaveSuccess }: OpenaiProviderProps) => {
     return (
         <ProviderView
             providerName="openai"
@@ -13,6 +14,7 @@ export const OpenaiProvider = ({ onApiKeyChange, onApiUrlChange }: OpenaiProvide
             defaultApiUrl="https://api.openai.com/v1/chat/completions"
             onApiKeyChange={onApiKeyChange}
             onApiUrlChange={onApiUrlChange}
+            onSaveSuccess={onSaveSuccess}
         />
     );
 };

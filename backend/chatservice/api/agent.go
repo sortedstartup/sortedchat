@@ -402,6 +402,10 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 				},
 			}); err != nil {
 				slog.Error("Failed to send text chunk", "error", err)
+				if accumulatedText != "" {
+					s.saveAgentMessage(sessionID, *nextSeq, "assistant", "text", accumulatedText, nil, nil, nil, nil, false, strPtr(err.Error()), 0)
+					*nextSeq++
+				}
 				return err
 			}
 

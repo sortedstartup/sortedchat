@@ -706,6 +706,14 @@ export function AgentChat() {
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const normalizeAgentMessage = (msg: AgentMessage & { streamEvents?: StreamEvent[] }) => {
+        const base = typeof (msg as any)?.toObject === "function" ? (msg as any).toObject() : msg;
+        if (msg.streamEvents) {
+            return { ...base, streamEvents: msg.streamEvents };
+        }
+        return base as AgentMessage & { streamEvents?: StreamEvent[] };
+    };
+
     useEffect(() => {
         if (sessionId && sessionId !== $currentSessionId.get()) {
             $currentSessionId.set(sessionId);
@@ -742,7 +750,7 @@ export function AgentChat() {
         let pendingToolEvents: StreamEvent[] = [];
 
         for (let i = 0; i < messages.length; i++) {
-            const msg = messages[i];
+            const msg = normalizeAgentMessage(messages[i] as AgentMessage & { streamEvents?: StreamEvent[] });
 
             if (msg.type === 'tool_call') {
                 // Add to pending tool events

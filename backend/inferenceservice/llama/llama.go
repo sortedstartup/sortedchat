@@ -133,6 +133,8 @@ func GetOrStartServer(modelName string, isEmbeddingModel bool) (string, error) {
 			"--no-webui",
 			"--host", socketPath,
 			"--port", "0", // Let it pick a port or ignore if unix is used exclusively for our proxy
+			"-ub", "8192", // max for nomic-embed-text
+			"-b", "8192", // max for nomic-embed-text
 		)
 	} else {
 		cmd = exec.Command(llamaServerPath,

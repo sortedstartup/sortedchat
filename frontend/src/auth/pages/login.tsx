@@ -153,7 +153,7 @@ export function LoginPage() {
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-400">
-          <p>© 2024 SortedChat. All rights reserved.</p>
+          <p>© 2026 SortedChat. All rights reserved.</p>
         </div>
       </div>
     </div>

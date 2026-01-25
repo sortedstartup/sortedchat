@@ -86,7 +86,6 @@ func (e *TextExtractor) Extract(ctx context.Context, r io.Reader, mime string) (
 type EqualSizeChunker struct{ ChunkSize int }
 
 func (e *EqualSizeChunker) Chunk(ctx context.Context, doc Document) ([]Chunk, error) {
-	slog.Info("rag_indexing_impl:Chunk", "doc", doc)
 	text := doc.Text
 	wordsArr := strings.Fields(text)
 	chunkSize := e.ChunkSize
@@ -142,18 +141,20 @@ type OLLamaEmbedder struct {
 }
 
 func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding, error) {
-	slog.Info("rag_indexing_impl:Embed", "chunks", chunks)
+	slog.Info("rag_indexing_impl:Embed", "chunks", len(chunks))
 
 	var embeddings []Embedding
 
-	for _, chunk := range chunks {
+	for i, chunk := range chunks {
+		slog.Info("rag_indexing_impl:Embed", "processing_chunk", i+1, "total_chunks", len(chunks), "chunk_id", chunk.ID, "chunk_text_length", len(chunk.Text))
+
 		reqBody := map[string]interface{}{
 			"model": e.Model,
 			"input": chunk.Text,
 		}
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			slog.Error("rag_indexing_impl:Embed", "step", "failed to marshal request body", "error", err, "chunk", chunk, "model", e.Model)
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to marshal request body", "error", err, "chunk_id", chunk.ID, "chunk_index", i+1, "model", e.Model)
 			return nil, err
 		}
 
@@ -161,7 +162,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		ollama_url := LOCAL_MODEL_URL
 		req, err := http.NewRequestWithContext(ctx, "POST", ollama_url, bytes.NewBuffer(bodyBytes))
 		if err != nil {
-			slog.Error("rag_indexing_impl:Embed", "step", "failed to create request", "error", err, "chunk", chunk, "model", e.Model)
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to create request", "error", err, "chunk_id", chunk.ID, "chunk_index", i+1, "model", e.Model)
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/json")
@@ -169,7 +170,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			slog.Error("rag_indexing_impl:Embed", "step", "failed to do request", "error", err, "chunk", chunk, "model", e.Model)
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to do request", "error", err, "chunk_id", chunk.ID, "chunk_index", i+1, "model", e.Model)
 			return nil, err
 		}
 		defer resp.Body.Close()
@@ -177,8 +178,8 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 		// Check HTTP status
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
-			slog.Error("rag_indexing_impl:Embed", "step", "HTTP error", "status", resp.StatusCode, "body", string(body), "chunk", chunk, "model", e.Model)
-			return nil, fmt.Errorf("embedding API returned status %d: %s", resp.StatusCode, string(body))
+			slog.Error("rag_indexing_impl:Embed", "step", "HTTP error", "status", resp.StatusCode, "body", string(body), "chunk_id", chunk.ID, "chunk_index", i+1, "model", e.Model)
+			return nil, fmt.Errorf("embedding API returned status %d for chunk %s (index %d): %s", resp.StatusCode, chunk.ID, i+1, string(body))
 		}
 
 		var respData struct {
@@ -187,19 +188,19 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 			} `json:"data"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-			slog.Error("rag_indexing_impl:Embed", "step", "failed to decode response", "error", err, "chunk", chunk, "model", e.Model)
+			slog.Error("rag_indexing_impl:Embed", "step", "failed to decode response", "error", err, "chunk_id", chunk.ID, "chunk_index", i+1, "model", e.Model)
 			return nil, err
 		}
 
 		if len(respData.Data) == 0 {
-			slog.Error("rag_indexing_impl:Embed", "step", "empty response data", "error", "no embedding data returned", "chunk", chunk, "model", e.Model)
-			return nil, fmt.Errorf("no embedding data returned from model")
+			slog.Error("rag_indexing_impl:Embed", "step", "empty response data", "error", "no embedding data returned", "chunk_id", chunk.ID, "chunk_index", i+1, "model", e.Model)
+			return nil, fmt.Errorf("no embedding data returned from model for chunk %s (index %d)", chunk.ID, i+1)
 		}
 
 		vec := respData.Data[0].Embedding
 		if len(vec) == 0 {
-			slog.Error("rag_indexing_impl:Embed", "step", "empty embedding vector", "error", "embedding vector is empty", "chunk", chunk, "model", e.Model)
-			return nil, fmt.Errorf("embedding vector is empty")
+			slog.Error("rag_indexing_impl:Embed", "step", "empty embedding vector", "error", "embedding vector is empty", "chunk_id", chunk.ID, "chunk_index", i+1, "model", e.Model)
+			return nil, fmt.Errorf("embedding vector is empty for chunk %s (index %d)", chunk.ID, i+1)
 		}
 
 		embeddings = append(embeddings, Embedding{
@@ -207,6 +208,7 @@ func (e *OLLamaEmbedder) Embed(ctx context.Context, chunks []Chunk) ([]Embedding
 			Vector:   vec,
 			Provider: "ollama", // not getting used anywhere right now
 		})
+
 	}
 
 	return embeddings, nil

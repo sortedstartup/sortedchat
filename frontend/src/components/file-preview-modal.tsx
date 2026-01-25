@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { FileText, XCircle, Download, Code2, FileType } from "lucide-react";
 import { useEffect, useState } from "react";
+import { SaveFile } from "../../wailsjs/go/main/App";
 
 export type FilePreviewType = 'html' | 'pdf' | 'text' | 'json' | 'markdown';
 
@@ -25,7 +26,6 @@ export function FilePreviewModal({
 }: FilePreviewModalProps) {
     const [pdfUrl, setPdfUrl] = useState('');
 
-
     useEffect(() => {
         if (isOpen && fileType === 'pdf') {
             const pdfBlob = new Blob([fileContent], { type: 'application/pdf' });
@@ -48,7 +48,7 @@ export function FilePreviewModal({
         onScriptsToggle?.(checked);
     };
 
-    const downloadFile = () => {
+    const downloadFile = async () => {
         const mimeTypes: Record<FilePreviewType, string> = {
             html: 'text/html',
             pdf: 'application/pdf',
@@ -56,14 +56,30 @@ export function FilePreviewModal({
             json: 'application/json',
             markdown: 'text/markdown',
         };
-
-        const blob = new Blob([fileContent], { type: mimeTypes[fileType] });
+    
+        const mimeType = mimeTypes[fileType];
+        
+        // Check if running in Wails
+        if ((window as any).runtime || (window as any).go) {
+            try {
+                // Call Go backend to save file
+                await SaveFile(fileName, fileContent);
+                return;
+            } catch (err) {
+                console.error("Desktop save failed:", err);
+            }
+        }
+        
+        // Web fallback
+        const blob = new Blob([fileContent], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = fileName;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
     };
 
     const getFileIcon = () => {

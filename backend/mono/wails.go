@@ -8,11 +8,13 @@ import (
 	"embed"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 //go:embed all:frontend-build-wails/dist
@@ -32,6 +34,26 @@ func (a *App) startup(ctx context.Context) {
 
 type MuxHandler struct {
 	handler http.Handler
+}
+
+func (a *App) SaveFile(fileName string, content string) error {
+	// Open save dialog
+	filePath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		DefaultFilename: fileName,
+		Title:           "Save File",
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// User cancelled
+	if filePath == "" {
+		return nil
+	}
+
+	// Write content to file
+	return os.WriteFile(filePath, []byte(content), 0644)
 }
 
 func (h *MuxHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {

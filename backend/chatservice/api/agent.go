@@ -407,10 +407,23 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 			slog.Info("Connecting to MCP server (stdio)", "serverName", mcp.ServerName, "command", stdioConfig.Command, "agentID", agentRow.ID)
 
 			// Build command and args
+			command := stdioConfig.Command
 			args := append([]string{}, stdioConfig.Arguments...)
 
+			// Fix for commands configured as a single string (e.g. "npx -y package")
+			// If arguments are empty but command has spaces, split it.
+			if len(args) == 0 && strings.Contains(command, " ") {
+				parts := strings.Fields(command)
+				if len(parts) > 0 {
+					command = parts[0]
+					if len(parts) > 1 {
+						args = parts[1:]
+					}
+				}
+			}
+
 			// Load MCP tools via stdio
-			mcpTools, cleanup, err := sortedagents.LoadMCPTools(ctx, stdioConfig.Command, args...)
+			mcpTools, cleanup, err := sortedagents.LoadMCPTools(ctx, command, args...)
 			if err != nil {
 				slog.Error("Failed to load MCP tools (stdio)", "error", err, "serverName", mcp.ServerName, "agentID", agentRow.ID)
 				// Continue with other MCP servers rather than failing

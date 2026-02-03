@@ -377,8 +377,106 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 	// Add timestamp tool
 	toolBuilder.AddFunc("get_timestamp", "Returns the current timestamp in RFC3339 format (ISO 8601). Useful for getting the current date and time.", getTimestamp)
 
+	// Add MCP servers
+	var mcpServers []*pb.MCPServer
+	if agentRow.MCPServers != "" {
+		mcpServers, err = deserializeMCPServers(agentRow.MCPServers)
+		if err != nil {
+			slog.Error("Failed to deserialize MCP servers from DB", "error", err, "agentID", agentRow.ID)
+			// Continue without MCP servers rather than failing the whole request
+			mcpServers = []*pb.MCPServer{}
+		}
+	}
+
+	// Track MCP cleanup functions to defer
+	var mcpCleanups []func()
+
+	for _, mcp := range mcpServers {
+		if !mcp.IsEnabled {
+			slog.Debug("Skipping disabled MCP server", "serverName", mcp.ServerName, "agentID", agentRow.ID)
+			continue
+		}
+
+		switch t := mcp.Transport.(type) {
+		case *pb.MCPServer_Stdio:
+			if t.Stdio == nil {
+				slog.Warn("MCP server has nil stdio config", "serverName", mcp.ServerName, "agentID", agentRow.ID)
+				continue
+			}
+			stdioConfig := t.Stdio
+			slog.Info("Connecting to MCP server (stdio)", "serverName", mcp.ServerName, "command", stdioConfig.Command, "agentID", agentRow.ID)
+
+			// Build command and args
+			args := append([]string{}, stdioConfig.Arguments...)
+
+			// Load MCP tools via stdio
+			mcpTools, cleanup, err := sortedagents.LoadMCPTools(ctx, stdioConfig.Command, args...)
+			if err != nil {
+				slog.Error("Failed to load MCP tools (stdio)", "error", err, "serverName", mcp.ServerName, "agentID", agentRow.ID)
+				// Continue with other MCP servers rather than failing
+				continue
+			}
+			if cleanup != nil {
+				mcpCleanups = append(mcpCleanups, cleanup)
+			}
+
+			// Add tools to builder
+			for _, tool := range mcpTools {
+				toolBuilder.AddTypedFunc(tool)
+			}
+			slog.Info("Added MCP tools (stdio)", "count", len(mcpTools), "serverName", mcp.ServerName, "agentID", agentRow.ID)
+
+		case *pb.MCPServer_Http:
+			if t.Http == nil {
+				slog.Warn("MCP server has nil http config", "serverName", mcp.ServerName, "agentID", agentRow.ID)
+				continue
+			}
+			httpConfig := t.Http
+			slog.Info("Connecting to MCP server (http)", "serverName", mcp.ServerName, "url", httpConfig.Url, "agentID", agentRow.ID)
+
+			// Connect to HTTP MCP server
+			session, cleanup, err := sortedagents.ConnectToMCPHTTPServer(ctx, httpConfig.Url)
+			if err != nil {
+				slog.Error("Failed to connect to MCP HTTP server", "error", err, "serverName", mcp.ServerName, "url", httpConfig.Url, "agentID", agentRow.ID)
+				// Continue with other MCP servers rather than failing
+				continue
+			}
+			if cleanup != nil {
+				mcpCleanups = append(mcpCleanups, cleanup)
+			}
+
+			// Fetch tools from the remote server
+			listResp, err := session.ListTools(ctx, nil)
+			if err != nil {
+				slog.Error("Failed to list tools from MCP HTTP server", "error", err, "serverName", mcp.ServerName, "url", httpConfig.Url, "agentID", agentRow.ID)
+				// Continue with other MCP servers rather than failing
+				continue
+			}
+
+			// Add tools to builder
+			toolCount := 0
+			for _, tool := range listResp.Tools {
+				toolBuilder.AddTypedFunc(sortedagents.NewMCPToolAdapter(session, tool))
+				toolCount++
+			}
+			slog.Info("Added MCP tools (http)", "count", toolCount, "serverName", mcp.ServerName, "url", httpConfig.Url, "agentID", agentRow.ID)
+
+		default:
+			slog.Warn("Unknown MCP server transport type", "serverName", mcp.ServerName, "agentID", agentRow.ID)
+		}
+	}
+
+	// Defer cleanup of all MCP servers
+	defer func() {
+		for _, cleanup := range mcpCleanups {
+			if cleanup != nil {
+				cleanup()
+			}
+		}
+	}()
+
 	tools := toolBuilder.Build()
-	slog.Debug("Added tools to agent", "count", len(tools), "workspace", workspacePath)
+	slog.Debug("Added tools to agent", "count", len(tools), "workspace", workspacePath, "mcpServers", len(mcpServers))
 
 	// Create sortedagents session and load message history
 	session := sortedagents.NewSessionWithID(sessionID)

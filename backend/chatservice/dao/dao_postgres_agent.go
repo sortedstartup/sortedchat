@@ -18,8 +18,8 @@ func NewPostgresAgentsDAO(db *sqlx.DB) *PostgresAgentsDAO {
 // Agent CRUD
 func (p *PostgresAgentsDAO) CreateAgent(agent AgentRow) error {
 	_, err := p.db.NamedExec(`
-		INSERT INTO agents (id, name, description, system_prompt, provider, model, local_tools, created_at, updated_at)
-		VALUES (:id, :name, :description, :system_prompt, :provider, :model, :local_tools, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO agents (id, name, description, system_prompt, provider, model, local_tools, mcp_servers, created_at, updated_at)
+		VALUES (:id, :name, :description, :system_prompt, :provider, :model, :local_tools, :mcp_servers, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`, agent)
 	if err != nil {
 		slog.Error("dao_postgres:CreateAgent", "message", "failed to create agent", "error", err, "agentID", agent.ID)
@@ -36,6 +36,7 @@ func (p *PostgresAgentsDAO) UpdateAgent(agent AgentRow) error {
 			system_prompt = :system_prompt, 
 			provider = :provider, 
 			model = :model, 
+			mcp_servers = :mcp_servers,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`, agent)

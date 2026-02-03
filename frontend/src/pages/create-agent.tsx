@@ -7,6 +7,8 @@ import { createAgent, createSession } from "@/store/agents";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { FileUploader } from "@/components/FileUploader";
 import { ModelSelector } from "@/components/ModelSelector";
+import { MCPServerForm } from "@/components/MCPServerForm";
+import { MCPServer } from "../../proto/chatservice";
 
 export function CreateAgentPage() {
     const navigate = useNavigate();
@@ -20,6 +22,7 @@ export function CreateAgentPage() {
         provider: "openai",
         model: "gpt-4o",
     });
+    const [mcpServers, setMcpServers] = useState<MCPServer[]>([]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,7 +33,8 @@ export function CreateAgentPage() {
                 formData.description,
                 formData.systemPrompt,
                 formData.model,
-                formData.provider
+                formData.provider,
+                mcpServers
             );
             // Store the agent ID to enable file uploads
             setCreatedAgentId(agentId);
@@ -117,6 +121,10 @@ export function CreateAgentPage() {
                                 }}
                                 className="w-full"
                             />
+                        </div>
+
+                        <div className="pt-4 border-t">
+                            <MCPServerForm servers={mcpServers} onChange={setMcpServers} />
                         </div>
 
                         <div className="pt-4 flex justify-end">

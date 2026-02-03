@@ -16,6 +16,7 @@ import {
     ContentEvent,
     ToolCall,
     ToolResult,
+    MCPServer,
 } from "../../proto/chatservice";
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { getUIConfig } from "../lib/config";
@@ -122,8 +123,11 @@ export const getAgents = async () => {
     }
 };
 
-export const createAgent = async (name: string, description: string, systemPrompt: string, model: string, provider: string) => {
+export const createAgent = async (name: string, description: string, systemPrompt: string, model: string, provider: string, mcpServers?: MCPServer[]) => {
     try {
+        // Properly serialize MCP servers
+        const serializedMcpServers = (mcpServers || []).map(server => server.toObject());
+        
         const response = await getAgentClient().CreateAgent(
             CreateAgentRequest.fromObject({
                 name,
@@ -131,7 +135,8 @@ export const createAgent = async (name: string, description: string, systemPromp
                 system_prompt: systemPrompt,
                 model,
                 provider,
-                local_tools: [] 
+                local_tools: [],
+                mcp_servers: serializedMcpServers
             }),
             {}
         );
@@ -145,8 +150,11 @@ export const createAgent = async (name: string, description: string, systemPromp
     }
 };
 
-export const updateAgent = async (agentId: string, name: string, description: string, systemPrompt: string, model: string, provider: string) => {
+export const updateAgent = async (agentId: string, name: string, description: string, systemPrompt: string, model: string, provider: string, mcpServers?: MCPServer[]) => {
     try {
+        // Properly serialize MCP servers
+        const serializedMcpServers = (mcpServers || []).map(server => server.toObject());
+        
         const response = await getAgentClient().UpdateAgent(
             UpdateAgentRequest.fromObject({
                 agent_id: agentId,
@@ -155,6 +163,7 @@ export const updateAgent = async (agentId: string, name: string, description: st
                 system_prompt: systemPrompt,
                 model,
                 provider,
+                mcp_servers: serializedMcpServers
             }),
             {}
         );

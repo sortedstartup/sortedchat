@@ -49,6 +49,13 @@ func (s *AgentServiceAPI) CreateAgent(ctx context.Context, req *pb.CreateAgentRe
 		return nil, status.Error(codes.Internal, "failed to serialize local tools")
 	}
 
+	// Serialize MCP servers to JSON string
+	mcpServersJSON, err := serializeMCPServers(req.McpServers)
+	if err != nil {
+		slog.Error("api:CreateAgent", "error", "failed to marshal mcp servers", "details", err)
+		return nil, status.Error(codes.Internal, "failed to serialize mcp servers")
+	}
+
 	agent := db.AgentRow{
 		ID:           agentID,
 		Name:         req.Name,
@@ -57,6 +64,7 @@ func (s *AgentServiceAPI) CreateAgent(ctx context.Context, req *pb.CreateAgentRe
 		Provider:     req.Provider,
 		Model:        req.Model,
 		LocalTools:   string(localToolsJSON),
+		MCPServers:   mcpServersJSON,
 	}
 
 	if err := s.dao.CreateAgent(agent); err != nil {
@@ -73,6 +81,13 @@ func (s *AgentServiceAPI) CreateAgent(ctx context.Context, req *pb.CreateAgentRe
 func (s *AgentServiceAPI) UpdateAgent(ctx context.Context, req *pb.UpdateAgentRequest) (*pb.UpdateAgentResponse, error) {
 	slog.Info("api:UpdateAgent", "agentID", req.AgentId)
 
+	// Serialize MCP servers to JSON string
+	mcpServersJSON, err := serializeMCPServers(req.McpServers)
+	if err != nil {
+		slog.Error("api:UpdateAgent", "error", "failed to marshal mcp servers", "details", err)
+		return nil, status.Error(codes.Internal, "failed to serialize mcp servers")
+	}
+
 	agent := db.AgentRow{
 		ID:           req.AgentId,
 		Name:         req.Name,
@@ -80,6 +95,7 @@ func (s *AgentServiceAPI) UpdateAgent(ctx context.Context, req *pb.UpdateAgentRe
 		SystemPrompt: req.SystemPrompt,
 		Provider:     req.Provider,
 		Model:        req.Model,
+		MCPServers:   mcpServersJSON,
 	}
 
 	if err := s.dao.UpdateAgent(agent); err != nil {
@@ -101,6 +117,22 @@ func (s *AgentServiceAPI) GetAgents(ctx context.Context, req *pb.GetAgentsReques
 
 	var pbAgents []*pb.Agent
 	for _, a := range agents {
+		// Parse local tools from JSON string
+		var localTools []string
+		if a.LocalTools != "" {
+			if err := json.Unmarshal([]byte(a.LocalTools), &localTools); err != nil {
+				slog.Warn("api:GetAgents", "warning", "failed to parse local tools", "agentID", a.ID)
+				localTools = []string{}
+			}
+		}
+
+		// Parse MCP servers from JSON string
+		mcpServers, err := deserializeMCPServers(a.MCPServers)
+		if err != nil {
+			slog.Warn("api:GetAgents", "warning", "failed to parse mcp servers", "agentID", a.ID, "error", err)
+			mcpServers = []*pb.MCPServer{}
+		}
+
 		pbAgents = append(pbAgents, &pb.Agent{
 			Id:           a.ID,
 			Name:         a.Name,
@@ -108,8 +140,8 @@ func (s *AgentServiceAPI) GetAgents(ctx context.Context, req *pb.GetAgentsReques
 			SystemPrompt: a.SystemPrompt,
 			Provider:     a.Provider,
 			Model:        a.Model,
-			// LocalTools: parse or leave empty? Proto expects repeated string.
-			// Ignoring complexity of parsing back for now as per "use dao" instruction focus.
+			LocalTools:   localTools,
+			McpServers:   mcpServers,
 		})
 	}
 
@@ -211,9 +243,9 @@ func (s *AgentServiceAPI) AgentChat(req *pb.AgentChatRequest, stream pb.AgentSer
 	if len(messages) > 0 && messages[len(messages)-1].Role == "user" {
 		lastMsg := messages[len(messages)-1]
 		repairSeq := lastMsg.SequenceNumber + 1
-		
+
 		slog.Info("api:AgentChat", "info", "Repairing dangling user message", "lastMsgID", lastMsg.ID)
-		
+
 		// Insert placeholder assistant message
 		placeholderMsg := db.AgentMessageRow{
 			ID:             uuid.New().String(),
@@ -225,12 +257,12 @@ func (s *AgentServiceAPI) AgentChat(req *pb.AgentChatRequest, stream pb.AgentSer
 			Success:        false,
 			ErrorMessage:   strPtr("System: Conversation turn repaired"),
 		}
-		
+
 		if err := s.dao.AddAgentMessage(placeholderMsg); err != nil {
 			slog.Error("api:AgentChat", "error", "failed to save repair message", "details", err)
 			// Continue anyway, as the next user message might still be saved, but we tried.
 		}
-		
+
 		// Append to local messages slice so context sent to LLM is correct
 		messages = append(messages, placeholderMsg)
 	}
@@ -327,7 +359,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 
 	// Build tools using sortedagents ToolBuilder
 	toolBuilder := sortedagents.NewToolBuilder()
-	
+
 	// Add filesystem tools
 	toolBuilder.AddTypedFunc(sortedagents.NewTool("read_file", "Reads the contents of a file from the agent's workspace. Optionally show line numbers. Returns the file content as a string.", fsTools.ReadFile))
 	toolBuilder.AddTypedFunc(sortedagents.NewTool("write_file", "Writes content to a file in the agent's workspace. Creates parent directories if needed. Returns success message.", fsTools.WriteFile))
@@ -341,22 +373,22 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 	toolBuilder.AddTypedFunc(sortedagents.NewTool("replace_lines", "Replaces specific lines in a file with new content (1-indexed, inclusive). Useful for precise file editing. Returns success message.", fsTools.ReplaceLines))
 	toolBuilder.AddTypedFunc(sortedagents.NewTool("search_regex", "Searches for a regex pattern in a file. Returns array of matches with line numbers, line content, and matched text.", fsTools.SearchRegex))
 	toolBuilder.AddTypedFunc(sortedagents.NewTool("regex_replace_all", "Replaces all occurrences of a regex pattern in a file with replacement text. Supports capture groups. Returns success message with count.", fsTools.RegexReplaceAll))
-	
+
 	// Add timestamp tool
 	toolBuilder.AddFunc("get_timestamp", "Returns the current timestamp in RFC3339 format (ISO 8601). Useful for getting the current date and time.", getTimestamp)
-	
+
 	tools := toolBuilder.Build()
 	slog.Debug("Added tools to agent", "count", len(tools), "workspace", workspacePath)
 
 	// Create sortedagents session and load message history
 	session := sortedagents.NewSessionWithID(sessionID)
-	
+
 	// Always add system prompt as the first message
 	session.AddMessage(sortedagents.Message{
 		Role:    "system",
 		Content: agentRow.SystemPrompt,
 	})
-	
+
 	// Load message history if exists
 	if len(messageHistory) > 0 {
 		for _, msg := range messageHistory {
@@ -450,7 +482,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 		case *sortedagents.ToolCallEndEvent:
 			// Get tool call ID
 			toolCallID := idCounter.getOrCreateID(e.ToolName)
-			
+
 			// Calculate duration
 			var durationMs int64
 			if startTime, exists := toolCallStartTimes[toolCallID]; exists {
@@ -567,7 +599,6 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 	return nil
 }
 
-
 // Helper to save agent message to DB
 func (s *AgentServiceAPI) saveAgentMessage(
 	sessionID string,
@@ -621,17 +652,17 @@ func (s *AgentServiceAPI) GetAgentMessages(ctx context.Context, req *pb.GetAgent
 	for _, m := range msgs {
 		pbMsgs = append(pbMsgs, &pb.AgentMessage{
 			Id:               m.ID,
-			SessionId:      m.SessionID,
+			SessionId:        m.SessionID,
 			SequenceNumber:   int32(m.SequenceNumber),
 			Role:             m.Role,
 			Type:             m.Type,
-			Content:        m.Content,
-			ToolName:       getStringValue(m.ToolName),
-			ToolCallId:     getStringValue(m.ToolCallID),
-			ToolArgs:       getStringValue(m.ToolArgs),
-			Success:        m.Success,
-			ErrorMessage:   getStringValue(m.ErrorMessage),
-			RunTimeMs:      m.RunTimeMs,
+			Content:          m.Content,
+			ToolName:         getStringValue(m.ToolName),
+			ToolCallId:       getStringValue(m.ToolCallID),
+			ToolArgs:         getStringValue(m.ToolArgs),
+			Success:          m.Success,
+			ErrorMessage:     getStringValue(m.ErrorMessage),
+			RunTimeMs:        m.RunTimeMs,
 			ThoughtSignature: getStringValue(m.ThoughtSignature),
 		})
 	}
@@ -731,4 +762,109 @@ func (tc *toolCallIDCounter) getOrCreateID(toolName string) string {
 
 func (tc *toolCallIDCounter) clearID(toolName string) {
 	delete(tc.callToIDMap, toolName)
+}
+
+// serializeMCPServers converts proto MCP servers to JSON string for storage
+func serializeMCPServers(servers []*pb.MCPServer) (string, error) {
+	if len(servers) == 0 {
+		return "[]", nil
+	}
+
+	// Convert proto to a more storage-friendly format
+	type MCPServerStorage struct {
+		ServerName           string            `json:"server_name"`
+		IsEnabled            bool              `json:"is_enabled"`
+		TransportType        string            `json:"transport_type"` // "stdio" or "http"
+		Command              string            `json:"command,omitempty"`
+		Arguments            []string          `json:"arguments,omitempty"`
+		EnvironmentVariables map[string]string `json:"environment_variables,omitempty"`
+		URL                  string            `json:"url,omitempty"`
+		Headers              map[string]string `json:"headers,omitempty"`
+		TimeoutSeconds       int32             `json:"timeout_seconds,omitempty"`
+	}
+
+	var storageServers []MCPServerStorage
+	for _, s := range servers {
+		storage := MCPServerStorage{
+			ServerName: s.ServerName,
+			IsEnabled:  s.IsEnabled,
+		}
+
+		switch t := s.Transport.(type) {
+		case *pb.MCPServer_Stdio:
+			storage.TransportType = "stdio"
+			storage.Command = t.Stdio.Command
+			storage.Arguments = t.Stdio.Arguments
+			storage.EnvironmentVariables = t.Stdio.EnvironmentVariables
+		case *pb.MCPServer_Http:
+			storage.TransportType = "http"
+			storage.URL = t.Http.Url
+			storage.Headers = t.Http.Headers
+			storage.TimeoutSeconds = t.Http.TimeoutSeconds
+		}
+
+		storageServers = append(storageServers, storage)
+	}
+
+	data, err := json.Marshal(storageServers)
+	if err != nil {
+		return "[]", fmt.Errorf("failed to marshal MCP servers: %w", err)
+	}
+
+	return string(data), nil
+}
+
+// deserializeMCPServers converts JSON string from storage to proto MCP servers
+func deserializeMCPServers(jsonStr string) ([]*pb.MCPServer, error) {
+	if jsonStr == "" || jsonStr == "[]" {
+		return []*pb.MCPServer{}, nil
+	}
+
+	type MCPServerStorage struct {
+		ServerName           string            `json:"server_name"`
+		IsEnabled            bool              `json:"is_enabled"`
+		TransportType        string            `json:"transport_type"`
+		Command              string            `json:"command,omitempty"`
+		Arguments            []string          `json:"arguments,omitempty"`
+		EnvironmentVariables map[string]string `json:"environment_variables,omitempty"`
+		URL                  string            `json:"url,omitempty"`
+		Headers              map[string]string `json:"headers,omitempty"`
+		TimeoutSeconds       int32             `json:"timeout_seconds,omitempty"`
+	}
+
+	var storageServers []MCPServerStorage
+	if err := json.Unmarshal([]byte(jsonStr), &storageServers); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal MCP servers: %w", err)
+	}
+
+	var servers []*pb.MCPServer
+	for _, s := range storageServers {
+		server := &pb.MCPServer{
+			ServerName: s.ServerName,
+			IsEnabled:  s.IsEnabled,
+		}
+
+		switch s.TransportType {
+		case "stdio":
+			server.Transport = &pb.MCPServer_Stdio{
+				Stdio: &pb.MCPStdio{
+					Command:              s.Command,
+					Arguments:            s.Arguments,
+					EnvironmentVariables: s.EnvironmentVariables,
+				},
+			}
+		case "http":
+			server.Transport = &pb.MCPServer_Http{
+				Http: &pb.MCPHttp{
+					Url:            s.URL,
+					Headers:        s.Headers,
+					TimeoutSeconds: s.TimeoutSeconds,
+				},
+			}
+		}
+
+		servers = append(servers, server)
+	}
+
+	return servers, nil
 }

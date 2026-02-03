@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { getJWTToken } from "@/lib/auth";
 import { getUIConfig } from "@/lib/config";
 import { ModelSelector } from "@/components/ModelSelector";
+import { MCPServerForm } from "@/components/MCPServerForm";
+import { MCPServer } from "../../proto/chatservice";
 import CodeMirror from '@uiw/react-codemirror';
 import { githubLight, githubDark } from '@uiw/codemirror-theme-github';
 import { javascript } from '@codemirror/lang-javascript';
@@ -25,7 +27,7 @@ import { baseKeymap } from 'prosemirror-commands';
 import { inputRules, wrappingInputRule, textblockTypeInputRule, InputRule } from 'prosemirror-inputrules';
 import { splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list';
 
-type TabType = "agent" | "files" | "editor";
+type TabType = "agent" | "files" | "mcp" | "editor";
 
 // Create markdown input rules for WYSIWYG editing
 function buildMarkdownInputRules() {
@@ -207,6 +209,7 @@ export function EditAgentPage() {
         provider: "openai",
         model: "gpt-4o",
     });
+    const [mcpServers, setMcpServers] = useState<MCPServer[]>([]);
 
     useEffect(() => {
         if (agentId) {
@@ -232,6 +235,9 @@ export function EditAgentPage() {
                     provider: agent.provider,
                     model: agent.model,
                 });
+
+                // Parse MCP servers from agent
+                setMcpServers(agent.mcp_servers || []);
             } else {
                 toast.error("Agent not found");
                 navigate("/");
@@ -286,7 +292,8 @@ export function EditAgentPage() {
                 formData.description,
                 formData.systemPrompt,
                 formData.model,
-                formData.provider
+                formData.provider,
+                mcpServers
             );
             // navigate("/");
         } catch (error) {
@@ -700,6 +707,16 @@ export function EditAgentPage() {
                         </button>
                         <button
                             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === "mcp"
+                                    ? "border-primary text-primary"
+                                    : "border-transparent text-muted-foreground hover:text-foreground"
+                            }`}
+                            onClick={() => setActiveTab("mcp")}
+                        >
+                            MCP Servers {mcpServers.length > 0 && `(${mcpServers.length})`}
+                        </button>
+                        <button
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                                 activeTab === "editor"
                                     ? "border-primary text-primary"
                                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -758,6 +775,22 @@ export function EditAgentPage() {
                             </div>
 
                             <div className="pt-4 flex justify-end gap-2">
+                                <Button variant="outline" onClick={() => navigate("/")}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={isSaving}>
+                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </form>
+                    )}
+
+                    {activeTab === "mcp" && (
+                        <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-lg border border-border">
+                            <MCPServerForm servers={mcpServers} onChange={setMcpServers} />
+
+                            <div className="pt-4 flex justify-end gap-2 border-t">
                                 <Button variant="outline" onClick={() => navigate("/")}>
                                     Cancel
                                 </Button>

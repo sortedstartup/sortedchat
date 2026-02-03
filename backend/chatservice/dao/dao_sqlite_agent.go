@@ -41,8 +41,8 @@ func NewSQLiteAgentsDAOWithDB(db *sqlx.DB) *SQLiteAgentsDAO {
 // Agent CRUD
 func (s *SQLiteAgentsDAO) CreateAgent(agent AgentRow) error {
 	_, err := s.db.NamedExec(`
-		INSERT INTO agents (id, name, description, system_prompt, provider, model, local_tools, created_at, updated_at)
-		VALUES (:id, :name, :description, :system_prompt, :provider, :model, :local_tools, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO agents (id, name, description, system_prompt, provider, model, local_tools, mcp_servers, created_at, updated_at)
+		VALUES (:id, :name, :description, :system_prompt, :provider, :model, :local_tools, :mcp_servers, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`, agent)
 	if err != nil {
 		slog.Error("dao_sqlite:CreateAgent", "message", "failed to create agent", "error", err, "agentID", agent.ID)
@@ -59,6 +59,7 @@ func (s *SQLiteAgentsDAO) UpdateAgent(agent AgentRow) error {
 			system_prompt = :system_prompt, 
 			provider = :provider, 
 			model = :model, 
+			mcp_servers = :mcp_servers,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = :id
 	`, agent)

@@ -3,6 +3,10 @@ package sortedagents
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"reflect"
+	"regexp"
+	"strings"
 )
 
 // Tool represents a function that can be called by the agent
@@ -11,6 +15,52 @@ type Tool interface {
 	Description() string
 	Parameters() *JSONSchema
 	Execute(ctx context.Context, args map[string]any) (any, error)
+}
+
+// StructTool represents a tool that uses a specific struct for arguments
+type StructTool[T any] interface {
+	Name() string
+	Description() string
+	Execute(ctx context.Context, args T) (any, error)
+}
+
+// structToolAdapter adapts a StructTool[T] to the standard Tool interface
+type structToolAdapter[T any] struct {
+	impl StructTool[T]
+}
+
+func (s *structToolAdapter[T]) Name() string {
+	return s.impl.Name()
+}
+
+func (s *structToolAdapter[T]) Description() string {
+	return s.impl.Description()
+}
+
+func (s *structToolAdapter[T]) Parameters() *JSONSchema {
+	schema, _ := GenerateSchema[T]()
+	return schema
+}
+
+func (s *structToolAdapter[T]) Execute(ctx context.Context, args map[string]any) (any, error) {
+	jsonBytes, err := json.Marshal(args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal arguments: %w", err)
+	}
+
+	var typedArgs T
+	if err := json.Unmarshal(jsonBytes, &typedArgs); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal arguments to %T: %w", typedArgs, err)
+	}
+
+	return s.impl.Execute(ctx, typedArgs)
+}
+
+// NewStructuredTool wraps a StructTool[T] into a standard Tool
+func NewStructuredTool[T any](impl StructTool[T]) Tool {
+	return &structToolAdapter[T]{
+		impl: impl,
+	}
 }
 
 // ToolFunc is a function signature that can be wrapped as a Tool
@@ -162,6 +212,132 @@ func (b *ToolBuilder) AddFunc(name, description string, fn ToolFunc) *ToolBuilde
 func (b *ToolBuilder) AddTool(tool Tool) *ToolBuilder {
 	b.tools = append(b.tools, tool)
 	return b
+}
+
+// AddService inspects the given instance for exported methods and registers them as tools.
+// It looks for methods with the signature: func (ctx context.Context, args StructType) (any, error)
+// It uses "Description" method if available to map method names to descriptions.
+func (b *ToolBuilder) AddService(instance any) *ToolBuilder {
+	val := reflect.ValueOf(instance)
+	typ := val.Type()
+
+	// Check if instance implements a Description() map[string]string method
+	descriptions := make(map[string]string)
+	if descMethod := val.MethodByName("Description"); descMethod.IsValid() {
+		// Expect signature: func() map[string]string
+		if descMethod.Type().NumIn() == 0 && descMethod.Type().NumOut() == 1 {
+			if descMethod.Type().Out(0).Kind() == reflect.Map {
+				results := descMethod.Call(nil)
+				if m, ok := results[0].Interface().(map[string]string); ok {
+					descriptions = m
+				}
+			}
+		}
+	}
+
+	for i := 0; i < val.NumMethod(); i++ {
+		method := val.Method(i)
+		methodType := method.Type()
+		structMethod := typ.Method(i)
+		methodName := structMethod.Name
+
+		// Skip unexported methods or the Description method itself
+		// PkgPath is empty for exported methods
+		if structMethod.PkgPath != "" || methodName == "Description" {
+			continue
+		}
+
+		// Expect signature: func (ctx context.Context, args StructType) (any, error)
+		if methodType.NumIn() != 2 || methodType.NumOut() != 2 {
+			continue
+		}
+
+		// Check first arg is Context
+		if methodType.In(0).Name() != "Context" && !methodType.In(0).Implements(reflect.TypeOf((*context.Context)(nil)).Elem()) {
+			continue
+		}
+
+		// Check return types: (any, error)
+		if !methodType.Out(1).Implements(reflect.TypeOf((*error)(nil)).Elem()) {
+			continue
+		}
+
+		// Get argument type
+		argType := methodType.In(1)
+
+		// Create a wrapper function that calls the method via reflection
+		// We need to capture 'method' and 'argType' in the closure
+		toolName := toSnakeCase(methodName)
+		toolDesc := descriptions[methodName]
+		if toolDesc == "" {
+			toolDesc = fmt.Sprintf("Execute %s", methodName)
+		}
+
+		// Use NewTool with a dynamic execution wrapper
+		// Since we can't instantiate generic NewTool[T] with a runtime type easily without reflection trickery,
+		// we'll implement a custom Tool for this reflection-based method.
+
+		b.tools = append(b.tools, &reflectionTool{
+			name:        toolName,
+			description: toolDesc,
+			method:      method,
+			argType:     argType,
+		})
+	}
+
+	return b
+}
+
+// reflectionTool adapts a reflected method to the Tool interface
+type reflectionTool struct {
+	name        string
+	description string
+	method      reflect.Value
+	argType     reflect.Type
+}
+
+func (r *reflectionTool) Name() string        { return r.name }
+func (r *reflectionTool) Description() string { return r.description }
+
+func (r *reflectionTool) Parameters() *JSONSchema {
+	schema, _ := GenerateSchemaReflect(r.argType)
+	return schema
+}
+
+func (r *reflectionTool) Execute(ctx context.Context, args map[string]any) (any, error) {
+	// 1. Marshal args to JSON
+	jsonBytes, err := json.Marshal(args)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Unmarshal to the specific arg struct type
+	argVal := reflect.New(r.argType) // pointer to new instance
+	if err := json.Unmarshal(jsonBytes, argVal.Interface()); err != nil {
+		return nil, err
+	}
+
+	// 3. Call method: func(ctx, args)
+	results := r.method.Call([]reflect.Value{reflect.ValueOf(ctx), argVal.Elem()})
+
+	// 4. Handle returns: (any, error)
+	res := results[0].Interface()
+	errVal := results[1].Interface()
+
+	if errVal != nil {
+		return res, errVal.(error)
+	}
+	return res, nil
+}
+
+// toSnakeCase converts "CamelCase" to "camel_case"
+func toSnakeCase(str string) string {
+	matchFirstCap := regexp.MustCompile("(.)([A-Z][a-z]+)")
+	matchAllCap := regexp.MustCompile("([a-z0-9])([A-Z])")
+
+	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
+	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
+	return strings.ToLower(snake)
 }
 
 // Build returns the final slice of tools

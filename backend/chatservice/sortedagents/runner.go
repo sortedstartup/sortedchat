@@ -122,13 +122,27 @@ func convertToolsToDefinitions(tools []Tool) []ToolDefinition {
 	definitions := make([]ToolDefinition, len(tools))
 	for i, tool := range tools {
 		params := tool.Parameters()
-		
+
 		// Auto-detect Strict Mode compatibility
-		// If properties are present, we enforce strict mode.
-		// If properties are empty (e.g. no args), we disable strict mode.
+		// OpenAI Strict Mode requires:
+		// 1. additionalProperties: false
+		// 2. All properties must be in the 'required' array
 		isStrict := false
-		if params != nil && params.Properties != nil && len(params.Properties) > 0 {
-			isStrict = true
+		if params != nil && params.Properties != nil {
+			// Check if additionalProperties is explicitly false
+			if params.AdditionalProperties != nil && !*params.AdditionalProperties {
+				// Check if all properties are in Required
+				if len(params.Properties) == len(params.Required) {
+					isStrict = true
+					// Double check that every property key exists in Required
+					// (Simple length check is usually enough if we trust the generator,
+					// but for robustness we could verify contents. For now length is a good proxy
+					// assuming no duplicates in Required).
+
+					// However, if the schema comes from MCP, 'Required' might be missing optional fields.
+					// So strict mode is only valid if EVERY property is required.
+				}
+			}
 		}
 
 		definitions[i] = ToolDefinition{
@@ -425,7 +439,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 			slog.Debug("%s -> %d tools", agent.Model(), len(assistantMessage.ToolCalls))
 
 			for _, toolCall := range assistantMessage.ToolCalls {
-			// Parse tool arguments
+				// Parse tool arguments
 				var args map[string]interface{}
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
 					eventChan <- &ErrorEvent{Error: fmt.Errorf("failed to parse tool arguments: %v", err)}

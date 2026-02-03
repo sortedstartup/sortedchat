@@ -48,11 +48,13 @@ func (s JSONSchema) MarshalJSON() ([]byte, error) {
 
 // GenerateSchema creates a JSON schema parameters map from a struct type
 // Returns the schema and a boolean indicating if the schema is compatible with Strict Mode
-// (i.e., it has at least one property). Empty structs cannot be Strict.
 func GenerateSchema[T any]() (*JSONSchema, bool) {
 	var zero T
-	t := reflect.TypeOf(zero)
+	return GenerateSchemaReflect(reflect.TypeOf(zero))
+}
 
+// GenerateSchemaReflect generates a JSON schema from a reflect.Type
+func GenerateSchemaReflect(t reflect.Type) (*JSONSchema, bool) {
 	// Handle pointer types
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -130,22 +132,16 @@ func GenerateSchema[T any]() (*JSONSchema, bool) {
 		properties[name] = schema
 
 		// In Strict Mode, all properties MUST be required.
-		// We ignore 'omitempty' for the purpose of the 'required' array in the schema.
 		required = append(required, name)
 	}
-
-	// OpenAI Strict Mode limitation: Objects must have at least one property.
-	// If the struct is empty, we must disable Strict Mode for this tool.
-	isStrictCompatible := len(properties) > 0
-    // DEBUG PRINT
-    if len(properties) == 0 {
-       // println("GenerateSchema: Empty properties for type", t.Name(), "Strict:", isStrictCompatible)
-    }
 
 	schema := &JSONSchema{
 		Type:       "object",
 		Properties: properties,
 	}
+
+	// OpenAI Strict Mode limitation: Objects must have at least one property.
+	isStrictCompatible := len(properties) > 0
 
 	if isStrictCompatible {
 		f := false

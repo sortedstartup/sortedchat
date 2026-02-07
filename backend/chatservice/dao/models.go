@@ -137,6 +137,7 @@ type AgentRow struct {
 	Provider     string `db:"provider" json:"provider"`
 	Model        string `db:"model" json:"model"`
 	LocalTools   string `db:"local_tools" json:"local_tools"`
+	MCPServers   string `db:"mcp_servers" json:"mcp_servers"` // JSON string
 	CreatedAt    string `db:"created_at" json:"created_at"`
 	UpdatedAt    string `db:"updated_at" json:"updated_at"`
 }

@@ -535,6 +535,29 @@ service AgentService {
   // TODO: how do agent produce artifacts ? how to show ? store them ?
 }
 
+// MCP Server Configuration
+message MCPServer {
+  string server_name = 1;
+  bool is_enabled = 2;
+  
+  oneof transport {
+    MCPStdio stdio = 3;
+    MCPHttp http = 4;
+  }
+}
+
+message MCPStdio {
+  string command = 1;
+  repeated string arguments = 2;
+  map<string, string> environment_variables = 3;
+}
+
+message MCPHttp {
+  string url = 1;
+  map<string, string> headers = 2;
+  int32 timeout_seconds = 3;
+}
+
 message CreateAgentRequest {
   string name = 1;
 
@@ -547,6 +570,8 @@ message CreateAgentRequest {
   string model = 4;
 
   repeated string local_tools = 6;
+  
+  repeated MCPServer mcp_servers = 7;
 }
 
 message Agent {
@@ -575,6 +600,8 @@ message Agent {
   // tools
   repeated string local_tools = 8;
  // repeated string remote_tools = 9;
+  
+  repeated MCPServer mcp_servers = 10;
 }
 
 message CreateAgentResponse {
@@ -595,6 +622,7 @@ message UpdateAgentRequest {
   string system_prompt = 4;
   string provider = 5;
   string model = 6;
+  repeated MCPServer mcp_servers = 7;
 }
 
 message UpdateAgentResponse {

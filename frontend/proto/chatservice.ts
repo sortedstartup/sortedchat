@@ -7273,6 +7273,408 @@ export class ListModelsResponse extends pb_1.Message {
         return ListModelsResponse.deserialize(bytes);
     }
 }
+export class MCPServer extends pb_1.Message {
+    #one_of_decls: number[][] = [[3, 4]];
+    constructor(data?: any[] | ({
+        server_name?: string;
+        is_enabled?: boolean;
+    } & (({
+        stdio?: MCPStdio;
+        http?: never;
+    } | {
+        stdio?: never;
+        http?: MCPHttp;
+    })))) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("server_name" in data && data.server_name != undefined) {
+                this.server_name = data.server_name;
+            }
+            if ("is_enabled" in data && data.is_enabled != undefined) {
+                this.is_enabled = data.is_enabled;
+            }
+            if ("stdio" in data && data.stdio != undefined) {
+                this.stdio = data.stdio;
+            }
+            if ("http" in data && data.http != undefined) {
+                this.http = data.http;
+            }
+        }
+    }
+    get server_name() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set server_name(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get is_enabled() {
+        return pb_1.Message.getFieldWithDefault(this, 2, false) as boolean;
+    }
+    set is_enabled(value: boolean) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get stdio() {
+        return pb_1.Message.getWrapperField(this, MCPStdio, 3) as MCPStdio;
+    }
+    set stdio(value: MCPStdio) {
+        pb_1.Message.setOneofWrapperField(this, 3, this.#one_of_decls[0], value);
+    }
+    get has_stdio() {
+        return pb_1.Message.getField(this, 3) != null;
+    }
+    get http() {
+        return pb_1.Message.getWrapperField(this, MCPHttp, 4) as MCPHttp;
+    }
+    set http(value: MCPHttp) {
+        pb_1.Message.setOneofWrapperField(this, 4, this.#one_of_decls[0], value);
+    }
+    get has_http() {
+        return pb_1.Message.getField(this, 4) != null;
+    }
+    get transport() {
+        const cases: {
+            [index: number]: "none" | "stdio" | "http";
+        } = {
+            0: "none",
+            3: "stdio",
+            4: "http"
+        };
+        return cases[pb_1.Message.computeOneofCase(this, [3, 4])];
+    }
+    static fromObject(data: {
+        server_name?: string;
+        is_enabled?: boolean;
+        stdio?: ReturnType<typeof MCPStdio.prototype.toObject>;
+        http?: ReturnType<typeof MCPHttp.prototype.toObject>;
+    }): MCPServer {
+        const message = new MCPServer({});
+        if (data.server_name != null) {
+            message.server_name = data.server_name;
+        }
+        if (data.is_enabled != null) {
+            message.is_enabled = data.is_enabled;
+        }
+        if (data.stdio != null) {
+            message.stdio = MCPStdio.fromObject(data.stdio);
+        }
+        if (data.http != null) {
+            message.http = MCPHttp.fromObject(data.http);
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            server_name?: string;
+            is_enabled?: boolean;
+            stdio?: ReturnType<typeof MCPStdio.prototype.toObject>;
+            http?: ReturnType<typeof MCPHttp.prototype.toObject>;
+        } = {};
+        if (this.server_name != null) {
+            data.server_name = this.server_name;
+        }
+        if (this.is_enabled != null) {
+            data.is_enabled = this.is_enabled;
+        }
+        if (this.stdio != null) {
+            data.stdio = this.stdio.toObject();
+        }
+        if (this.http != null) {
+            data.http = this.http.toObject();
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.server_name.length)
+            writer.writeString(1, this.server_name);
+        if (this.is_enabled != false)
+            writer.writeBool(2, this.is_enabled);
+        if (this.has_stdio)
+            writer.writeMessage(3, this.stdio, () => this.stdio.serialize(writer));
+        if (this.has_http)
+            writer.writeMessage(4, this.http, () => this.http.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): MCPServer {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new MCPServer();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.server_name = reader.readString();
+                    break;
+                case 2:
+                    message.is_enabled = reader.readBool();
+                    break;
+                case 3:
+                    reader.readMessage(message.stdio, () => message.stdio = MCPStdio.deserialize(reader));
+                    break;
+                case 4:
+                    reader.readMessage(message.http, () => message.http = MCPHttp.deserialize(reader));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): MCPServer {
+        return MCPServer.deserialize(bytes);
+    }
+}
+export class MCPStdio extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        command?: string;
+        arguments?: string[];
+        environment_variables?: Map<string, string>;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [2], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("command" in data && data.command != undefined) {
+                this.command = data.command;
+            }
+            if ("arguments" in data && data.arguments != undefined) {
+                this.arguments = data.arguments;
+            }
+            if ("environment_variables" in data && data.environment_variables != undefined) {
+                this.environment_variables = data.environment_variables;
+            }
+        }
+        if (!this.environment_variables)
+            this.environment_variables = new Map();
+    }
+    get command() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set command(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get arguments() {
+        return pb_1.Message.getFieldWithDefault(this, 2, []) as string[];
+    }
+    set arguments(value: string[]) {
+        pb_1.Message.setField(this, 2, value);
+    }
+    get environment_variables() {
+        return pb_1.Message.getField(this, 3) as any as Map<string, string>;
+    }
+    set environment_variables(value: Map<string, string>) {
+        pb_1.Message.setField(this, 3, value as any);
+    }
+    static fromObject(data: {
+        command?: string;
+        arguments?: string[];
+        environment_variables?: {
+            [key: string]: string;
+        };
+    }): MCPStdio {
+        const message = new MCPStdio({});
+        if (data.command != null) {
+            message.command = data.command;
+        }
+        if (data.arguments != null) {
+            message.arguments = data.arguments;
+        }
+        if (typeof data.environment_variables == "object") {
+            message.environment_variables = new Map(Object.entries(data.environment_variables));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            command?: string;
+            arguments?: string[];
+            environment_variables?: {
+                [key: string]: string;
+            };
+        } = {};
+        if (this.command != null) {
+            data.command = this.command;
+        }
+        if (this.arguments != null) {
+            data.arguments = this.arguments;
+        }
+        if (this.environment_variables != null) {
+            data.environment_variables = (Object.fromEntries)(this.environment_variables);
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.command.length)
+            writer.writeString(1, this.command);
+        if (this.arguments.length)
+            writer.writeRepeatedString(2, this.arguments);
+        for (const [key, value] of this.environment_variables) {
+            writer.writeMessage(3, this.environment_variables, () => {
+                writer.writeString(1, key);
+                writer.writeString(2, value);
+            });
+        }
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): MCPStdio {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new MCPStdio();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.command = reader.readString();
+                    break;
+                case 2:
+                    pb_1.Message.addToRepeatedField(message, 2, reader.readString());
+                    break;
+                case 3:
+                    reader.readMessage(message, () => pb_1.Map.deserializeBinary(message.environment_variables as any, reader, reader.readString, reader.readString));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): MCPStdio {
+        return MCPStdio.deserialize(bytes);
+    }
+}
+export class MCPHttp extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        url?: string;
+        headers?: Map<string, string>;
+        timeout_seconds?: number;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("url" in data && data.url != undefined) {
+                this.url = data.url;
+            }
+            if ("headers" in data && data.headers != undefined) {
+                this.headers = data.headers;
+            }
+            if ("timeout_seconds" in data && data.timeout_seconds != undefined) {
+                this.timeout_seconds = data.timeout_seconds;
+            }
+        }
+        if (!this.headers)
+            this.headers = new Map();
+    }
+    get url() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set url(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    get headers() {
+        return pb_1.Message.getField(this, 2) as any as Map<string, string>;
+    }
+    set headers(value: Map<string, string>) {
+        pb_1.Message.setField(this, 2, value as any);
+    }
+    get timeout_seconds() {
+        return pb_1.Message.getFieldWithDefault(this, 3, 0) as number;
+    }
+    set timeout_seconds(value: number) {
+        pb_1.Message.setField(this, 3, value);
+    }
+    static fromObject(data: {
+        url?: string;
+        headers?: {
+            [key: string]: string;
+        };
+        timeout_seconds?: number;
+    }): MCPHttp {
+        const message = new MCPHttp({});
+        if (data.url != null) {
+            message.url = data.url;
+        }
+        if (typeof data.headers == "object") {
+            message.headers = new Map(Object.entries(data.headers));
+        }
+        if (data.timeout_seconds != null) {
+            message.timeout_seconds = data.timeout_seconds;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            url?: string;
+            headers?: {
+                [key: string]: string;
+            };
+            timeout_seconds?: number;
+        } = {};
+        if (this.url != null) {
+            data.url = this.url;
+        }
+        if (this.headers != null) {
+            data.headers = (Object.fromEntries)(this.headers);
+        }
+        if (this.timeout_seconds != null) {
+            data.timeout_seconds = this.timeout_seconds;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.url.length)
+            writer.writeString(1, this.url);
+        for (const [key, value] of this.headers) {
+            writer.writeMessage(2, this.headers, () => {
+                writer.writeString(1, key);
+                writer.writeString(2, value);
+            });
+        }
+        if (this.timeout_seconds != 0)
+            writer.writeInt32(3, this.timeout_seconds);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): MCPHttp {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new MCPHttp();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.url = reader.readString();
+                    break;
+                case 2:
+                    reader.readMessage(message, () => pb_1.Map.deserializeBinary(message.headers as any, reader, reader.readString, reader.readString));
+                    break;
+                case 3:
+                    message.timeout_seconds = reader.readInt32();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): MCPHttp {
+        return MCPHttp.deserialize(bytes);
+    }
+}
 export class CreateAgentRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -7282,9 +7684,10 @@ export class CreateAgentRequest extends pb_1.Message {
         provider?: string;
         model?: string;
         local_tools?: string[];
+        mcp_servers?: MCPServer[];
     }) {
         super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [6], this.#one_of_decls);
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [6, 7], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("name" in data && data.name != undefined) {
                 this.name = data.name;
@@ -7303,6 +7706,9 @@ export class CreateAgentRequest extends pb_1.Message {
             }
             if ("local_tools" in data && data.local_tools != undefined) {
                 this.local_tools = data.local_tools;
+            }
+            if ("mcp_servers" in data && data.mcp_servers != undefined) {
+                this.mcp_servers = data.mcp_servers;
             }
         }
     }
@@ -7342,6 +7748,12 @@ export class CreateAgentRequest extends pb_1.Message {
     set local_tools(value: string[]) {
         pb_1.Message.setField(this, 6, value);
     }
+    get mcp_servers() {
+        return pb_1.Message.getRepeatedWrapperField(this, MCPServer, 7) as MCPServer[];
+    }
+    set mcp_servers(value: MCPServer[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 7, value);
+    }
     static fromObject(data: {
         name?: string;
         description?: string;
@@ -7349,6 +7761,7 @@ export class CreateAgentRequest extends pb_1.Message {
         provider?: string;
         model?: string;
         local_tools?: string[];
+        mcp_servers?: ReturnType<typeof MCPServer.prototype.toObject>[];
     }): CreateAgentRequest {
         const message = new CreateAgentRequest({});
         if (data.name != null) {
@@ -7369,6 +7782,9 @@ export class CreateAgentRequest extends pb_1.Message {
         if (data.local_tools != null) {
             message.local_tools = data.local_tools;
         }
+        if (data.mcp_servers != null) {
+            message.mcp_servers = data.mcp_servers.map(item => MCPServer.fromObject(item));
+        }
         return message;
     }
     toObject() {
@@ -7379,6 +7795,7 @@ export class CreateAgentRequest extends pb_1.Message {
             provider?: string;
             model?: string;
             local_tools?: string[];
+            mcp_servers?: ReturnType<typeof MCPServer.prototype.toObject>[];
         } = {};
         if (this.name != null) {
             data.name = this.name;
@@ -7398,6 +7815,9 @@ export class CreateAgentRequest extends pb_1.Message {
         if (this.local_tools != null) {
             data.local_tools = this.local_tools;
         }
+        if (this.mcp_servers != null) {
+            data.mcp_servers = this.mcp_servers.map((item: MCPServer) => item.toObject());
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -7416,6 +7836,8 @@ export class CreateAgentRequest extends pb_1.Message {
             writer.writeString(4, this.model);
         if (this.local_tools.length)
             writer.writeRepeatedString(6, this.local_tools);
+        if (this.mcp_servers.length)
+            writer.writeRepeatedMessage(7, this.mcp_servers, (item: MCPServer) => item.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -7443,6 +7865,9 @@ export class CreateAgentRequest extends pb_1.Message {
                 case 6:
                     pb_1.Message.addToRepeatedField(message, 6, reader.readString());
                     break;
+                case 7:
+                    reader.readMessage(message.mcp_servers, () => pb_1.Message.addToRepeatedWrapperField(message, 7, MCPServer.deserialize(reader), MCPServer));
+                    break;
                 default: reader.skipField();
             }
         }
@@ -7465,9 +7890,10 @@ export class Agent extends pb_1.Message {
         provider?: string;
         model?: string;
         local_tools?: string[];
+        mcp_servers?: MCPServer[];
     }) {
         super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [8], this.#one_of_decls);
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [8, 10], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("id" in data && data.id != undefined) {
                 this.id = data.id;
@@ -7489,6 +7915,9 @@ export class Agent extends pb_1.Message {
             }
             if ("local_tools" in data && data.local_tools != undefined) {
                 this.local_tools = data.local_tools;
+            }
+            if ("mcp_servers" in data && data.mcp_servers != undefined) {
+                this.mcp_servers = data.mcp_servers;
             }
         }
     }
@@ -7534,6 +7963,12 @@ export class Agent extends pb_1.Message {
     set local_tools(value: string[]) {
         pb_1.Message.setField(this, 8, value);
     }
+    get mcp_servers() {
+        return pb_1.Message.getRepeatedWrapperField(this, MCPServer, 10) as MCPServer[];
+    }
+    set mcp_servers(value: MCPServer[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 10, value);
+    }
     static fromObject(data: {
         id?: string;
         name?: string;
@@ -7542,6 +7977,7 @@ export class Agent extends pb_1.Message {
         provider?: string;
         model?: string;
         local_tools?: string[];
+        mcp_servers?: ReturnType<typeof MCPServer.prototype.toObject>[];
     }): Agent {
         const message = new Agent({});
         if (data.id != null) {
@@ -7565,6 +8001,9 @@ export class Agent extends pb_1.Message {
         if (data.local_tools != null) {
             message.local_tools = data.local_tools;
         }
+        if (data.mcp_servers != null) {
+            message.mcp_servers = data.mcp_servers.map(item => MCPServer.fromObject(item));
+        }
         return message;
     }
     toObject() {
@@ -7576,6 +8015,7 @@ export class Agent extends pb_1.Message {
             provider?: string;
             model?: string;
             local_tools?: string[];
+            mcp_servers?: ReturnType<typeof MCPServer.prototype.toObject>[];
         } = {};
         if (this.id != null) {
             data.id = this.id;
@@ -7598,6 +8038,9 @@ export class Agent extends pb_1.Message {
         if (this.local_tools != null) {
             data.local_tools = this.local_tools;
         }
+        if (this.mcp_servers != null) {
+            data.mcp_servers = this.mcp_servers.map((item: MCPServer) => item.toObject());
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -7618,6 +8061,8 @@ export class Agent extends pb_1.Message {
             writer.writeString(6, this.model);
         if (this.local_tools.length)
             writer.writeRepeatedString(8, this.local_tools);
+        if (this.mcp_servers.length)
+            writer.writeRepeatedMessage(10, this.mcp_servers, (item: MCPServer) => item.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -7647,6 +8092,9 @@ export class Agent extends pb_1.Message {
                     break;
                 case 8:
                     pb_1.Message.addToRepeatedField(message, 8, reader.readString());
+                    break;
+                case 10:
+                    reader.readMessage(message.mcp_servers, () => pb_1.Message.addToRepeatedWrapperField(message, 10, MCPServer.deserialize(reader), MCPServer));
                     break;
                 default: reader.skipField();
             }
@@ -7866,9 +8314,10 @@ export class UpdateAgentRequest extends pb_1.Message {
         system_prompt?: string;
         provider?: string;
         model?: string;
+        mcp_servers?: MCPServer[];
     }) {
         super();
-        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [7], this.#one_of_decls);
         if (!Array.isArray(data) && typeof data == "object") {
             if ("agent_id" in data && data.agent_id != undefined) {
                 this.agent_id = data.agent_id;
@@ -7887,6 +8336,9 @@ export class UpdateAgentRequest extends pb_1.Message {
             }
             if ("model" in data && data.model != undefined) {
                 this.model = data.model;
+            }
+            if ("mcp_servers" in data && data.mcp_servers != undefined) {
+                this.mcp_servers = data.mcp_servers;
             }
         }
     }
@@ -7926,6 +8378,12 @@ export class UpdateAgentRequest extends pb_1.Message {
     set model(value: string) {
         pb_1.Message.setField(this, 6, value);
     }
+    get mcp_servers() {
+        return pb_1.Message.getRepeatedWrapperField(this, MCPServer, 7) as MCPServer[];
+    }
+    set mcp_servers(value: MCPServer[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 7, value);
+    }
     static fromObject(data: {
         agent_id?: string;
         name?: string;
@@ -7933,6 +8391,7 @@ export class UpdateAgentRequest extends pb_1.Message {
         system_prompt?: string;
         provider?: string;
         model?: string;
+        mcp_servers?: ReturnType<typeof MCPServer.prototype.toObject>[];
     }): UpdateAgentRequest {
         const message = new UpdateAgentRequest({});
         if (data.agent_id != null) {
@@ -7953,6 +8412,9 @@ export class UpdateAgentRequest extends pb_1.Message {
         if (data.model != null) {
             message.model = data.model;
         }
+        if (data.mcp_servers != null) {
+            message.mcp_servers = data.mcp_servers.map(item => MCPServer.fromObject(item));
+        }
         return message;
     }
     toObject() {
@@ -7963,6 +8425,7 @@ export class UpdateAgentRequest extends pb_1.Message {
             system_prompt?: string;
             provider?: string;
             model?: string;
+            mcp_servers?: ReturnType<typeof MCPServer.prototype.toObject>[];
         } = {};
         if (this.agent_id != null) {
             data.agent_id = this.agent_id;
@@ -7982,6 +8445,9 @@ export class UpdateAgentRequest extends pb_1.Message {
         if (this.model != null) {
             data.model = this.model;
         }
+        if (this.mcp_servers != null) {
+            data.mcp_servers = this.mcp_servers.map((item: MCPServer) => item.toObject());
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -8000,6 +8466,8 @@ export class UpdateAgentRequest extends pb_1.Message {
             writer.writeString(5, this.provider);
         if (this.model.length)
             writer.writeString(6, this.model);
+        if (this.mcp_servers.length)
+            writer.writeRepeatedMessage(7, this.mcp_servers, (item: MCPServer) => item.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -8026,6 +8494,9 @@ export class UpdateAgentRequest extends pb_1.Message {
                     break;
                 case 6:
                     message.model = reader.readString();
+                    break;
+                case 7:
+                    reader.readMessage(message.mcp_servers, () => pb_1.Message.addToRepeatedWrapperField(message, 7, MCPServer.deserialize(reader), MCPServer));
                     break;
                 default: reader.skipField();
             }

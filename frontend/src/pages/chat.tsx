@@ -218,7 +218,7 @@ const Message = React.memo(function Message({
           </div>
         )}
 
-        <div className={`flex-1 min-w-0 ${isUser ? "text-right" : "text-left"}`}>
+        <div className={`flex-1 min-w-0 text-left`}>
           {isProgress ? (
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -711,13 +711,13 @@ export function Chat() {
   const isUserScrolledUpRef = useRef(false);
 
   // Show progress as assistant message when there's progress but no streaming content yet
-  const showProgressAsMessage = useMemo(() => 
-    chatProgress && !streamingMessage?.trim(), 
+  const showProgressAsMessage = useMemo(() =>
+    chatProgress && !streamingMessage?.trim(),
     [chatProgress, streamingMessage]
   );
 
   const chatIdRef = useRef(chatId);
-  
+
   useEffect(() => {
     chatIdRef.current = chatId;
     if (chatId) {
@@ -880,7 +880,7 @@ export function Chat() {
           )}
 
           <div ref={messagesEndRef} />
-          
+
           {/* Error Display */}
           {currentChatError && (
             <div className="w-full px-4 py-4">
@@ -891,7 +891,7 @@ export function Chat() {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 </div>
-                
+
                 {/* Error content */}
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold text-red-800 dark:text-red-300">
@@ -900,7 +900,7 @@ export function Chat() {
                   <p className="mt-1 text-sm text-red-700 dark:text-red-400">
                     {currentChatError.message}
                   </p>
-                  
+
                   {/* Action button for provider configuration errors */}
                   {currentChatError.type === 0 && (
                     <Button
@@ -913,7 +913,7 @@ export function Chat() {
                     </Button>
                   )}
                 </div>
-                
+
                 {/* Close button */}
                 <button
                   onClick={() => $currentChatError.set(null)}
@@ -925,7 +925,7 @@ export function Chat() {
               </div>
             </div>
           )}
-          
+
           {listChatBranch.length > 0 && (
             <div className="bg-muted border-t border-border py-4 px-4">
               <div className="w-full max-w-none px-4">

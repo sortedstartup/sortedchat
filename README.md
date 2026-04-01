@@ -124,3 +124,11 @@ CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
 ```
 
 **Application will be available at:** http://localhost:5173
+
+#### 4. Run Desktop App (Dev Mode)
+To run the native desktop application with hot-reloading:
+
+```bash
+cd backend/mono
+wails dev -tags "sqlite_fts5,dev,webkit2_41,wails" -s -v 2
+```

@@ -1,11 +1,13 @@
 # SortedChat
 
-- Chat with multiple cloud models (OpenAI, Gemini, Claude)
-- Chat with local models (via Ollama / llama.cpp)
+- Chat with multiple cloud models (OpenAI, Gemini, Claude) using API key
+- Chat with local models (via Ollama / llama.cpp) - download inside sortedchat with single click
 - Chat with docs — upload documents and chat in a project context (RAG)
-- Agentic chat
-- Branch a chat — fork any conversation and explore different directions
-- Realtime audio chat — talk to the LLM in real time
+- Agents
+   - Create and run agents with any of the above models
+   - Support for MCP servers 
+- Branch a chat — fork any conversation and explore tangents
+- Realtime audio chat — chat with models that support realtime direct audio output
 
 ---
 

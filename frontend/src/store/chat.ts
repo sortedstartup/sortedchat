@@ -748,7 +748,7 @@ export async function BranchChat(branch_from_message_id: string) {
       $currentChatId.set(res.new_chat_id);
 
     } else {
-      toast.error("Failed to create branch: No chat ID returned");
+      toast.error(res.message);
     }
   } catch (error) {
     console.error('Failed to branch chat:', error);

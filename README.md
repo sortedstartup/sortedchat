@@ -111,7 +111,7 @@ git clone https://github.com/sortedstartup/sortedchat.git
 cd sortedchat
 ```
 
-#### 2. Build Frontend 
+#### 2. Run Frontend 
 ```bash
 cd frontend
 pnpm install

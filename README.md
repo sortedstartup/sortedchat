@@ -11,7 +11,7 @@
 
 ## Two Ways to Run
 - **Web App** — runs as a backend server; access via browser at `http://localhost:8080`
-- **Desktop App** — runs as a native GUI application (no browser needed)
+- **Desktop App** — runs as a native GUI application
 
 ---
 
@@ -102,8 +102,6 @@ docker run -d \
 Open `http://localhost:8080` in your browser.
 
 ## Development Setup
-
-### Run as Web App
 
 #### 1. Clone Repository
 ```bash

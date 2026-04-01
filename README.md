@@ -1,5 +1,6 @@
 # SortedChat
 
+- Cross platform, single binary, uses sqlite by default (no db server needed) or use postgres
 - Chat with multiple cloud models (OpenAI, Gemini, Claude) using API key
 - Chat with local models (via Ollama / llama.cpp) - download inside sortedchat with single click
 - Chat with docs — upload documents and chat in a project context (RAG)

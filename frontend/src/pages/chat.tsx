@@ -180,7 +180,7 @@ const Message = React.memo(function Message({
   message,
   onCopyMessage,
   onViewRAGDetails,
-  // onBranchChat, //temporarily hiding it for this release only
+  onBranchChat,
   isCopied,
   projectId,
   isExpanded,
@@ -320,14 +320,14 @@ const Message = React.memo(function Message({
                 </Button>
 
                 {/* Temporarily hiding it for this release only */}
-                {/* <Button
+                <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onBranchChat(message.message_id)}
                   className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Branch Chat
-                </Button> */}
+                </Button>
               </div>
 
               <div

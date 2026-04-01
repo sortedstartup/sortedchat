@@ -71,9 +71,6 @@ The app opens directly
 
 ---
 
-
-## Run using Docker
-
 ## Run using Docker
 
 You have to pass your own `ui-config.json` using a volume mount.
@@ -103,3 +100,29 @@ docker run -d \
 ```
 
 Open `http://localhost:8080` in your browser.
+
+## Development Setup
+
+### Run as Web App
+
+#### 1. Clone Repository
+```bash
+git clone https://github.com/sortedstartup/sortedchat.git
+cd sortedchat
+```
+
+#### 2. Build Frontend 
+```bash
+cd frontend
+pnpm install
+pnpm run dev
+cd ..
+```
+
+#### 3. Run Backend
+```bash
+cd backend
+CGO_CFLAGS="-I$(pwd)/sqlite3" go run -tags "sqlite_fts5" ./mono/
+```
+
+**Application will be available at:** http://localhost:5173

@@ -173,7 +173,12 @@ export const GetAllProviderSettings = async () => {
     const req = new GetAllProviderSettingsRequest({});
     const res: GetAllProviderSettingsResponse = await getClient().GetAllProviderSettings(req, {});
 
-    $providerSettings.set(res.settings as Map<string, ProviderSettings>);
+    const settings = res.settings;
+    if (settings instanceof Map) {
+      $providerSettings.set(settings);
+    } else {
+      $providerSettings.set(new Map(Object.entries(settings || {})));
+    }
     $isLoadingProviderSettings.set(false);
   } catch (error) {
     console.error("Failed to fetch provider settings:", error);

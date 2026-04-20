@@ -12,6 +12,7 @@ import {
 } from '../../store/setting';
 import { ModelCard } from '@/components/model-card';
 import { ProviderSettings } from '../../../proto/chatservice';
+import { AddModelDialog } from '@/components/add-model-dialog';
 
 interface ProviderViewProps {
     providerName: string;
@@ -37,6 +38,7 @@ export const ProviderView = ({
     const [apiUrl, setApiUrl] = useState('');
     const [apiKey, setApiKey] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Get current provider settings
     const currentProviderSettings = providerSettings.get(providerName);
@@ -98,27 +100,49 @@ export const ProviderView = ({
                     </p>
                 </div>
 
-                <button
-                    onClick={handleRefresh}
-                    disabled={isLoading}
-                    className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-primary-foreground rounded-md transition-colors"
-                >
-                    <svg
-                        className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-md transition-colors"
                     >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                        />
-                    </svg>
-                    <span>{isLoading ? 'Refreshing...' : 'Refresh'}</span>
-                </button>
+                        <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Add Model</span>
+                    </button>
+                    <button
+                        onClick={handleRefresh}
+                        disabled={isLoading}
+                        className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-primary-foreground rounded-md transition-colors"
+                    >
+                        <svg
+                            className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                        </svg>
+                        <span>{isLoading ? 'Refreshing...' : 'Refresh'}</span>
+                    </button>
+                </div>
             </div>
+
+            <AddModelDialog
+                providerName={providerName}
+                isOpen={isAddModalOpen}
+                onOpenChange={setIsAddModalOpen}
+            />
 
             {/* Provider Settings - Hide for local provider if needed, but logic in original file showed it only if not local */}
             {providerName !== 'local' && (
@@ -139,6 +163,9 @@ export const ProviderView = ({
                                 className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                 placeholder={defaultApiUrl}
                             />
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                                Note: Use OpenAI chat completions API compatible endpoint only
+                            </p>
                         </div>
 
                         <div>

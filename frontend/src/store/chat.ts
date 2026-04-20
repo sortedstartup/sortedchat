@@ -36,12 +36,14 @@ import {
   ListModelsRequest,
   ModelListInfo,
   ChatError,
+  AddModelRequest,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { getUIConfig } from "../lib/config";
 import type { ClientReadableStream } from "grpc-web";
-// import { $llmModels, $selectedModel } from "./inference";
+import { ListLLMModels } from "./inference";
+import { $providerSettings } from "./setting";
 
 let _chatClient: SortedChatClient | undefined;
 
@@ -920,3 +922,23 @@ export const RenameChat = async (chatId: string, name: string) => {
 export const RenameProject = async (projectId: string, name: string) => {
   return RenameItem(projectId, name, RenameItemRequestItemType.PROJECT);
 }
+
+export const addModel = async (req: AddModelRequest): Promise<string> => {
+  try {
+    const providerSettings = $providerSettings.get();
+    const settings = providerSettings.get(req.provider_name);
+    req.url = settings?.api_url || "";
+
+    const res = await getChatClient().AddModel(req, {});
+
+
+    toast.success(res.message || "Model added successfully");
+    await fetchAvailableModels();
+    await ListLLMModels();
+    return res.message ?? "Model added successfully";
+  } catch (error) {
+    console.error("Failed to add model:", error);
+    toast.error(`Failed to add model: ${(error as Error).message || "Unknown error"}`);
+    throw error;
+  }
+};

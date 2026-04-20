@@ -736,18 +736,19 @@ func (s *SQLiteDAO) IsNameExists(userID string, chatId string, name string) (boo
 	return exists, nil
 }
 
-func (s *SQLiteDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
+func (s *SQLiteDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64, isEmbeddingModel bool) error {
 	_, err := s.db.Exec(`
-		INSERT INTO shared_models_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO shared_models_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost, is_embedding_model, is_downloaded, is_downloadable, progress, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
 			name = excluded.name,
 			url = excluded.url,
 			provider = excluded.provider,
 			input_token_cost = excluded.input_token_cost,
 			output_token_cost = excluded.output_token_cost,
-			cached_token_cost = excluded.cached_token_cost
-	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost)
+			cached_token_cost = excluded.cached_token_cost,
+			is_embedding_model = excluded.is_embedding_model
+	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost, isEmbeddingModel, false, false, "", 0)
 	if err != nil {
 		slog.Error("dao_sqlite:UpsertModel", "message", "failed to upsert model", "error", err, "modelID", modelID)
 		return fmt.Errorf("failed to upsert model")
@@ -891,7 +892,7 @@ func (s *SQLiteDAO) UpdateChatMessageDocumentReferences(userID string, messageID
 func (s *SQLiteDAO) GetModels() ([]*proto.ModelListInfo, error) {
 	var models []Models
 
-	err := s.db.Select(&models, "SELECT id, name, provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}') AS capabilities, is_embedding_model, is_downloaded, is_downloadable FROM shared_models_metadata")
+	err := s.db.Select(&models, "SELECT id, name, provider, url, COALESCE(input_token_cost, 0) as input_token_cost, COALESCE(output_token_cost, 0) as output_token_cost, COALESCE(cached_token_cost, 0) as cached_token_cost, COALESCE(capabilities, '{}') AS capabilities, COALESCE(is_embedding_model, 0) as is_embedding_model, COALESCE(is_downloaded, 0) as is_downloaded, COALESCE(is_downloadable, 0) as is_downloadable FROM shared_models_metadata")
 	if err != nil {
 		slog.Error("dao_sqlite:GetModels", "message", "failed to get models", "error", err)
 		return nil, fmt.Errorf("failed to get models")
@@ -913,6 +914,7 @@ func (s *SQLiteDAO) GetModels() ([]*proto.ModelListInfo, error) {
 			Url:              m.URL,
 			InputTokenCost:   m.InputTokenCost,
 			OutputTokenCost:  m.OutputTokenCost,
+			CachedTokenCost:  m.CachedTokenCost,
 			Capabilities:     capabilities,
 			IsDownloadable:   m.IsDownloadable,
 			IsDownloaded:     m.IsDownloaded,

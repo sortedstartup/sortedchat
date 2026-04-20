@@ -1672,6 +1672,31 @@ func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error
 	return models, nil
 }
 
+func (s *ChatService) AddModel(ctx context.Context, modelId, providerName, modelName string, inputTokenCost, outputTokenCost, cachedTokenCost int32, isEmbeddingModel bool, url string) (string, error) {
+	slog.Info("service:AddModel", "provider", providerName, "modelID", modelId)
+	if modelId == "" {
+		return "", fmt.Errorf("model_id is required")
+	}
+	if modelName == "" {
+		modelName = modelId
+	}
+	err := s.dao.UpsertModel(
+		modelId,
+		modelName,
+		url,
+		providerName,
+		float64(inputTokenCost),
+		float64(outputTokenCost),
+		float64(cachedTokenCost),
+		isEmbeddingModel,
+	)
+	if err != nil {
+		slog.Error("service:AddModel", "message", "failed to add model", "error", err)
+		return "", fmt.Errorf("failed to add model")
+	}
+	return "Model added successfully", nil
+}
+
 func (s *ChatService) Init(config *dao.Config) *sql.DB {
 	slog.Debug("service:Init", "config", config)
 	//for sqlite we pass db connnection to migrate and seed functions

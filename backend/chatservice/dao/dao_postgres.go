@@ -917,21 +917,22 @@ func (p *PostgresDAO) IsNameExists(userID string, chatId string, name string) (b
 	return exists, nil
 }
 
-func (p *PostgresDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error {
-	slog.Info("dao_postgres:UpsertModel", "modelID", modelID, "name", name, "url", url, "provider", provider, "inputTokenCost", inputTokenCost, "outputTokenCost", outputTokenCost, "cachedTokenCost", cachedTokenCost)
+func (p *PostgresDAO) UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64, isEmbeddingModel bool) error {
+	slog.Info("dao_postgres:UpsertModel", "modelID", modelID, "name", name, "url", url, "provider", provider, "inputTokenCost", inputTokenCost, "outputTokenCost", outputTokenCost, "cachedTokenCost", cachedTokenCost, "isEmbeddingModel", isEmbeddingModel)
 	_, err := p.db.Exec(`
-		INSERT INTO shared_models_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (id) DO UPDATE SET
-			name = EXCLUDED.name,
-			url = EXCLUDED.url,
-			provider = EXCLUDED.provider,
-			input_token_cost = EXCLUDED.input_token_cost,
-			output_token_cost = EXCLUDED.output_token_cost,
-			cached_token_cost = EXCLUDED.cached_token_cost
-	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost)
+		INSERT INTO shared_models_metadata (id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost, is_embedding_model, is_downloaded, is_downloadable, progress, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		ON CONFLICT(id) DO UPDATE SET
+			name = excluded.name,
+			url = excluded.url,
+			provider = excluded.provider,
+			input_token_cost = excluded.input_token_cost,
+			output_token_cost = excluded.output_token_cost,
+			cached_token_cost = excluded.cached_token_cost,
+			is_embedding_model = excluded.is_embedding_model
+	`, modelID, name, url, provider, inputTokenCost, outputTokenCost, cachedTokenCost, isEmbeddingModel, false, false, "", 0)
 	if err != nil {
-		slog.Error("dao_postgres:UpsertModel", "message", "failed to upsert model", "error", err, "modelID", modelID, "name", name, "url", url, "provider", provider, "inputTokenCost", inputTokenCost, "outputTokenCost", outputTokenCost, "cachedTokenCost", cachedTokenCost)
+		slog.Error("dao_postgres:UpsertModel", "message", "failed to upsert model", "error", err, "modelID", modelID)
 		return fmt.Errorf("failed to upsert model")
 	}
 	return nil
@@ -1093,7 +1094,7 @@ func (p *PostgresDAO) UpdateChatMessageDocumentReferences(userID string, message
 func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
 	slog.Info("dao_postgres:GetModels")
 	var models []Models
-	err := p.db.Select(&models, "SELECT id, name,provider,url,input_token_cost,output_token_cost,COALESCE(capabilities, '{}'::jsonb)::text AS capabilities, is_embedding_model, is_downloaded, is_downloadable FROM shared_models_metadata")
+	err := p.db.Select(&models, "SELECT id, name, provider, url, COALESCE(input_token_cost, 0) as input_token_cost, COALESCE(output_token_cost, 0) as output_token_cost, COALESCE(cached_token_cost, 0) as cached_token_cost, COALESCE(capabilities, '{}'::jsonb)::text AS capabilities, COALESCE(is_embedding_model, false) as is_embedding_model, COALESCE(is_downloaded, false) as is_downloaded, COALESCE(is_downloadable, false) as is_downloadable FROM shared_models_metadata")
 	if err != nil {
 		slog.Error("dao_postgres:GetModels", "message", "failed to get models", "error", err)
 		return nil, fmt.Errorf("failed to get models")
@@ -1115,6 +1116,7 @@ func (p *PostgresDAO) GetModels() ([]*proto.ModelListInfo, error) {
 			Url:              m.URL,
 			InputTokenCost:   m.InputTokenCost,
 			OutputTokenCost:  m.OutputTokenCost,
+			CachedTokenCost:  m.CachedTokenCost,
 			Capabilities:     capabilities,
 			IsDownloadable:   m.IsDownloadable,
 			IsDownloaded:     m.IsDownloaded,

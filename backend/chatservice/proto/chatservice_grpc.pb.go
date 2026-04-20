@@ -37,6 +37,7 @@ const (
 	SortedChat_DeleteChat_FullMethodName                  = "/sortedchat.SortedChat/DeleteChat"
 	SortedChat_RestoreChat_FullMethodName                 = "/sortedchat.SortedChat/RestoreChat"
 	SortedChat_RenameItem_FullMethodName                  = "/sortedchat.SortedChat/RenameItem"
+	SortedChat_AddModel_FullMethodName                    = "/sortedchat.SortedChat/AddModel"
 )
 
 // SortedChatClient is the client API for SortedChat service.
@@ -61,6 +62,7 @@ type SortedChatClient interface {
 	DeleteChat(ctx context.Context, in *DeleteChatRequest, opts ...grpc.CallOption) (*DeleteChatResponse, error)
 	RestoreChat(ctx context.Context, in *RestoreChatRequest, opts ...grpc.CallOption) (*RestoreChatResponse, error)
 	RenameItem(ctx context.Context, in *RenameItemRequest, opts ...grpc.CallOption) (*RenameItemResponse, error)
+	AddModel(ctx context.Context, in *AddModelRequest, opts ...grpc.CallOption) (*AddModelResponse, error)
 }
 
 type sortedChatClient struct {
@@ -260,6 +262,16 @@ func (c *sortedChatClient) RenameItem(ctx context.Context, in *RenameItemRequest
 	return out, nil
 }
 
+func (c *sortedChatClient) AddModel(ctx context.Context, in *AddModelRequest, opts ...grpc.CallOption) (*AddModelResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddModelResponse)
+	err := c.cc.Invoke(ctx, SortedChat_AddModel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SortedChatServer is the server API for SortedChat service.
 // All implementations must embed UnimplementedSortedChatServer
 // for forward compatibility.
@@ -282,6 +294,7 @@ type SortedChatServer interface {
 	DeleteChat(context.Context, *DeleteChatRequest) (*DeleteChatResponse, error)
 	RestoreChat(context.Context, *RestoreChatRequest) (*RestoreChatResponse, error)
 	RenameItem(context.Context, *RenameItemRequest) (*RenameItemResponse, error)
+	AddModel(context.Context, *AddModelRequest) (*AddModelResponse, error)
 	mustEmbedUnimplementedSortedChatServer()
 }
 
@@ -345,6 +358,9 @@ func (UnimplementedSortedChatServer) RestoreChat(context.Context, *RestoreChatRe
 }
 func (UnimplementedSortedChatServer) RenameItem(context.Context, *RenameItemRequest) (*RenameItemResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RenameItem not implemented")
+}
+func (UnimplementedSortedChatServer) AddModel(context.Context, *AddModelRequest) (*AddModelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddModel not implemented")
 }
 func (UnimplementedSortedChatServer) mustEmbedUnimplementedSortedChatServer() {}
 func (UnimplementedSortedChatServer) testEmbeddedByValue()                    {}
@@ -684,6 +700,24 @@ func _SortedChat_RenameItem_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SortedChat_AddModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddModelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SortedChatServer).AddModel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SortedChat_AddModel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SortedChatServer).AddModel(ctx, req.(*AddModelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SortedChat_ServiceDesc is the grpc.ServiceDesc for SortedChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -758,6 +792,10 @@ var SortedChat_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RenameItem",
 			Handler:    _SortedChat_RenameItem_Handler,
+		},
+		{
+			MethodName: "AddModel",
+			Handler:    _SortedChat_AddModel_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

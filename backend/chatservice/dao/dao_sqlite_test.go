@@ -189,7 +189,7 @@ func TestAddChatMessageWithTokens(t *testing.T) {
 		t.Run(fmt.Sprintf("Model_%s", model.model), func(t *testing.T) {
 			// Add the model once per model test group
 			err := daoInstance.UpsertModel(model.model, model.modelDisplayName, "", model.modelProvider,
-				model.inputTokenCost, model.outputTokenCost, model.cachedTokenCost)
+				model.inputTokenCost, model.outputTokenCost, model.cachedTokenCost, false)
 			if err != nil {
 				t.Fatalf("failed to add model: %v", err)
 			}

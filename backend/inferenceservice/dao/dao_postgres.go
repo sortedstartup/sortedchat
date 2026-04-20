@@ -57,7 +57,7 @@ func (d *PostgresDAO) Infer(dummy string) error {
 
 func (d *PostgresDAO) GetModelByID(modelID string) (*ModelMetadata, error) {
 	slog.Info("inferenceservice:dao_postgres:GetModelByID")
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, model_info, creator_name, modified_by, description FROM shared_models_metadata WHERE id = $1`
+	query := `SELECT id, name, url, provider, COALESCE(input_token_cost, 0) as input_token_cost, COALESCE(output_token_cost, 0) as output_token_cost, COALESCE(progress, '') as progress, COALESCE(is_downloaded, false) as is_downloaded, COALESCE(is_downloadable, false) as is_downloadable, COALESCE(status, 0) as status, filestore_id, COALESCE(model_info, '{}'::jsonb)::text as model_info, creator_name, modified_by, description FROM shared_models_metadata WHERE id = $1`
 
 	var model ModelMetadata
 	err := d.db.Get(&model, query, modelID)
@@ -71,7 +71,7 @@ func (d *PostgresDAO) GetModelByID(modelID string) (*ModelMetadata, error) {
 
 func (d *PostgresDAO) GetAllModels() ([]*ModelMetadata, error) {
 	slog.Info("inferenceservice:dao_postgres:GetAllModels")
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, cached_token_cost, is_enabled, is_embedding_model, model_info, creator_name, modified_by, description FROM shared_models_metadata ORDER BY name`
+	query := `SELECT id, name, url, provider, COALESCE(input_token_cost, 0) as input_token_cost, COALESCE(output_token_cost, 0) as output_token_cost, COALESCE(progress, '') as progress, COALESCE(is_downloaded, false) as is_downloaded, COALESCE(is_downloadable, false) as is_downloadable, COALESCE(status, 0) as status, filestore_id, COALESCE(cached_token_cost, 0) as cached_token_cost, COALESCE(is_enabled, true) as is_enabled, COALESCE(is_embedding_model, false) as is_embedding_model, COALESCE(model_info, '{}'::jsonb)::text as model_info, creator_name, modified_by, description FROM shared_models_metadata ORDER BY name`
 
 	var models []*ModelMetadata
 	err := d.db.Select(&models, query)

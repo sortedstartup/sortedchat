@@ -350,7 +350,7 @@ func (s *ChatServiceAPI) BranchAChat(ctx context.Context, req *pb.BranchAChatReq
 	if err != nil {
 		slog.Error("api:BranchAChat", "message", "failed to branch a chat", "error", err)
 		return &pb.BranchAChatResponse{
-			Message: "failed to branch a chat",
+			Message: err.Error(),
 		}, nil
 	}
 

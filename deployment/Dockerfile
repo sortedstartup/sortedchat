@@ -57,4 +57,4 @@ COPY --from=go-builder /app/backend/sortedchat /usr/local/bin/sortedchat
 RUN chmod +x /usr/local/bin/sortedchat
 
 # Run the application
-CMD ["/usr/local/bin/sortedchat"]
+ENTRYPOINT ["/usr/local/bin/sortedchat"]

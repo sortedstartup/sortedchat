@@ -16,6 +16,10 @@ Provider and model, user is trying to add should have openai chat completions co
 
 ## Technical Implementation
 ### Backend changes
+
+#### Request Templates
+- When calling an LLM provider, the system uses a request template from `backend/chatservice/llm/templates/`. 
+- If a provider-specific template is not found, it defaults to the `openai` template.
 #### Adding Provider
 There are already two rpc's for provider getting and setting, we can use them to get and set provider.
 ```proto

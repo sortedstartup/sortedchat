@@ -1672,7 +1672,7 @@ func (s *ChatService) ListModel(ctx context.Context) ([]*pb.ModelListInfo, error
 	return models, nil
 }
 
-func (s *ChatService) AddModel(ctx context.Context, modelId, providerName, modelName string, inputTokenCost, outputTokenCost, cachedTokenCost int32, isEmbeddingModel bool, url string) (string, error) {
+func (s *ChatService) AddModel(ctx context.Context, modelId, providerName, modelName string, inputTokenCost, outputTokenCost, cachedTokenCost float32, isEmbeddingModel bool, url string) (string, error) {
 	slog.Info("service:AddModel", "provider", providerName, "modelID", modelId)
 	if modelId == "" {
 		return "", fmt.Errorf("model_id is required")

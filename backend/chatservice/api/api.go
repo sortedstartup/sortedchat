@@ -469,7 +469,7 @@ func (s *ChatServiceAPI) AddModel(ctx context.Context, req *pb.AddModelRequest) 
 		return nil, err
 	}
 	slog.Debug("api:AddModel", "provider", req.ProviderName, "modelID", req.ModelId, "userID", userID)
-	msg, err := s.service.AddModel(ctx, req.GetModelId(), req.GetProviderName(), req.GetModelName(), req.GetOutputTokenCost(), req.GetInputTokenCost(), req.GetCachedTokenCost(), req.GetIsEmbeddingModel(), req.GetUrl())
+	msg, err := s.service.AddModel(ctx, req.GetModelId(), req.GetProviderName(), req.GetModelName(),  req.GetInputTokenCost(), req.GetOutputTokenCost(), req.GetCachedTokenCost(), req.GetIsEmbeddingModel(), req.GetUrl())
 	if err != nil {
 		slog.Error("api:AddModel", "message", "failed to add model", "error", err)
 		return nil, err

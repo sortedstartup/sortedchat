@@ -66,9 +66,9 @@ func TestAddModel(t *testing.T) {
 		modelId          string
 		providerName     string
 		modelName        string
-		inputTokenCost   int32
-		outputTokenCost  int32
-		cachedTokenCost  int32
+		inputTokenCost   float32
+		outputTokenCost  float32
+		cachedTokenCost  float32
 		isEmbeddingModel bool
 		url              string
 		wantErr          bool
@@ -158,7 +158,7 @@ func TestAddModel(t *testing.T) {
 					if m.Provider != tt.providerName {
 						t.Errorf("expected provider %s, got %s", tt.providerName, m.Provider)
 					}
-					if m.CachedTokenCost != float32(tt.cachedTokenCost) {
+					if m.CachedTokenCost != tt.cachedTokenCost {
 						t.Errorf("expected cached token cost %v, got %v", tt.cachedTokenCost, m.CachedTokenCost)
 					}
 					if m.IsEmbeddingModel != tt.isEmbeddingModel {

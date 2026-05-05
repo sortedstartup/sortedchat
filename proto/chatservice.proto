@@ -166,9 +166,9 @@ message AddModelRequest {
     string model_id = 2;
     string model_name = 3;
     string url = 4;
-    int32 input_token_cost = 5;
-    int32 output_token_cost = 6;
-    int32 cached_token_cost = 7;
+    float input_token_cost = 5;
+    float output_token_cost = 6;
+    float cached_token_cost = 7;
     bool is_embedding_model = 8;
 }
 

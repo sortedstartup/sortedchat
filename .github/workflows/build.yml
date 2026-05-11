@@ -342,7 +342,7 @@ jobs:
           # Note: We override CGO_CFLAGS locally here to omit the SQLite extension for the server only
           CGO_CFLAGS="-I$(pwd)/sqlite3 -DSQLITE_OMIT_LOAD_EXTENSION" \
           go build \
-            -tags "sqlite_fts5 netgo osusergo sqlite_omit_load_extension" \
+            -tags "prod sqlite_fts5 netgo osusergo sqlite_omit_load_extension" \
             -ldflags "$SERVER_LDFLAGS" \
             -o $BINARY_NAME_SERVER ./mono/
 

@@ -468,8 +468,14 @@ func (s *ChatServiceAPI) AddModel(ctx context.Context, req *pb.AddModelRequest) 
 		slog.Error("api:AddModel", "message", "failed to get user ID from context", "error", err)
 		return nil, err
 	}
+
+	if req.GetProviderName() == "" || req.GetModelId() == "" {
+		slog.Error("api:AddModel", "message", "provider name, model ID  are required")
+		return nil, fmt.Errorf("provider name, model ID  are required")
+	}
+
 	slog.Debug("api:AddModel", "provider", req.ProviderName, "modelID", req.ModelId, "userID", userID)
-	msg, err := s.service.AddModel(ctx, req.GetModelId(), req.GetProviderName(), req.GetModelName(),  req.GetInputTokenCost(), req.GetOutputTokenCost(), req.GetCachedTokenCost(), req.GetIsEmbeddingModel(), req.GetUrl())
+	msg, err := s.service.AddModel(ctx, req.GetModelId(), req.GetProviderName(), req.GetModelName(), req.GetInputTokenCost(), req.GetOutputTokenCost(), req.GetCachedTokenCost(), req.GetIsEmbeddingModel(), req.GetUrl())
 	if err != nil {
 		slog.Error("api:AddModel", "message", "failed to add model", "error", err)
 		return nil, err

@@ -1677,10 +1677,21 @@ func (s *ChatService) AddModel(ctx context.Context, modelId, providerName, model
 	if modelId == "" {
 		return "", fmt.Errorf("model_id is required")
 	}
+	if providerName == "" {
+		return "", fmt.Errorf("provider_name is required")
+	}
+	_, err := s.settingsDAO.GetSettingValue("provider." + providerName)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("provider '%s' does not exist. Please add provider settings first", providerName)
+		}
+		slog.Error("service:AddModel", "message", "failed to validate provider settings", "provider", providerName, "error", err)
+		return "", fmt.Errorf("failed to validate provider")
+	}
 	if modelName == "" {
 		modelName = modelId
 	}
-	err := s.dao.UpsertModel(
+	err = s.dao.UpsertModel(
 		modelId,
 		modelName,
 		url,

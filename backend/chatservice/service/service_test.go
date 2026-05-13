@@ -6,6 +6,8 @@ import (
 	pb "sortedstartup/chatservice/proto"
 	"strings"
 	"testing"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func setupTestChatService(t *testing.T) *ChatService {
@@ -21,6 +23,7 @@ func setupTestChatService(t *testing.T) *ChatService {
 		t.Fatalf("failed to create SQLiteDAO: %v", err)
 	}
 	chatService.dao = daoInstance
+	chatService.settingsDAO = dao.NewSQLiteSettingsDAOWithDB(sqlx.NewDb(dbConn, "sqlite3"))
 
 	// Register cleanup to run after this test completes
 	t.Cleanup(func() {
@@ -60,6 +63,11 @@ func TestRenameChat(t *testing.T) {
 // CGO_CFLAGS="-I$(pwd)/sqlite3" go test -v -tags "sqlite_fts5" -run ^TestAddModel$ sortedstartup/chatservice/service
 func TestAddModel(t *testing.T) {
 	chatService := setupTestChatService(t)
+
+	err := chatService.settingsDAO.SetSettingValue("provider.test-provider", `{"api_url":"https://api.test.com/v1/chat/completions","api_key":"test-key","is_enabled":true}`)
+	if err != nil {
+		t.Fatalf("failed to seed provider settings: %v", err)
+	}
 
 	tests := []struct {
 		name             string
@@ -110,6 +118,18 @@ func TestAddModel(t *testing.T) {
 			cachedTokenCost:  0,
 			isEmbeddingModel: false,
 			url:              "",
+			wantErr:          true,
+		},
+		{
+			name:             "Fails when provider does not exist",
+			modelId:          "test-model-3",
+			providerName:     "missing-provider",
+			modelName:        "Missing Provider Model",
+			inputTokenCost:   0,
+			outputTokenCost:  0,
+			cachedTokenCost:  0,
+			isEmbeddingModel: false,
+			url:              "https://api.missing.com",
 			wantErr:          true,
 		},
 	}

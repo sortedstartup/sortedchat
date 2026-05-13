@@ -45,9 +45,9 @@ We added a new rpc to add a model for a provider.
         string model_id = 2;
         string model_name = 3;
         string url = 4;
-        int32 input_token_cost = 5;
-        int32 output_token_cost = 6;
-        int32 cached_token_cost = 7;
+        float input_token_cost = 5;
+        float output_token_cost = 6;
+        float cached_token_cost = 7;
         bool is_embedding_model = 8;
     }
     message AddModelResponse {
@@ -59,12 +59,12 @@ We added a new rpc to add a model for a provider.
 We have a table shared_models_metadata, there we have to add model details.
 ```sql
 -- Add model for sqlite
-INSERT INTO shared_models_metadata (provider_name, model_id, model_name, url, input_token_cost, output_token_cost, cached_token_cost, is_embedding_model)
+INSERT INTO shared_models_metadata (provide, id, name, url, input_token_cost, output_token_cost, cached_token_cost, is_embedding_model)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 ```
 ```sql
 -- Add model for postgres
-INSERT INTO shared_models_metadata (provider_name, model_id, model_name, url, input_token_cost, output_token_cost, cached_token_cost, is_embedding_model)
+INSERT INTO shared_models_metadata (provide, id, name, url, input_token_cost, output_token_cost, cached_token_cost, is_embedding_model)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 ```
 

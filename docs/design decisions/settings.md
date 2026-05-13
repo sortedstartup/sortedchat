@@ -40,20 +40,21 @@ SetAllProviderSettings(SetAllProviderSettingsRequest) (SetAllProvidersSettingsRe
 message ProviderSettings {
     string api_url = 1;
    string api_key = 2;
+   bool is_enabled = 3;
 }
 
-message AllProviderSettingsResponse {
+message GetAllProviderSettingsResponse {
     AllProviderSettings settings = 1;
 }
 
-message AllProviderSettingsRequest {
+message GetAllProviderSettingsRequest {
 }
 
-message AllProviderSettings {
+message SetAllProviderSettings {
     map<string, ProviderSettings> settings = 1;
 }
 
-message AllProviderSettings {
+message SetAllProviderSettings {
     map<string, ProviderSettings> settings = 1;
 }
 ```

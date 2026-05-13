@@ -20,19 +20,11 @@ Provider and model, user is trying to add should have openai chat completions co
 #### Request Templates
 - When calling an LLM provider, the system uses a request template from `backend/chatservice/llm/templates/`. 
 - If a provider-specific template is not found, it defaults to the `openai` template.
+
 #### Adding Provider
-There are already two rpc's for provider getting and setting, we can use them to get and set provider.
+There is already a  rpc's for setting a provider, we can use that to set provider.
 ```proto
-    rpc GetProviderSetting(GetProviderSettingRequest) returns (GetProviderSettingResponse);
     rpc SetProviderSetting(SetProviderSettingRequest) returns (SetProviderSettingResponse);
-    message GetProviderSettingRequest {
-        string name = 1;
-    }
-
-    message GetProviderSettingResponse {
-        ProviderSettings settings = 1;
-    }
-
     message SetProviderSettingRequest {
         string name = 1;
         ProviderSettings settings = 2;
@@ -42,11 +34,10 @@ There are already two rpc's for provider getting and setting, we can use them to
         string message = 1;
     }
 ```
-- So, No changes required for adding provider in backend
 - We just have to implement the UI for adding provider.
 
 #### Adding Model
-We have to add a new rpc to add a model for a provider.
+We added a new rpc to add a model for a provider.
 ```proto
     rpc AddModel(AddModelRequest) returns (AddModelResponse);
     message AddModelRequest {
@@ -82,6 +73,17 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     - in provider's modal, ask for model name,url, api key, is_enabled(true/false, default true)
 - add a new function for integrating, AddModel rpc in store/chat.ts
     - in model's modal, ask for model id(mandatory), input_token_cost(optional), output_token_cost(optional), cached_token_cost(optional),is_embedding_model(true/false, default false)
-- look for modal component in components folder and try to reuse the same for adding provider and model.
-- keep code changes minimal
-- all business logic should be stores only and stores should be used by components to get and set data.
+
+### Frontend implementation decisions
+
+#### API usage
+- Provider APIs are integrated in `setting.ts`.
+- `GetAllProviderSettings()` loads all saved provider configs into the frontend store.
+- `SetProviderSetting(providerName, settings)` is used by `add-provider-dialog.tsx` and `provider-view.tsx` to create or update provider settings.
+- Model API is integrated in `chat.ts` as `addModel(req)`.
+- Before calling `AddModel`, the store reads the selected provider's `api_url` from provider settings and sets `req.url`.
+
+#### Nanostore usage
+- `$providerSettings` in `setting.ts` is the source of truth for provider config on the frontend.
+- After `SetProviderSetting`, the store refreshes `$providerSettings` by calling `GetAllProviderSettings()` again.
+- After `addModel(...)`, the store refreshes model data using `fetchAvailableModels()` and `ListLLMModels()` so UI updates from store state instead of manual component mutation.

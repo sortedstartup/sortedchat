@@ -44,17 +44,21 @@ export const $onboardingData = atom<{
   OPENAI_API_KEY: string;
   CLAUDE_API_KEY: string;
   GEMINI_API_KEY: string;
+  FIREWORKS_API_KEY: string;
   CLAUDE_API_URL: string;
   OPENAI_API_URL: string;
   GEMINI_API_URL: string;
+  FIREWORKS_API_URL: string;
   OLLAMA_URL: string;
 }>({
   OPENAI_API_KEY: "",
   GEMINI_API_KEY: "",
   CLAUDE_API_KEY: "",
+  FIREWORKS_API_KEY: "",
   CLAUDE_API_URL: "https://api.anthropic.com/v1/chat/completions",
   OPENAI_API_URL: "https://api.openai.com/v1/chat/completions",
   GEMINI_API_URL: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+  FIREWORKS_API_URL: "https://api.fireworks.ai/inference/v1/chat/completions",
   OLLAMA_URL: "http://localhost:8081/v1/embeddings",
 });
 
@@ -75,6 +79,11 @@ export const onboardingActions = {
     $onboardingData.set({ ...data, CLAUDE_API_KEY: key });
   },
 
+  setFireworksApiKey: (key: string) => {
+    const data = $onboardingData.get();
+    $onboardingData.set({ ...data, FIREWORKS_API_KEY: key });
+  },
+
   setClaudeApiUrl: (url: string) => {
     const data = $onboardingData.get();
     $onboardingData.set({ ...data, CLAUDE_API_URL: url });
@@ -89,6 +98,12 @@ export const onboardingActions = {
     const data = $onboardingData.get();
     $onboardingData.set({ ...data, GEMINI_API_URL: url });
   },
+
+  setFireworksApiUrl: (url: string) => {
+    const data = $onboardingData.get();
+    $onboardingData.set({ ...data, FIREWORKS_API_URL: url });
+  },
+
 
   setOllamaUrl: (url: string) => {
     const data = $onboardingData.get();
@@ -141,6 +156,11 @@ export const onboardingActions = {
       settings.set('gemini', new ProviderSettings({
         api_key: data.GEMINI_API_KEY,
         api_url: data.GEMINI_API_URL,
+        is_enabled: true
+      }));
+      settings.set('fireworks', new ProviderSettings({
+        api_key: data.FIREWORKS_API_KEY,
+        api_url: data.FIREWORKS_API_URL,
         is_enabled: true
       }));
 

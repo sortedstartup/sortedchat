@@ -120,6 +120,7 @@ func (c *Client) generateRequestBody(req types.ChatCompletionRequest, provider s
 	if !ok {
 		tmpl, ok = c.templates[constants.OPENAI_PROVIDER]
 		if !ok {
+			slog.Warn("llm:call", "template not found for provider", provider_rest_api_format, "falling back to openai template", "openai_template_exists")
 			return nil, fmt.Errorf("template not found for provider: %s", provider_rest_api_format)
 		}
 	}

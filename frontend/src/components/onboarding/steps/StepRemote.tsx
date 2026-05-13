@@ -4,8 +4,9 @@ import { onboardingActions } from '@/store/setting';
 import { OpenaiProvider } from '@/components/providers/openai-provider';
 import { ClaudeProvider } from '@/components/providers/claude-provider';
 import { GeminiProvider } from '@/components/providers/gemini-provider';
+import { ProviderView } from '@/components/providers/provider-view';
 
-type Provider = 'openai' | 'claude' | 'gemini';
+type Provider = 'openai' | 'claude' | 'gemini' | 'fireworks';
 
 export function StepRemote() {
   const [isValidating, setIsValidating] = useState(false);
@@ -46,12 +47,20 @@ export function StepRemote() {
           onApiKeyChange={onboardingActions.setGeminiApiKey}
           onApiUrlChange={onboardingActions.setGeminiApiUrl}
         />;
+      case 'fireworks':
+        return <ProviderView
+          providerName="fireworks"
+          displayName="Fireworks"
+          defaultApiUrl="https://api.fireworks.ai/inference/v1/chat/completions"
+          onApiKeyChange={onboardingActions.setFireworksApiKey}
+          onApiUrlChange={onboardingActions.setFireworksApiUrl}
+        />;
       default:
         return null;
     }
   };
 
-  const providers: Provider[] = ['openai', 'claude', 'gemini'];
+  const providers: Provider[] = ['openai', 'claude', 'gemini', 'fireworks'];
 
   return (
     <div className="flex flex-col h-full">
@@ -61,7 +70,7 @@ export function StepRemote() {
         </h2>
 
         {/* API Key Links */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2">
           <a
             href="https://aistudio.google.com/api-keys"
             target="_blank"
@@ -99,6 +108,20 @@ export function StepRemote() {
             <div className="flex items-center justify-between mb-2">
               <span className="font-bold text-sm text-foreground">Get Claude API Key</span>
               <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </div>
+          </a>
+
+          <a
+            href="https://app.fireworks.ai/settings/users/api-keys"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-card hover:border-rose-500 transition-all text-left shadow-sm hover:shadow-md"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-sm text-foreground">Get Fireworks API Key</span>
+              <svg className="w-4 h-4 text-gray-400 group-hover:text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </div>

@@ -87,3 +87,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 - `$providerSettings` in `setting.ts` is the source of truth for provider config on the frontend.
 - After `SetProviderSetting`, the store refreshes `$providerSettings` by calling `GetAllProviderSettings()` again.
 - After `addModel(...)`, the store refreshes model data using `fetchAvailableModels()` and `ListLLMModels()` so UI updates from store state instead of manual component mutation.
+
+#### Adding default provider
+- Default providers like `openai`, `claude`, `gemini`, `fireworks`, and `openrouter` are not seeded in DB from backend.
+- On onboarding, frontend prepares provider settings for these providers and sends them using `SetAllProviderSettings(...)`. 
+    - Don't know why we have done it this way
+- Backend saves them in DB as provider settings entries like `provider.openai`, `provider.claude`, `provider.fireworks`, etc.

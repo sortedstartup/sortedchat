@@ -10,12 +10,15 @@ import {
 import {
   $isLoadingProviderSettings,
   GetAllProviderSettings,
+  $providerSettings,
 } from '../store/setting';
 import { OpenaiProvider } from '@/components/providers/openai-provider';
 import { ClaudeProvider } from '@/components/providers/claude-provider';
 import { GeminiProvider } from '@/components/providers/gemini-provider';
 import { LocalProvider } from '@/components/providers/local-provider';
 import { ProviderView } from '@/components/providers/provider-view';
+import { AddProviderDialog } from '@/components/add-provider-dialog';
+import { PlusIcon } from 'lucide-react';
 
 
 const Models = () => {
@@ -25,6 +28,8 @@ const Models = () => {
   const isLoadingProviders = useStore($isLoadingProviderSettings);
 
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [isAddProviderModalOpen, setIsAddProviderModalOpen] = useState(false);
+  const providerSettingsMap = useStore($providerSettings);
 
   // Load data on mount
   useEffect(() => {
@@ -32,8 +37,11 @@ const Models = () => {
     GetAllProviderSettings();
   }, []);
 
-  // Get unique providers from models
-  const providers = Object.keys(modelsByProvider);
+  // Get unique providers from models AND settings
+  const providers = Array.from(new Set([
+    ...Object.keys(modelsByProvider),
+    ...Array.from(providerSettingsMap.keys())
+  ]));
 
   // Auto-select first provider
   useEffect(() => {
@@ -78,8 +86,15 @@ const Models = () => {
     <div className="h-full flex overflow-hidden">
       {/* Sidebar */}
       <div className="w-64 border-r border-border bg-card overflow-y-auto">
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Providers</h2>
+          <button
+            onClick={() => setIsAddProviderModalOpen(true)}
+            className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+            title="Add Provider"
+          >
+            <PlusIcon size={18} />
+          </button>
         </div>
         <div className="p-2">
           {providers.map((provider) => (
@@ -104,6 +119,11 @@ const Models = () => {
       <div className="flex-1 overflow-y-auto">
         {renderProviderContent()}
       </div>
+
+      <AddProviderDialog
+        isOpen={isAddProviderModalOpen}
+        onOpenChange={setIsAddProviderModalOpen}
+      />
     </div>
   );
 };

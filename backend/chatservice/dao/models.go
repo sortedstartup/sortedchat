@@ -77,6 +77,7 @@ type Models struct {
 	URL              string  `db:"url"`
 	InputTokenCost   float32 `db:"input_token_cost"`
 	OutputTokenCost  float32 `db:"output_token_cost"`
+	CachedTokenCost  float32 `db:"cached_token_cost"`
 	Capabilities     string  `db:"capabilities"` // JSON string from SQLite
 	IsDownloadable   bool    `db:"is_downloadable"`
 	IsDownloaded     bool    `db:"is_downloaded"`

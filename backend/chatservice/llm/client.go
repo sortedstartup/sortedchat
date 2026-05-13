@@ -118,7 +118,11 @@ func (c *Client) generateRequestBody(req types.ChatCompletionRequest, provider s
 	// Get the cached template
 	tmpl, ok := c.templates[provider_rest_api_format]
 	if !ok {
-		return nil, fmt.Errorf("template not found for provider: %s", provider_rest_api_format)
+		tmpl, ok = c.templates[constants.OPENAI_PROVIDER]
+		if !ok {
+			slog.Warn("llm:call", "template not found for provider", provider_rest_api_format, "falling back to openai template", "openai_template_exists")
+			return nil, fmt.Errorf("template not found for provider: %s", provider_rest_api_format)
+		}
 	}
 
 	var bodyBuffer bytes.Buffer

@@ -54,7 +54,7 @@ type DAO interface {
 	RenameProject(userID string, projectId string, name string) error
 	IsNameExists(userID string, chatId string, name string) (bool, error)
 	IsProjectNameExists(userID string, projectId string, name string) (bool, error)
-	UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64) error
+	UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64, isEmbeddingModel bool) error
 }
 
 type SettingsDAO interface {
@@ -63,7 +63,7 @@ type SettingsDAO interface {
 	// This is mainly needed to make like at UI layer simple
 	// for e.g. DB has settings 'provider.openai', 'openai.gemini',
 	// UI can ask for all LLM provider settings - 'provider.*'
-	// return - 
+	// return -
 	//  {
 	//    'provider.openai': setting json (proto message type struct ...,
 	//    'provider.gemini': setting json (proto message type struct ...

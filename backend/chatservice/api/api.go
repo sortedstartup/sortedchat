@@ -462,6 +462,27 @@ func (s *ChatServiceAPI) ListModel(ctx context.Context, req *pb.ListModelsReques
 	return &pb.ListModelsResponse{Models: models}, nil
 }
 
+func (s *ChatServiceAPI) AddModel(ctx context.Context, req *pb.AddModelRequest) (*pb.AddModelResponse, error) {
+	userID, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("api:AddModel", "message", "failed to get user ID from context", "error", err)
+		return nil, err
+	}
+
+	if req.GetProviderName() == "" || req.GetModelId() == "" {
+		slog.Error("api:AddModel", "message", "provider name, model ID  are required")
+		return nil, fmt.Errorf("provider name, model ID  are required")
+	}
+
+	slog.Debug("api:AddModel", "provider", req.ProviderName, "modelID", req.ModelId, "userID", userID)
+	msg, err := s.service.AddModel(ctx, req.GetModelId(), req.GetProviderName(), req.GetModelName(), req.GetInputTokenCost(), req.GetOutputTokenCost(), req.GetCachedTokenCost(), req.GetIsEmbeddingModel(), req.GetUrl())
+	if err != nil {
+		slog.Error("api:AddModel", "message", "failed to add model", "error", err)
+		return nil, err
+	}
+	return &pb.AddModelResponse{Message: msg}, nil
+}
+
 func (s *ChatServiceAPI) Init(config *db.Config) {
 	s.service.Init(config)
 }

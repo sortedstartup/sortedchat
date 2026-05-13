@@ -53,7 +53,7 @@ func (d *SQLiteDAO) Infer(dummy string) error {
 }
 
 func (d *SQLiteDAO) GetModelByID(modelID string) (*ModelMetadata, error) {
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, model_info, creator_name, modified_by, description FROM shared_models_metadata WHERE id = ?`
+	query := `SELECT id, name, url, provider, COALESCE(input_token_cost, 0) as input_token_cost, COALESCE(output_token_cost, 0) as output_token_cost, COALESCE(progress, '') as progress, COALESCE(is_downloaded, 0) as is_downloaded, COALESCE(is_downloadable, 0) as is_downloadable, COALESCE(status, 0) as status, filestore_id, COALESCE(model_info, '{}') as model_info, creator_name, modified_by, description FROM shared_models_metadata WHERE id = ?`
 
 	var model ModelMetadata
 	err := d.db.Get(&model, query, modelID)
@@ -66,7 +66,7 @@ func (d *SQLiteDAO) GetModelByID(modelID string) (*ModelMetadata, error) {
 }
 
 func (d *SQLiteDAO) GetAllModels() ([]*ModelMetadata, error) {
-	query := `SELECT id, name, url, provider, input_token_cost, output_token_cost, progress, is_downloaded, is_downloadable, status, filestore_id, cached_token_cost, is_enabled, is_embedding_model, model_info, creator_name, modified_by, description FROM shared_models_metadata ORDER BY name`
+	query := `SELECT id, name, url, provider, COALESCE(input_token_cost, 0) as input_token_cost, COALESCE(output_token_cost, 0) as output_token_cost, COALESCE(progress, '') as progress, COALESCE(is_downloaded, 0) as is_downloaded, COALESCE(is_downloadable, 0) as is_downloadable, COALESCE(status, 0) as status, filestore_id, COALESCE(cached_token_cost, 0) as cached_token_cost, COALESCE(is_enabled, 1) as is_enabled, COALESCE(is_embedding_model, 0) as is_embedding_model, COALESCE(model_info, '{}') as model_info, creator_name, modified_by, description FROM shared_models_metadata ORDER BY name`
 
 	var models []*ModelMetadata
 	err := d.db.Select(&models, query)

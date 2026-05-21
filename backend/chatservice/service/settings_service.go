@@ -375,3 +375,28 @@ func (s *SettingService) TestConnection(ctx context.Context, req *pb.TestConnect
 		Message: fmt.Sprintf("Unknown error connecting to %s", serviceName),
 	}, nil
 }
+
+type webSearchSettings struct {
+	BraveSearchAPIKey string `json:"brave_search_api_key"`
+}
+
+func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
+	value, err := s.settingsDAO.GetSettingValue("websearch")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &webSearchSettings{}, nil
+		}
+		return nil, err
+	}
+
+	if strings.TrimSpace(value) == "" {
+		return &webSearchSettings{}, nil
+	}
+
+	var settings webSearchSettings
+	if err := json.Unmarshal([]byte(value), &settings); err != nil {
+		return nil, fmt.Errorf("failed to parse websearch settings: %w", err)
+	}
+
+	return &settings, nil
+}

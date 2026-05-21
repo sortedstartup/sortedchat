@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 
 	"sortedstartup/chatservice/dao"
@@ -27,7 +26,13 @@ func (s *ChatService) shouldUseAgenticChat(capabilities *pb.ModelCapabilities, h
 		return false
 	}
 
-	if strings.TrimSpace(os.Getenv("BRAVE_SEARCH_API_KEY")) == "" {
+	webSearchSettings, err := s.getWebSearchSettings()
+	if err != nil {
+		slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err)
+		return false
+	}
+
+	if strings.TrimSpace(webSearchSettings.BraveSearchAPIKey) == "" {
 		return false
 	}
 
@@ -120,11 +125,17 @@ func (s *ChatService) runAgenticChat(
 		return fmt.Errorf("failed to prepare chat context")
 	}
 
+	webSearchSettings, err := s.getWebSearchSettings()
+	if err != nil {
+		slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+		return fmt.Errorf("failed to load web search settings")
+	}
+
 	agent := sortedagents.NewAgent(
 		"chat-agent",
 		chatAgentInstructions,
 		model,
-		[]sortedagents.Tool{NewBraveSearchTool()},
+		[]sortedagents.Tool{NewBraveSearchToolWithAPIKey(webSearchSettings.BraveSearchAPIKey)},
 	)
 	runner := sortedagents.NewRunnerWithLLM(sortedagents.NewOpenAILLMWithConfig(
 		providerSettings.ApiKey,

@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"sortedstartup/chatservice/sortedagents"
@@ -38,7 +37,13 @@ type braveSearchResponse struct {
 func NewBraveSearchTool() *BraveSearchTool {
 	return &BraveSearchTool{
 		httpClient: http.DefaultClient,
-		apiKey:     os.Getenv("BRAVE_SEARCH_API_KEY"),
+	}
+}
+
+func NewBraveSearchToolWithAPIKey(apiKey string) *BraveSearchTool {
+	return &BraveSearchTool{
+		httpClient: http.DefaultClient,
+		apiKey:     apiKey,
 	}
 }
 

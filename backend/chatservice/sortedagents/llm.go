@@ -21,155 +21,125 @@ type LLM interface {
 // Message represents a chat message
 
 type Message struct {
+	Role string `json:"role"`
 
-	Role         string        `json:"role"`
+	Content string `json:"content"`
 
-	Content      string        `json:"content"`
+	ToolCallID string `json:"tool_call_id,omitempty"`
 
-	ToolCallID   string        `json:"tool_call_id,omitempty"`
-
-	ToolCalls    []ToolCall    `json:"tool_calls,omitempty"`
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 
 	ExtraContent *ExtraContent `json:"extra_content,omitempty"`
-
 }
-
-
 
 // ToolCall represents a tool call from the assistant
 
 type ToolCall struct {
+	ID string `json:"id"`
 
-	ID               string        `json:"id"`
+	Type string `json:"type"`
 
-	Type             string        `json:"type"`
+	Function Function `json:"function"`
 
-	Function         Function      `json:"function"`
+	ThoughtSignature string `json:"thought_signature,omitempty"`
 
-	ThoughtSignature string        `json:"thought_signature,omitempty"`
-
-	ExtraContent     *ExtraContent `json:"extra_content,omitempty"`
-
+	ExtraContent *ExtraContent `json:"extra_content,omitempty"`
 }
-
-
 
 // ExtraContent represents non-standard fields for Gemini/Vertex
 
 type ExtraContent struct {
-
 	Google *GoogleExtra `json:"google,omitempty"`
-
 }
-
-
 
 // GoogleExtra contains Google-specific fields like thought_signature
 
 type GoogleExtra struct {
-
 	ThoughtSignature string `json:"thought_signature,omitempty"`
-
 }
-
-
 
 // Function represents a function call
 
 type Function struct {
+	Name string `json:"name"`
 
-	Name             string `json:"name"`
-
-	Arguments        string `json:"arguments"`
+	Arguments string `json:"arguments"`
 
 	ThoughtSignature string `json:"thought_signature,omitempty"`
-
 }
-
-
 
 // ToolDefinition represents a tool definition for OpenAI
 
 type ToolDefinition struct {
-
-	Type     string `json:"type"`
+	Type string `json:"type"`
 
 	Function struct {
+		Name string `json:"name"`
 
-		Name        string      `json:"name"`
+		Description string `json:"description"`
 
-		Description string      `json:"description"`
+		Parameters *JSONSchema `json:"parameters"`
 
-		Parameters  *JSONSchema `json:"parameters"`
-
-		Strict      bool        `json:"strict"`
-
+		Strict bool `json:"strict"`
 	} `json:"function"`
-
 }
-
-
 
 // ChatResponse represents the response from OpenAI
 
 type ChatResponse struct {
-
 	Choices []struct {
+		Message Message `json:"message"`
 
-		Message      Message `json:"message"`
-
-		FinishReason string  `json:"finish_reason"`
-
+		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
-
 }
-
-
 
 // StreamChunk represents a chunk from the streaming API
 
 type StreamChunk struct {
+	Usage *struct {
+		PromptTokens int `json:"prompt_tokens"`
+
+		CompletionTokens int `json:"completion_tokens"`
+
+		TotalTokens int `json:"total_tokens"`
+
+		PromptTokensDetails struct {
+			CachedTokens int `json:"cached_tokens"`
+		} `json:"prompt_tokens_details"`
+	} `json:"usage,omitempty"`
 
 	Choices []struct {
-
 		Delta struct {
+			Role string `json:"role,omitempty"`
 
-			Role         string        `json:"role,omitempty"`
-
-			Content      string        `json:"content,omitempty"`
+			Content string `json:"content,omitempty"`
 
 			ExtraContent *ExtraContent `json:"extra_content,omitempty"`
 
-			ToolCalls    []struct {
+			ToolCalls []struct {
+				Index int `json:"index"`
 
-				Index    int    `json:"index"`
+				ID string `json:"id,omitempty"`
 
-				ID       string `json:"id,omitempty"`
-
-				Type     string `json:"type,omitempty"`
+				Type string `json:"type,omitempty"`
 
 				Function struct {
+					Name string `json:"name,omitempty"`
 
-					Name             string `json:"name,omitempty"`
-
-					Arguments        string `json:"arguments,omitempty"`
+					Arguments string `json:"arguments,omitempty"`
 
 					ThoughtSignature string `json:"thought_signature,omitempty"`
-
 				} `json:"function,omitempty"`
 
-				ThoughtSignature string        `json:"thought_signature,omitempty"`
+				ThoughtSignature string `json:"thought_signature,omitempty"`
 
-				ExtraContent     *ExtraContent `json:"extra_content,omitempty"`
-
+				ExtraContent *ExtraContent `json:"extra_content,omitempty"`
 			} `json:"tool_calls,omitempty"`
-
 		} `json:"delta"`
 
 		FinishReason *string `json:"finish_reason"`
-
 	} `json:"choices"`
-
 }
 
 // OpenAILLM implements the LLM interface using OpenAI's API
@@ -272,7 +242,7 @@ func (llm *OpenAILLM) Call(ctx context.Context, messages []Message, tools []Tool
 	}
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	
+
 	var chatResponse ChatResponse
 	if err := json.NewDecoder(bytes.NewBuffer(bodyBytes)).Decode(&chatResponse); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %v", err)
@@ -309,6 +279,9 @@ func (llm *OpenAILLM) CallStream(ctx context.Context, messages []Message, tools 
 			"model":    llm.model,
 			"messages": messages,
 			"stream":   true,
+			"stream_options": map[string]bool{
+				"include_usage": true,
+			},
 		}
 
 		if len(tools) > 0 {

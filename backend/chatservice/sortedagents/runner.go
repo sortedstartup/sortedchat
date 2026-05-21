@@ -20,6 +20,14 @@ type TextChunkEvent struct {
 
 func (e *TextChunkEvent) EventType() string { return "text_chunk" }
 
+type UsageEvent struct {
+	InputTokens  int
+	OutputTokens int
+	CachedTokens int
+}
+
+func (e *UsageEvent) EventType() string { return "usage" }
+
 // ToolCallStartEvent represents the start of a tool call
 type ToolCallStartEvent struct {
 	ToolName         string
@@ -321,6 +329,13 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 					}
 
 					if len(chunk.Choices) == 0 {
+						if chunk.Usage != nil {
+							eventChan <- &UsageEvent{
+								InputTokens:  chunk.Usage.PromptTokens,
+								OutputTokens: chunk.Usage.CompletionTokens,
+								CachedTokens: chunk.Usage.PromptTokensDetails.CachedTokens,
+							}
+						}
 						continue
 					}
 
@@ -388,6 +403,14 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 									tc.ExtraContent.Google.ThoughtSignature += tcDelta.ExtraContent.Google.ThoughtSignature
 								}
 							}
+						}
+					}
+
+					if chunk.Usage != nil {
+						eventChan <- &UsageEvent{
+							InputTokens:  chunk.Usage.PromptTokens,
+							OutputTokens: chunk.Usage.CompletionTokens,
+							CachedTokens: chunk.Usage.PromptTokensDetails.CachedTokens,
 						}
 					}
 

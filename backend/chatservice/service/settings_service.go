@@ -27,6 +27,8 @@ type SettingService struct {
 	queue queue.Queue
 }
 
+const WEBSEARCH_SETTINGS_KEY = "websearch"
+
 func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingService {
 	slog.Debug("settings_service:NewSettingService")
 	settingsDAO, err := daoFactory.CreateSettingsDAO()
@@ -381,7 +383,7 @@ type webSearchSettings struct {
 }
 
 func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
-	value, err := s.settingsDAO.GetSettingValue("websearch")
+	value, err := s.settingsDAO.GetSettingValue(WEBSEARCH_SETTINGS_KEY)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &webSearchSettings{}, nil

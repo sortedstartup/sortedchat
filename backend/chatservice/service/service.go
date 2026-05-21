@@ -455,20 +455,26 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		currentUserPrompt = enhancedPrompt
 	}
 
-	if s.shouldUseAgenticChat(capabilities, hasImages, history, providerSettings) {
-		return s.runAgenticChat(
-			ctx,
-			chatId,
-			userID,
-			projectID,
-			model,
-			currentUserPrompt,
-			history,
-			ragChunks,
-			ragEnabled,
-			providerSettings,
-			stream,
-		)
+	if !hasImages && providerSettings != nil && strings.TrimSpace(providerSettings.ApiUrl) != "" {
+		webSearchSettings, err := s.getWebSearchSettings()
+		if err != nil {
+			slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err)
+		} else if strings.TrimSpace(webSearchSettings.BraveSearchAPIKey) != "" {
+			// TODO: check model capabilities for tool calling then only run agentic chat if tool calling is supported.
+			return s.runAgenticChat(
+				ctx,
+				chatId,
+				userID,
+				projectID,
+				model,
+				currentUserPrompt,
+				history,
+				ragChunks,
+				ragEnabled,
+				providerSettings,
+				stream,
+			)
+		}
 	}
 
 	llmReq := types.ChatCompletionRequest{

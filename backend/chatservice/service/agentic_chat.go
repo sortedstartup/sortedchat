@@ -20,38 +20,6 @@ Answer from your own knowledge and reasoning by default. Use web_search only whe
 When you search, ground the answer in the results and include relevant source URLs.
 `
 
-func (s *ChatService) shouldUseAgenticChat(capabilities *pb.ModelCapabilities, hasImages bool, history []dao.ChatMessageRow, providerSettings *pb.ProviderSettings) bool {
-	slog.Debug("service:Chat", "message", "checking if agentic chat should be used")
-	if hasImages || providerSettings == nil || strings.TrimSpace(providerSettings.ApiUrl) == "" {
-		return false
-	}
-
-	webSearchSettings, err := s.getWebSearchSettings()
-	if err != nil {
-		slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err)
-		return false
-	}
-
-	if strings.TrimSpace(webSearchSettings.BraveSearchAPIKey) == "" {
-		return false
-	}
-
-	// Today our agent loop is text-only, so we gate on text chat capability
-	// rather than provider name. Tool-calling capability can be added here once
-	// it exists in model metadata.
-	if capabilities == nil || capabilities.Text == nil || !capabilities.Text.Input || !capabilities.Text.Output {
-		return false
-	}
-
-	for _, msg := range history {
-		if _, ok := extractTextOnlyChatMessage(msg); !ok {
-			return false
-		}
-	}
-
-	return true
-}
-
 func extractTextOnlyChatMessage(msg dao.ChatMessageRow) (string, bool) {
 	slog.Debug("service:Chat", "message", "extracting text from chat message", "messageId", msg)
 	if msg.ContentImage != "" {

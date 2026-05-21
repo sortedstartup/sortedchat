@@ -1,4 +1,4 @@
-package sortedagents
+package service
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"sortedstartup/chatservice/sortedagents"
 )
 
 const braveSearchEndpoint = "https://api.search.brave.com/res/v1/web/search"
@@ -33,7 +35,6 @@ type braveSearchResponse struct {
 	} `json:"web"`
 }
 
-// NewBraveSearchTool creates a web search tool backed by Brave Search.
 func NewBraveSearchTool() *BraveSearchTool {
 	return &BraveSearchTool{
 		httpClient: http.DefaultClient,
@@ -49,8 +50,8 @@ func (t *BraveSearchTool) Description() string {
 	return "Search the web for fresh information and return a concise list of relevant results with titles, URLs, and snippets."
 }
 
-func (t *BraveSearchTool) Parameters() *JSONSchema {
-	schema, _ := GenerateSchema[braveSearchArgs]()
+func (t *BraveSearchTool) Parameters() *sortedagents.JSONSchema {
+	schema, _ := sortedagents.GenerateSchema[braveSearchArgs]()
 	return schema
 }
 

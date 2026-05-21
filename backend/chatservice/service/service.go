@@ -455,6 +455,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		currentUserPrompt = enhancedPrompt
 	}
 
+	// we are not allowing images in agentic chat for now because sortedagents does not support multi-modal input yet.
 	if !hasImages && providerSettings != nil && strings.TrimSpace(providerSettings.ApiUrl) != "" {
 		webSearchSettings, err := s.getWebSearchSettings()
 		if err != nil {

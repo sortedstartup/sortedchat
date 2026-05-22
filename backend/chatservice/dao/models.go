@@ -84,6 +84,29 @@ type Models struct {
 	IsEmbeddingModel bool    `db:"is_embedding_model"`
 }
 
+type HostedModel struct {
+	ID               string          `json:"id"`
+	Name             string          `json:"name"`
+	URL              string          `json:"url"`
+	Provider         string          `json:"provider"`
+	InputTokenCost   float64         `json:"input_token_cost"`
+	OutputTokenCost  float64         `json:"output_token_cost"`
+	CachedTokenCost  float64         `json:"cached_token_cost"`
+	IsEmbeddingModel bool            `json:"is_embedding_model"`
+	IsDownloadable   bool            `json:"is_downloadable"`
+	Capabilities     json.RawMessage `json:"capabilities"`
+	IsEnabled        *bool           `json:"is_enabled"`
+	ModelInfo        json.RawMessage `json:"model_info"`
+	CreatorName      string          `json:"creator_name"`
+	ModifiedBy       string          `json:"modified_by"`
+	Description      string          `json:"description"`
+}
+
+type ModelCatalogVersion struct {
+	JSONSchemaVersion    string
+	ModelRevisionVersion string
+}
+
 // Intermediate struct for JSON parsing
 type CapabilitiesJSON struct {
 	Text     CapabilityJSON `json:"text"`
@@ -109,7 +132,6 @@ func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error
 	}
 	var caps CapabilitiesJSON
 	dec := json.NewDecoder(strings.NewReader(capabilitiesJSON))
-	dec.DisallowUnknownFields()
 	if err := dec.Decode(&caps); err != nil {
 		return nil, fmt.Errorf("parse capabilities: %w", err)
 	}

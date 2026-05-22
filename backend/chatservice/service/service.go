@@ -15,6 +15,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"sortedstartup/chatservice/constants"
 	"sortedstartup/chatservice/dao"
@@ -66,6 +67,13 @@ const MAX_CHAT_NAME_LENGTH = 50
 const MIN_CHAT_NAME_LENGTH = 1
 const LOCAL_PROVIDER = constants.LOCAL_PROVIDER
 
+const (
+	hostedModelsCatalogURL    = "https://raw.githubusercontent.com/sanskaraggarwal2025/hosted_models/main/models.json"
+	hostedModelsVersionURL    = "https://raw.githubusercontent.com/sanskaraggarwal2025/hosted_models/main/models_version.json"
+	hostedModelsHTTPTimeout   = 15 * time.Second
+	supportedModelsJSONSchema = "v1"
+)
+
 // Image processing constants
 const (
 	MaxImageSizeBytes   = 20 * 1024 * 1024 // 20MB per image
@@ -79,6 +87,20 @@ var supportedImageTypes = map[string]bool{
 	"png":  true,
 	"gif":  true,
 	"webp": true,
+}
+
+type hostedModelsManifest struct {
+	Metadata hostedModelsMetadata `json:"metadata"`
+	Models   []dao.HostedModel    `json:"models_list"`
+}
+
+type hostedModelsMetadata struct {
+	JSONSchemaVersion string `json:"json_schema_version"`
+}
+
+type hostedModelsVersionManifest struct {
+	JSONSchemaVersion    string `json:"json_schema_version"`
+	ModelRevisionVersion string `json:"model_revision_version"`
 }
 
 func NewChatService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory dao.DAOFactory) (*ChatService, error) {
@@ -1708,15 +1730,141 @@ func (s *ChatService) AddModel(ctx context.Context, modelId, providerName, model
 	return "Model added successfully", nil
 }
 
+func (s *ChatService) syncHostedModelsIfNeeded(ctx context.Context) error {
+	currentVersion, err := s.dao.GetModelCatalogVersion()
+	if err != nil {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to read current model catalog version", "error", err)
+		return fmt.Errorf("failed to read current model catalog version")
+	}
+
+	versionReq, err := http.NewRequestWithContext(ctx, http.MethodGet, hostedModelsVersionURL, nil)
+	if err != nil {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to create hosted models version request", "error", err)
+		return fmt.Errorf("failed to create request for hosted models version")
+	}
+	versionReq.Header.Set("Accept", "application/json")
+
+	client := &http.Client{Timeout: hostedModelsHTTPTimeout}
+	resp, err := client.Do(versionReq)
+	if err != nil {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to fetch hosted models version", "error", err)
+		return fmt.Errorf("failed to fetch hosted models version")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "hosted models version endpoint returned non-200", "status", resp.StatusCode)
+		return fmt.Errorf("hosted models version endpoint returned non-200")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to read hosted models version response", "error", err)
+		return fmt.Errorf("failed to read hosted models version response")
+	}
+
+	var remoteVersion hostedModelsVersionManifest
+	if err := json.Unmarshal(body, &remoteVersion); err != nil {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to decode hosted models version JSON", "error", err)
+		return fmt.Errorf("failed to decode hosted models version JSON")
+	}
+
+	if strings.TrimSpace(remoteVersion.JSONSchemaVersion) != supportedModelsJSONSchema {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "schema version mismatch please update sortedchat with latest version", "remoteSchemaVersion", remoteVersion.JSONSchemaVersion, "supportedSchemaVersion", supportedModelsJSONSchema)
+		return fmt.Errorf("schema version mismatch please update sortedchat with latest version")
+	}
+
+	if currentVersion != nil && strings.TrimSpace(currentVersion.JSONSchemaVersion) != "" && strings.TrimSpace(currentVersion.JSONSchemaVersion) != strings.TrimSpace(remoteVersion.JSONSchemaVersion) {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "schema version mismatch please update sortedchat with latest version", "dbSchemaVersion", currentVersion.JSONSchemaVersion, "remoteSchemaVersion", remoteVersion.JSONSchemaVersion)
+		return fmt.Errorf("schema version mismatch please update sortedchat with latest version")
+	}
+
+	if currentVersion != nil && strings.TrimSpace(currentVersion.ModelRevisionVersion) == strings.TrimSpace(remoteVersion.ModelRevisionVersion) {
+		slog.Info("service:syncHostedModelsIfNeeded", "message", "skipping hosted model sync because model revision version is unchanged", "modelRevisionVersion", remoteVersion.ModelRevisionVersion)
+		return nil
+	}
+
+	modelsReq, err := http.NewRequestWithContext(ctx, http.MethodGet, hostedModelsCatalogURL, nil)
+	if err != nil {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to create hosted models request", "error", err)
+		return fmt.Errorf("failed to create request for hosted models")
+	}
+	modelsReq.Header.Set("Accept", "application/json")
+
+	modelsResp, err := client.Do(modelsReq)
+	if err != nil {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to fetch hosted models", "error", err)
+		return fmt.Errorf("failed to fetch hosted models")
+	}
+	defer modelsResp.Body.Close()
+
+	if modelsResp.StatusCode != http.StatusOK {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "hosted models endpoint returned non-200", "status", modelsResp.StatusCode)
+		return fmt.Errorf("hosted models endpoint returned non-200")
+	}
+
+	modelsBody, err := io.ReadAll(modelsResp.Body)
+	if err != nil {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to read hosted models response", "error", err)
+		return fmt.Errorf("failed to read hosted models response")
+	}
+
+	var manifest hostedModelsManifest
+	if err := json.Unmarshal(modelsBody, &manifest); err != nil {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to decode hosted models response", "error", err)
+		return fmt.Errorf("failed to decode hosted models response")
+	}
+
+	if strings.TrimSpace(manifest.Metadata.JSONSchemaVersion) != supportedModelsJSONSchema {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "schema version mismatch please update sortedchat with latest version", "remoteSchemaVersion", manifest.Metadata.JSONSchemaVersion, "supportedSchemaVersion", supportedModelsJSONSchema)
+		return fmt.Errorf("schema version mismatch please update sortedchat with latest version")
+	}
+
+	if strings.TrimSpace(manifest.Metadata.JSONSchemaVersion) != strings.TrimSpace(remoteVersion.JSONSchemaVersion) {
+		slog.Error("service:syncHostedModelsIfNeeded", "message", "schema version mismatch between models version file and models manifest", "versionFileSchemaVersion", remoteVersion.JSONSchemaVersion, "manifestSchemaVersion", manifest.Metadata.JSONSchemaVersion)
+		return fmt.Errorf("schema version mismatch between models version file and models manifest")
+	}
+
+	if len(manifest.Models) == 0 {
+		slog.Info("service:syncHostedModelsIfNeeded", "message", "hosted models manifest was empty")
+		return fmt.Errorf("hosted models manifest was empty")
+	}
+
+	version := dao.ModelCatalogVersion{
+		JSONSchemaVersion:    remoteVersion.JSONSchemaVersion,
+		ModelRevisionVersion: remoteVersion.ModelRevisionVersion,
+	}
+
+	for _, model := range manifest.Models {
+		if strings.TrimSpace(model.ID) == "" {
+			slog.Warn("service:syncHostedModelsIfNeeded", "message", "skipping hosted model with empty id")
+			continue
+		}
+
+		if strings.TrimSpace(model.Name) == "" {
+			model.Name = model.ID
+		}
+
+		if err := s.dao.UpsertHostedModel(model, version); err != nil {
+			slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to upsert hosted model", "error", err, "modelID", model.ID)
+			return fmt.Errorf("failed to sync hosted models")
+		}
+	}
+
+	return nil
+}
+
 func (s *ChatService) Init(config *dao.Config) *sql.DB {
 	slog.Debug("service:Init", "config", config)
 	//for sqlite we pass db connnection to migrate and seed functions
 	//for postgres we pass dsn(URL) to migrate and seed functions
+	var sqlDB *sql.DB
 	switch config.Database.Type {
 	case dao.DatabaseTypeSQLite:
 		//Create DB and run migrations
 		sqlite_vec.Auto()
-		sqlDB, err := sql.Open("sqlite3", config.Database.SQLite.URL)
+		var err error
+		sqlDB, err = sql.Open("sqlite3", config.Database.SQLite.URL)
 		if err != nil {
 			log.Fatalf("failed to open database: %v", err)
 		}
@@ -1728,7 +1876,6 @@ func (s *ChatService) Init(config *dao.Config) *sql.DB {
 		if err := dao.SeedDB_UsingConnectionDefaults(sqlDB); err != nil {
 			log.Fatalf("ChatService: Failed to seed SQLite database: %v", err)
 		}
-		return sqlDB
 	case dao.DatabaseTypePostgres:
 		slog.Info("ChatService: Running PostgreSQL migrations")
 		dsn := config.Database.Postgres.GetPostgresDSN()
@@ -1741,5 +1888,7 @@ func (s *ChatService) Init(config *dao.Config) *sql.DB {
 	default:
 		log.Fatalf("ChatService: Unsupported database type: %s", config.Database.Type)
 	}
-	return nil
+
+	go s.syncHostedModelsIfNeeded(context.Background())
+	return sqlDB
 }

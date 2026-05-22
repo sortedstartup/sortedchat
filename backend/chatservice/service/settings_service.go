@@ -29,7 +29,7 @@ type SettingService struct {
 
 const (
 	WEBSEARCH_SETTINGS_KEY   = "tool.websearch.brave"
-	CHAT_DEFAULT_PROMPT_KEY  = "chat.default_prompt"
+	CHAT_DEFAULT_PROMPT_KEY  = "chat.default_system_prompt"
 	defaultBraveSearchAPIURL = "https://api.search.brave.com/res/v1/web/search"
 	defaultBraveSearchCost   = "0.005"
 	defaultChatPrompt        = `You are SortedChat’s default assistant.

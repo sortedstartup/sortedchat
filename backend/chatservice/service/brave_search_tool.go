@@ -13,10 +13,9 @@ import (
 	"sortedstartup/chatservice/sortedagents"
 )
 
-const braveSearchEndpoint = "https://api.search.brave.com/res/v1/web/search"
-
 type BraveSearchTool struct {
 	httpClient *http.Client
+	apiURL     string
 	apiKey     string
 }
 
@@ -37,12 +36,17 @@ type braveSearchResponse struct {
 func NewBraveSearchTool() *BraveSearchTool {
 	return &BraveSearchTool{
 		httpClient: http.DefaultClient,
+		apiURL:     defaultBraveSearchAPIURL,
 	}
 }
 
-func NewBraveSearchToolWithAPIKey(apiKey string) *BraveSearchTool {
+func NewBraveSearchToolWithConfig(apiURL, apiKey string) *BraveSearchTool {
+	if strings.TrimSpace(apiURL) == "" {
+		apiURL = defaultBraveSearchAPIURL
+	}
 	return &BraveSearchTool{
 		httpClient: http.DefaultClient,
+		apiURL:     apiURL,
 		apiKey:     apiKey,
 	}
 }
@@ -63,8 +67,8 @@ func (t *BraveSearchTool) Parameters() *sortedagents.JSONSchema {
 func (t *BraveSearchTool) Execute(ctx context.Context, args map[string]any) (any, error) {
 	slog.Info("BraveSearchTool:Execute", "message", "executing brave search tool", "args", args)
 	if strings.TrimSpace(t.apiKey) == "" {
-		slog.Error("BraveSearchTool:Execute", "message", "BRAVE_SEARCH_API_KEY environment variable not set")
-		return nil, fmt.Errorf("BRAVE_SEARCH_API_KEY environment variable not set")
+		slog.Error("BraveSearchTool:Execute", "message", "brave search api key is not configured")
+		return nil, fmt.Errorf("brave search api key is not configured")
 	}
 
 	query, _ := args["query"].(string)
@@ -74,7 +78,7 @@ func (t *BraveSearchTool) Execute(ctx context.Context, args map[string]any) (any
 		return nil, fmt.Errorf("query parameter is required")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, braveSearchEndpoint+"?q="+url.QueryEscape(query), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, t.apiURL+"?q="+url.QueryEscape(query), nil)
 	if err != nil {
 		slog.Error("BraveSearchTool:Execute", "message", "failed to create brave search request", "error", err)
 		return nil, fmt.Errorf("failed to create brave search request: %w", err)

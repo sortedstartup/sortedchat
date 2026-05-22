@@ -461,7 +461,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		webSearchSettings, err := s.getWebSearchSettings()
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err)
-		} else if strings.TrimSpace(webSearchSettings.BraveSearchAPIKey) != "" {
+		} else if strings.TrimSpace(webSearchSettings.APIKey) != "" {
 			err := s.runAgenticChat(
 				ctx,
 				chatId,

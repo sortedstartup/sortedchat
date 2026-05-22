@@ -40,7 +40,8 @@ function getClient(): SettingServiceClient {
 export const $settings = atom<Settings>(new Settings({}));
 export const $providerSettings = atom<Map<string, ProviderSettings>>(new Map());
 export const $isLoadingProviderSettings = atom<boolean>(false);
-export const $webSearch = atom<string>("");
+export const $webSearchKey = atom<string>("");
+export const $webSearchApiUrl = atom<string>("https://api.search.brave.com/res/v1/web/search");
 export const $isLoadingWebSearch = atom<boolean>(false);
 
 // Onboarding state
@@ -283,8 +284,11 @@ export const SetSetting = async (name: string, settings: Record<string, string>)
 export const GetWebSearchSetting = async (): Promise<void> => {
   $isLoadingWebSearch.set(true);
   try {
-    const settings = await GetSetting("websearch");
-    $webSearch.set(settings.brave_search_api_key ?? "");
+    const settings = await GetSetting("tool.websearch.brave");
+    $webSearchApiUrl.set(
+      settings.apiUrl ?? "https://api.search.brave.com/res/v1/web/search",
+    );
+    $webSearchKey.set(settings.apiKey ?? "");
   } catch (error) {
     console.error("Failed to fetch websearch setting:", error);
     throw error;
@@ -298,7 +302,7 @@ onMount($providerSettings, () => {
   return () => { };
 });
 
-onMount($webSearch, () => {
+onMount($webSearchKey, () => {
   GetWebSearchSetting().catch((error) => {
     console.error("Failed to load websearch setting on mount:", error);
   });

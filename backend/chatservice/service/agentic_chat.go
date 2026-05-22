@@ -14,11 +14,6 @@ import (
 )
 
 const MAX_TURNS = 4
-const chatAgentInstructions = `You are SortedChat’s default assistant.
-
-Answer from your own knowledge and reasoning by default. Use web_search only when fresh, external, verifiable, or source-backed information is needed, such as news, prices, laws, schedules, product details, live data, recent updates, or explicit search requests.
-When you search, ground the answer in the results and include relevant source URLs.
-`
 
 func extractTextOnlyChatMessage(msg dao.ChatMessageRow) (string, bool) {
 	slog.Debug("service:Chat", "message", "extracting text from chat message", "messageId", msg)
@@ -52,10 +47,10 @@ func extractTextOnlyChatMessage(msg dao.ChatMessageRow) (string, bool) {
 	return strings.TrimSpace(strings.Join(textParts, "\n")), true
 }
 
-func (s *ChatService) buildAgenticSession(chatID string, history []dao.ChatMessageRow) (sortedagents.Session, error) {
+func (s *ChatService) buildAgenticSession(chatID string, prompt string, history []dao.ChatMessageRow) (sortedagents.Session, error) {
 	slog.Debug("service:Chat", "message", "building agentic session from chat history", "chatId", chatID)
 	messages := []sortedagents.Message{
-		{Role: "system", Content: chatAgentInstructions},
+		{Role: "system", Content: prompt},
 	}
 
 	for _, msg := range history {
@@ -87,7 +82,13 @@ func (s *ChatService) runAgenticChat(
 	stream func(*pb.ChatResponse) error,
 ) error {
 	slog.Debug("service:Chat", "message", "running agentic chat", "chatId", chatID, "userID", userID, "projectID", projectID)
-	session, err := s.buildAgenticSession(chatID, history)
+	agentPrompt, err := s.getChatDefaultPrompt()
+	if err != nil {
+		slog.Error("service:Chat", "message", "failed to load chat default prompt", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+		return fmt.Errorf("failed to load chat prompt")
+	}
+
+	session, err := s.buildAgenticSession(chatID, agentPrompt, history)
 	if err != nil {
 		slog.Error("service:Chat", "message", "failed to build agentic session", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to prepare chat context")
@@ -101,9 +102,9 @@ func (s *ChatService) runAgenticChat(
 
 	agent := sortedagents.NewAgent(
 		"chat-agent",
-		chatAgentInstructions,
+		agentPrompt,
 		model,
-		[]sortedagents.Tool{NewBraveSearchToolWithAPIKey(webSearchSettings.BraveSearchAPIKey)},
+		[]sortedagents.Tool{NewBraveSearchToolWithConfig(webSearchSettings.APIURL, webSearchSettings.APIKey)},
 	)
 	apiKey := providerSettings.ApiKey
 	apiURL := providerSettings.ApiUrl

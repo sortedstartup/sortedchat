@@ -27,7 +27,16 @@ type SettingService struct {
 	queue queue.Queue
 }
 
-const WEBSEARCH_SETTINGS_KEY = "websearch"
+const (
+	WEBSEARCH_SETTINGS_KEY   = "tool.websearch.brave"
+	CHAT_DEFAULT_PROMPT_KEY  = "chat.default_prompt"
+	defaultBraveSearchAPIURL = "https://api.search.brave.com/res/v1/web/search"
+	defaultChatPrompt        = `You are SortedChat’s default assistant.
+
+Answer from your own knowledge and reasoning by default. Use web_search only when fresh, external, verifiable, or source-backed information is needed, such as news, prices, laws, schedules, product details, live data, recent updates, or explicit search requests.
+When you search, ground the answer in the results and include relevant source URLs.
+`
+)
 
 func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingService {
 	slog.Debug("settings_service:NewSettingService")
@@ -87,7 +96,34 @@ func (s *SettingService) Init() {
 		s.setSettingWithoutCompletingOnboarding("settings", st)
 	}
 
+	webSearchDefaults, err := json.Marshal(webSearchSettings{
+		APIURL: defaultBraveSearchAPIURL,
+		APIKey: "",
+	})
+	if err != nil {
+		slog.Error("settings_service:Init", "step", "failed to marshal default web search settings", "error", err)
+	} else {
+		s.ensureDefaultSetting(WEBSEARCH_SETTINGS_KEY, string(webSearchDefaults))
+	}
+	s.ensureDefaultSetting(CHAT_DEFAULT_PROMPT_KEY, defaultChatPrompt)
+
 	// Note: FirstBootComplete() is now called only after onboarding wizard completion
+}
+
+func (s *SettingService) ensureDefaultSetting(name string, defaultValue string) {
+	value, err := s.dao.GetSettingValue(name)
+	if err != nil && err != sql.ErrNoRows {
+		slog.Error("settings_service:ensureDefaultSetting", "step", "failed to load setting", "name", name, "error", err)
+		return
+	}
+
+	if strings.TrimSpace(value) != "" {
+		return
+	}
+
+	if err := s.dao.SetSettingValue(name, defaultValue); err != nil {
+		slog.Error("settings_service:ensureDefaultSetting", "step", "failed to seed setting", "name", name, "error", err)
+	}
 }
 
 func (s *SettingService) FirstBootComplete() {
@@ -379,20 +415,21 @@ func (s *SettingService) TestConnection(ctx context.Context, req *pb.TestConnect
 }
 
 type webSearchSettings struct {
-	BraveSearchAPIKey string `json:"brave_search_api_key"`
+	APIURL string `json:"apiUrl"`
+	APIKey string `json:"apiKey"`
 }
 
 func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
 	value, err := s.settingsDAO.GetSettingValue(WEBSEARCH_SETTINGS_KEY)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return &webSearchSettings{}, nil
+			return &webSearchSettings{APIURL: defaultBraveSearchAPIURL}, nil
 		}
 		return nil, err
 	}
 
 	if strings.TrimSpace(value) == "" {
-		return &webSearchSettings{}, nil
+		return &webSearchSettings{APIURL: defaultBraveSearchAPIURL}, nil
 	}
 
 	var settings webSearchSettings
@@ -400,5 +437,25 @@ func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
 		return nil, fmt.Errorf("failed to parse websearch settings: %w", err)
 	}
 
+	if strings.TrimSpace(settings.APIURL) == "" {
+		settings.APIURL = defaultBraveSearchAPIURL
+	}
+
 	return &settings, nil
+}
+
+func (s *ChatService) getChatDefaultPrompt() (string, error) {
+	value, err := s.settingsDAO.GetSettingValue(CHAT_DEFAULT_PROMPT_KEY)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return defaultChatPrompt, nil
+		}
+		return "", err
+	}
+
+	if strings.TrimSpace(value) == "" {
+		return defaultChatPrompt, nil
+	}
+
+	return value, nil
 }

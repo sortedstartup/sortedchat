@@ -462,7 +462,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err)
 		} else if strings.TrimSpace(webSearchSettings.BraveSearchAPIKey) != "" {
-			return s.runAgenticChat(
+			err := s.runAgenticChat(
 				ctx,
 				chatId,
 				userID,
@@ -475,6 +475,11 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				providerSettings,
 				stream,
 			)
+			if err == nil {
+				return nil
+			}
+
+			slog.Warn("service:Chat", "message", "agentic chat failed, falling back to direct llm call", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		}
 	}
 

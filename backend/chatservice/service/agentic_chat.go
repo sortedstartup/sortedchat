@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"sortedstartup/chatservice/dao"
@@ -14,7 +15,6 @@ import (
 )
 
 const MAX_TURNS = 4
-const braveSearchRequestCost = 0.005
 
 func extractTextOnlyChatMessage(msg dao.ChatMessageRow) (string, bool) {
 	slog.Debug("service:Chat", "message", "extracting text from chat message", "messageId", msg)
@@ -139,6 +139,11 @@ func (s *ChatService) runAgenticChat(
 	var fullResponse strings.Builder
 	var inputTokens, outputTokens, cachedTokens int
 	var successfulWebSearchCalls int
+	searchCostPerRequest, err := parseBraveSearchCost(webSearchSettings.Cost)
+	if err != nil {
+		slog.Warn("service:Chat", "message", "invalid brave search request cost, using default", "cost", webSearchSettings.Cost, "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+		searchCostPerRequest, _ = parseBraveSearchCost(defaultBraveSearchCost)
+	}
 	firstToken := true
 	completed := false
 
@@ -164,7 +169,7 @@ func (s *ChatService) runAgenticChat(
 			nonCachedInputTokens = 0
 		}
 
-		searchCost := float64(successfulWebSearchCalls) * braveSearchRequestCost
+		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
 
 		if _, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled); err != nil {
 			slog.Error("service:Chat", "message", "failed to save partial agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
@@ -271,7 +276,7 @@ func (s *ChatService) runAgenticChat(
 			nonCachedInputTokens = 0
 		}
 
-		searchCost := float64(successfulWebSearchCalls) * braveSearchRequestCost
+		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
 		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
@@ -309,4 +314,15 @@ func (s *ChatService) runAgenticChat(
 			},
 		},
 	})
+}
+
+func parseBraveSearchCost(value string) (float64, error) {
+	cost, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	if err != nil {
+		return 0, err
+	}
+	if cost < 0 {
+		return 0, fmt.Errorf("cost must be non-negative")
+	}
+	return cost, nil
 }

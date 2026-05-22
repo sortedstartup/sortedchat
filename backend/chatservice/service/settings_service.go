@@ -31,6 +31,7 @@ const (
 	WEBSEARCH_SETTINGS_KEY   = "tool.websearch.brave"
 	CHAT_DEFAULT_PROMPT_KEY  = "chat.default_prompt"
 	defaultBraveSearchAPIURL = "https://api.search.brave.com/res/v1/web/search"
+	defaultBraveSearchCost   = "0.005"
 	defaultChatPrompt        = `You are SortedChat’s default assistant.
 
 Answer from your own knowledge and reasoning by default. Use web_search only when fresh, external, verifiable, or source-backed information is needed, such as news, prices, laws, schedules, product details, live data, recent updates, or explicit search requests.
@@ -99,6 +100,7 @@ func (s *SettingService) Init() {
 	webSearchDefaults, err := json.Marshal(webSearchSettings{
 		APIURL: defaultBraveSearchAPIURL,
 		APIKey: "",
+		Cost:   defaultBraveSearchCost,
 	})
 	if err != nil {
 		slog.Error("settings_service:Init", "step", "failed to marshal default web search settings", "error", err)
@@ -417,6 +419,7 @@ func (s *SettingService) TestConnection(ctx context.Context, req *pb.TestConnect
 type webSearchSettings struct {
 	APIURL string `json:"apiUrl"`
 	APIKey string `json:"apiKey"`
+	Cost   string `json:"cost"`
 }
 
 func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
@@ -439,6 +442,9 @@ func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
 
 	if strings.TrimSpace(settings.APIURL) == "" {
 		settings.APIURL = defaultBraveSearchAPIURL
+	}
+	if strings.TrimSpace(settings.Cost) == "" {
+		settings.Cost = defaultBraveSearchCost
 	}
 
 	return &settings, nil

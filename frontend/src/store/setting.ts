@@ -42,6 +42,7 @@ export const $providerSettings = atom<Map<string, ProviderSettings>>(new Map());
 export const $isLoadingProviderSettings = atom<boolean>(false);
 export const $webSearchKey = atom<string>("");
 export const $webSearchApiUrl = atom<string>("https://api.search.brave.com/res/v1/web/search");
+export const $webSearchCost = atom<string>("0.005");
 export const $isLoadingWebSearch = atom<boolean>(false);
 
 // Onboarding state
@@ -288,6 +289,7 @@ export const GetWebSearchSetting = async (): Promise<void> => {
     $webSearchApiUrl.set(
       settings.apiUrl ?? "https://api.search.brave.com/res/v1/web/search",
     );
+    $webSearchCost.set(settings.cost ?? "0.005");
     $webSearchKey.set(settings.apiKey ?? "");
   } catch (error) {
     console.error("Failed to fetch websearch setting:", error);

@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { $isLoadingWebSearch, $webSearchKey, $webSearchApiUrl, SetSetting } from "@/store/setting";
+import { $isLoadingWebSearch, $webSearchKey, $webSearchApiUrl, $webSearchCost, SetSetting } from "@/store/setting";
 import { toast } from "sonner";
 
 const Settings = () => {
   const { theme, setTheme } = useTheme();
   const webSearchKey = useStore($webSearchKey);
   const webSearchApiUrl = useStore($webSearchApiUrl);
+  const webSearchCost = useStore($webSearchCost);
   const isLoadingWebSearch = useStore($isLoadingWebSearch);
   const [isSavingWebSearch, setIsSavingWebSearch] = useState(false);
 
@@ -20,12 +21,15 @@ const Settings = () => {
     try {
       const braveSearchApiUrl = webSearchApiUrl.trim() || "https://api.search.brave.com/res/v1/web/search";
       const braveSearchApiKey = webSearchKey.trim();
+      const braveSearchCost = webSearchCost.trim() || "0.005";
       const message = await SetSetting("tool.websearch.brave", {
         apiUrl: braveSearchApiUrl,
         apiKey: braveSearchApiKey,
+        cost: braveSearchCost,
       });
       $webSearchApiUrl.set(braveSearchApiUrl);
       $webSearchKey.set(braveSearchApiKey);
+      $webSearchCost.set(braveSearchCost);
       toast.success(message);
     } catch (error) {
       console.error("Failed to save websearch settings:", error);
@@ -93,6 +97,19 @@ const Settings = () => {
                   value={webSearchKey}
                   onChange={(e) => $webSearchKey.set(e.target.value)}
                   placeholder="Enter Brave Search API key"
+                  disabled={isLoadingWebSearch || isSavingWebSearch}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="brave-search-cost">Brave Search Cost Per Request (USD)</Label>
+                <Input
+                  id="brave-search-cost"
+                  type="number"
+                  min="0"
+                  value={webSearchCost}
+                  onChange={(e) => $webSearchCost.set(e.target.value)}
+                  placeholder="Enter cost per request"
                   disabled={isLoadingWebSearch || isSavingWebSearch}
                 />
               </div>

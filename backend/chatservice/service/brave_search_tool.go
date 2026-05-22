@@ -63,17 +63,20 @@ func (t *BraveSearchTool) Parameters() *sortedagents.JSONSchema {
 func (t *BraveSearchTool) Execute(ctx context.Context, args map[string]any) (any, error) {
 	slog.Info("BraveSearchTool:Execute", "message", "executing brave search tool", "args", args)
 	if strings.TrimSpace(t.apiKey) == "" {
+		slog.Error("BraveSearchTool:Execute", "message", "BRAVE_SEARCH_API_KEY environment variable not set")
 		return nil, fmt.Errorf("BRAVE_SEARCH_API_KEY environment variable not set")
 	}
 
 	query, _ := args["query"].(string)
 	query = strings.TrimSpace(query)
 	if query == "" {
+		slog.Error("BraveSearchTool:Execute", "message", "query parameter is required")
 		return nil, fmt.Errorf("query parameter is required")
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, braveSearchEndpoint+"?q="+url.QueryEscape(query), nil)
 	if err != nil {
+		slog.Error("BraveSearchTool:Execute", "message", "failed to create brave search request", "error", err)
 		return nil, fmt.Errorf("failed to create brave search request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
@@ -81,21 +84,25 @@ func (t *BraveSearchTool) Execute(ctx context.Context, args map[string]any) (any
 
 	resp, err := t.httpClient.Do(req)
 	if err != nil {
+		slog.Error("BraveSearchTool:Execute", "message", "brave search request failed", "error", err)
 		return nil, fmt.Errorf("brave search request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		slog.Error("BraveSearchTool:Execute", "message", "failed to read brave search response", "error", err)
 		return nil, fmt.Errorf("failed to read brave search response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		slog.Error("BraveSearchTool:Execute", "message", "brave search failed", "statusCode", resp.StatusCode, "body", strings.TrimSpace(string(body)))
 		return nil, fmt.Errorf("brave search failed with status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
 	var payload braveSearchResponse
 	if err := json.Unmarshal(body, &payload); err != nil {
+		slog.Error("BraveSearchTool:Execute", "message", "failed to parse brave search response", "error", err)
 		return nil, fmt.Errorf("failed to parse brave search response: %w", err)
 	}
 
@@ -114,6 +121,8 @@ func (t *BraveSearchTool) Execute(ctx context.Context, args map[string]any) (any
 			"snippet": item.Description,
 		})
 	}
+
+	slog.Info("BraveSearchTool:Execute", "message", "brave search executed successfully", "query", query, "resultsCount", len(results))
 
 	return map[string]any{
 		"query":   query,

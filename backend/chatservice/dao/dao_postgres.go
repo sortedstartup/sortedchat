@@ -214,6 +214,7 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 	inputTokens int,
 	outputTokens int,
 	cachedTokens int,
+	searchCost float64,
 	references string,
 	ragEnabled bool,
 ) (MessageSummary, error) {
@@ -253,7 +254,7 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 		calc AS (
 			SELECT (p.input_token_cost * $6
 				+ p.output_token_cost * $7
-				+ p.cached_token_cost * $8) / 1000000.0 AS cost
+				+ p.cached_token_cost * $8) / 1000000.0 + $12 AS cost
 			FROM prices p
 		),
 		upd_msg AS (
@@ -278,7 +279,7 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 	err := p.db.QueryRow(sqlQuery,
 		chatId, role, content, contentImageValue, model,
 		inputTokens, outputTokens, cachedTokens,
-		userID, referencesValue, ragEnabled,
+		userID, referencesValue, ragEnabled, searchCost,
 	).Scan(&messageId, &cost)
 
 	if err != nil {

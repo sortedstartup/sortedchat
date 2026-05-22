@@ -14,6 +14,7 @@ import (
 )
 
 const MAX_TURNS = 4
+const braveSearchRequestCost = 0.005
 
 func extractTextOnlyChatMessage(msg dao.ChatMessageRow) (string, bool) {
 	slog.Debug("service:Chat", "message", "extracting text from chat message", "messageId", msg)
@@ -137,6 +138,7 @@ func (s *ChatService) runAgenticChat(
 
 	var fullResponse strings.Builder
 	var inputTokens, outputTokens, cachedTokens int
+	var successfulWebSearchCalls int
 	firstToken := true
 	completed := false
 
@@ -162,7 +164,9 @@ func (s *ChatService) runAgenticChat(
 			nonCachedInputTokens = 0
 		}
 
-		if _, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled); err != nil {
+		searchCost := float64(successfulWebSearchCalls) * braveSearchRequestCost
+
+		if _, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled); err != nil {
 			slog.Error("service:Chat", "message", "failed to save partial agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		}
 	}
@@ -214,6 +218,11 @@ func (s *ChatService) runAgenticChat(
 			outputTokens = e.OutputTokens
 			cachedTokens = e.CachedTokens
 
+		case *sortedagents.ToolCallEndEvent:
+			if e.ToolName == "web_search" && e.Error == nil {
+				successfulWebSearchCalls++
+			}
+
 		case *sortedagents.CompleteEvent:
 			completed = true
 
@@ -262,7 +271,8 @@ func (s *ChatService) runAgenticChat(
 			nonCachedInputTokens = 0
 		}
 
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled)
+		searchCost := float64(successfulWebSearchCalls) * braveSearchRequestCost
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		} else {

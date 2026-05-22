@@ -8,7 +8,7 @@ The flow works as follows:
 
 - In `service.go`, the `Chat` function checks the selected model's capabilities.
 - For now, model capabilities are seeded in `shared_models_metadata`.
-- If the current message does not contain images and the model supports tool calling, we route the request through the agentic chat flow.
+- If the current message does not contain images, model supports tool calling and websearch api key is present, we route the request through the agentic chat flow.
 - We do not currently support images in `sortedagents`, so image-based chat requests continue to use the normal LLM path.
 
 ## Chat Agent Behavior

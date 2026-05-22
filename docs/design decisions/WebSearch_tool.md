@@ -55,3 +55,4 @@ We also store the default chat agent prompt in the `settings` table.
 - Add Brave Search cost tracking and reporting.
 - We could add RAG as a Tool
 - we can entirely remove, direct llm call, if the model does not support function/Tool calling, simply start teh agent with no tools
+- add scraping tool to get better result

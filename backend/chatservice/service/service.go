@@ -1730,103 +1730,103 @@ func (s *ChatService) AddModel(ctx context.Context, modelId, providerName, model
 	return "Model added successfully", nil
 }
 
-func (s *ChatService) syncHostedModelsIfNeeded(ctx context.Context) error {
+func (s *ChatService) UpdateModelsList(ctx context.Context) error {
 	currentVersion, err := s.dao.GetModelCatalogVersion()
 	if err != nil {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to read current model catalog version", "error", err)
-		return fmt.Errorf("failed to read current model catalog version")
+		slog.Error("service:UpdateModelsList", "message", "failed to read current model catalog version", "error", err)
+		return fmt.Errorf("failed to update models list")
 	}
 
 	versionReq, err := http.NewRequestWithContext(ctx, http.MethodGet, hostedModelsVersionURL, nil)
 	if err != nil {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to create hosted models version request", "error", err)
-		return fmt.Errorf("failed to create request for hosted models version")
+		slog.Error("service:UpdateModelsList", "message", "failed to create hosted models version request", "error", err)
+		return fmt.Errorf("failed to update models list")
 	}
 	versionReq.Header.Set("Accept", "application/json")
 
 	client := &http.Client{Timeout: hostedModelsHTTPTimeout}
 	resp, err := client.Do(versionReq)
 	if err != nil {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to fetch hosted models version", "error", err)
-		return fmt.Errorf("failed to fetch hosted models version")
+		slog.Error("service:UpdateModelsList", "message", "failed to fetch hosted models version", "error", err)
+		return fmt.Errorf("failed to update models list")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "hosted models version endpoint returned non-200", "status", resp.StatusCode)
-		return fmt.Errorf("hosted models version endpoint returned non-200")
+		slog.Error("service:UpdateModelsList", "message", "hosted models version endpoint returned non-200", "status", resp.StatusCode)
+		return fmt.Errorf("failed to update models list")
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to read hosted models version response", "error", err)
-		return fmt.Errorf("failed to read hosted models version response")
+		slog.Error("service:UpdateModelsList", "message", "failed to read hosted models version response", "error", err)
+		return fmt.Errorf("failed to update models list")
 	}
 
 	var remoteVersion hostedModelsVersionManifest
 	if err := json.Unmarshal(body, &remoteVersion); err != nil {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to decode hosted models version JSON", "error", err)
-		return fmt.Errorf("failed to decode hosted models version JSON")
+		slog.Error("service:UpdateModelsList", "message", "failed to decode hosted models version JSON", "error", err)
+		return fmt.Errorf("failed to update models list")
 	}
 
 	if strings.TrimSpace(remoteVersion.JSONSchemaVersion) != supportedModelsJSONSchema {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "schema version mismatch please update sortedchat with latest version", "remoteSchemaVersion", remoteVersion.JSONSchemaVersion, "supportedSchemaVersion", supportedModelsJSONSchema)
-		return fmt.Errorf("schema version mismatch please update sortedchat with latest version")
+		slog.Error("service:UpdateModelsList", "message", "schema version mismatch please update sortedchat with latest version", "remoteSchemaVersion", remoteVersion.JSONSchemaVersion, "supportedSchemaVersion", supportedModelsJSONSchema)
+		return fmt.Errorf("Please update sortedchat with latest version")
 	}
 
 	if currentVersion != nil && strings.TrimSpace(currentVersion.JSONSchemaVersion) != "" && strings.TrimSpace(currentVersion.JSONSchemaVersion) != strings.TrimSpace(remoteVersion.JSONSchemaVersion) {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "schema version mismatch please update sortedchat with latest version", "dbSchemaVersion", currentVersion.JSONSchemaVersion, "remoteSchemaVersion", remoteVersion.JSONSchemaVersion)
-		return fmt.Errorf("schema version mismatch please update sortedchat with latest version")
+		slog.Error("service:UpdateModelsList", "message", "schema version mismatch please update sortedchat with latest version", "dbSchemaVersion", currentVersion.JSONSchemaVersion, "remoteSchemaVersion", remoteVersion.JSONSchemaVersion)
+		return fmt.Errorf("Please update sortedchat with latest version")
 	}
 
 	if currentVersion != nil && strings.TrimSpace(currentVersion.ModelRevisionVersion) == strings.TrimSpace(remoteVersion.ModelRevisionVersion) {
-		slog.Info("service:syncHostedModelsIfNeeded", "message", "skipping hosted model sync because model revision version is unchanged", "modelRevisionVersion", remoteVersion.ModelRevisionVersion)
+		slog.Info("service:UpdateModelsList", "message", "skipping hosted model sync because model revision version is unchanged", "modelRevisionVersion", remoteVersion.ModelRevisionVersion)
 		return nil
 	}
 
 	modelsReq, err := http.NewRequestWithContext(ctx, http.MethodGet, hostedModelsCatalogURL, nil)
 	if err != nil {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to create hosted models request", "error", err)
-		return fmt.Errorf("failed to create request for hosted models")
+		slog.Error("service:UpdateModelsList", "message", "failed to create hosted models request", "error", err)
+		return fmt.Errorf("failed to update models list")
 	}
 	modelsReq.Header.Set("Accept", "application/json")
 
 	modelsResp, err := client.Do(modelsReq)
 	if err != nil {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to fetch hosted models", "error", err)
-		return fmt.Errorf("failed to fetch hosted models")
+		slog.Error("service:UpdateModelsList", "message", "failed to fetch hosted models", "error", err)
+		return fmt.Errorf("failed to update models list")
 	}
 	defer modelsResp.Body.Close()
 
 	if modelsResp.StatusCode != http.StatusOK {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "hosted models endpoint returned non-200", "status", modelsResp.StatusCode)
-		return fmt.Errorf("hosted models endpoint returned non-200")
+		slog.Error("service:UpdateModelsList", "message", "hosted models endpoint returned non-200", "status", modelsResp.StatusCode)
+		return fmt.Errorf("failed to update models list")
 	}
 
 	modelsBody, err := io.ReadAll(modelsResp.Body)
 	if err != nil {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to read hosted models response", "error", err)
-		return fmt.Errorf("failed to read hosted models response")
+		slog.Error("service:UpdateModelsList", "message", "failed to read hosted models response", "error", err)
+		return fmt.Errorf("failed to update models list")
 	}
 
 	var manifest hostedModelsManifest
 	if err := json.Unmarshal(modelsBody, &manifest); err != nil {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to decode hosted models response", "error", err)
-		return fmt.Errorf("failed to decode hosted models response")
+		slog.Error("service:UpdateModelsList", "message", "failed to decode hosted models response", "error", err)
+		return fmt.Errorf("failed to update models list")
 	}
 
 	if strings.TrimSpace(manifest.Metadata.JSONSchemaVersion) != supportedModelsJSONSchema {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "schema version mismatch please update sortedchat with latest version", "remoteSchemaVersion", manifest.Metadata.JSONSchemaVersion, "supportedSchemaVersion", supportedModelsJSONSchema)
-		return fmt.Errorf("schema version mismatch please update sortedchat with latest version")
+		slog.Error("service:UpdateModelsList", "message", "schema version mismatch please update sortedchat with latest version", "remoteSchemaVersion", manifest.Metadata.JSONSchemaVersion, "supportedSchemaVersion", supportedModelsJSONSchema)
+		return fmt.Errorf("Please update sortedchat with latest version")
 	}
 
 	if strings.TrimSpace(manifest.Metadata.JSONSchemaVersion) != strings.TrimSpace(remoteVersion.JSONSchemaVersion) {
-		slog.Error("service:syncHostedModelsIfNeeded", "message", "schema version mismatch between models version file and models manifest", "versionFileSchemaVersion", remoteVersion.JSONSchemaVersion, "manifestSchemaVersion", manifest.Metadata.JSONSchemaVersion)
-		return fmt.Errorf("schema version mismatch between models version file and models manifest")
+		slog.Error("service:UpdateModelsList", "message", "schema version mismatch between models version file and models manifest", "versionFileSchemaVersion", remoteVersion.JSONSchemaVersion, "manifestSchemaVersion", manifest.Metadata.JSONSchemaVersion)
+		return fmt.Errorf("Please update sortedchat with latest version")
 	}
 
 	if len(manifest.Models) == 0 {
-		slog.Info("service:syncHostedModelsIfNeeded", "message", "hosted models manifest was empty")
+		slog.Info("service:UpdateModelsList", "message", "hosted models manifest was empty")
 		return fmt.Errorf("hosted models manifest was empty")
 	}
 
@@ -1837,7 +1837,7 @@ func (s *ChatService) syncHostedModelsIfNeeded(ctx context.Context) error {
 
 	for _, model := range manifest.Models {
 		if strings.TrimSpace(model.ID) == "" {
-			slog.Warn("service:syncHostedModelsIfNeeded", "message", "skipping hosted model with empty id")
+			slog.Warn("service:UpdateModelsList", "message", "skipping hosted model with empty id")
 			continue
 		}
 
@@ -1846,10 +1846,12 @@ func (s *ChatService) syncHostedModelsIfNeeded(ctx context.Context) error {
 		}
 
 		if err := s.dao.UpsertHostedModel(model, version); err != nil {
-			slog.Error("service:syncHostedModelsIfNeeded", "message", "failed to upsert hosted model", "error", err, "modelID", model.ID)
-			return fmt.Errorf("failed to sync hosted models")
+			slog.Error("service:UpdateModelsList", "message", "failed to upsert hosted model", "error", err, "modelID", model.ID)
+			return fmt.Errorf("failed to update models list")
 		}
 	}
+
+	slog.Info("service:UpdateModelsList", "message", "hosted model sync completed successfully", "modelCount", len(manifest.Models), "modelRevisionVersion", remoteVersion.ModelRevisionVersion)
 
 	return nil
 }
@@ -1889,6 +1891,6 @@ func (s *ChatService) Init(config *dao.Config) *sql.DB {
 		log.Fatalf("ChatService: Unsupported database type: %s", config.Database.Type)
 	}
 
-	go s.syncHostedModelsIfNeeded(context.Background())
+	go s.UpdateModelsList(context.Background())
 	return sqlDB
 }

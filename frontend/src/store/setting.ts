@@ -2,6 +2,7 @@
 import {
   Settings,
   SettingServiceClient,
+  SortedChatClient,
   IsFirstBootRequest,
   TestConnectionRequest,
   TestConnectionResponse,
@@ -12,12 +13,16 @@ import {
   SetProviderSettingRequest,
   SetProviderSettingResponse,
   ProviderSettings,
+  UpdateModelsListRequest,
+  UpdateModelsListResponse,
 } from "../../proto/chatservice";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { getUIConfig } from "../lib/config";
+import { toast } from "sonner";
 
 let _settingClient: SettingServiceClient | undefined;
+let _chatClient: SortedChatClient | undefined;
 
 function getClient(): SettingServiceClient {
   if (!_settingClient) {
@@ -32,6 +37,21 @@ function getClient(): SettingServiceClient {
     );
   }
   return _settingClient;
+}
+
+function getChatClient(): SortedChatClient {
+  if (!_chatClient) {
+    const config = getUIConfig();
+    if (!config) {
+      throw new Error("UI config not loaded, cannot initialize chat client.");
+    }
+    _chatClient = new SortedChatClient(
+      config.API_URL,
+      {},
+      createAuthenticatedClientOptions(),
+    );
+  }
+  return _chatClient;
 }
 
 export const $settings = atom<Settings>(new Settings({}));
@@ -224,6 +244,20 @@ export const SetProviderSetting = async (
   } catch (error) {
     console.error("Failed to save provider settings:", error);
     throw new Error("Failed to save provider settings");
+  }
+};
+
+export const UpdateModelsList = async (): Promise<string> => {
+  try {
+    const req = new UpdateModelsListRequest({});
+    const res: UpdateModelsListResponse = await getChatClient().UpdateModelsList(req, {});
+    const message = res.message ?? "Models list updated successfully";
+    toast.success(message);
+    return message;
+  } catch (error) {
+    console.error("Failed to update models list:", error);
+    toast.error("Failed to update models list");
+    throw new Error("Failed to update models list");
   }
 };
 

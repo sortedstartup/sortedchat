@@ -483,6 +483,22 @@ func (s *ChatServiceAPI) AddModel(ctx context.Context, req *pb.AddModelRequest) 
 	return &pb.AddModelResponse{Message: msg}, nil
 }
 
+func (s *ChatServiceAPI) UpdateModelsList(ctx context.Context, req *pb.UpdateModelsListRequest) (*pb.UpdateModelsListResponse, error) {
+	_, err := auth.GetUserIDFromContext_WithError(ctx)
+	if err != nil {
+		slog.Error("api:UpdateModelsList", "message", "failed to get user ID from context", "error", err)
+		return nil, err
+	}
+
+	err = s.service.UpdateModelsList(ctx)
+	if err != nil {
+		slog.Error("api:UpdateModelsList", "message", "failed to update models list", "error", err)
+		return nil, err
+	}
+
+	return &pb.UpdateModelsListResponse{Message: "Models list updated successfully"}, nil
+}
+
 func (s *ChatServiceAPI) Init(config *db.Config) {
 	s.service.Init(config)
 }

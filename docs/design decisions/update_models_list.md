@@ -1,36 +1,46 @@
 # Update Models List
-- Till now, models list was coming from `shared_models_metadata` table
-- We were seeding the models list in the table 
 
-## Problem 
-- To update the model list, we have to add new seed migration and have to again run the server to update the local db 
+Until now, the models list has been coming from the `shared_models_metadata` table. We were seeding the models list into this table.
 
-## Solution 
-- We hosted the models.json on github
-```
+## Problem
+
+To update the models list, we have to add a new seed migration and run the server again to update the local database.
+
+## Solution
+
+We host `models.json` on GitHub.
+
+``` 
 {
-  "metadata" : {
+  "metadata": {
     "json_schema_version": "v1"
   },
-  "models_list": [{},{}]
+  "models_list": [{}, {}]
 }
 ```
-- we have a models_version.json file 
+
+We also have a `models_version.json` file.
+
 ```
 {
   "json_schema_version": "v1",
   "model_revision_version": "20260522.2"
 }
 ```
-- remote(model_revision_version) != local(model_revision_version) && remote(json_schema_version) == local(json_schema_version) -> fetch model_json and update local db
-- remote(model_revision_version) == local(model_revision_version) && remote(json_schema_version) == local(json_schema_version) -> dont fetch(already up to date)
-- remote(model_revision_version) != local(model_revision_version) && remote(json_schema_version) != local(json_schema_version) -> Update Sortedchat (cant update models list)
+
+The update flow is:
+
+- `remote(model_revision_version) != local(model_revision_version)` and `remote(json_schema_version) == local(json_schema_version)`: fetch `models.json` and update the local database.
+- `remote(model_revision_version) == local(model_revision_version)` and `remote(json_schema_version) == local(json_schema_version)`: do not fetch, because the local models list is already up to date.
+- `remote(model_revision_version) != local(model_revision_version)` and `remote(json_schema_version) != local(json_schema_version)`: update SortedChat, because of json_schema_version mismatch
 
 ### Desktop App
-- On service init, we do above steps
-- so whenever user start the desktop app and if there is version mismatch, models list will be automatically updated
+
+On service layer initialization, we perform the steps above. So whenever a user starts the desktop app, if there is a version mismatch, the models list is automatically updated.
 
 ### Web-App
-- For users, who have deployed sortedchat 
-- Added new RPC to Update local models list
-- They can navigate to Settings page, and can update local models list from there
+
+For users who have deployed SortedChat:
+
+- We added a new RPC to update the local models list.
+- They can navigate to the Settings page and update the local models list from there.

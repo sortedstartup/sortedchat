@@ -23,3 +23,4 @@
 ## What need to be added 
 - Added image support in sortedagents
 - Right now, we don't have save websearch tool call or tool call failure in normal chat_messages
+- cost of brave search api key 

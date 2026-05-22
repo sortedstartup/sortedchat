@@ -763,6 +763,7 @@ func (s *SQLiteDAO) GetModelCatalogVersion() (*ModelCatalogVersion, error) {
 	}
 
 	var row catalogVersionRow
+	// <> is not but not equal-to operator in sql
 	err := s.db.Get(&row, `
 		SELECT json_schema_version, model_revision_version
 		FROM shared_models_metadata

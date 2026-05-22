@@ -105,11 +105,10 @@ func (s *ChatService) runAgenticChat(
 		model,
 		[]sortedagents.Tool{NewBraveSearchToolWithAPIKey(webSearchSettings.BraveSearchAPIKey)},
 	)
-	runner := sortedagents.NewRunnerWithLLM(sortedagents.NewOpenAILLMWithConfig(
-		providerSettings.ApiKey,
-		providerSettings.ApiUrl,
-		model,
-	))
+	apiKey := providerSettings.ApiKey
+	apiURL := providerSettings.ApiUrl
+	llm := sortedagents.NewOpenAILLMWithConfig(apiKey, apiURL, model)
+	runner := sortedagents.NewRunnerWithLLM(llm)
 
 	if err := stream(&pb.ChatResponse{
 		Response: &pb.ChatResponse_Progress{

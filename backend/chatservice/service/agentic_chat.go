@@ -14,7 +14,7 @@ import (
 	"sortedstartup/chatservice/sortedagents"
 )
 
-const MAX_TURNS = 4
+const MAX_TURNS = 10
 
 func extractTextOnlyChatMessage(msg dao.ChatMessageRow) (string, bool) {
 	slog.Debug("service:Chat", "message", "extracting text from chat message", "messageId", msg)
@@ -101,11 +101,27 @@ func (s *ChatService) runAgenticChat(
 		return fmt.Errorf("failed to load web search settings")
 	}
 
+	scrapeSettings, err := s.getCloudflareScrapeSettings()
+	if err != nil {
+		slog.Error("service:Chat", "message", "failed to load cloudflare scrape settings", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+		return fmt.Errorf("failed to load scrape settings")
+	}
+
+	tools := []sortedagents.Tool{
+		NewBraveSearchToolWithConfig(webSearchSettings.APIURL, webSearchSettings.APIKey),
+	}
+	if strings.TrimSpace(scrapeSettings.APIURL) != "" && strings.TrimSpace(scrapeSettings.APIKey) != "" {
+		slog.Info("Cloudflare scrape tool configured, adding to agent tools", "chatId", chatID, "userID", userID, "projectID", projectID)
+		tools = append(tools, NewBrowserScrapeToolWithConfig(scrapeSettings.APIURL, scrapeSettings.APIKey))
+	} else {
+		slog.Info("Cloudflare scrape tool not configured, skipping", "chatId", chatID, "userID", userID, "projectID", projectID)
+	}
+
 	agent := sortedagents.NewAgent(
 		"chat-agent",
 		agentPrompt,
 		model,
-		[]sortedagents.Tool{NewBraveSearchToolWithConfig(webSearchSettings.APIURL, webSearchSettings.APIKey)},
+		tools,
 	)
 	apiKey := providerSettings.ApiKey
 	apiURL := providerSettings.ApiUrl
@@ -203,19 +219,31 @@ func (s *ChatService) runAgenticChat(
 			}
 
 		case *sortedagents.ToolCallStartEvent:
-			if e.ToolName != "web_search" {
-				continue
-			}
-			if err := stream(&pb.ChatResponse{
-				Response: &pb.ChatResponse_Progress{
-					Progress: &pb.ChatProgress{
-						State:   pb.ChatProgress_REQUEST_SENT_TO_LLM,
-						Message: "Searching the web",
+			switch e.ToolName {
+			case "web_search":
+				if err := stream(&pb.ChatResponse{
+					Response: &pb.ChatResponse_Progress{
+						Progress: &pb.ChatProgress{
+							State:   pb.ChatProgress_REQUEST_SENT_TO_LLM,
+							Message: "Searching the web",
+						},
 					},
-				},
-			}); err != nil {
-				savePartialResponse()
-				return fmt.Errorf("error while processing request, please try again")
+				}); err != nil {
+					savePartialResponse()
+					return fmt.Errorf("error while processing request, please try again")
+				}
+			case "browser_scrape":
+				if err := stream(&pb.ChatResponse{
+					Response: &pb.ChatResponse_Progress{
+						Progress: &pb.ChatProgress{
+							State:   pb.ChatProgress_REQUEST_SENT_TO_LLM,
+							Message: "Scraping web page",
+						},
+					},
+				}); err != nil {
+					savePartialResponse()
+					return fmt.Errorf("error while processing request, please try again")
+				}
 			}
 
 		case *sortedagents.UsageEvent:

@@ -28,18 +28,38 @@ type SettingService struct {
 }
 
 const (
-	WEBSEARCH_SETTINGS_KEY   = "tool.websearch.brave"
-	CHAT_DEFAULT_PROMPT_KEY  = "chat.default_system_prompt"
-	defaultBraveSearchAPIURL = "https://api.search.brave.com/res/v1/web/search"
-	defaultBraveSearchCost   = "0.005"
-	defaultChatPrompt        = `You are SortedChat’s default assistant.
+	WEBSEARCH_SETTINGS_KEY         = "tool.websearch.brave"
+	SCRAPE_CLOUDFLARE_SETTINGS_KEY = "tool.scrape.cloudflare"
+	CHAT_DEFAULT_PROMPT_KEY        = "chat.default_system_prompt"
+	defaultBraveSearchAPIURL       = "https://api.search.brave.com/res/v1/web/search"
+	defaultBraveSearchCost         = "0.005"
+	defaultChatPrompt              = `You are SortedChat’s default assistant.
 
-Answer from your own knowledge and reasoning by default. Use web_search only when fresh, external, verifiable, or source-backed information is needed, such as news, prices, laws, schedules, product details, live data, recent updates, or explicit search requests.
-When you search, ground the answer in the results and include relevant source URLs at the end of the response.
-When uncertain or in doubt about whether information may be outdated, incomplete, niche, or externally verifiable, use web_search.
-Try to get the best result in 1-2 web searches whenever possible.
-Only extend web_search tool calls when it is clearly necessary.
-Once you have enough information, stop searching and provide the final answer.
+Answer using your own knowledge and reasoning by default.
+
+Use web_search only when the user asks you to search, or when the answer needs fresh, external, verifiable, or source-backed information. Examples include news, prices, laws, schedules, product details, live data, recent updates, or facts that may have changed.
+
+If you are unsure whether the information is outdated, incomplete, niche, or needs verification, use web_search.
+
+When using external information, choose tools like this:
+
+1. Use web_search first to discover relevant sources, pages, URLs, or summaries.
+2. Use browser_scrape after web_search when:
+   - the user asks for a detailed answer, deep explanation, comparison, research, analysis, or review
+   - the search result snippet is not enough
+   - the answer depends on details from a specific page
+   - you need pricing, docs, product details, changelogs, policies, API behavior, or exact claims from a page
+   - you need to compare multiple sources accurately
+3. Do not use browser_scrape for simple factual questions where the web_search snippet is enough.
+4. If the user gives a specific URL, use browser_scrape directly on that URL when page content is needed.
+
+When you use web_search or browser_scrape:
+- Base your answer on the retrieved information.
+- Include relevant source URLs at the end of the response.
+- Try to get the best answer with 1–2 searches when possible.
+- Scrape only the most relevant pages.
+- Stop once you have enough information.
+- Then give the final answer.
 `
 )
 
@@ -110,6 +130,15 @@ func (s *SettingService) Init() {
 		slog.Error("settings_service:Init", "step", "failed to marshal default web search settings", "error", err)
 	} else {
 		s.ensureDefaultSetting(WEBSEARCH_SETTINGS_KEY, string(webSearchDefaults))
+	}
+	scrapeDefaults, err := json.Marshal(cloudflareScrapeSettings{
+		APIURL: "",
+		APIKey: "",
+	})
+	if err != nil {
+		slog.Error("settings_service:Init", "step", "failed to marshal default cloudflare scrape settings", "error", err)
+	} else {
+		s.ensureDefaultSetting(SCRAPE_CLOUDFLARE_SETTINGS_KEY, string(scrapeDefaults))
 	}
 	s.ensureDefaultSetting(CHAT_DEFAULT_PROMPT_KEY, defaultChatPrompt)
 
@@ -426,6 +455,11 @@ type webSearchSettings struct {
 	Cost   string `json:"cost"`
 }
 
+type cloudflareScrapeSettings struct {
+	APIURL string `json:"apiUrl"`
+	APIKey string `json:"apiKey"`
+}
+
 func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
 	value, err := s.settingsDAO.GetSettingValue(WEBSEARCH_SETTINGS_KEY)
 	if err != nil {
@@ -468,4 +502,25 @@ func (s *ChatService) getChatDefaultPrompt() (string, error) {
 	}
 
 	return value, nil
+}
+
+func (s *ChatService) getCloudflareScrapeSettings() (*cloudflareScrapeSettings, error) {
+	value, err := s.settingsDAO.GetSettingValue(SCRAPE_CLOUDFLARE_SETTINGS_KEY)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &cloudflareScrapeSettings{}, nil
+		}
+		return nil, err
+	}
+
+	if strings.TrimSpace(value) == "" {
+		return &cloudflareScrapeSettings{}, nil
+	}
+
+	var settings cloudflareScrapeSettings
+	if err := json.Unmarshal([]byte(value), &settings); err != nil {
+		return nil, fmt.Errorf("failed to parse cloudflare scrape settings: %w", err)
+	}
+
+	return &settings, nil
 }

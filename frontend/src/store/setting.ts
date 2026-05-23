@@ -44,6 +44,9 @@ export const $webSearchKey = atom<string>("");
 export const $webSearchApiUrl = atom<string>("https://api.search.brave.com/res/v1/web/search");
 export const $webSearchCost = atom<string>("0.005");
 export const $isLoadingWebSearch = atom<boolean>(false);
+export const $cloudflareScrapeApiUrl = atom<string>("");
+export const $cloudflareScrapeApiKey = atom<string>("");
+export const $isLoadingCloudflareScrape = atom<boolean>(false);
 
 // Onboarding state
 export const $onboardingStep = atom<number>(0);
@@ -299,6 +302,20 @@ export const GetWebSearchSetting = async (): Promise<void> => {
   }
 };
 
+export const GetCloudflareScrapeSetting = async (): Promise<void> => {
+  $isLoadingCloudflareScrape.set(true);
+  try {
+    const settings = await GetSetting("tool.scrape.cloudflare");
+    $cloudflareScrapeApiUrl.set(settings.apiUrl ?? "");
+    $cloudflareScrapeApiKey.set(settings.apiKey ?? "");
+  } catch (error) {
+    console.error("Failed to fetch cloudflare scrape setting:", error);
+    throw error;
+  } finally {
+    $isLoadingCloudflareScrape.set(false);
+  }
+};
+
 onMount($providerSettings, () => {
   GetAllProviderSettings();
   return () => { };
@@ -307,6 +324,13 @@ onMount($providerSettings, () => {
 onMount($webSearchKey, () => {
   GetWebSearchSetting().catch((error) => {
     console.error("Failed to load websearch setting on mount:", error);
+  });
+  return () => { };
+});
+
+onMount($cloudflareScrapeApiKey, () => {
+  GetCloudflareScrapeSetting().catch((error) => {
+    console.error("Failed to load cloudflare scrape setting on mount:", error);
   });
   return () => { };
 });

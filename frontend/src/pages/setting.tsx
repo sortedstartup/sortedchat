@@ -5,7 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { $isLoadingWebSearch, $webSearchKey, $webSearchApiUrl, $webSearchCost, SetSetting } from "@/store/setting";
+import {
+  $cloudflareScrapeApiKey,
+  $cloudflareScrapeApiUrl,
+  $isLoadingCloudflareScrape,
+  $isLoadingWebSearch,
+  $webSearchApiUrl,
+  $webSearchCost,
+  $webSearchKey,
+  SetSetting,
+} from "@/store/setting";
 import { toast } from "sonner";
 
 const Settings = () => {
@@ -13,8 +22,12 @@ const Settings = () => {
   const webSearchKey = useStore($webSearchKey);
   const webSearchApiUrl = useStore($webSearchApiUrl);
   const webSearchCost = useStore($webSearchCost);
+  const cloudflareScrapeApiUrl = useStore($cloudflareScrapeApiUrl);
+  const cloudflareScrapeApiKey = useStore($cloudflareScrapeApiKey);
   const isLoadingWebSearch = useStore($isLoadingWebSearch);
+  const isLoadingCloudflareScrape = useStore($isLoadingCloudflareScrape);
   const [isSavingWebSearch, setIsSavingWebSearch] = useState(false);
+  const [isSavingCloudflareScrape, setIsSavingCloudflareScrape] = useState(false);
 
   const saveWebSearchSettings = async () => {
     setIsSavingWebSearch(true);
@@ -36,6 +49,26 @@ const Settings = () => {
       toast.error("Failed to save web search settings");
     } finally {
       setIsSavingWebSearch(false);
+    }
+  };
+
+  const saveCloudflareScrapeSettings = async () => {
+    setIsSavingCloudflareScrape(true);
+    try {
+      const apiUrl = cloudflareScrapeApiUrl.trim();
+      const apiKey = cloudflareScrapeApiKey.trim();
+      const message = await SetSetting("tool.scrape.cloudflare", {
+        apiUrl,
+        apiKey,
+      });
+      $cloudflareScrapeApiUrl.set(apiUrl);
+      $cloudflareScrapeApiKey.set(apiKey);
+      toast.success(message);
+    } catch (error) {
+      console.error("Failed to save cloudflare scrape settings:", error);
+      toast.error("Failed to save Cloudflare scrape settings");
+    } finally {
+      setIsSavingCloudflareScrape(false);
     }
   };
 
@@ -117,6 +150,47 @@ const Settings = () => {
               <div className="flex justify-end">
                 <Button onClick={saveWebSearchSettings} disabled={isLoadingWebSearch || isSavingWebSearch}>
                   {isSavingWebSearch ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <Label className="text-base">Cloudflare Scrape</Label>
+                <p className="text-sm text-muted-foreground">
+                  Save your Cloudflare Browser Rendering API URL and API key to enable page scraping for agentic chat.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cloudflare-scrape-api-url">Cloudflare Scrape API URL</Label>
+                <Input
+                  id="cloudflare-scrape-api-url"
+                  type="text"
+                  value={cloudflareScrapeApiUrl}
+                  onChange={(e) => $cloudflareScrapeApiUrl.set(e.target.value)}
+                  placeholder="https://api.cloudflare.com/client/v4/accounts/<accountId>/browser-rendering/markdown"
+                  disabled={isLoadingCloudflareScrape || isSavingCloudflareScrape}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cloudflare-scrape-api-key">Cloudflare Scrape API Key</Label>
+                <Input
+                  id="cloudflare-scrape-api-key"
+                  type="password"
+                  value={cloudflareScrapeApiKey}
+                  onChange={(e) => $cloudflareScrapeApiKey.set(e.target.value)}
+                  placeholder="Enter Cloudflare Browser Rendering API key"
+                  disabled={isLoadingCloudflareScrape || isSavingCloudflareScrape}
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={saveCloudflareScrapeSettings} disabled={isLoadingCloudflareScrape || isSavingCloudflareScrape}>
+                  {isSavingCloudflareScrape ? "Saving..." : "Save"}
                 </Button>
               </div>
             </CardContent>

@@ -44,6 +44,55 @@ func buildSortedAgentsMessage(role string, content interface{}) sortedagents.Mes
 	}
 }
 
+func buildSortedAgentsToolCallMessage(msg dao.ChatMessageRow) sortedagents.Message {
+	toolCall := sortedagents.ToolCall{
+		ID:   msg.ToolCallID,
+		Type: "function",
+		Function: sortedagents.Function{
+			Name:      msg.ToolName,
+			Arguments: msg.ToolArgs,
+		},
+	}
+
+	return sortedagents.Message{
+		Role:      "assistant",
+		ToolCalls: []sortedagents.ToolCall{toolCall},
+	}
+}
+
+func buildSortedAgentsToolResultMessage(msg dao.ChatMessageRow) sortedagents.Message {
+	return sortedagents.Message{
+		Role:       "tool",
+		Content:    sortedagents.TextContent(msg.Content),
+		ToolCallID: msg.ToolCallID,
+	}
+}
+
+type chatToolCallIDCounter struct {
+	counter     int
+	callToIDMap map[string]string
+}
+
+func newChatToolCallIDCounter() *chatToolCallIDCounter {
+	return &chatToolCallIDCounter{
+		callToIDMap: make(map[string]string),
+	}
+}
+
+func (c *chatToolCallIDCounter) getOrCreateID(toolName string) string {
+	if id, exists := c.callToIDMap[toolName]; exists {
+		return id
+	}
+	c.counter++
+	id := fmt.Sprintf("chat-tool-call-%d", c.counter)
+	c.callToIDMap[toolName] = id
+	return id
+}
+
+func (c *chatToolCallIDCounter) clearID(toolName string) {
+	delete(c.callToIDMap, toolName)
+}
+
 func (s *ChatService) buildAgenticSession(chatID string, prompt string, history []dao.ChatMessageRow) (sortedagents.Session, error) {
 	slog.Debug("service:Chat", "message", "building agentic session from chat history", "chatId", chatID)
 	messages := []sortedagents.Message{
@@ -52,6 +101,15 @@ func (s *ChatService) buildAgenticSession(chatID string, prompt string, history 
 
 	for _, msg := range history {
 		slog.Debug("service:Chat", "message", "building sortedagents content from chat message", "messageId", msg.Id)
+
+		switch msg.Type {
+		case "tool_call":
+			messages = append(messages, buildSortedAgentsToolCallMessage(msg))
+			continue
+		case "tool_result":
+			messages = append(messages, buildSortedAgentsToolResultMessage(msg))
+			continue
+		}
 
 		var contents []*pb.MessageContent
 		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
@@ -195,6 +253,7 @@ func (s *ChatService) runAgenticChat(
 	var inputTokens, outputTokens, cachedTokens int
 	var successfulWebSearchCalls int
 	var scrapeAPIUsageTimeSeconds float64
+	toolCallIDs := newChatToolCallIDCounter()
 	searchCostPerRequest, err := parseBraveSearchCost(webSearchSettings.Cost)
 	if err != nil {
 		slog.Warn("service:Chat", "message", "invalid brave search request cost, using default", "cost", webSearchSettings.Cost, "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
@@ -227,7 +286,7 @@ func (s *ChatService) runAgenticChat(
 
 		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
 
-		if _, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, successfulWebSearchCalls, scrapeAPIUsageTimeSeconds, referencesJSON, ragEnabled); err != nil {
+		if _, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, successfulWebSearchCalls, scrapeAPIUsageTimeSeconds, referencesJSON, ragEnabled, nil); err != nil {
 			slog.Error("service:Chat", "message", "failed to save partial agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		}
 	}
@@ -259,6 +318,20 @@ func (s *ChatService) runAgenticChat(
 			}
 
 		case *sortedagents.ToolCallStartEvent:
+			toolCallID := toolCallIDs.getOrCreateID(e.ToolName)
+			argsJSON, err := json.Marshal(e.Args)
+			if err != nil {
+				slog.Warn("service:Chat", "message", "failed to marshal tool call args", "error", err, "toolName", e.ToolName, "chatId", chatID, "userID", userID, "projectID", projectID)
+			}
+			if _, err := s.dao.AddChatMessage(userID, chatID, "assistant", "", "", model, 0, 0, 0, "", false, &dao.ChatMessageToolInfo{
+				Type:       "tool_call",
+				ToolName:   e.ToolName,
+				ToolCallID: toolCallID,
+				ToolArgs:   string(argsJSON),
+			}); err != nil {
+				slog.Error("service:Chat", "message", "failed to save agentic tool call", "error", err, "toolName", e.ToolName, "chatId", chatID, "userID", userID, "projectID", projectID)
+			}
+
 			switch e.ToolName {
 			case "web_search":
 				if err := stream(&pb.ChatResponse{
@@ -292,6 +365,7 @@ func (s *ChatService) runAgenticChat(
 			cachedTokens = e.CachedTokens
 
 		case *sortedagents.ToolCallEndEvent:
+			toolCallID := toolCallIDs.getOrCreateID(e.ToolName)
 			if e.ToolName == "web_search" && e.Error == nil {
 				successfulWebSearchCalls++
 			}
@@ -302,6 +376,23 @@ func (s *ChatService) runAgenticChat(
 					}
 				}
 			}
+
+			resultJSON, err := json.Marshal(e.Result)
+			if err != nil {
+				slog.Warn("service:Chat", "message", "failed to marshal tool result", "error", err, "toolName", e.ToolName, "chatId", chatID, "userID", userID, "projectID", projectID)
+			}
+			toolContent := string(resultJSON)
+			if e.Error != nil {
+				toolContent = fmt.Sprintf("Error: %v", e.Error)
+			}
+			if _, err := s.dao.AddChatMessage(userID, chatID, "tool", toolContent, "", model, 0, 0, 0, "", false, &dao.ChatMessageToolInfo{
+				Type:       "tool_result",
+				ToolName:   e.ToolName,
+				ToolCallID: toolCallID,
+			}); err != nil {
+				slog.Error("service:Chat", "message", "failed to save agentic tool result", "error", err, "toolName", e.ToolName, "chatId", chatID, "userID", userID, "projectID", projectID)
+			}
+			toolCallIDs.clearID(e.ToolName)
 
 		case *sortedagents.CompleteEvent:
 			completed = true
@@ -352,7 +443,7 @@ func (s *ChatService) runAgenticChat(
 		}
 
 		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, successfulWebSearchCalls, scrapeAPIUsageTimeSeconds, referencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, successfulWebSearchCalls, scrapeAPIUsageTimeSeconds, referencesJSON, ragEnabled, nil)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		} else {

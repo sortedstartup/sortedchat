@@ -222,6 +222,7 @@ func TestAddChatMessageWithTokens(t *testing.T) {
 						0,
 						tc.references,
 						tc.ragEnabled,
+						nil,
 					)
 
 					// Check error expectations

@@ -347,7 +347,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	}
 
 	// Always use single method - pass empty string for contentImage when no images
-	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", string(textContentJSON), imageContentJSON, model, 0, 0, 0, referencesJSON, ragEnabled)
+	requestMessageId, err = s.dao.AddChatMessage(userID, chatId, "user", string(textContentJSON), imageContentJSON, model, 0, 0, 0, referencesJSON, ragEnabled, nil)
 
 	if err != nil {
 		slog.Error("service:Chat", "error", "failed to insert user message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
@@ -367,6 +367,10 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	// Convert history to types.Message
 	var messages []types.Message
 	for _, msg := range history {
+		if msg.Type == "tool_call" {
+			continue
+		}
+
 		var content interface{}
 		var parts []types.ContentPart
 
@@ -404,12 +408,23 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			content = parts[0].Text
 		} else if len(parts) > 0 {
 			content = parts
+		} else if msg.Type == "tool_result" && msg.Content != "" {
+			toolPrefix := "Tool result"
+			if msg.ToolName != "" {
+				toolPrefix = fmt.Sprintf("Tool result from %s", msg.ToolName)
+			}
+			content = fmt.Sprintf("%s: %s", toolPrefix, msg.Content)
 		} else {
 			continue
 		}
 
+		role := msg.Role
+		if msg.Type == "tool_result" {
+			role = "assistant"
+		}
+
 		messages = append(messages, types.Message{
-			Role:    msg.Role,
+			Role:    role,
 			Content: content,
 		})
 	}
@@ -531,7 +546,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				slog.Warn("service:Chat", "message", "cachedTokens > inputTokens, setting non-cached input tokens to 0", "inputTokens", inputTokens, "cachedTokens", cachedTokens, "chatId", chatId, "userID", userID, "projectID", projectID)
 				nonCachedInputTokens = 0
 			}
-			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, 0, 0, 0, partialReferencesJSON, ragEnabled)
+			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, 0, 0, 0, partialReferencesJSON, ragEnabled, nil)
 			if err != nil {
 				slog.Error("service:Chat", "message", "failed to save partial assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 			}
@@ -623,7 +638,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			nonCachedInputTokens = 0
 		}
 		// TODO : scope for optimization, can be 1 sql call internally
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, 0, 0, 0, finalReferencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, 0, 0, 0, finalReferencesJSON, ragEnabled, nil)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else {

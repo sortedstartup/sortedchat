@@ -9,9 +9,13 @@ import (
 
 type ChatMessageRow struct {
 	Role               string  `db:"role" json:"role"`
+	Type               string  `db:"type" json:"type"`
 	Content            string  `db:"content" json:"content"`
 	ContentImage       string  `db:"content_image" json:"content_image"`
 	Id                 string  `db:"id" json:"id"`
+	ToolName           string  `db:"tool_name" json:"tool_name"`
+	ToolCallID         string  `db:"tool_call_id" json:"tool_call_id"`
+	ToolArgs           string  `db:"tool_args" json:"tool_args"`
 	DocumentReferences string  `db:"document_references" json:"document_references"`
 	RagEnabled         bool    `db:"rag_enabled" json:"rag_enabled"`
 	Model              string  `db:"model" json:"model"`
@@ -21,6 +25,13 @@ type ChatMessageRow struct {
 	Cost               float64 `db:"cost" json:"cost"`
 	BraveSearchCount   int     `db:"brave_search_count" json:"brave_search_count"`
 	ScrapeAPIUsageTime float64 `db:"scrape_api_usage_time" json:"scrape_api_usage_time"`
+}
+
+type ChatMessageToolInfo struct {
+	Type       string
+	ToolName   string
+	ToolCallID string
+	ToolArgs   string
 }
 
 type MessageSummary struct {

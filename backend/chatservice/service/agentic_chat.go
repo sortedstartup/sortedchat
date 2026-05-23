@@ -135,6 +135,7 @@ func (s *ChatService) runAgenticChat(
 
 	tools := []sortedagents.Tool{
 		NewBraveSearchToolWithConfig(webSearchSettings.APIURL, webSearchSettings.APIKey),
+		NewGetTimestampTool(),
 	}
 	if strings.TrimSpace(scrapeSettings.APIURL) != "" && strings.TrimSpace(scrapeSettings.APIKey) != "" {
 		slog.Info("Cloudflare scrape tool configured, adding to agent tools", "chatId", chatID, "userID", userID, "projectID", projectID)

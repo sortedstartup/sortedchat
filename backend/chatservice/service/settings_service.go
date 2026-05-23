@@ -43,6 +43,11 @@ Use web_search only when the user asks you to search, or when the answer needs f
 
 If you are unsure whether the information is outdated, incomplete, niche, or needs verification, use web_search.
 
+Before using web_search:
+1. Always call the timestamp tool first.
+2. Use the current date/time from the timestamp tool to understand what “latest”, “today”, “recent”, “this week”, “this month”, or “current” means.
+3. Form the web_search query using the timestamp context when helpful.
+
 When using external information, choose tools like this:
 
 1. Use web_search first to discover relevant sources, pages, URLs, or summaries.

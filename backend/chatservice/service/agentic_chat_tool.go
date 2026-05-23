@@ -291,3 +291,46 @@ func parseScrapeUsageSeconds(browserMsUsed string) (float64, error) {
 
 	return milliseconds / 1000.0, nil
 }
+
+// GetTimestampTool returns the current timestamp in various formats
+type GetTimestampTool struct{}
+
+func NewGetTimestampTool() *GetTimestampTool {
+	return &GetTimestampTool{}
+}
+
+func (t *GetTimestampTool) Name() string {
+	return "get_timestamp"
+}
+
+func (t *GetTimestampTool) Description() string {
+	return "Get the current timestamp in various formats. Useful for filtering latest news or time-based queries."
+}
+
+func (t *GetTimestampTool) Parameters() *sortedagents.JSONSchema {
+	return &sortedagents.JSONSchema{
+		Type:       "object",
+		Properties: map[string]sortedagents.JSONSchema{},
+		Required:   []string{},
+	}
+}
+
+func (t *GetTimestampTool) Execute(ctx context.Context, args map[string]any) (any, error) {
+	now := time.Now()
+
+	return map[string]interface{}{
+		"unix_timestamp": now.Unix(),
+		"unix_nano":      now.UnixNano(),
+		"iso8601":        now.Format(time.RFC3339),
+		"date":           now.Format("2006-01-02"),
+		"datetime":       now.Format("2006-01-02 15:04:05"),
+		"year":           now.Year(),
+		"month":          int(now.Month()),
+		"day":            now.Day(),
+		"hour":           now.Hour(),
+		"minute":         now.Minute(),
+		"second":         now.Second(),
+		"timezone":       now.Format("MST"),
+		"human_readable": now.Format("Monday, January 2, 2006 at 3:04 PM"),
+	}, nil
+}

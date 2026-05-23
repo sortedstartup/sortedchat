@@ -47,6 +47,9 @@ export const $isLoadingWebSearch = atom<boolean>(false);
 export const $cloudflareScrapeApiUrl = atom<string>("");
 export const $cloudflareScrapeApiKey = atom<string>("");
 export const $isLoadingCloudflareScrape = atom<boolean>(false);
+export const $agenticSystemPrompt = atom<string>("");
+export const $agenticMaxTurns = atom<string>("4");
+export const $isLoadingAgenticSettings = atom<boolean>(false);
 
 // Onboarding state
 export const $onboardingStep = atom<number>(0);
@@ -316,6 +319,23 @@ export const GetCloudflareScrapeSetting = async (): Promise<void> => {
   }
 };
 
+export const GetAgenticSettings = async (): Promise<void> => {
+  $isLoadingAgenticSettings.set(true);
+  try {
+    const [promptSettings, maxTurnsSettings] = await Promise.all([
+      GetSetting("chat.default_system_prompt"),
+      GetSetting("chat.agentic_max_turns"),
+    ]);
+    $agenticSystemPrompt.set(promptSettings.value ?? "");
+    $agenticMaxTurns.set(maxTurnsSettings.value ?? "4");
+  } catch (error) {
+    console.error("Failed to fetch agentic settings:", error);
+    throw error;
+  } finally {
+    $isLoadingAgenticSettings.set(false);
+  }
+};
+
 onMount($providerSettings, () => {
   GetAllProviderSettings();
   return () => { };
@@ -331,6 +351,13 @@ onMount($webSearchKey, () => {
 onMount($cloudflareScrapeApiKey, () => {
   GetCloudflareScrapeSetting().catch((error) => {
     console.error("Failed to load cloudflare scrape setting on mount:", error);
+  });
+  return () => { };
+});
+
+onMount($agenticSystemPrompt, () => {
+  GetAgenticSettings().catch((error) => {
+    console.error("Failed to load agentic settings on mount:", error);
   });
   return () => { };
 });

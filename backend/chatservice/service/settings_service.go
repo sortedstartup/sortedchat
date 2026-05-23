@@ -31,8 +31,10 @@ const (
 	WEBSEARCH_SETTINGS_KEY         = "tool.websearch.brave"
 	SCRAPE_CLOUDFLARE_SETTINGS_KEY = "tool.scrape.cloudflare"
 	CHAT_DEFAULT_PROMPT_KEY        = "chat.default_system_prompt"
+	AGENTIC_MAX_TURNS_KEY          = "chat.agentic_max_turns"
 	defaultBraveSearchAPIURL       = "https://api.search.brave.com/res/v1/web/search"
 	defaultBraveSearchCost         = "0.005"
+	defaultAgenticMaxTurns         = "4"
 	defaultChatPrompt              = `You are SortedChat’s default assistant.
 
 Answer using your own knowledge and reasoning by default.
@@ -141,6 +143,7 @@ func (s *SettingService) Init() {
 		s.ensureDefaultSetting(SCRAPE_CLOUDFLARE_SETTINGS_KEY, string(scrapeDefaults))
 	}
 	s.ensureDefaultSetting(CHAT_DEFAULT_PROMPT_KEY, defaultChatPrompt)
+	s.ensureDefaultSetting(AGENTIC_MAX_TURNS_KEY, defaultAgenticMaxTurns)
 
 	// Note: FirstBootComplete() is now called only after onboarding wizard completion
 }
@@ -182,6 +185,10 @@ func (s *SettingService) GetSetting(ctx context.Context, name string) (*structpb
 		return &structpb.Struct{}, nil
 	}
 
+	if name == CHAT_DEFAULT_PROMPT_KEY || name == AGENTIC_MAX_TURNS_KEY {
+		return structpb.NewStruct(map[string]interface{}{"value": settingsString})
+	}
+
 	var settingsMap map[string]interface{}
 	err = json.Unmarshal([]byte(settingsString), &settingsMap)
 	if err != nil {
@@ -195,6 +202,27 @@ func (s *SettingService) GetSetting(ctx context.Context, name string) (*structpb
 // saveSettings is the internal implementation for saving settings
 // If completeOnboarding is true, sets is_first_boot = 1
 func (s *SettingService) saveSettings(name string, settingsStruct *structpb.Struct, completeOnboarding bool) error {
+	if name == CHAT_DEFAULT_PROMPT_KEY || name == AGENTIC_MAX_TURNS_KEY {
+		value, ok := settingsStruct.AsMap()["value"].(string)
+		if !ok {
+			return fmt.Errorf("failed to set settings")
+		}
+		if err := s.dao.SetSettingValue(name, value); err != nil {
+			slog.Error("settings_service:saveSettings", "step", "failed to set settings", "error", err)
+			return fmt.Errorf("failed to set settings")
+		}
+
+		if completeOnboarding {
+			if err := s.dao.SetSettingValue("is_first_boot", "1"); err != nil {
+				slog.Error("settings_service:saveSettings", "step", "failed to set is_first_boot", "error", err)
+			}
+		}
+
+		slog.Info("publishing settings change event", "event", events.SETTINGS_CHANGED_EVENT)
+		s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
+		return nil
+	}
+
 	// Load existing settings from DB to support merge behavior
 	existingSettingsStr, err := s.dao.GetSettingValue(name)
 	if err != nil && err != sql.ErrNoRows {
@@ -460,67 +488,32 @@ type cloudflareScrapeSettings struct {
 	APIKey string `json:"apiKey"`
 }
 
-func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
-	value, err := s.settingsDAO.GetSettingValue(WEBSEARCH_SETTINGS_KEY)
+func (s *ChatService) getSettingValue(name string, defaultValue string) (string, error) {
+	value, err := s.settingsDAO.GetSettingValue(name)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return &webSearchSettings{APIURL: defaultBraveSearchAPIURL}, nil
-		}
-		return nil, err
-	}
-
-	if strings.TrimSpace(value) == "" {
-		return &webSearchSettings{APIURL: defaultBraveSearchAPIURL}, nil
-	}
-
-	var settings webSearchSettings
-	if err := json.Unmarshal([]byte(value), &settings); err != nil {
-		return nil, fmt.Errorf("failed to parse websearch settings: %w", err)
-	}
-
-	if strings.TrimSpace(settings.APIURL) == "" {
-		settings.APIURL = defaultBraveSearchAPIURL
-	}
-	if strings.TrimSpace(settings.Cost) == "" {
-		settings.Cost = defaultBraveSearchCost
-	}
-
-	return &settings, nil
-}
-
-func (s *ChatService) getChatDefaultPrompt() (string, error) {
-	value, err := s.settingsDAO.GetSettingValue(CHAT_DEFAULT_PROMPT_KEY)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return defaultChatPrompt, nil
+			return defaultValue, nil
 		}
 		return "", err
 	}
 
-	if strings.TrimSpace(value) == "" {
-		return defaultChatPrompt, nil
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return defaultValue, nil
 	}
 
 	return value, nil
 }
 
-func (s *ChatService) getCloudflareScrapeSettings() (*cloudflareScrapeSettings, error) {
-	value, err := s.settingsDAO.GetSettingValue(SCRAPE_CLOUDFLARE_SETTINGS_KEY)
+func (s *ChatService) getJSONSetting(name string, out any) error {
+	value, err := s.getSettingValue(name, "")
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return &cloudflareScrapeSettings{}, nil
-		}
-		return nil, err
+		return err
 	}
 
-	if strings.TrimSpace(value) == "" {
-		return &cloudflareScrapeSettings{}, nil
+	if value == "" {
+		return nil
 	}
 
-	var settings cloudflareScrapeSettings
-	if err := json.Unmarshal([]byte(value), &settings); err != nil {
-		return nil, fmt.Errorf("failed to parse cloudflare scrape settings: %w", err)
-	}
-
-	return &settings, nil
+	return json.Unmarshal([]byte(value), out)
 }

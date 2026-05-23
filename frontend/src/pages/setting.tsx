@@ -5,9 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
+  $agenticMaxTurns,
+  $agenticSystemPrompt,
   $cloudflareScrapeApiKey,
   $cloudflareScrapeApiUrl,
+  $isLoadingAgenticSettings,
   $isLoadingCloudflareScrape,
   $isLoadingWebSearch,
   $webSearchApiUrl,
@@ -22,11 +26,15 @@ const Settings = () => {
   const webSearchKey = useStore($webSearchKey);
   const webSearchApiUrl = useStore($webSearchApiUrl);
   const webSearchCost = useStore($webSearchCost);
+  const agenticSystemPrompt = useStore($agenticSystemPrompt);
+  const agenticMaxTurns = useStore($agenticMaxTurns);
   const cloudflareScrapeApiUrl = useStore($cloudflareScrapeApiUrl);
   const cloudflareScrapeApiKey = useStore($cloudflareScrapeApiKey);
   const isLoadingWebSearch = useStore($isLoadingWebSearch);
+  const isLoadingAgenticSettings = useStore($isLoadingAgenticSettings);
   const isLoadingCloudflareScrape = useStore($isLoadingCloudflareScrape);
   const [isSavingWebSearch, setIsSavingWebSearch] = useState(false);
+  const [isSavingAgenticSettings, setIsSavingAgenticSettings] = useState(false);
   const [isSavingCloudflareScrape, setIsSavingCloudflareScrape] = useState(false);
 
   const saveWebSearchSettings = async () => {
@@ -72,6 +80,26 @@ const Settings = () => {
     }
   };
 
+  const saveAgenticSettings = async () => {
+    setIsSavingAgenticSettings(true);
+    try {
+      const prompt = agenticSystemPrompt;
+      const maxTurns = agenticMaxTurns.trim() || "4";
+      const [promptMessage] = await Promise.all([
+        SetSetting("chat.default_system_prompt", { value: prompt }),
+        SetSetting("chat.agentic_max_turns", { value: maxTurns }),
+      ]);
+      $agenticSystemPrompt.set(prompt);
+      $agenticMaxTurns.set(maxTurns);
+      toast.success(promptMessage);
+    } catch (error) {
+      console.error("Failed to save agentic settings:", error);
+      toast.error("Failed to save agentic chat settings");
+    } finally {
+      setIsSavingAgenticSettings(false);
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -97,6 +125,48 @@ const Settings = () => {
                     <option value="dark">Dark</option>
                   </select>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <Label className="text-base">Agentic Chat</Label>
+                <p className="text-sm text-muted-foreground">
+                  Configure the system prompt and maximum turn limit used by agentic chat.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="agentic-system-prompt">System Prompt</Label>
+                <Textarea
+                  id="agentic-system-prompt"
+                  value={agenticSystemPrompt}
+                  onChange={(e) => $agenticSystemPrompt.set(e.target.value)}
+                  placeholder="Enter the default system prompt for agentic chat"
+                  disabled={isLoadingAgenticSettings || isSavingAgenticSettings}
+                  rows={10}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="agentic-max-turns">Max Turns</Label>
+                <Input
+                  id="agentic-max-turns"
+                  type="number"
+                  min="1"
+                  value={agenticMaxTurns}
+                  onChange={(e) => $agenticMaxTurns.set(e.target.value)}
+                  placeholder="Enter max turns"
+                  disabled={isLoadingAgenticSettings || isSavingAgenticSettings}
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={saveAgenticSettings} disabled={isLoadingAgenticSettings || isSavingAgenticSettings}>
+                  {isSavingAgenticSettings ? "Saving..." : "Save"}
+                </Button>
               </div>
             </CardContent>
           </Card>

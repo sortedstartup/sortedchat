@@ -316,6 +316,7 @@ func (t *GetTimestampTool) Parameters() *sortedagents.JSONSchema {
 }
 
 func (t *GetTimestampTool) Execute(ctx context.Context, args map[string]any) (any, error) {
+	slog.Info("GetTimestampTool:Execute", "message", "executing get timestamp tool")
 	now := time.Now()
 
 	return map[string]interface{}{

@@ -33,7 +33,7 @@ const (
 	CHAT_DEFAULT_PROMPT_KEY        = "chat.default_system_prompt"
 	AGENTIC_MAX_TURNS_KEY          = "chat.agentic_max_turns"
 	defaultBraveSearchAPIURL       = "https://api.search.brave.com/res/v1/web/search"
-	defaultBraveSearchCost         = "0.005"
+	defaultBraveSearchCost         = "0"
 	defaultAgenticMaxTurns         = "4"
 	defaultChatPrompt              = `You are SortedChat’s default assistant.
 

@@ -450,14 +450,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		Content: currentMessageContent,
 	})
 
-	currentUserPrompt := userMessage
-	if enhancedPrompt != "" {
-		currentUserPrompt = enhancedPrompt
-	}
-
-	// We are not allowing images in agentic chat for now because sortedagents does
-	// not support multi-modal input yet.
-	if !hasImages && capabilities.GetSupportToolCalling() && providerSettings != nil && strings.TrimSpace(providerSettings.ApiUrl) != "" {
+	if capabilities.GetSupportToolCalling() && providerSettings != nil && strings.TrimSpace(providerSettings.ApiUrl) != "" {
 		webSearchSettings := webSearchSettings{APIURL: defaultBraveSearchAPIURL, Cost: defaultBraveSearchCost}
 		if err := s.getJSONSetting(WEBSEARCH_SETTINGS_KEY, &webSearchSettings); err != nil {
 			slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err)
@@ -468,7 +461,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				userID,
 				projectID,
 				model,
-				currentUserPrompt,
+				currentMessageContent,
 				history,
 				ragChunks,
 				ragEnabled,

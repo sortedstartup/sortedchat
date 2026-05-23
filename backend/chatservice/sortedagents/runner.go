@@ -62,8 +62,8 @@ func (e *ErrorEvent) EventType() string { return "error" }
 
 // Runner executes an agent with a conversation loop
 type Runner interface {
-	Run(ctx context.Context, agent Agent, input string, maxTurns int, session Session) (string, error)
-	RunStream(ctx context.Context, agent Agent, input string, maxTurns int, session Session) <-chan StreamEvent
+	Run(ctx context.Context, agent Agent, input Message, maxTurns int, session Session) (string, error)
+	RunStream(ctx context.Context, agent Agent, input Message, maxTurns int, session Session) <-chan StreamEvent
 }
 
 // BasicRunner is a simple implementation of the Runner interface
@@ -125,6 +125,44 @@ func formatToolOutput(result interface{}) string {
 	return fmt.Sprintf("(%s)", strings.Join(pairs, ", "))
 }
 
+func normalizeInputMessage(input Message) Message {
+	msg := input
+	if msg.Role == "" {
+		msg.Role = "user"
+	}
+	if msg.Content == nil {
+		msg.Content = TextContent("")
+	}
+	return msg
+}
+
+func contentToText(content MessageContent) string {
+	switch value := content.(type) {
+	case nil:
+		return ""
+	case TextContent:
+		return string(value)
+	case ContentParts:
+		return contentPartsToText(value)
+	default:
+		return ""
+	}
+}
+
+func contentPartsToText(content []ContentPart) string {
+	var builder strings.Builder
+	for _, part := range content {
+		if part.Type != "text" || part.Text == "" {
+			continue
+		}
+		if builder.Len() > 0 {
+			builder.WriteByte('\n')
+		}
+		builder.WriteString(part.Text)
+	}
+	return builder.String()
+}
+
 // convertToolsToDefinitions converts Tool interfaces to OpenAI tool definitions
 func convertToolsToDefinitions(tools []Tool) []ToolDefinition {
 	definitions := make([]ToolDefinition, len(tools))
@@ -172,13 +210,13 @@ func convertToolsToDefinitions(tools []Tool) []ToolDefinition {
 }
 
 // Run executes the agent with a provided session for conversation history
-func (r *BasicRunner) Run(ctx context.Context, agent Agent, input string, maxTurns int, session Session) (string, error) {
+func (r *BasicRunner) Run(ctx context.Context, agent Agent, input Message, maxTurns int, session Session) (string, error) {
 	// Initialize conversation from session history
 	messages := make([]Message, 0, len(session.GetMessages())+2)
 
 	// If session is empty, add system prompt
 	if session.MessageCount() == 0 {
-		systemMsg := Message{Role: "system", Content: agent.Instructions()}
+		systemMsg := Message{Role: "system", Content: TextContent(agent.Instructions())}
 		messages = append(messages, systemMsg)
 		session.AddMessage(systemMsg)
 	} else {
@@ -187,7 +225,7 @@ func (r *BasicRunner) Run(ctx context.Context, agent Agent, input string, maxTur
 	}
 
 	// Add new user input
-	userMessage := Message{Role: "user", Content: input}
+	userMessage := normalizeInputMessage(input)
 	messages = append(messages, userMessage)
 	session.AddMessage(userMessage)
 
@@ -217,7 +255,7 @@ func (r *BasicRunner) Run(ctx context.Context, agent Agent, input string, maxTur
 
 		// If no tool calls, we're done
 		if len(assistantMessage.ToolCalls) == 0 {
-			return assistantMessage.Content, nil
+			return contentToText(assistantMessage.Content), nil
 		}
 
 		// Log what the LLM wants to execute
@@ -267,7 +305,7 @@ func (r *BasicRunner) Run(ctx context.Context, agent Agent, input string, maxTur
 			// Add tool result message
 			toolMessage := Message{
 				Role:       "tool",
-				Content:    string(resultJSON),
+				Content:    TextContent(string(resultJSON)),
 				ToolCallID: toolCall.ID,
 			}
 			messages = append(messages, toolMessage)
@@ -279,7 +317,7 @@ func (r *BasicRunner) Run(ctx context.Context, agent Agent, input string, maxTur
 }
 
 // RunStream executes the agent with streaming events and a provided session
-func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, maxTurns int, session Session) <-chan StreamEvent {
+func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input Message, maxTurns int, session Session) <-chan StreamEvent {
 	eventChan := make(chan StreamEvent, 10)
 
 	go func() {
@@ -290,7 +328,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 
 		// If session is empty, add system prompt
 		if session.MessageCount() == 0 {
-			systemMsg := Message{Role: "system", Content: agent.Instructions()}
+			systemMsg := Message{Role: "system", Content: TextContent(agent.Instructions())}
 			messages = append(messages, systemMsg)
 			session.AddMessage(systemMsg)
 		} else {
@@ -299,7 +337,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 		}
 
 		// Add new user input
-		userMessage := Message{Role: "user", Content: input}
+		userMessage := normalizeInputMessage(input)
 		messages = append(messages, userMessage)
 		session.AddMessage(userMessage)
 
@@ -425,7 +463,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 			// Build the complete assistant message
 			assistantMessage := Message{
 				Role:         role,
-				Content:      contentBuilder.String(),
+				Content:      TextContent(contentBuilder.String()),
 				ExtraContent: extraContent,
 			}
 
@@ -454,7 +492,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 
 			// If no tool calls, we're done
 			if len(assistantMessage.ToolCalls) == 0 {
-				eventChan <- &CompleteEvent{FinalMessage: assistantMessage.Content}
+				eventChan <- &CompleteEvent{FinalMessage: contentToText(assistantMessage.Content)}
 				return
 			}
 
@@ -494,7 +532,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 					// Add error message and continue
 					toolMessage := Message{
 						Role:       "tool",
-						Content:    fmt.Sprintf("Error: %v", err),
+						Content:    TextContent(fmt.Sprintf("Error: %v", err)),
 						ToolCallID: toolCall.ID,
 					}
 					messages = append(messages, toolMessage)
@@ -533,7 +571,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input string, 
 				// Add tool result message
 				toolMessage := Message{
 					Role:       "tool",
-					Content:    content,
+					Content:    TextContent(content),
 					ToolCallID: toolCall.ID,
 				}
 				messages = append(messages, toolMessage)

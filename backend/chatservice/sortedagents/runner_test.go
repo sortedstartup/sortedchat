@@ -17,7 +17,7 @@ func (m *MockLLM) Call(ctx context.Context, messages []Message, tools []ToolDefi
 			FinishReason string  `json:"finish_reason"`
 		}{
 			{
-				Message: Message{Role: "assistant", Content: "I understand."},
+				Message: Message{Role: "assistant", Content: TextContent("I understand.")},
 			},
 		},
 	}, nil
@@ -66,7 +66,7 @@ func TestSystemPromptPersistence(t *testing.T) {
 	ctx := context.Background()
 
 	// First run
-	_, err := runner.Run(ctx, agent, "Hello", 1, session)
+	_, err := runner.Run(ctx, agent, Message{Role: "user", Content: TextContent("Hello")}, 1, session)
 	if err != nil {
 		t.Fatalf("First run failed: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestSystemPromptPersistence(t *testing.T) {
 	// Check if system prompt was sent
 	hasSystem := false
 	for _, msg := range mockLLM.LastMessages {
-		if msg.Role == "system" && msg.Content == "SYSTEM_INSTRUCTIONS" {
+		if msg.Role == "system" && contentToText(msg.Content) == "SYSTEM_INSTRUCTIONS" {
 			hasSystem = true
 		}
 	}
@@ -83,7 +83,7 @@ func TestSystemPromptPersistence(t *testing.T) {
 	}
 
 	// Second run with same session
-	_, err = runner.Run(ctx, agent, "How are you?", 1, session)
+	_, err = runner.Run(ctx, agent, Message{Role: "user", Content: TextContent("How are you?")}, 1, session)
 	if err != nil {
 		t.Fatalf("Second run failed: %v", err)
 	}
@@ -91,7 +91,7 @@ func TestSystemPromptPersistence(t *testing.T) {
 	// Check if system prompt was sent in second run
 	hasSystem = false
 	for _, msg := range mockLLM.LastMessages {
-		if msg.Role == "system" && msg.Content == "SYSTEM_INSTRUCTIONS" {
+		if msg.Role == "system" && contentToText(msg.Content) == "SYSTEM_INSTRUCTIONS" {
 			hasSystem = true
 		}
 	}

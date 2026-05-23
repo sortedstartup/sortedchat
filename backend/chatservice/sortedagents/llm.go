@@ -19,17 +19,38 @@ type LLM interface {
 }
 
 // Message represents a chat message
-
 type Message struct {
 	Role string `json:"role"`
 
-	Content string `json:"content"`
+	Content MessageContent `json:"content"`
 
 	ToolCallID string `json:"tool_call_id,omitempty"`
 
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 
 	ExtraContent *ExtraContent `json:"extra_content,omitempty"`
+}
+
+// using this interface for type assertion to allow both string and []ContentPart as content
+type MessageContent interface {
+	MessageContent()
+}
+type TextContent string
+
+func (TextContent) MessageContent() {}
+
+type ContentParts []ContentPart
+
+func (ContentParts) MessageContent() {}
+
+type ContentPart struct {
+	Type     string        `json:"type"`
+	Text     string        `json:"text,omitempty"`
+	ImageURL *ImageURLPart `json:"image_url,omitempty"`
+}
+
+type ImageURLPart struct {
+	URL string `json:"url"`
 }
 
 // ToolCall represents a tool call from the assistant

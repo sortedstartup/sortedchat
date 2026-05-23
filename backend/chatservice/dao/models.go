@@ -19,6 +19,8 @@ type ChatMessageRow struct {
 	OutputTokenCount   int     `db:"output_token_count" json:"output_token_count"`
 	CachedTokenCount   int     `db:"cached_token_count" json:"cached_token_count"`
 	Cost               float64 `db:"cost" json:"cost"`
+	BraveSearchCount   int     `db:"brave_search_count" json:"brave_search_count"`
+	ScrapeAPIUsageTime float64 `db:"scrape_api_usage_time" json:"scrape_api_usage_time"`
 }
 
 type MessageSummary struct {

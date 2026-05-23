@@ -193,6 +193,7 @@ func (s *ChatService) runAgenticChat(
 	var fullResponse strings.Builder
 	var inputTokens, outputTokens, cachedTokens int
 	var successfulWebSearchCalls int
+	var scrapeAPIUsageTimeSeconds float64
 	searchCostPerRequest, err := parseBraveSearchCost(webSearchSettings.Cost)
 	if err != nil {
 		slog.Warn("service:Chat", "message", "invalid brave search request cost, using default", "cost", webSearchSettings.Cost, "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
@@ -225,7 +226,7 @@ func (s *ChatService) runAgenticChat(
 
 		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
 
-		if _, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled); err != nil {
+		if _, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, successfulWebSearchCalls, scrapeAPIUsageTimeSeconds, referencesJSON, ragEnabled); err != nil {
 			slog.Error("service:Chat", "message", "failed to save partial agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		}
 	}
@@ -293,6 +294,13 @@ func (s *ChatService) runAgenticChat(
 			if e.ToolName == "web_search" && e.Error == nil {
 				successfulWebSearchCalls++
 			}
+			if e.ToolName == "browser_scrape" && e.Error == nil {
+				if resultMap, ok := e.Result.(map[string]interface{}); ok {
+					if usageSeconds, ok := resultMap[scrapeUsageSecondsResultKey].(float64); ok {
+						scrapeAPIUsageTimeSeconds += usageSeconds
+					}
+				}
+			}
 
 		case *sortedagents.CompleteEvent:
 			completed = true
@@ -343,7 +351,7 @@ func (s *ChatService) runAgenticChat(
 		}
 
 		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, successfulWebSearchCalls, scrapeAPIUsageTimeSeconds, referencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		} else {

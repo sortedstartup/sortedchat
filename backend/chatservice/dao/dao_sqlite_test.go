@@ -218,6 +218,8 @@ func TestAddChatMessageWithTokens(t *testing.T) {
 						tc.outputTokens,
 						tc.cachedTokens,
 						0,
+						0,
+						0,
 						tc.references,
 						tc.ragEnabled,
 					)

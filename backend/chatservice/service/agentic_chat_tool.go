@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -177,6 +178,8 @@ type BrowserScrapeResult struct {
 	Result  string `json:"result"`
 }
 
+const scrapeUsageSecondsResultKey = "_scrape_api_usage_seconds"
+
 func (t *BrowserScrapeTool) Execute(ctx context.Context, args map[string]any) (any, error) {
 	slog.Info("executing browser scrape tool")
 
@@ -248,6 +251,12 @@ func (t *BrowserScrapeTool) Execute(ctx context.Context, args map[string]any) (a
 		return nil, fmt.Errorf("failed to read response: %v", err)
 	}
 
+	scrapeUsageSeconds, err := parseScrapeUsageSeconds(resp.Header.Get("X-Browser-Ms-Used"))
+	if err != nil {
+		slog.Warn("BrowserScrapeTool:Execute", "message", "failed to parse scrape usage header", "error", err, "header", resp.Header.Get("X-Browser-Ms-Used"))
+		scrapeUsageSeconds = 0
+	}
+
 	slog.Debug("Cloudflare API response", "status", resp.StatusCode)
 
 	// Parse the response
@@ -260,7 +269,25 @@ func (t *BrowserScrapeTool) Execute(ctx context.Context, args map[string]any) (a
 	slog.Info("Parsed result", "success", result.Success, "result_length", len(result.Result))
 
 	return map[string]interface{}{
-		"url":      urlStr,
-		"markdown": result.Result,
+		"url":                       urlStr,
+		"markdown":                  result.Result,
+		scrapeUsageSecondsResultKey: scrapeUsageSeconds,
 	}, nil
+}
+
+func parseScrapeUsageSeconds(browserMsUsed string) (float64, error) {
+	browserMsUsed = strings.TrimSpace(browserMsUsed)
+	if browserMsUsed == "" {
+		return 0, nil
+	}
+
+	milliseconds, err := strconv.ParseFloat(browserMsUsed, 64)
+	if err != nil {
+		return 0, fmt.Errorf("parse browser ms used: %w", err)
+	}
+	if milliseconds < 0 {
+		return 0, fmt.Errorf("browser ms used must be non-negative")
+	}
+
+	return milliseconds / 1000.0, nil
 }

@@ -161,7 +161,7 @@ func (p *PostgresDAO) GetModelByID(modelID string) (*Models, error) {
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	slog.Info("dao_postgres:GetChatMessages", "userID", userID, "chatId", chatId)
 	var messages []ChatMessageRow
-	err := p.db.Select(&messages, "SELECT role, content, COALESCE(content_image, '') as content_image, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cost, 0) as cost, COALESCE(cached_token_count, 0) as cached_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
+	err := p.db.Select(&messages, "SELECT role, content, COALESCE(content_image, '') as content_image, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cost, 0) as cost, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(brave_search_count, 0) as brave_search_count, COALESCE(scrape_api_usage_time, 0) as scrape_api_usage_time FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	if err != nil {
 		slog.Error("dao_postgres:GetChatMessages", "message", "failed to get chat messages", "error", err, "userID", userID, "chatId", chatId)
 		return nil, fmt.Errorf("failed to get chat messages")
@@ -215,6 +215,8 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 	outputTokens int,
 	cachedTokens int,
 	searchCost float64,
+	braveSearchCount int,
+	scrapeAPIUsageTime float64,
 	references string,
 	ragEnabled bool,
 ) (MessageSummary, error) {
@@ -242,9 +244,9 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 			INSERT INTO chat_messages (
 				chat_id, role, content, content_image, model,
 				input_token_count, output_token_count, cached_token_count,
-				user_id, document_references, rag_enabled
+				user_id, document_references, rag_enabled, brave_search_count, scrape_api_usage_time
 			)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 			RETURNING id
 		),
 		prices AS (
@@ -254,7 +256,7 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 		calc AS (
 			SELECT (p.input_token_cost * $6
 				+ p.output_token_cost * $7
-				+ p.cached_token_cost * $8) / 1000000.0 + $12 AS cost
+				+ p.cached_token_cost * $8) / 1000000.0 + $14 AS cost
 			FROM prices p
 		),
 		upd_msg AS (
@@ -279,7 +281,7 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 	err := p.db.QueryRow(sqlQuery,
 		chatId, role, content, contentImageValue, model,
 		inputTokens, outputTokens, cachedTokens,
-		userID, referencesValue, ragEnabled, searchCost,
+		userID, referencesValue, ragEnabled, braveSearchCount, scrapeAPIUsageTime, searchCost,
 	).Scan(&messageId, &cost)
 
 	if err != nil {
@@ -1068,7 +1070,9 @@ func (p *PostgresDAO) GetChatMessageByID(userID string, messageID string) (*Chat
 	slog.Info("dao_postgres:GetChatMessageByID", "userID", userID, "messageID", messageID)
 	var message ChatMessageRow
 	err := p.db.Get(&message, `
-		SELECT role, content, id, COALESCE(document_references::text, '') as document_references 
+		SELECT role, content, id, COALESCE(document_references::text, '') as document_references,
+		       COALESCE(brave_search_count, 0) as brave_search_count,
+		       COALESCE(scrape_api_usage_time, 0) as scrape_api_usage_time
 		FROM chat_messages 
 		WHERE id = $1 AND user_id = $2`, messageID, userID)
 	if err != nil {

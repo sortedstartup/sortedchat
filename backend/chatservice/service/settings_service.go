@@ -23,18 +23,19 @@ import (
 )
 
 type SettingService struct {
-	dao   dao.SettingsDAO
-	queue queue.Queue
+	dao             dao.SettingsDAO
+	queue           queue.Queue
+	settingsManager *settings.SettingsManager
 }
 
-func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingService {
+func NewSettingService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory dao.DAOFactory) *SettingService {
 	slog.Debug("settings_service:NewSettingService")
 	settingsDAO, err := daoFactory.CreateSettingsDAO()
 	if err != nil {
 		slog.Error("settings_service:NewSettingService, failed to create settings DAO", "error", err)
 		return nil
 	}
-	return &SettingService{dao: settingsDAO, queue: queue}
+	return &SettingService{dao: settingsDAO, queue: queue, settingsManager: settingsManager}
 }
 
 func (s *SettingService) Init() {
@@ -85,7 +86,45 @@ func (s *SettingService) Init() {
 		s.setSettingWithoutCompletingOnboarding("settings", st)
 	}
 
+	webSearchDefaults, err := json.Marshal(webSearchSettings{
+		APIURL: settings.DEFAULT_BRAVE_SEARCH_API_URL,
+		APIKey: "",
+	})
+	if err != nil {
+		slog.Error("settings_service:Init", "step", "failed to marshal default web search settings", "error", err)
+	} else {
+		s.ensureDefaultSetting(settings.WEBSEARCH_SETTINGS_KEY, string(webSearchDefaults))
+	}
+	defaultPromptStruct, err := structpb.NewStruct(map[string]interface{}{"value": settings.DEFAULT_CHAT_PROMPT})
+	if err != nil {
+		slog.Error("settings_service:Init", "step", "failed to create default chat prompt struct", "error", err)
+	} else {
+		bytes, marshalErr := json.Marshal(defaultPromptStruct.AsMap())
+		if marshalErr != nil {
+			slog.Error("settings_service:Init", "step", "failed to marshal default chat prompt", "error", marshalErr)
+		} else {
+			s.ensureDefaultSetting(settings.CHAT_DEFAULT_PROMPT_KEY, string(bytes))
+		}
+	}
+
 	// Note: FirstBootComplete() is now called only after onboarding wizard completion
+}
+
+// TODO: what will happen with 2 replicas
+func (s *SettingService) ensureDefaultSetting(name string, defaultValue string) {
+	value, err := s.dao.GetSettingValue(name)
+	if err != nil && err != sql.ErrNoRows {
+		slog.Error("settings_service:ensureDefaultSetting", "step", "failed to load setting", "name", name, "error", err)
+		return
+	}
+
+	if strings.TrimSpace(value) != "" {
+		return
+	}
+
+	if err := s.dao.SetSettingValue(name, defaultValue); err != nil {
+		slog.Error("settings_service:ensureDefaultSetting", "step", "failed to seed setting", "name", name, "error", err)
+	}
 }
 
 func (s *SettingService) FirstBootComplete() {
@@ -96,6 +135,19 @@ func (s *SettingService) FirstBootComplete() {
 }
 
 func (s *SettingService) GetSetting(ctx context.Context, name string) (*structpb.Struct, error) {
+	switch name {
+	case settings.WEBSEARCH_SETTINGS_KEY:
+		webSearchSettings := s.settingsManager.GetWebSearchSettings()
+		return structpb.NewStruct(map[string]interface{}{
+			"apiUrl": webSearchSettings.APIURL,
+			"apiKey": webSearchSettings.APIKey,
+		})
+	case settings.CHAT_DEFAULT_PROMPT_KEY:
+		return structpb.NewStruct(map[string]interface{}{
+			"value": s.settingsManager.GetChatDefaultPrompt(),
+		})
+	}
+
 	settingsString, err := s.dao.GetSettingValue(name)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -167,6 +219,17 @@ func (s *SettingService) saveSettings(name string, settingsStruct *structpb.Stru
 	slog.Info("publishing settings change event", "event", events.SETTINGS_CHANGED_EVENT)
 	// publish an event, any subscriber now need to reload settings from the database
 	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
+
+	switch name {
+	case settings.WEBSEARCH_SETTINGS_KEY:
+		if err := s.settingsManager.LoadWebSearchSettingsFromDB(); err != nil {
+			return err
+		}
+	case settings.CHAT_DEFAULT_PROMPT_KEY:
+		if err := s.settingsManager.LoadChatDefaultPromptFromDB(); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -374,4 +437,21 @@ func (s *SettingService) TestConnection(ctx context.Context, req *pb.TestConnect
 		Success: false,
 		Message: fmt.Sprintf("Unknown error connecting to %s", serviceName),
 	}, nil
+}
+
+type webSearchSettings struct {
+	APIURL string `json:"apiUrl"`
+	APIKey string `json:"apiKey"`
+}
+
+func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
+	settings := s.settingsManager.GetWebSearchSettings()
+	return &webSearchSettings{
+		APIURL: settings.APIURL,
+		APIKey: settings.APIKey,
+	}, nil
+}
+
+func (s *ChatService) getChatDefaultPrompt() (string, error) {
+	return s.settingsManager.GetChatDefaultPrompt(), nil
 }

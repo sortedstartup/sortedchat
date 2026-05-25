@@ -86,11 +86,12 @@ type Models struct {
 
 // Intermediate struct for JSON parsing
 type CapabilitiesJSON struct {
-	Text     CapabilityJSON `json:"text"`
-	Audio    CapabilityJSON `json:"audio"`
-	Video    CapabilityJSON `json:"video"`
-	Image    CapabilityJSON `json:"image"`
-	Realtime bool           `json:"realtime"`
+	Text               CapabilityJSON `json:"text"`
+	Audio              CapabilityJSON `json:"audio"`
+	Video              CapabilityJSON `json:"video"`
+	Image              CapabilityJSON `json:"image"`
+	Realtime           bool           `json:"realtime"`
+	SupportToolCalling bool           `json:"support_tool_calling"`
 }
 
 type CapabilityJSON struct {
@@ -122,11 +123,12 @@ func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error
 	}
 
 	return &proto.ModelCapabilities{
-		Text:     toProto(caps.Text),
-		Audio:    toProto(caps.Audio),
-		Video:    toProto(caps.Video),
-		Image:    toProto(caps.Image),
-		Realtime: caps.Realtime,
+		Text:               toProto(caps.Text),
+		Audio:              toProto(caps.Audio),
+		Video:              toProto(caps.Video),
+		Image:              toProto(caps.Image),
+		Realtime:           caps.Realtime,
+		SupportToolCalling: caps.SupportToolCalling,
 	}, nil
 }
 

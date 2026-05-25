@@ -12,7 +12,10 @@ import {
   SetProviderSettingRequest,
   SetProviderSettingResponse,
   ProviderSettings,
+  GetSettingRequest,
+  SetSettingRequest,
 } from "../../proto/chatservice";
+import { Struct, Value } from "../../proto/google/protobuf/struct";
 import { atom, onMount } from "nanostores";
 import { createAuthenticatedClientOptions } from "../lib/auth";
 import { getUIConfig } from "../lib/config";
@@ -37,6 +40,9 @@ function getClient(): SettingServiceClient {
 export const $settings = atom<Settings>(new Settings({}));
 export const $providerSettings = atom<Map<string, ProviderSettings>>(new Map());
 export const $isLoadingProviderSettings = atom<boolean>(false);
+export const $webSearchKey = atom<string>("");
+export const $webSearchApiUrl = atom<string>("https://api.search.brave.com/res/v1/web/search");
+export const $isLoadingWebSearch = atom<boolean>(false);
 
 // Onboarding state
 export const $onboardingStep = atom<number>(0);
@@ -227,7 +233,78 @@ export const SetProviderSetting = async (
   }
 };
 
+function objectToStruct(data: Record<string, string>): Struct {
+  const fields = new Map<string, Value>();
+  for (const [key, value] of Object.entries(data)) {
+    fields.set(key, new Value({ string_value: value }));
+  }
+  return new Struct({ fields });
+}
+
+function structToStringRecord(settings?: Struct): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!settings) {
+    return result;
+  }
+
+  for (const [key, value] of settings.fields.entries()) {
+    if (value.kind === "string_value") {
+      result[key] = value.string_value;
+    }
+  }
+
+  return result;
+}
+
+export const GetSetting = async (name: string): Promise<Record<string, string>> => {
+  try {
+    const req = new GetSettingRequest({ name });
+    const res = await getClient().GetSetting(req, {});
+    return structToStringRecord(res.settings);
+  } catch (error) {
+    console.error("Failed to fetch setting:", error);
+    throw new Error("Failed to fetch setting");
+  }
+};
+
+export const SetSetting = async (name: string, settings: Record<string, string>): Promise<string> => {
+  try {
+    const req = new SetSettingRequest({
+      name,
+      settings: objectToStruct(settings),
+    });
+    const res = await getClient().SetSetting(req, {});
+    return res.message ?? "Settings saved successfully";
+  } catch (error) {
+    console.error("Failed to save setting:", error);
+    throw new Error("Failed to save setting");
+  }
+};
+
+export const GetWebSearchSetting = async (): Promise<void> => {
+  $isLoadingWebSearch.set(true);
+  try {
+    const settings = await GetSetting("tool.websearch.brave");
+    $webSearchApiUrl.set(
+      settings.apiUrl ?? "https://api.search.brave.com/res/v1/web/search",
+    );
+    $webSearchKey.set(settings.apiKey ?? "");
+  } catch (error) {
+    console.error("Failed to fetch websearch setting:", error);
+    throw error;
+  } finally {
+    $isLoadingWebSearch.set(false);
+  }
+};
+
 onMount($providerSettings, () => {
   GetAllProviderSettings();
+  return () => { };
+});
+
+onMount($webSearchKey, () => {
+  GetWebSearchSetting().catch((error) => {
+    console.error("Failed to load websearch setting on mount:", error);
+  });
   return () => { };
 });

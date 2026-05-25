@@ -21,9 +21,9 @@ type SettingServiceAPI struct {
 	service *service.SettingService
 }
 
-func NewSettingService(queue queue.Queue, daoFactory db.DAOFactory) *SettingServiceAPI {
+func NewSettingService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory db.DAOFactory) *SettingServiceAPI {
 	slog.Debug("api:NewSettingService")
-	settingService := service.NewSettingService(queue, daoFactory)
+	settingService := service.NewSettingService(queue, settingsManager, daoFactory)
 	if settingService == nil {
 		slog.Error("api:NewSettingService", "error", "failed to create setting service")
 		return nil

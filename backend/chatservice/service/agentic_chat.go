@@ -140,14 +140,22 @@ func (s *ChatService) runAgenticChat(
 	firstToken := true
 	completed := false
 
+	// - fullResponse accumulates streamed text chunks into one final assistant message.
+	// - We stream chunks to the client immediately, but still need the full text for DB persistence.
 	savePartialResponse := func() {
 		assistantText := fullResponse.String()
 		if assistantText == "" {
 			return
 		}
 
+		// - referencesJSON stores which RAG docs/chunks were used for this assistant message.
+		// - It is saved with the chat message so reference UI can be reconstructed later.
 		var referencesJSON string
 		if len(ragChunks) > 0 {
+			// - createRAGDocumentJSONFromChunks groups retrieved chunks by document.
+			// - We group retrieved chunks by document before saving references on a message.
+			// - Example: chunk1/docA, chunk2/docA, chunk3/docB becomes docA with 2 chunks and docB with 1 chunk.
+			// Group chunks by document ID
 			ragDocs := s.createRAGDocumentJSONFromChunks(ragChunks)
 			referencesBytes, err := json.Marshal(ragDocs)
 			if err != nil {
@@ -246,6 +254,8 @@ func (s *ChatService) runAgenticChat(
 
 	assistantText := fullResponse.String()
 	if assistantText != "" {
+		// - Final save mirrors partial save, but for a completed assistant response.
+		// - We attach the same RAG references so the final message preserves its supporting context.
 		var referencesJSON string
 		if len(ragChunks) > 0 {
 			ragDocs := s.createRAGDocumentJSONFromChunks(ragChunks)

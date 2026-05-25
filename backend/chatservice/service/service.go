@@ -1349,6 +1349,8 @@ func (s *ChatService) EmbeddingSubscriber() {
 // createRAGDocumentJSONFromChunks converts RAG chunks to the requested JSON structure
 func (s *ChatService) createRAGDocumentJSONFromChunks(ragChunks []rag.Result) []RAGDocumentJSON {
 	slog.Info("service:createRAGDocumentJSONFromChunks", "ChunksCount", len(ragChunks))
+	// - We group retrieved chunks by document before saving references on a message.
+	// - Example: chunk1/docA, chunk2/docA, chunk3/docB becomes docA with 2 chunks and docB with 1 chunk.
 	// Group chunks by document ID
 	docChunksMap := make(map[string][]RAGDocumentChunk)
 

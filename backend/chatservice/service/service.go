@@ -479,6 +479,10 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				return nil
 			}
 
+			stream(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_SENDING_REQUEST_TO_LLM, Message: "Agentic chat failed, falling back to direct LLM call"}},
+			})
+
 			slog.Warn("service:Chat", "message", "agentic chat failed, falling back to direct llm call", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		}
 	}

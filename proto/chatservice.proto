@@ -29,6 +29,13 @@ service SortedChat {
     rpc RestoreChat(RestoreChatRequest) returns (RestoreChatResponse);
     rpc RenameItem(RenameItemRequest) returns (RenameItemResponse);
     rpc AddModel(AddModelRequest) returns (AddModelResponse);
+    rpc UpdateModelsList(UpdateModelsListRequest) returns (UpdateModelsListResponse);
+}
+
+message UpdateModelsListRequest {}
+
+message UpdateModelsListResponse {
+  string message = 1;
 }
 
 message RenameItemRequest {

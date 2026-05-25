@@ -18,6 +18,113 @@ export enum Embedding_Status {
     STATUS_ERROR = 2,
     STATUS_SUCCESS = 3
 }
+export class UpdateModelsListRequest extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {}) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") { }
+    }
+    static fromObject(data: {}): UpdateModelsListRequest {
+        const message = new UpdateModelsListRequest({});
+        return message;
+    }
+    toObject() {
+        const data: {} = {};
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): UpdateModelsListRequest {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new UpdateModelsListRequest();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): UpdateModelsListRequest {
+        return UpdateModelsListRequest.deserialize(bytes);
+    }
+}
+export class UpdateModelsListResponse extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        message?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("message" in data && data.message != undefined) {
+                this.message = data.message;
+            }
+        }
+    }
+    get message() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set message(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        message?: string;
+    }): UpdateModelsListResponse {
+        const message = new UpdateModelsListResponse({});
+        if (data.message != null) {
+            message.message = data.message;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            message?: string;
+        } = {};
+        if (this.message != null) {
+            data.message = this.message;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.message.length)
+            writer.writeString(1, this.message);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): UpdateModelsListResponse {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new UpdateModelsListResponse();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.message = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): UpdateModelsListResponse {
+        return UpdateModelsListResponse.deserialize(bytes);
+    }
+}
 export class RenameItemRequest extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
@@ -10973,6 +11080,10 @@ export class SortedChatClient {
     private static AddModel = new grpc_web_1.MethodDescriptor<AddModelRequest, AddModelResponse>("/sortedchat.SortedChat/AddModel", grpc_web_1.MethodType.UNARY, AddModelRequest, AddModelResponse, (message: AddModelRequest) => message.serialize(), AddModelResponse.deserialize);
     AddModel(message: AddModelRequest, metadata: grpc_web_1.Metadata | null) {
         return this._client.thenableCall<AddModelRequest, AddModelResponse>(this._address + "/sortedchat.SortedChat/AddModel", message, metadata || {}, SortedChatClient.AddModel);
+    }
+    private static UpdateModelsList = new grpc_web_1.MethodDescriptor<UpdateModelsListRequest, UpdateModelsListResponse>("/sortedchat.SortedChat/UpdateModelsList", grpc_web_1.MethodType.UNARY, UpdateModelsListRequest, UpdateModelsListResponse, (message: UpdateModelsListRequest) => message.serialize(), UpdateModelsListResponse.deserialize);
+    UpdateModelsList(message: UpdateModelsListRequest, metadata: grpc_web_1.Metadata | null) {
+        return this._client.thenableCall<UpdateModelsListRequest, UpdateModelsListResponse>(this._address + "/sortedchat.SortedChat/UpdateModelsList", message, metadata || {}, SortedChatClient.UpdateModelsList);
     }
 }
 // Server-side service class removed for client-side compatibility

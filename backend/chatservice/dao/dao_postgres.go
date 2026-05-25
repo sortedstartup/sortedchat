@@ -938,6 +938,101 @@ func (p *PostgresDAO) UpsertModel(modelID string, name string, url string, provi
 	return nil
 }
 
+func (p *PostgresDAO) GetModelCatalogVersion() (*ModelCatalogVersion, error) {
+	type catalogVersionRow struct {
+		JSONSchemaVersion    sql.NullString `db:"json_schema_version"`
+		ModelRevisionVersion sql.NullString `db:"model_revision_version"`
+	}
+
+	var row catalogVersionRow
+	err := p.db.Get(&row, `
+		SELECT json_schema_version, model_revision_version
+		FROM shared_models_metadata
+		WHERE COALESCE(model_revision_version, '') <> '' OR COALESCE(json_schema_version, '') <> ''
+		ORDER BY model_revision_version DESC, id ASC
+		LIMIT 1
+	`)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		slog.Error("dao_postgres:GetModelCatalogVersion", "message", "failed to fetch model catalog version", "error", err)
+		return nil, fmt.Errorf("failed to fetch model catalog version")
+	}
+
+	if !row.JSONSchemaVersion.Valid && !row.ModelRevisionVersion.Valid {
+		return nil, nil
+	}
+
+	return &ModelCatalogVersion{
+		JSONSchemaVersion:    strings.TrimSpace(row.JSONSchemaVersion.String),
+		ModelRevisionVersion: strings.TrimSpace(row.ModelRevisionVersion.String),
+	}, nil
+}
+
+func (p *PostgresDAO) UpsertHostedModel(model HostedModel, version ModelCatalogVersion) error {
+	isEnabled := true
+	if model.IsEnabled != nil {
+		isEnabled = *model.IsEnabled
+	}
+
+	_, err := p.db.Exec(`
+		INSERT INTO shared_models_metadata (
+			id, name, url, provider, input_token_cost, output_token_cost, cached_token_cost,
+			is_embedding_model, is_downloadable, capabilities, is_enabled, model_info,
+			creator_name, modified_by, description, json_schema_version, model_revision_version
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12::jsonb, $13, $14, $15, $16, $17)
+		ON CONFLICT(id) DO UPDATE SET
+			name = excluded.name,
+			url = excluded.url,
+			provider = excluded.provider,
+			input_token_cost = excluded.input_token_cost,
+			output_token_cost = excluded.output_token_cost,
+			cached_token_cost = excluded.cached_token_cost,
+			is_embedding_model = excluded.is_embedding_model,
+			is_downloadable = excluded.is_downloadable,
+			capabilities = excluded.capabilities,
+			model_info = excluded.model_info,
+			creator_name = excluded.creator_name,
+			modified_by = excluded.modified_by,
+			description = excluded.description,
+			json_schema_version = excluded.json_schema_version,
+			model_revision_version = excluded.model_revision_version
+	`,
+		model.ID,
+		model.Name,
+		model.URL,
+		model.Provider,
+		model.InputTokenCost,
+		model.OutputTokenCost,
+		model.CachedTokenCost,
+		model.IsEmbeddingModel,
+		model.IsDownloadable,
+		defaultJSONObjectBytes(model.Capabilities),
+		isEnabled,
+		defaultJSONObjectBytes(model.ModelInfo),
+		model.CreatorName,
+		model.ModifiedBy,
+		model.Description,
+		version.JSONSchemaVersion,
+		version.ModelRevisionVersion,
+	)
+	if err != nil {
+		slog.Error("dao_postgres:UpsertHostedModel", "message", "failed to upsert hosted model", "error", err, "modelID", model.ID)
+		return fmt.Errorf("failed to upsert hosted model")
+	}
+
+	return nil
+}
+
+func defaultJSONObjectBytes(value []byte) string {
+	if strings.TrimSpace(string(value)) == "" {
+		return "{}"
+	}
+	return string(value)
+}
+
 func (p *PostgresDAO) RenameProject(userID string, projectId string, name string) error {
 	slog.Info("dao_postgres:RenameProject", "userID", userID, "projectId", projectId, "name", name)
 	result, err := p.db.Exec("UPDATE project SET name = $1 WHERE id = $2 AND user_id = $3", name, projectId, userID)

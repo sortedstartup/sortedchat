@@ -55,6 +55,8 @@ type DAO interface {
 	IsNameExists(userID string, chatId string, name string) (bool, error)
 	IsProjectNameExists(userID string, projectId string, name string) (bool, error)
 	UpsertModel(modelID string, name string, url string, provider string, inputTokenCost float64, outputTokenCost float64, cachedTokenCost float64, isEmbeddingModel bool) error
+	GetModelCatalogVersion() (*ModelCatalogVersion, error)
+	UpsertHostedModel(model HostedModel, version ModelCatalogVersion) error
 }
 
 type SettingsDAO interface {

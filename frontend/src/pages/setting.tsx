@@ -1,9 +1,24 @@
 import { useTheme } from "@/components/theme-provider";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { UpdateModelsList } from "@/store/setting";
+import { useState } from "react";
 
 const Settings = () => {
   const { theme, setTheme } = useTheme();
+  const [isSyncingModels, setIsSyncingModels] = useState(false);
+
+  const handleSyncModels = async () => {
+    setIsSyncingModels(true);
+    try {
+      await UpdateModelsList();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSyncingModels(false);
+    }
+  };
 
   return (
     <div className="h-full overflow-y-auto bg-background">
@@ -30,6 +45,22 @@ const Settings = () => {
                     <option value="dark">Dark</option>
                   </select>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label className="text-base">Models List</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Fetch the latest hosted models catalog and update your local models list.
+                  </p>
+                </div>
+                <Button onClick={handleSyncModels} disabled={isSyncingModels}>
+                  {isSyncingModels ? "Syncing..." : "Sync Models List"}
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -172,7 +172,7 @@ func (s *SQLiteDAO) GetChatList(userID string, projectID string, softDeleted boo
 	return result, nil
 }
 
-func (s *SQLiteDAO) AddChatMessageWithTokens(
+func (s *SQLiteDAO) AddChatMessageWithTokenCount(
 	userID string,
 	chatId string,
 	role string,
@@ -204,13 +204,13 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
 		inputTokens, outputTokens, cachedTokens,
 		userID, references, ragEnabled)
 	if err != nil {
-		slog.Error("dao_sqlite:AddChatMessageWithTokens", "message", "failed to add chat message with tokens", "error", err, "chatId", chatId, "userID", userID)
+		slog.Error("dao_sqlite:AddChatMessageWithTokenCount", "message", "failed to add chat message with tokens", "error", err, "chatId", chatId, "userID", userID)
 		return MessageSummary{}, fmt.Errorf("failed to add chat message with tokens")
 	}
 
 	messageId, err := result.LastInsertId()
 	if err != nil {
-		slog.Error("dao_sqlite:AddChatMessageWithTokens", "message", "failed to get last insert id", "error", err, "chatId", chatId, "userID", userID)
+		slog.Error("dao_sqlite:AddChatMessageWithTokenCount", "message", "failed to get last insert id", "error", err, "chatId", chatId, "userID", userID)
 		return MessageSummary{}, fmt.Errorf("failed to get last insert id")
 	}
 
@@ -221,7 +221,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
         FROM shared_models_metadata
         WHERE id = ?`, model).Scan(&inputCost, &outputCost, &cachedCost)
 	if err != nil {
-		slog.Error("dao_sqlite:AddChatMessageWithTokens", "message", "failed to get model metadata", "error", err, "chatId", chatId, "userID", userID)
+		slog.Error("dao_sqlite:AddChatMessageWithTokenCount", "message", "failed to get model metadata", "error", err, "chatId", chatId, "userID", userID)
 		return MessageSummary{}, fmt.Errorf("failed to get model metadata")
 	}
 
@@ -234,7 +234,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
         SET cost = ? 
         WHERE id = ?`, cost, messageId)
 	if err != nil {
-		slog.Error("dao_sqlite:AddChatMessageWithTokens", "message", "failed to update message cost", "error", err, "chatId", chatId, "userID", userID)
+		slog.Error("dao_sqlite:AddChatMessageWithTokenCount", "message", "failed to update message cost", "error", err, "chatId", chatId, "userID", userID)
 		return MessageSummary{}, fmt.Errorf("failed to update message cost")
 	}
 
@@ -249,7 +249,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokens(
         WHERE chat_id = ? AND user_id = ?`,
 		cost, inputTokens, outputTokens, cachedTokens, chatId, userID)
 	if err != nil {
-		slog.Error("dao_sqlite:AddChatMessageWithTokens", "message", "failed to update chat_list", "error", err, "chatId", chatId, "userID", userID)
+		slog.Error("dao_sqlite:AddChatMessageWithTokenCount", "message", "failed to update chat_list", "error", err, "chatId", chatId, "userID", userID)
 		return MessageSummary{}, fmt.Errorf("failed to update chat list")
 	}
 

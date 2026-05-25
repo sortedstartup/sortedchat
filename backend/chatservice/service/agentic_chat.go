@@ -162,7 +162,7 @@ func (s *ChatService) runAgenticChat(
 			nonCachedInputTokens = 0
 		}
 
-		if _, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled); err != nil {
+		if _, err := s.dao.AddChatMessageWithTokenCount(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled); err != nil {
 			slog.Error("service:Chat", "message", "failed to save partial agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		}
 	}
@@ -262,7 +262,7 @@ func (s *ChatService) runAgenticChat(
 			nonCachedInputTokens = 0
 		}
 
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokenCount(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, referencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		} else {

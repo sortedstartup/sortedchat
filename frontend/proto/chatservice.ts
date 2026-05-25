@@ -7231,6 +7231,7 @@ export class ModelCapabilities extends pb_1.Message {
         video?: Capability;
         image?: Capability;
         realtime?: boolean;
+        support_tool_calling?: boolean;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -7249,6 +7250,9 @@ export class ModelCapabilities extends pb_1.Message {
             }
             if ("realtime" in data && data.realtime != undefined) {
                 this.realtime = data.realtime;
+            }
+            if ("support_tool_calling" in data && data.support_tool_calling != undefined) {
+                this.support_tool_calling = data.support_tool_calling;
             }
         }
     }
@@ -7294,12 +7298,19 @@ export class ModelCapabilities extends pb_1.Message {
     set realtime(value: boolean) {
         pb_1.Message.setField(this, 5, value);
     }
+    get support_tool_calling() {
+        return pb_1.Message.getFieldWithDefault(this, 6, false) as boolean;
+    }
+    set support_tool_calling(value: boolean) {
+        pb_1.Message.setField(this, 6, value);
+    }
     static fromObject(data: {
         text?: ReturnType<typeof Capability.prototype.toObject>;
         audio?: ReturnType<typeof Capability.prototype.toObject>;
         video?: ReturnType<typeof Capability.prototype.toObject>;
         image?: ReturnType<typeof Capability.prototype.toObject>;
         realtime?: boolean;
+        support_tool_calling?: boolean;
     }): ModelCapabilities {
         const message = new ModelCapabilities({});
         if (data.text != null) {
@@ -7317,6 +7328,9 @@ export class ModelCapabilities extends pb_1.Message {
         if (data.realtime != null) {
             message.realtime = data.realtime;
         }
+        if (data.support_tool_calling != null) {
+            message.support_tool_calling = data.support_tool_calling;
+        }
         return message;
     }
     toObject() {
@@ -7326,6 +7340,7 @@ export class ModelCapabilities extends pb_1.Message {
             video?: ReturnType<typeof Capability.prototype.toObject>;
             image?: ReturnType<typeof Capability.prototype.toObject>;
             realtime?: boolean;
+            support_tool_calling?: boolean;
         } = {};
         if (this.text != null) {
             data.text = this.text.toObject();
@@ -7341,6 +7356,9 @@ export class ModelCapabilities extends pb_1.Message {
         }
         if (this.realtime != null) {
             data.realtime = this.realtime;
+        }
+        if (this.support_tool_calling != null) {
+            data.support_tool_calling = this.support_tool_calling;
         }
         return data;
     }
@@ -7358,6 +7376,8 @@ export class ModelCapabilities extends pb_1.Message {
             writer.writeMessage(4, this.image, () => this.image.serialize(writer));
         if (this.realtime != false)
             writer.writeBool(5, this.realtime);
+        if (this.support_tool_calling != false)
+            writer.writeBool(6, this.support_tool_calling);
         if (!w)
             return writer.getResultBuffer();
     }
@@ -7381,6 +7401,9 @@ export class ModelCapabilities extends pb_1.Message {
                     break;
                 case 5:
                     message.realtime = reader.readBool();
+                    break;
+                case 6:
+                    message.support_tool_calling = reader.readBool();
                     break;
                 default: reader.skipField();
             }

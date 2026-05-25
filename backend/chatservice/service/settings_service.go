@@ -27,6 +27,49 @@ type SettingService struct {
 	queue queue.Queue
 }
 
+const (
+	WEBSEARCH_SETTINGS_KEY         = "tool.websearch.brave"
+	SCRAPE_CLOUDFLARE_SETTINGS_KEY = "tool.scrape.cloudflare"
+	CHAT_DEFAULT_PROMPT_KEY        = "chat.default_system_prompt"
+	AGENTIC_MAX_TURNS_KEY          = "chat.agentic_max_turns"
+	defaultBraveSearchAPIURL       = "https://api.search.brave.com/res/v1/web/search"
+	defaultBraveSearchCost         = "0"
+	defaultAgenticMaxTurns         = "4"
+	defaultChatPrompt              = `You are SortedChat’s default assistant.
+
+Answer using your own knowledge and reasoning by default.
+
+Use web_search only when the user asks you to search, or when the answer needs fresh, external, verifiable, or source-backed information. Examples include news, prices, laws, schedules, product details, live data, recent updates, or facts that may have changed.
+
+If you are unsure whether the information is outdated, incomplete, niche, or needs verification, use web_search.
+
+Before using web_search:
+1. Always call the timestamp tool first.
+2. Use the current date/time from the timestamp tool to understand what “latest”, “today”, “recent”, “this week”, “this month”, or “current” means.
+3. Form the web_search query using the timestamp context when helpful.
+
+When using external information, choose tools like this:
+
+1. Use web_search first to discover relevant sources, pages, URLs, or summaries.
+2. Use browser_scrape after web_search when:
+   - the user asks for a detailed answer, deep explanation, comparison, research, analysis, or review
+   - the search result snippet is not enough
+   - the answer depends on details from a specific page
+   - you need pricing, docs, product details, changelogs, policies, API behavior, or exact claims from a page
+   - you need to compare multiple sources accurately
+3. Do not use browser_scrape for simple factual questions where the web_search snippet is enough.
+4. If the user gives a specific URL, use browser_scrape directly on that URL when page content is needed.
+
+When you use web_search or browser_scrape:
+- Base your answer on the retrieved information.
+- Include relevant source URLs at the end of the response.
+- Try to get the best answer with 1–2 searches when possible.
+- Scrape only the most relevant pages.
+- Stop once you have enough information.
+- Then give the final answer.
+`
+)
+
 func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingService {
 	slog.Debug("settings_service:NewSettingService")
 	settingsDAO, err := daoFactory.CreateSettingsDAO()
@@ -85,7 +128,45 @@ func (s *SettingService) Init() {
 		s.setSettingWithoutCompletingOnboarding("settings", st)
 	}
 
+	webSearchDefaults, err := json.Marshal(webSearchSettings{
+		APIURL: defaultBraveSearchAPIURL,
+		APIKey: "",
+		Cost:   defaultBraveSearchCost,
+	})
+	if err != nil {
+		slog.Error("settings_service:Init", "step", "failed to marshal default web search settings", "error", err)
+	} else {
+		s.ensureDefaultSetting(WEBSEARCH_SETTINGS_KEY, string(webSearchDefaults))
+	}
+	scrapeDefaults, err := json.Marshal(cloudflareScrapeSettings{
+		APIURL: "",
+		APIKey: "",
+	})
+	if err != nil {
+		slog.Error("settings_service:Init", "step", "failed to marshal default cloudflare scrape settings", "error", err)
+	} else {
+		s.ensureDefaultSetting(SCRAPE_CLOUDFLARE_SETTINGS_KEY, string(scrapeDefaults))
+	}
+	s.ensureDefaultSetting(CHAT_DEFAULT_PROMPT_KEY, defaultChatPrompt)
+	s.ensureDefaultSetting(AGENTIC_MAX_TURNS_KEY, defaultAgenticMaxTurns)
+
 	// Note: FirstBootComplete() is now called only after onboarding wizard completion
+}
+
+func (s *SettingService) ensureDefaultSetting(name string, defaultValue string) {
+	value, err := s.dao.GetSettingValue(name)
+	if err != nil && err != sql.ErrNoRows {
+		slog.Error("settings_service:ensureDefaultSetting", "step", "failed to load setting", "name", name, "error", err)
+		return
+	}
+
+	if strings.TrimSpace(value) != "" {
+		return
+	}
+
+	if err := s.dao.SetSettingValue(name, defaultValue); err != nil {
+		slog.Error("settings_service:ensureDefaultSetting", "step", "failed to seed setting", "name", name, "error", err)
+	}
 }
 
 func (s *SettingService) FirstBootComplete() {
@@ -109,6 +190,10 @@ func (s *SettingService) GetSetting(ctx context.Context, name string) (*structpb
 		return &structpb.Struct{}, nil
 	}
 
+	if name == CHAT_DEFAULT_PROMPT_KEY || name == AGENTIC_MAX_TURNS_KEY {
+		return structpb.NewStruct(map[string]interface{}{"value": settingsString})
+	}
+
 	var settingsMap map[string]interface{}
 	err = json.Unmarshal([]byte(settingsString), &settingsMap)
 	if err != nil {
@@ -122,6 +207,27 @@ func (s *SettingService) GetSetting(ctx context.Context, name string) (*structpb
 // saveSettings is the internal implementation for saving settings
 // If completeOnboarding is true, sets is_first_boot = 1
 func (s *SettingService) saveSettings(name string, settingsStruct *structpb.Struct, completeOnboarding bool) error {
+	if name == CHAT_DEFAULT_PROMPT_KEY || name == AGENTIC_MAX_TURNS_KEY {
+		value, ok := settingsStruct.AsMap()["value"].(string)
+		if !ok {
+			return fmt.Errorf("failed to set settings")
+		}
+		if err := s.dao.SetSettingValue(name, value); err != nil {
+			slog.Error("settings_service:saveSettings", "step", "failed to set settings", "error", err)
+			return fmt.Errorf("failed to set settings")
+		}
+
+		if completeOnboarding {
+			if err := s.dao.SetSettingValue("is_first_boot", "1"); err != nil {
+				slog.Error("settings_service:saveSettings", "step", "failed to set is_first_boot", "error", err)
+			}
+		}
+
+		slog.Info("publishing settings change event", "event", events.SETTINGS_CHANGED_EVENT)
+		s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
+		return nil
+	}
+
 	// Load existing settings from DB to support merge behavior
 	existingSettingsStr, err := s.dao.GetSettingValue(name)
 	if err != nil && err != sql.ErrNoRows {
@@ -374,4 +480,45 @@ func (s *SettingService) TestConnection(ctx context.Context, req *pb.TestConnect
 		Success: false,
 		Message: fmt.Sprintf("Unknown error connecting to %s", serviceName),
 	}, nil
+}
+
+type webSearchSettings struct {
+	APIURL string `json:"apiUrl"`
+	APIKey string `json:"apiKey"`
+	Cost   string `json:"cost"`
+}
+
+type cloudflareScrapeSettings struct {
+	APIURL string `json:"apiUrl"`
+	APIKey string `json:"apiKey"`
+}
+
+func (s *ChatService) getSettingValue(name string, defaultValue string) (string, error) {
+	value, err := s.settingsDAO.GetSettingValue(name)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return defaultValue, nil
+		}
+		return "", err
+	}
+
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return defaultValue, nil
+	}
+
+	return value, nil
+}
+
+func (s *ChatService) getJSONSetting(name string, out any) error {
+	value, err := s.getSettingValue(name, "")
+	if err != nil {
+		return err
+	}
+
+	if value == "" {
+		return nil
+	}
+
+	return json.Unmarshal([]byte(value), out)
 }

@@ -49,7 +49,7 @@ func TestAgentRun(t *testing.T) {
 	ctx := context.Background()
 	maxTurns := 10
 	session := NewSession()
-	result, err := runner.Run(ctx, agent, "What's the weather like?", maxTurns, session)
+	result, err := runner.Run(ctx, agent, Message{Role: "user", Content: TextContent("What's the weather like?")}, maxTurns, session)
 
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
@@ -117,7 +117,7 @@ func TestBasicRunner(t *testing.T) {
 	ctx := context.Background()
 	maxTurns := 5
 	session := NewSession()
-	result, err := runner.Run(ctx, agent, "Hello", maxTurns, session)
+	result, err := runner.Run(ctx, agent, Message{Role: "user", Content: TextContent("Hello")}, maxTurns, session)
 
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
@@ -145,13 +145,13 @@ func TestRunnerWithDifferentMaxTurns(t *testing.T) {
 
 	// Test with different max turns - same agent, different execution parameters
 	session1 := NewSession()
-	result1, err := runner.Run(ctx, agent, "Hello", 3, session1)
+	result1, err := runner.Run(ctx, agent, Message{Role: "user", Content: TextContent("Hello")}, 3, session1)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
 
 	session2 := NewSession()
-	result2, err := runner.Run(ctx, agent, "Hello", 10, session2)
+	result2, err := runner.Run(ctx, agent, Message{Role: "user", Content: TextContent("Hello")}, 10, session2)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}

@@ -479,6 +479,7 @@ message ModelCapabilities {
   Capability video = 3;
   Capability image = 4;
   bool realtime = 5;
+  bool support_tool_calling = 6;
 }
 
 message Capability {
@@ -759,5 +760,4 @@ message GetAgentMessageRequest {
 message GetAgentMessageResponse {
   AgentMessage message = 1;
 }
-
 

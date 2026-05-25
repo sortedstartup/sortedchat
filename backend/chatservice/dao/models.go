@@ -9,9 +9,13 @@ import (
 
 type ChatMessageRow struct {
 	Role               string  `db:"role" json:"role"`
+	Type               string  `db:"type" json:"type"`
 	Content            string  `db:"content" json:"content"`
 	ContentImage       string  `db:"content_image" json:"content_image"`
 	Id                 string  `db:"id" json:"id"`
+	ToolName           string  `db:"tool_name" json:"tool_name"`
+	ToolCallID         string  `db:"tool_call_id" json:"tool_call_id"`
+	ToolArgs           string  `db:"tool_args" json:"tool_args"`
 	DocumentReferences string  `db:"document_references" json:"document_references"`
 	RagEnabled         bool    `db:"rag_enabled" json:"rag_enabled"`
 	Model              string  `db:"model" json:"model"`
@@ -19,6 +23,15 @@ type ChatMessageRow struct {
 	OutputTokenCount   int     `db:"output_token_count" json:"output_token_count"`
 	CachedTokenCount   int     `db:"cached_token_count" json:"cached_token_count"`
 	Cost               float64 `db:"cost" json:"cost"`
+	BraveSearchCount   int     `db:"brave_search_count" json:"brave_search_count"`
+	ScrapeAPIUsageTime float64 `db:"scrape_api_usage_time" json:"scrape_api_usage_time"`
+}
+
+type ChatMessageToolInfo struct {
+	Type       string
+	ToolName   string
+	ToolCallID string
+	ToolArgs   string
 }
 
 type MessageSummary struct {
@@ -86,11 +99,12 @@ type Models struct {
 
 // Intermediate struct for JSON parsing
 type CapabilitiesJSON struct {
-	Text     CapabilityJSON `json:"text"`
-	Audio    CapabilityJSON `json:"audio"`
-	Video    CapabilityJSON `json:"video"`
-	Image    CapabilityJSON `json:"image"`
-	Realtime bool           `json:"realtime"`
+	Text               CapabilityJSON `json:"text"`
+	Audio              CapabilityJSON `json:"audio"`
+	Video              CapabilityJSON `json:"video"`
+	Image              CapabilityJSON `json:"image"`
+	Realtime           bool           `json:"realtime"`
+	SupportToolCalling bool           `json:"support_tool_calling"`
 }
 
 type CapabilityJSON struct {
@@ -122,11 +136,12 @@ func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error
 	}
 
 	return &proto.ModelCapabilities{
-		Text:     toProto(caps.Text),
-		Audio:    toProto(caps.Audio),
-		Video:    toProto(caps.Video),
-		Image:    toProto(caps.Image),
-		Realtime: caps.Realtime,
+		Text:               toProto(caps.Text),
+		Audio:              toProto(caps.Audio),
+		Video:              toProto(caps.Video),
+		Image:              toProto(caps.Image),
+		Realtime:           caps.Realtime,
+		SupportToolCalling: caps.SupportToolCalling,
 	}, nil
 }
 

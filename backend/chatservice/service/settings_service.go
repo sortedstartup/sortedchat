@@ -110,6 +110,7 @@ func (s *SettingService) Init() {
 	// Note: FirstBootComplete() is now called only after onboarding wizard completion
 }
 
+// TODO: what will happen with 2 replicas
 func (s *SettingService) ensureDefaultSetting(name string, defaultValue string) {
 	value, err := s.dao.GetSettingValue(name)
 	if err != nil && err != sql.ErrNoRows {

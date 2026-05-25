@@ -11,6 +11,7 @@ import (
 	"sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/rag"
+	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/sortedagents"
 )
 
@@ -142,7 +143,7 @@ func (s *ChatService) runAgenticChat(
 	searchCostPerRequest, err := parseBraveSearchCost(webSearchSettings.Cost)
 	if err != nil {
 		slog.Warn("service:Chat", "message", "invalid brave search request cost, using default", "cost", webSearchSettings.Cost, "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
-		searchCostPerRequest, _ = parseBraveSearchCost(defaultBraveSearchCost)
+		searchCostPerRequest, _ = parseBraveSearchCost(settings.DEFAULT_BRAVE_SEARCH_COST)
 	}
 	firstToken := true
 	completed := false

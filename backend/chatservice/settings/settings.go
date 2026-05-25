@@ -20,6 +20,7 @@ const (
 	WEBSEARCH_SETTINGS_KEY       = "tool.websearch.brave"
 	CHAT_DEFAULT_PROMPT_KEY      = "chat.default_prompt"
 	DEFAULT_BRAVE_SEARCH_API_URL = "https://api.search.brave.com/res/v1/web/search"
+	DEFAULT_BRAVE_SEARCH_COST    = "0"
 	DEFAULT_CHAT_PROMPT          = `You are SortedChat’s default assistant.
 
 Answer from your own knowledge and reasoning by default. Use web_search only when fresh, external, verifiable, or source-backed information is needed, such as news, prices, laws, schedules, product details, live data, recent updates, or explicit search requests.
@@ -43,6 +44,7 @@ type Settings struct {
 type WebSearchSettings struct {
 	APIURL string `json:"apiUrl"`
 	APIKey string `json:"apiKey"`
+	Cost   string `json:"cost"`
 }
 
 var DefaultSettings = &Settings{
@@ -99,7 +101,7 @@ func NewSettingsManager(queue queue.Queue, daoFactory dao.DAOFactory) *SettingsM
 
 	cm := &SettingsManager{
 		settings:          &Settings{},
-		webSearchSettings: &WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL},
+		webSearchSettings: &WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL, Cost: DEFAULT_BRAVE_SEARCH_COST},
 		chatDefaultPrompt: DEFAULT_CHAT_PROMPT,
 		queue:             queue,
 		dao:               settingsDAO,
@@ -117,7 +119,7 @@ func NewSettingsManagerWithSQLite(queue queue.Queue) *SettingsManager {
 
 	cm := &SettingsManager{
 		settings:          &Settings{},
-		webSearchSettings: &WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL},
+		webSearchSettings: &WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL, Cost: DEFAULT_BRAVE_SEARCH_COST},
 		chatDefaultPrompt: DEFAULT_CHAT_PROMPT,
 		queue:             queue,
 		dao:               settingsDAO,
@@ -167,6 +169,9 @@ func (cm *SettingsManager) LoadWebSearchSettings(settings_ *WebSearchSettings) {
 	newSettings := *settings_
 	if newSettings.APIURL == "" {
 		newSettings.APIURL = DEFAULT_BRAVE_SEARCH_API_URL
+	}
+	if newSettings.Cost == "" {
+		newSettings.Cost = DEFAULT_BRAVE_SEARCH_COST
 	}
 	cm.webSearchSettings = &newSettings
 }
@@ -254,7 +259,7 @@ func (s *SettingsManager) LoadWebSearchSettingsFromDB() error {
 	value, err := s.dao.GetSettingValue(WEBSEARCH_SETTINGS_KEY)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.LoadWebSearchSettings(&WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL})
+			s.LoadWebSearchSettings(&WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL, Cost: DEFAULT_BRAVE_SEARCH_COST})
 			return nil
 		}
 		slog.Error("settings:LoadWebSearchSettingsFromDB", "message", "failed to get settings value", "error", err)
@@ -262,7 +267,7 @@ func (s *SettingsManager) LoadWebSearchSettingsFromDB() error {
 	}
 
 	if value == "" {
-		s.LoadWebSearchSettings(&WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL})
+		s.LoadWebSearchSettings(&WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL, Cost: DEFAULT_BRAVE_SEARCH_COST})
 		return nil
 	}
 

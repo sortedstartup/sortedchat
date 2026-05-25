@@ -23,34 +23,19 @@ import (
 )
 
 type SettingService struct {
-	dao   dao.SettingsDAO
-	queue queue.Queue
+	dao             dao.SettingsDAO
+	queue           queue.Queue
+	settingsManager *settings.SettingsManager
 }
 
-const (
-	WEBSEARCH_SETTINGS_KEY   = "tool.websearch.brave"
-	CHAT_DEFAULT_PROMPT_KEY  = "chat.default_system_prompt"
-	defaultBraveSearchAPIURL = "https://api.search.brave.com/res/v1/web/search"
-	defaultBraveSearchCost   = "0.005"
-	defaultChatPrompt        = `You are SortedChat’s default assistant.
-
-Answer from your own knowledge and reasoning by default. Use web_search only when fresh, external, verifiable, or source-backed information is needed, such as news, prices, laws, schedules, product details, live data, recent updates, or explicit search requests.
-When you search, ground the answer in the results and include relevant source URLs at the end of the response.
-When uncertain or in doubt about whether information may be outdated, incomplete, niche, or externally verifiable, use web_search.
-Try to get the best result in 1-2 web searches whenever possible.
-Only extend web_search tool calls when it is clearly necessary.
-Once you have enough information, stop searching and provide the final answer.
-`
-)
-
-func NewSettingService(queue queue.Queue, daoFactory dao.DAOFactory) *SettingService {
+func NewSettingService(queue queue.Queue, settingsManager *settings.SettingsManager, daoFactory dao.DAOFactory) *SettingService {
 	slog.Debug("settings_service:NewSettingService")
 	settingsDAO, err := daoFactory.CreateSettingsDAO()
 	if err != nil {
 		slog.Error("settings_service:NewSettingService, failed to create settings DAO", "error", err)
 		return nil
 	}
-	return &SettingService{dao: settingsDAO, queue: queue}
+	return &SettingService{dao: settingsDAO, queue: queue, settingsManager: settingsManager}
 }
 
 func (s *SettingService) Init() {
@@ -102,20 +87,31 @@ func (s *SettingService) Init() {
 	}
 
 	webSearchDefaults, err := json.Marshal(webSearchSettings{
-		APIURL: defaultBraveSearchAPIURL,
+		APIURL: settings.DEFAULT_BRAVE_SEARCH_API_URL,
 		APIKey: "",
 		Cost:   defaultBraveSearchCost,
 	})
 	if err != nil {
 		slog.Error("settings_service:Init", "step", "failed to marshal default web search settings", "error", err)
 	} else {
-		s.ensureDefaultSetting(WEBSEARCH_SETTINGS_KEY, string(webSearchDefaults))
+		s.ensureDefaultSetting(settings.WEBSEARCH_SETTINGS_KEY, string(webSearchDefaults))
 	}
-	s.ensureDefaultSetting(CHAT_DEFAULT_PROMPT_KEY, defaultChatPrompt)
+	defaultPromptStruct, err := structpb.NewStruct(map[string]interface{}{"value": settings.DEFAULT_CHAT_PROMPT})
+	if err != nil {
+		slog.Error("settings_service:Init", "step", "failed to create default chat prompt struct", "error", err)
+	} else {
+		bytes, marshalErr := json.Marshal(defaultPromptStruct.AsMap())
+		if marshalErr != nil {
+			slog.Error("settings_service:Init", "step", "failed to marshal default chat prompt", "error", marshalErr)
+		} else {
+			s.ensureDefaultSetting(settings.CHAT_DEFAULT_PROMPT_KEY, string(bytes))
+		}
+	}
 
 	// Note: FirstBootComplete() is now called only after onboarding wizard completion
 }
 
+// TODO: what will happen with 2 replicas
 func (s *SettingService) ensureDefaultSetting(name string, defaultValue string) {
 	value, err := s.dao.GetSettingValue(name)
 	if err != nil && err != sql.ErrNoRows {
@@ -140,6 +136,19 @@ func (s *SettingService) FirstBootComplete() {
 }
 
 func (s *SettingService) GetSetting(ctx context.Context, name string) (*structpb.Struct, error) {
+	switch name {
+	case settings.WEBSEARCH_SETTINGS_KEY:
+		webSearchSettings := s.settingsManager.GetWebSearchSettings()
+		return structpb.NewStruct(map[string]interface{}{
+			"apiUrl": webSearchSettings.APIURL,
+			"apiKey": webSearchSettings.APIKey,
+		})
+	case settings.CHAT_DEFAULT_PROMPT_KEY:
+		return structpb.NewStruct(map[string]interface{}{
+			"value": s.settingsManager.GetChatDefaultPrompt(),
+		})
+	}
+
 	settingsString, err := s.dao.GetSettingValue(name)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -211,6 +220,17 @@ func (s *SettingService) saveSettings(name string, settingsStruct *structpb.Stru
 	slog.Info("publishing settings change event", "event", events.SETTINGS_CHANGED_EVENT)
 	// publish an event, any subscriber now need to reload settings from the database
 	s.queue.Publish(context.Background(), events.SETTINGS_CHANGED_EVENT, []byte(""))
+
+	switch name {
+	case settings.WEBSEARCH_SETTINGS_KEY:
+		if err := s.settingsManager.LoadWebSearchSettingsFromDB(); err != nil {
+			return err
+		}
+	case settings.CHAT_DEFAULT_PROMPT_KEY:
+		if err := s.settingsManager.LoadChatDefaultPromptFromDB(); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -427,45 +447,13 @@ type webSearchSettings struct {
 }
 
 func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
-	value, err := s.settingsDAO.GetSettingValue(WEBSEARCH_SETTINGS_KEY)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return &webSearchSettings{APIURL: defaultBraveSearchAPIURL}, nil
-		}
-		return nil, err
-	}
-
-	if strings.TrimSpace(value) == "" {
-		return &webSearchSettings{APIURL: defaultBraveSearchAPIURL}, nil
-	}
-
-	var settings webSearchSettings
-	if err := json.Unmarshal([]byte(value), &settings); err != nil {
-		return nil, fmt.Errorf("failed to parse websearch settings: %w", err)
-	}
-
-	if strings.TrimSpace(settings.APIURL) == "" {
-		settings.APIURL = defaultBraveSearchAPIURL
-	}
-	if strings.TrimSpace(settings.Cost) == "" {
-		settings.Cost = defaultBraveSearchCost
-	}
-
-	return &settings, nil
+	settings := s.settingsManager.GetWebSearchSettings()
+	return &webSearchSettings{
+		APIURL: settings.APIURL,
+		APIKey: settings.APIKey,
+	}, nil
 }
 
 func (s *ChatService) getChatDefaultPrompt() (string, error) {
-	value, err := s.settingsDAO.GetSettingValue(CHAT_DEFAULT_PROMPT_KEY)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return defaultChatPrompt, nil
-		}
-		return "", err
-	}
-
-	if strings.TrimSpace(value) == "" {
-		return defaultChatPrompt, nil
-	}
-
-	return value, nil
+	return s.settingsManager.GetChatDefaultPrompt(), nil
 }

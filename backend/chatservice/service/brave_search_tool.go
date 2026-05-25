@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 
+	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/sortedagents"
 )
 
@@ -36,13 +37,13 @@ type braveSearchResponse struct {
 func NewBraveSearchTool() *BraveSearchTool {
 	return &BraveSearchTool{
 		httpClient: http.DefaultClient,
-		apiURL:     defaultBraveSearchAPIURL,
+		apiURL:     settings.DEFAULT_BRAVE_SEARCH_API_URL,
 	}
 }
 
 func NewBraveSearchToolWithConfig(apiURL, apiKey string) *BraveSearchTool {
 	if strings.TrimSpace(apiURL) == "" {
-		apiURL = defaultBraveSearchAPIURL
+		apiURL = settings.DEFAULT_BRAVE_SEARCH_API_URL
 	}
 	return &BraveSearchTool{
 		httpClient: http.DefaultClient,

@@ -479,6 +479,10 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				return nil
 			}
 
+			stream(&pb.ChatResponse{
+				Response: &pb.ChatResponse_Progress{Progress: &pb.ChatProgress{State: pb.ChatProgress_SENDING_REQUEST_TO_LLM, Message: "Agentic chat failed, falling back to direct LLM call"}},
+			})
+
 			slog.Warn("service:Chat", "message", "agentic chat failed, falling back to direct llm call", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		}
 	}
@@ -538,7 +542,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				slog.Warn("service:Chat", "message", "cachedTokens > inputTokens, setting non-cached input tokens to 0", "inputTokens", inputTokens, "cachedTokens", cachedTokens, "chatId", chatId, "userID", userID, "projectID", projectID)
 				nonCachedInputTokens = 0
 			}
-			_, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, 0, partialReferencesJSON, ragEnabled)
+			_, err := s.dao.AddChatMessageWithTokenCount(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, partialReferencesJSON, ragEnabled)
 			if err != nil {
 				slog.Error("service:Chat", "message", "failed to save partial assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 			}
@@ -630,7 +634,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 			nonCachedInputTokens = 0
 		}
 		// TODO : scope for optimization, can be 1 sql call internally
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, 0, finalReferencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokenCount(userID, chatId, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, finalReferencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else {
@@ -1349,6 +1353,8 @@ func (s *ChatService) EmbeddingSubscriber() {
 // createRAGDocumentJSONFromChunks converts RAG chunks to the requested JSON structure
 func (s *ChatService) createRAGDocumentJSONFromChunks(ragChunks []rag.Result) []RAGDocumentJSON {
 	slog.Info("service:createRAGDocumentJSONFromChunks", "ChunksCount", len(ragChunks))
+	// - We group retrieved chunks by document before saving references on a message.
+	// - Example: chunk1/docA, chunk2/docA, chunk3/docB becomes docA with 2 chunks and docB with 1 chunk.
 	// Group chunks by document ID
 	docChunksMap := make(map[string][]RAGDocumentChunk)
 

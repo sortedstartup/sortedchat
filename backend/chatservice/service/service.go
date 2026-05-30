@@ -633,6 +633,15 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert assistant message", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
 		} else {
+			var metadata *ChatMessageMetadata
+			if strings.TrimSpace(daoSummary.Metadata) != "" {
+				metadata = &ChatMessageMetadata{}
+				if err := json.Unmarshal([]byte(daoSummary.Metadata), metadata); err != nil {
+					slog.Error("service:Chat", "message", "failed to parse assistant metadata", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
+					metadata = nil
+				}
+			}
+
 			pbSummary := &pb.ResponseSummary{
 				MessageId:    daoSummary.MessageId,
 				Model:        model,
@@ -640,7 +649,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 				OutputTokens: int32(daoSummary.OutputTokenCount),
 				CachedTokens: int32(daoSummary.CachedTokenCount),
 				Cost:         float32(daoSummary.Cost),
-				Metadata:     dao.ParseAssistantMessageMetadataJSON(daoSummary.Metadata),
+				Metadata:     metadata.ToProto(),
 			}
 			if err := stream(&pb.ChatResponse{Response: &pb.ChatResponse_Summary{Summary: pbSummary}}); err != nil {
 				slog.Error("service:Chat", "message", "failed to send message summary", "error", err, "chatId", chatId, "userID", userID, "projectID", projectID)
@@ -793,6 +802,15 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 
 	var pbMessages []*pb.ChatMessage
 	for _, m := range messages {
+		var metadata *ChatMessageMetadata
+		if strings.TrimSpace(m.Metadata) != "" {
+			metadata = &ChatMessageMetadata{}
+			if err := json.Unmarshal([]byte(m.Metadata), metadata); err != nil {
+				slog.Error("service:GetHistory", "message", "failed to parse assistant metadata", "error", err, "messageId", m.Id)
+				metadata = nil
+			}
+		}
+
 		pbMessage := &pb.ChatMessage{
 			Role:         m.Role,
 			Content:      m.Content, // Plain text fallback
@@ -803,7 +821,7 @@ func (s *ChatService) GetHistory(ctx context.Context, userID string, chatId stri
 			OutputTokens: int32(m.OutputTokenCount),
 			CachedTokens: int32(m.CachedTokenCount),
 			Cost:         float32(m.Cost),
-			Metadata:     dao.ParseAssistantMessageMetadataJSON(m.Metadata),
+			Metadata:     metadata.ToProto(),
 		}
 
 		// Reconstruct full message content from separated text and image content

@@ -16,21 +16,50 @@ import (
 	"sortedstartup/chatservice/types"
 )
 
-type assistantMessageMetadata struct {
-	WebSearches []assistantMetadataWebSearch `json:"websearches,omitempty"`
-	Sources     []assistantMetadataSource    `json:"sources,omitempty"`
+type ChatMessageMetadata struct {
+	WebSearches []ChatWebSearch `json:"websearches,omitempty"`
+	Sources     []ChatSource    `json:"sources,omitempty"`
 }
 
-type assistantMetadataWebSearch struct {
+type ChatWebSearch struct {
 	Query string `json:"query"`
 }
 
-type assistantMetadataSource struct {
+type ChatSource struct {
 	URL string `json:"url"`
 }
 
-func buildAssistantMessageMetadata(webSearchQueries []string, sourceURLs []string) (*pb.AssistantMessageMetadata, string) {
-	metadata := assistantMessageMetadata{}
+func (c *ChatMessageMetadata) ToProto() *pb.AssistantMessageMetadata {
+	if c == nil {
+		return nil
+	}
+	proto := &pb.AssistantMessageMetadata{}
+	for _, search := range c.WebSearches {
+		proto.Websearches = append(proto.Websearches, &pb.AssistantMessageMetadata_WebSearch{
+			Query: search.Query,
+		})
+	}
+	for _, source := range c.Sources {
+		proto.Sources = append(proto.Sources, &pb.AssistantMessageMetadata_Source{
+			Url: source.URL,
+		})
+	}
+	return proto
+}
+
+func (c *ChatMessageMetadata) ToJSON() (string, error) {
+	if c == nil {
+		return "", nil
+	}
+	bytes, err := json.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
+func NewChatMessageMetadata(webSearchQueries []string, sourceURLs []string) *ChatMessageMetadata {
+	metadata := &ChatMessageMetadata{}
 	seenQueries := make(map[string]struct{})
 	seenSources := make(map[string]struct{})
 
@@ -43,7 +72,9 @@ func buildAssistantMessageMetadata(webSearchQueries []string, sourceURLs []strin
 			continue
 		}
 		seenQueries[trimmed] = struct{}{}
-		metadata.WebSearches = append(metadata.WebSearches, assistantMetadataWebSearch{Query: trimmed})
+		metadata.WebSearches = append(metadata.WebSearches, ChatWebSearch{
+			Query: trimmed,
+		})
 	}
 
 	for _, sourceURL := range sourceURLs {
@@ -55,32 +86,16 @@ func buildAssistantMessageMetadata(webSearchQueries []string, sourceURLs []strin
 			continue
 		}
 		seenSources[trimmed] = struct{}{}
-		metadata.Sources = append(metadata.Sources, assistantMetadataSource{URL: trimmed})
+		metadata.Sources = append(metadata.Sources, ChatSource{
+			URL: trimmed,
+		})
 	}
 
 	if len(metadata.WebSearches) == 0 && len(metadata.Sources) == 0 {
-		return nil, ""
+		return nil
 	}
 
-	payload, err := json.Marshal(metadata)
-	if err != nil {
-		slog.Error("service:Chat", "message", "failed to marshal assistant metadata", "error", err)
-		return nil, ""
-	}
-
-	protoMetadata := &pb.AssistantMessageMetadata{}
-	for _, search := range metadata.WebSearches {
-		protoMetadata.Websearches = append(protoMetadata.Websearches, &pb.AssistantMessageMetadata_WebSearch{
-			Query: search.Query,
-		})
-	}
-	for _, source := range metadata.Sources {
-		protoMetadata.Sources = append(protoMetadata.Sources, &pb.AssistantMessageMetadata_Source{
-			Url: source.URL,
-		})
-	}
-
-	return protoMetadata, string(payload)
+	return metadata
 }
 
 // this function convert normal text to sortedagents message struct type
@@ -315,7 +330,12 @@ func (s *ChatService) runAgenticChat(
 		}
 
 		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
-		_, metadataJSON := buildAssistantMessageMetadata(webSearchQueries, sourceURLs)
+		metadata := NewChatMessageMetadata(webSearchQueries, sourceURLs)
+		metadataJSON, err := metadata.ToJSON()
+		if err != nil {
+			slog.Error("service:Chat", "message", "failed to serialize assistant metadata", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+			metadataJSON = ""
+		}
 
 		if _, err := s.dao.AddChatMessageWithTokenCount(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, metadataJSON, ragEnabled); err != nil {
 			slog.Error("service:Chat", "message", "failed to save partial agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
@@ -457,7 +477,12 @@ func (s *ChatService) runAgenticChat(
 		}
 
 		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
-		protoMetadata, metadataJSON := buildAssistantMessageMetadata(webSearchQueries, sourceURLs)
+		metadata := NewChatMessageMetadata(webSearchQueries, sourceURLs)
+		metadataJSON, err := metadata.ToJSON()
+		if err != nil {
+			slog.Error("service:Chat", "message", "failed to serialize assistant metadata", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+			metadataJSON = ""
+		}
 		daoSummary, err := s.dao.AddChatMessageWithTokenCount(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, metadataJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
@@ -469,7 +494,7 @@ func (s *ChatService) runAgenticChat(
 				OutputTokens: int32(daoSummary.OutputTokenCount),
 				CachedTokens: int32(daoSummary.CachedTokenCount),
 				Cost:         float32(daoSummary.Cost),
-				Metadata:     protoMetadata,
+				Metadata:     metadata.ToProto(),
 			}
 			if err := stream(&pb.ChatResponse{
 				Response: &pb.ChatResponse_Summary{Summary: pbSummary},

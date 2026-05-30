@@ -63,18 +63,12 @@ func (c *ChatMessageMetadata) ToJSON() (string, error) {
 
 func NewChatMessageMetadata(webSearchQueries []string, sourceURLs []string) *ChatMessageMetadata {
 	metadata := &ChatMessageMetadata{}
-	seenQueries := make(map[string]struct{})
-	seenSources := make(map[string]struct{})
 
 	for _, query := range webSearchQueries {
 		trimmed := strings.TrimSpace(query)
 		if trimmed == "" {
 			continue
 		}
-		if _, exists := seenQueries[trimmed]; exists {
-			continue
-		}
-		seenQueries[trimmed] = struct{}{}
 		metadata.WebSearches = append(metadata.WebSearches, ChatWebSearch{
 			Query: trimmed,
 		})
@@ -85,10 +79,6 @@ func NewChatMessageMetadata(webSearchQueries []string, sourceURLs []string) *Cha
 		if trimmed == "" {
 			continue
 		}
-		if _, exists := seenSources[trimmed]; exists {
-			continue
-		}
-		seenSources[trimmed] = struct{}{}
 		metadata.Sources = append(metadata.Sources, ChatSource{
 			URL: trimmed,
 		})

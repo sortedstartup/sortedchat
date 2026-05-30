@@ -204,7 +204,7 @@ func (p *PostgresDAO) GetChatList(userID string, projectID string, softDeleted b
 	return result, nil
 }
 
-func (p *PostgresDAO) AddChatMessageWithTokens(
+func (p *PostgresDAO) AddChatMessageWithTokenCount(
 	userID string,
 	chatId string,
 	role string,
@@ -218,7 +218,7 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 	references string,
 	ragEnabled bool,
 ) (MessageSummary, error) {
-	slog.Info("dao_postgres:AddChatMessageWithTokens", "userID", userID, "chatId", chatId, "role", role, "model", model)
+	slog.Info("dao_postgres:AddChatMessageWithTokenCount", "userID", userID, "chatId", chatId, "role", role, "model", model)
 
 	var messageId string
 	var cost float64
@@ -284,10 +284,10 @@ func (p *PostgresDAO) AddChatMessageWithTokens(
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Error("dao_postgres:AddChatMessageWithTokens", "message", "no message inserted or updated, no result returned", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
+			slog.Error("dao_postgres:AddChatMessageWithTokenCount", "message", "no message inserted or updated, no result returned", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
 			return MessageSummary{}, fmt.Errorf("no message inserted or updated, no result returned")
 		}
-		slog.Error("dao_postgres:AddChatMessageWithTokens", "message", "failed to add chat message with tokens", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
+		slog.Error("dao_postgres:AddChatMessageWithTokenCount", "message", "failed to add chat message with tokens", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
 		return MessageSummary{}, fmt.Errorf("failed to add chat message with tokens")
 	}
 

@@ -207,7 +207,7 @@ func TestAddChatMessageWithTokens(t *testing.T) {
 					}
 
 					// Execute the function under test
-					summary, err := daoInstance.AddChatMessageWithTokens(
+					summary, err := daoInstance.AddChatMessageWithTokenCount(
 						userID,
 						chatID,
 						tc.role,
@@ -234,7 +234,7 @@ func TestAddChatMessageWithTokens(t *testing.T) {
 					}
 
 					if err != nil {
-						t.Fatalf("AddChatMessageWithTokens failed: %v", err)
+						t.Fatalf("AddChatMessageWithTokenCount failed: %v", err)
 					}
 
 					// Verify the returned summary

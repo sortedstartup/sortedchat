@@ -11,6 +11,7 @@ import (
 	"sortedstartup/chatservice/dao"
 	pb "sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/rag"
+	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/sortedagents"
 	"sortedstartup/chatservice/types"
 )
@@ -100,7 +101,7 @@ func (s *ChatService) runAgenticChat(
 	stream func(*pb.ChatResponse) error,
 ) error {
 	slog.Debug("service:Chat", "message", "running agentic chat", "chatId", chatID, "userID", userID, "projectID", projectID)
-	agentPrompt, err := s.getSettingValue(CHAT_DEFAULT_PROMPT_KEY, defaultChatPrompt)
+	agentPrompt, err := s.getChatDefaultPrompt()
 	if err != nil {
 		slog.Error("service:Chat", "message", "failed to load chat default prompt", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to load chat prompt")
@@ -112,25 +113,22 @@ func (s *ChatService) runAgenticChat(
 		return fmt.Errorf("failed to prepare chat context")
 	}
 
-	webSearchSettings := webSearchSettings{
-		APIURL: defaultBraveSearchAPIURL,
-		Cost:   defaultBraveSearchCost,
-	}
-	if err := s.getJSONSetting(WEBSEARCH_SETTINGS_KEY, &webSearchSettings); err != nil {
+	webSearchSettings, err := s.getWebSearchSettings()
+	if err != nil {
 		slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to load web search settings")
 	}
-	if strings.TrimSpace(webSearchSettings.APIURL) == "" {
-		webSearchSettings.APIURL = defaultBraveSearchAPIURL
-	}
-	if strings.TrimSpace(webSearchSettings.Cost) == "" {
-		webSearchSettings.Cost = defaultBraveSearchCost
-	}
 
-	scrapeSettings := cloudflareScrapeSettings{}
-	if err := s.getJSONSetting(SCRAPE_CLOUDFLARE_SETTINGS_KEY, &scrapeSettings); err != nil {
+	scrapeSettings, err := s.getCloudflareScrapeSettings()
+	if err != nil {
 		slog.Error("service:Chat", "message", "failed to load cloudflare scrape settings", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to load scrape settings")
+	}
+
+	maxTurns, err := s.getAgenticMaxTurns()
+	if err != nil {
+		slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+		return fmt.Errorf("failed to load agentic max turns setting")
 	}
 
 	tools := []sortedagents.Tool{
@@ -165,15 +163,15 @@ func (s *ChatService) runAgenticChat(
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
-	maxTurnsValue, err := s.getSettingValue(AGENTIC_MAX_TURNS_KEY, defaultAgenticMaxTurns)
-	if err != nil {
-		slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
-		maxTurnsValue = defaultAgenticMaxTurns
-	}
-	maxTurns, err := strconv.Atoi(maxTurnsValue)
-	if err != nil || maxTurns <= 0 {
-		maxTurns, _ = strconv.Atoi(defaultAgenticMaxTurns)
-	}
+	// maxTurnsValue, err := s.getSettingValue(AGENTIC_MAX_TURNS_KEY, defaultAgenticMaxTurns)
+	// if err != nil {
+	// 	slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+	// 	maxTurnsValue = defaultAgenticMaxTurns
+	// }
+	// maxTurns, err := strconv.Atoi(maxTurnsValue)
+	// if err != nil || maxTurns <= 0 {
+	// 	maxTurns, _ = strconv.Atoi(defaultAgenticMaxTurns)
+	// }
 
 	userMessage := buildSortedAgentsMessage("user", userContent)
 
@@ -196,19 +194,27 @@ func (s *ChatService) runAgenticChat(
 	searchCostPerRequest, err := parseBraveSearchCost(webSearchSettings.Cost)
 	if err != nil {
 		slog.Warn("service:Chat", "message", "invalid brave search request cost, using default", "cost", webSearchSettings.Cost, "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
-		searchCostPerRequest, _ = parseBraveSearchCost(defaultBraveSearchCost)
+		searchCostPerRequest, _ = parseBraveSearchCost(settings.DEFAULT_BRAVE_SEARCH_COST)
 	}
 	firstToken := true
 	completed := false
 
+	// - fullResponse accumulates streamed text chunks into one final assistant message.
+	// - We stream chunks to the client immediately, but still need the full text for DB persistence.
 	savePartialResponse := func() {
 		assistantText := fullResponse.String()
 		if assistantText == "" {
 			return
 		}
 
+		// - referencesJSON stores which RAG docs/chunks were used for this assistant message.
+		// - It is saved with the chat message so reference UI can be reconstructed later.
 		var referencesJSON string
 		if len(ragChunks) > 0 {
+			// - createRAGDocumentJSONFromChunks groups retrieved chunks by document.
+			// - We group retrieved chunks by document before saving references on a message.
+			// - Example: chunk1/docA, chunk2/docA, chunk3/docB becomes docA with 2 chunks and docB with 1 chunk.
+			// Group chunks by document ID
 			ragDocs := s.createRAGDocumentJSONFromChunks(ragChunks)
 			referencesBytes, err := json.Marshal(ragDocs)
 			if err != nil {
@@ -225,7 +231,7 @@ func (s *ChatService) runAgenticChat(
 
 		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
 
-		if _, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled); err != nil {
+		if _, err := s.dao.AddChatMessageWithTokenCount(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled); err != nil {
 			slog.Error("service:Chat", "message", "failed to save partial agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		}
 	}
@@ -326,6 +332,8 @@ func (s *ChatService) runAgenticChat(
 
 	assistantText := fullResponse.String()
 	if assistantText != "" {
+		// - Final save mirrors partial save, but for a completed assistant response.
+		// - We attach the same RAG references so the final message preserves its supporting context.
 		var referencesJSON string
 		if len(ragChunks) > 0 {
 			ragDocs := s.createRAGDocumentJSONFromChunks(ragChunks)
@@ -343,7 +351,7 @@ func (s *ChatService) runAgenticChat(
 		}
 
 		searchCost := float64(successfulWebSearchCalls) * searchCostPerRequest
-		daoSummary, err := s.dao.AddChatMessageWithTokens(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled)
+		daoSummary, err := s.dao.AddChatMessageWithTokenCount(userID, chatID, "assistant", assistantText, "", model, nonCachedInputTokens, outputTokens, cachedTokens, searchCost, referencesJSON, ragEnabled)
 		if err != nil {
 			slog.Error("service:Chat", "message", "failed to insert agentic assistant message", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		} else {

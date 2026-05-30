@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,10 +11,26 @@ import (
 	"sortedstartup/chatservice/events"
 	"sortedstartup/chatservice/proto"
 	"sortedstartup/chatservice/queue"
+	"strconv"
 	"sync"
 )
 
 var SQLITE_DB_URL = "db.sqlite"
+
+const (
+	WEBSEARCH_SETTINGS_KEY       = "tool.websearch.brave"
+	CHAT_DEFAULT_PROMPT_KEY      = "chat.default_system_prompt"
+	DEFAULT_BRAVE_SEARCH_API_URL = "https://api.search.brave.com/res/v1/web/search"
+	DEFAULT_BRAVE_SEARCH_COST    = "0"
+	DEFAULT_CHAT_PROMPT          = `You are SortedChat’s default assistant.
+
+Answer from your own knowledge and reasoning by default. Use web_search only when fresh, external, verifiable, or source-backed information is needed, such as news, prices, laws, schedules, product details, live data, recent updates, or explicit search requests.
+When you search, ground the answer in the results and include relevant source URLs.
+`
+	CLOUDFLARE_SCRAPE_SETTINGS_KEY = "tool.scrape.cloudflare"
+	DEFAULT_AGENCIC_MAX_TURNS      = 4
+	DEFAULT_AGENCIC_MAX_TURNS_KEY  = "chat.agentic_max_turns"
+)
 
 /*
 - TODO: To think : settings have to be app level and then broken down to the service level
@@ -26,6 +43,17 @@ type Settings struct {
 	GeminiAPIUrl string `koanf:"gemini_api_url" json:"gemini_api_url"`
 	OpenaiAPIUrl string `koanf:"openai_api_url" json:"openai_api_url"`
 	OllamaURL    string `koanf:"ollama_url" json:"ollama_url"`
+}
+
+type WebSearchSettings struct {
+	APIURL string `json:"apiUrl"`
+	APIKey string `json:"apiKey"`
+	Cost   string `json:"cost"`
+}
+
+type CloudflareScrapeSettings struct {
+	APIURL string `json:"apiUrl"`
+	APIKey string `json:"apiKey"`
 }
 
 var DefaultSettings = &Settings{
@@ -65,10 +93,14 @@ func FromProto(protoSettings *proto.Settings) *Settings {
 // Application should use settings from here, not directly from the database
 // This monitors the database for changes and reloads the settings
 type SettingsManager struct {
-	settings *Settings
-	mu       sync.RWMutex
-	queue    queue.Queue
-	dao      dao.SettingsDAO
+	settings               *Settings
+	webSearchSettings      *WebSearchSettings
+	chatDefaultPrompt      string
+	defaultAgenticMaxTurns int
+	scrapeSettings         *CloudflareScrapeSettings
+	mu                     sync.RWMutex
+	queue                  queue.Queue
+	dao                    dao.SettingsDAO
 }
 
 func NewSettingsManager(queue queue.Queue, daoFactory dao.DAOFactory) *SettingsManager {
@@ -79,9 +111,13 @@ func NewSettingsManager(queue queue.Queue, daoFactory dao.DAOFactory) *SettingsM
 	}
 
 	cm := &SettingsManager{
-		settings: &Settings{},
-		queue:    queue,
-		dao:      settingsDAO,
+		settings:               &Settings{},
+		webSearchSettings:      &WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL, Cost: DEFAULT_BRAVE_SEARCH_COST},
+		chatDefaultPrompt:      DEFAULT_CHAT_PROMPT,
+		defaultAgenticMaxTurns: DEFAULT_AGENCIC_MAX_TURNS,
+		scrapeSettings:         &CloudflareScrapeSettings{APIURL: "", APIKey: ""},
+		queue:                  queue,
+		dao:                    settingsDAO,
 	}
 
 	cm.StartSettingsChangedSubscriber()
@@ -95,9 +131,12 @@ func NewSettingsManagerWithSQLite(queue queue.Queue) *SettingsManager {
 	settingsDAO := dao.NewSQLiteSettingsDAO(SQLITE_DB_URL)
 
 	cm := &SettingsManager{
-		settings: &Settings{},
-		queue:    queue,
-		dao:      settingsDAO,
+		settings:          &Settings{},
+		webSearchSettings: &WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL, Cost: DEFAULT_BRAVE_SEARCH_COST},
+		scrapeSettings:    &CloudflareScrapeSettings{APIURL: "", APIKey: ""},
+		chatDefaultPrompt: DEFAULT_CHAT_PROMPT,
+		queue:             queue,
+		dao:               settingsDAO,
 	}
 
 	cm.StartSettingsChangedSubscriber()
@@ -137,10 +176,81 @@ func (cm *SettingsManager) LoadSettings(settings_ *Settings) error {
 	return nil
 }
 
+func (cm *SettingsManager) LoadWebSearchSettings(settings_ *WebSearchSettings) {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	newSettings := *settings_
+	if newSettings.APIURL == "" {
+		newSettings.APIURL = DEFAULT_BRAVE_SEARCH_API_URL
+	}
+	if newSettings.Cost == "" {
+		newSettings.Cost = DEFAULT_BRAVE_SEARCH_COST
+	}
+	cm.webSearchSettings = &newSettings
+}
+
+func (cm *SettingsManager) LoadScrapeSettings(settings_ *CloudflareScrapeSettings) {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	newSettings := *settings_
+	cm.scrapeSettings = &newSettings
+}
+
+func (cm *SettingsManager) LoadChatDefaultPrompt(prompt string) {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	if prompt == "" {
+		prompt = DEFAULT_CHAT_PROMPT
+	}
+	cm.chatDefaultPrompt = prompt
+}
+
+func (cm *SettingsManager) LoadAgenticMaxTurns(maxTurns int) {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	if maxTurns <= 0 {
+		maxTurns = DEFAULT_AGENCIC_MAX_TURNS
+	}
+	cm.defaultAgenticMaxTurns = maxTurns
+}
+
 func (cm *SettingsManager) GetSettings() *Settings {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
 	return cm.settings
+}
+
+func (cm *SettingsManager) GetWebSearchSettings() *WebSearchSettings {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	newSettings := *cm.webSearchSettings
+	return &newSettings
+}
+
+func (cm *SettingsManager) GetAgenticMaxTurns() int {
+	// This is a temporary function to get the agentic max turns setting, which will be used in the agentic chat service
+	// In the future, this should be replaced by a more generic function to get any setting
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	return cm.defaultAgenticMaxTurns
+}
+func (cm *SettingsManager) GetCloudflareScrapeSettings() *CloudflareScrapeSettings {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	newSettings := *cm.scrapeSettings
+	return &newSettings
+}
+func (cm *SettingsManager) GetChatDefaultPrompt() string {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+	return cm.chatDefaultPrompt
 }
 
 func (s *SettingsManager) StartSettingsChangedSubscriber() {
@@ -177,7 +287,109 @@ func (s *SettingsManager) LoadSettingsFromDB() error {
 		return fmt.Errorf("failed to unmarshal settings")
 	}
 
-	return s.LoadSettings(&settings)
+	if err := s.LoadSettings(&settings); err != nil {
+		return err
+	}
+
+	if err := s.LoadWebSearchSettingsFromDB(); err != nil {
+		return err
+	}
+
+	if err := s.LoadScrapeSettingsFromDB(); err != nil {
+		return err
+	}
+
+	if err := s.LoadChatDefaultPromptFromDB(); err != nil {
+		return err
+	}
+
+	if err := s.LoadAgenticMaxTurnsFromDB(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *SettingsManager) LoadWebSearchSettingsFromDB() error {
+	value, err := s.dao.GetSettingValue(WEBSEARCH_SETTINGS_KEY)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.LoadWebSearchSettings(&WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL, Cost: DEFAULT_BRAVE_SEARCH_COST})
+			return nil
+		}
+		slog.Error("settings:LoadWebSearchSettingsFromDB", "message", "failed to get settings value", "error", err)
+		return fmt.Errorf("failed to get web search settings value")
+	}
+
+	if value == "" {
+		s.LoadWebSearchSettings(&WebSearchSettings{APIURL: DEFAULT_BRAVE_SEARCH_API_URL, Cost: DEFAULT_BRAVE_SEARCH_COST})
+		return nil
+	}
+
+	var webSearchSettings WebSearchSettings
+	if err := json.Unmarshal([]byte(value), &webSearchSettings); err != nil {
+		slog.Error("settings:LoadWebSearchSettingsFromDB", "message", "failed to unmarshal web search settings", "error", err)
+		return fmt.Errorf("failed to unmarshal web search settings")
+	}
+
+	s.LoadWebSearchSettings(&webSearchSettings)
+	return nil
+}
+
+func (s *SettingsManager) LoadScrapeSettingsFromDB() error {
+	value, err := s.dao.GetSettingValue(CLOUDFLARE_SCRAPE_SETTINGS_KEY)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.LoadScrapeSettings(&CloudflareScrapeSettings{APIURL: "", APIKey: ""})
+			return nil
+		}
+		slog.Error("settings:LoadScrapeSettingsFromDB", "message", "failed to get scrape settings value", "error", err)
+		return fmt.Errorf("failed to get scrape settings value")
+	}
+
+	if value == "" {
+		s.LoadScrapeSettings(&CloudflareScrapeSettings{APIURL: "", APIKey: ""})
+		return nil
+	}
+
+	var scrapeSettings CloudflareScrapeSettings
+	if err := json.Unmarshal([]byte(value), &scrapeSettings); err != nil {
+		slog.Error("settings:LoadScrapeSettingsFromDB", "message", "failed to unmarshal scrape settings", "error", err)
+		return fmt.Errorf("failed to unmarshal scrape settings")
+	}
+
+	s.LoadScrapeSettings(&scrapeSettings)
+	return nil
+}
+
+func (s *SettingsManager) LoadChatDefaultPromptFromDB() error {
+	value, err := s.dao.GetSettingValue(CHAT_DEFAULT_PROMPT_KEY)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.LoadChatDefaultPrompt(DEFAULT_CHAT_PROMPT)
+			return nil
+		}
+		slog.Error("settings:LoadChatDefaultPromptFromDB", "message", "failed to get prompt value", "error", err)
+		return fmt.Errorf("failed to get chat default prompt value")
+	}
+
+	s.LoadChatDefaultPrompt(extractChatDefaultPrompt(value))
+	return nil
+}
+
+func (s *SettingsManager) LoadAgenticMaxTurnsFromDB() error {
+	value, err := s.dao.GetSettingValue(DEFAULT_AGENCIC_MAX_TURNS_KEY)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.LoadAgenticMaxTurns(DEFAULT_AGENCIC_MAX_TURNS)
+			return nil
+		}
+		slog.Error("settings:LoadAgenticMaxTurnsFromDB", "message", "failed to get max turns value", "error", err)
+		return fmt.Errorf("failed to get agentic max turns value")
+	}
+
+	s.LoadAgenticMaxTurns(extractAgenticMaxTurns(value))
+	return nil
 }
 
 func (cm *SettingsManager) GetProviderSetting(providerName string) (*proto.ProviderSettings, error) {
@@ -199,4 +411,45 @@ func (cm *SettingsManager) GetProviderSetting(providerName string) (*proto.Provi
 	}
 
 	return &ps, nil
+}
+
+func extractChatDefaultPrompt(value string) string {
+	if value == "" {
+		return DEFAULT_CHAT_PROMPT
+	}
+
+	var settingsMap map[string]interface{}
+	if err := json.Unmarshal([]byte(value), &settingsMap); err == nil {
+		if prompt, ok := settingsMap["value"].(string); ok && prompt != "" {
+			return prompt
+		}
+	}
+
+	return value
+}
+
+func extractAgenticMaxTurns(value string) int {
+	if value == "" {
+		return DEFAULT_AGENCIC_MAX_TURNS
+	}
+
+	var settingsMap map[string]interface{}
+	if err := json.Unmarshal([]byte(value), &settingsMap); err == nil {
+		switch v := settingsMap["value"].(type) {
+		case float64:
+			if int(v) > 0 {
+				return int(v)
+			}
+		case string:
+			if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+				return parsed
+			}
+		}
+	}
+
+	if parsed, err := strconv.Atoi(value); err == nil && parsed > 0 {
+		return parsed
+	}
+
+	return DEFAULT_AGENCIC_MAX_TURNS
 }

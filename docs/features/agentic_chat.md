@@ -90,6 +90,56 @@ type ImageURL struct {
 - If a message contains only text, we send `TextContent`. If it includes an image, we send `ContentParts`.
 
 
+## Added Sources List per message
+- Added new column in `chat_messages` table,  `metadata TEXT`
+- This column stores assistant-message level metadata as JSON.
+- Current stored shape:
+
+```json
+{
+  "websearches": [
+    { "query": "latest openai api pricing" }
+  ],
+  "sources": [
+    { "url": "https://platform.openai.com/docs/pricing" },
+    { "url": "https://openai.com/api/" }
+  ]
+}
+```
+
+### How metadata is collected
+
+- In `agentic_chat.go`, during one agent run we keep two in-memory lists:
+  - `webSearchQueries []string`
+  - `sourceURLs []string`
+- These lists exist only for the lifetime of the current assistant response generation.
+
+### Collection points
+
+- On `ToolCallStartEvent`:
+  - if tool name is `web_search`, we read `args["query"]` and append it to `webSearchQueries`
+  - if tool name is `browser_scrape`, we read `args["url"]` and append it to `sourceURLs`
+- On `ToolCallEndEvent` for successful `web_search`:
+  - we inspect the tool result payload
+  - for each returned search result, we extract its `url`
+  - those URLs are appended to `sourceURLs`
+
+### How metadata is converted and saved
+
+- `NewChatMessageMetadata(webSearchQueries, sourceURLs)` builds a `ChatMessageMetadata`.
+- `ChatMessageMetadata.ToJSON()` serializes it for DB storage in `chat_messages.metadata`.
+- `ChatMessageMetadata.ToProto()` converts it into `AssistantMessageMetadata` for gRPC responses.
+
+
+### How metadata is returned
+
+- DAO returns raw `metadata` as string from `chat_messages.metadata`.
+- In `service.go`, before sending response/history:
+  - if metadata string is non-empty, we `json.Unmarshal` it into `ChatMessageMetadata`
+  - then call `ToProto()`
+- This is used in:
+  - `ResponseSummary.metadata` for the current streamed assistant message
+  - `ChatMessage.metadata` in `GetHistory`
 ## Current Limitations
 
 - In normal `chat_messages`, we do not currently persist web search tool-call history or tool-call failure details.

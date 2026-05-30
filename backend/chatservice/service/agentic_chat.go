@@ -16,7 +16,9 @@ import (
 	"sortedstartup/chatservice/types"
 )
 
-func buildSortedAgentsMessage(role string, content interface{}) sortedagents.Message {
+// this function convert normal text to sortedagents message struct type
+// we have to check that if message is in string format or in content part format and then convert it accordingly to sortedagents message struct type
+func buildSortedAgentsMessage(role string, content any) sortedagents.Message {
 	var messageContent sortedagents.MessageContent
 
 	switch value := content.(type) {
@@ -93,7 +95,7 @@ func (s *ChatService) runAgenticChat(
 	userID string,
 	projectID string,
 	model string,
-	userContent interface{},
+	userContent any,
 	history []dao.ChatMessageRow,
 	ragChunks []rag.Result,
 	ragEnabled bool,
@@ -162,16 +164,6 @@ func (s *ChatService) runAgenticChat(
 	}); err != nil {
 		return fmt.Errorf("error while processing request, please try again")
 	}
-
-	// maxTurnsValue, err := s.getSettingValue(AGENTIC_MAX_TURNS_KEY, defaultAgenticMaxTurns)
-	// if err != nil {
-	// 	slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
-	// 	maxTurnsValue = defaultAgenticMaxTurns
-	// }
-	// maxTurns, err := strconv.Atoi(maxTurnsValue)
-	// if err != nil || maxTurns <= 0 {
-	// 	maxTurns, _ = strconv.Atoi(defaultAgenticMaxTurns)
-	// }
 
 	userMessage := buildSortedAgentsMessage("user", userContent)
 

@@ -31,6 +31,7 @@ type Message struct {
 	ExtraContent *ExtraContent `json:"extra_content,omitempty"`
 }
 
+// content can be either a simple string or a list of content parts, so we define an interface and two types that implement it.
 // using this interface for type assertion to allow both string and []ContentPart as content
 type MessageContent interface {
 	MessageContent()

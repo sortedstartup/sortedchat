@@ -8,8 +8,7 @@ The flow works as follows:
 
 - In `service.go`, the `Chat` function checks the selected model's capabilities.
 - For now, model capabilities are seeded in `shared_models_metadata`.
-- If the current message does not contain images, model supports tool calling and websearch api key is present, we route the request through the agentic chat flow.
-- We do not currently support images in `sortedagents`, so image-based chat requests continue to use the normal LLM path.
+- If the current message supports tool calling, websearch api key is present, and provider settings are set, we route the request through the agentic chat flow.
 
 ## Chat Agent Behavior
 
@@ -93,13 +92,11 @@ type ImageURL struct {
 
 ## Current Limitations
 
-- `sortedagents` does not yet support image input.
 - In normal `chat_messages`, we do not currently persist web search tool-call history or tool-call failure details.
 - Brave Search API usage cost is not yet tracked.
 
 ## Future Improvements
 
-- Add image support in `sortedagents`.
 - Persist tool-call activity and failures for normal chat flows.
 - Add Brave Search cost tracking and reporting.
 - We could add RAG as a Tool

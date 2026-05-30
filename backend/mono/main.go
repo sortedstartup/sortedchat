@@ -254,7 +254,7 @@ func main() {
 	chatServiceApi.Init(config)
 	proto.RegisterSortedChatServer(grpcServer, chatServiceApi)
 
-	settingServiceApi := api.NewSettingService(queue, daoFactory)
+	settingServiceApi := api.NewSettingService(queue, settingsManager, daoFactory)
 	settingServiceApi.Init()
 
 	agentsServiceApi, err := api.NewAgentService(daoFactory, settingsManager)

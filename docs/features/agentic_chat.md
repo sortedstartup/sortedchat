@@ -23,7 +23,7 @@ The chat agent is responsible for deciding whether web search is needed for a gi
 
 ## Settings
 
-We store Brave Search configuration in the `settings` table.
+We store Brave Search configuration and the default chat agent prompt in the `settings` table, but normal reads during chat do not hit the DB every time anymore.
 
 - Setting name: `tool.websearch.brave`
 - Setting value:
@@ -35,12 +35,29 @@ We store Brave Search configuration in the `settings` table.
 }
 ```
 
-The API key and API URL are provided by the user through the settings page.
-
-We also store the default chat agent prompt in the `settings` table.
-
 - Setting name: `chat.default_prompt`
-- Setting value: plain text prompt
+- Setting value:
+
+```json
+{
+  "value": "You are SortedChat's default assistant..."
+}
+```
+
+### Runtime Behavior
+
+- DB is still the source of truth for both settings.
+- `SettingsManager` keeps an in-memory copy of:
+  - `tool.websearch.brave`
+  - `chat.default_prompt`
+- Chat reads these values from `SettingsManager`, not directly from `settingsDAO`, during request execution.
+
+### Fake Message Bus Pattern
+
+- When a setting is updated, `SettingService` writes to DB first.
+- After the write, it publishes `settings.changed` on the in-memory queue.
+- `SettingsManager` subscribes to that event and reloads the cached settings from DB.
+
 
 ## Current Limitations
 

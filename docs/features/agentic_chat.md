@@ -71,8 +71,8 @@ We store Brave Search configuration and the default chat agent prompt in the `se
 
 
 ## Sortedagents Image Support
-- from sortedagents.Message struct we changed content from type string to `MessageContent`
-- llm api content either to be plain text message or Content parts array 
+- In `sortedagents.Message`, `Content` was changed from `string` to `MessageContent`.
+- This matches the LLM API contract, where message content can be either a plain text string or an array of structured content parts.
 - Example :
 ```
 type ContentPart struct {
@@ -85,9 +85,9 @@ type ImageURL struct {
 	URL string `json:"url"`
 }
 ```
-- That's why we keep `MessageContent` as interface
-- which is implemented by `TextContent string` and `ContentParts`.
-- so if image is present then we send ContentParts or else we send TextContent
+- `MessageContent` is kept as an interface so both supported representations can be handled through the same field.
+- The interface is implemented by `TextContent` and `ContentParts`.
+- If a message contains only text, we send `TextContent`. If it includes an image, we send `ContentParts`.
 
 
 ## Current Limitations

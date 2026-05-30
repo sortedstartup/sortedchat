@@ -67,7 +67,10 @@ func buildSortedAgentsMessage(role string, content any) sortedagents.Message {
 func (s *ChatService) buildAgenticSession(chatID string, prompt string, history []dao.ChatMessageRow) (sortedagents.Session, error) {
 	slog.Debug("service:Chat", "message", "building agentic session from chat history", "chatId", chatID)
 	messages := []sortedagents.Message{
-		buildSortedAgentsMessage("system", prompt),
+		{
+			Role:    "system",
+			Content: sortedagents.TextContent(prompt),
+		},
 	}
 
 	for _, msg := range history {

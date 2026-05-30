@@ -74,7 +74,7 @@ func TestSystemPromptPersistence(t *testing.T) {
 	// Check if system prompt was sent
 	hasSystem := false
 	for _, msg := range mockLLM.LastMessages {
-		if msg.Role == "system" && contentToText(msg.Content) == "SYSTEM_INSTRUCTIONS" {
+		if msg.Role == "system" && contentToFlatString(msg.Content) == "SYSTEM_INSTRUCTIONS" {
 			hasSystem = true
 		}
 	}
@@ -91,7 +91,7 @@ func TestSystemPromptPersistence(t *testing.T) {
 	// Check if system prompt was sent in second run
 	hasSystem = false
 	for _, msg := range mockLLM.LastMessages {
-		if msg.Role == "system" && contentToText(msg.Content) == "SYSTEM_INSTRUCTIONS" {
+		if msg.Role == "system" && contentToFlatString(msg.Content) == "SYSTEM_INSTRUCTIONS" {
 			hasSystem = true
 		}
 	}

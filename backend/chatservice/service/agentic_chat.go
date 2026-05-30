@@ -32,18 +32,18 @@ type ChatSource struct {
 	URL string `json:"url"`
 }
 
-func (c *ChatMessageMetadata) ToProto() *pb.AssistantMessageMetadata {
+func (c *ChatMessageMetadata) ToProto() *pb.ChatMessageMetadata {
 	if c == nil {
 		return nil
 	}
-	proto := &pb.AssistantMessageMetadata{}
+	proto := &pb.ChatMessageMetadata{}
 	for _, search := range c.WebSearches {
-		proto.Websearches = append(proto.Websearches, &pb.AssistantMessageMetadata_WebSearch{
+		proto.Websearches = append(proto.Websearches, &pb.ChatMessageMetadata_WebSearch{
 			Query: search.Query,
 		})
 	}
 	for _, source := range c.Sources {
-		proto.Sources = append(proto.Sources, &pb.AssistantMessageMetadata_Source{
+		proto.Sources = append(proto.Sources, &pb.ChatMessageMetadata_Source{
 			Url: source.URL,
 		})
 	}

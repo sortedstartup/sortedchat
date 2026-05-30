@@ -2598,14 +2598,14 @@ func (x *RAGDocumentReference) GetChunks() []*RAGDocumentReference_Chunk {
 }
 
 type ResponseSummary struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	MessageId     string                    `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
-	Model         string                    `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
-	InputTokens   int32                     `protobuf:"varint,3,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
-	OutputTokens  int32                     `protobuf:"varint,4,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
-	CachedTokens  int32                     `protobuf:"varint,5,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
-	Cost          float32                   `protobuf:"fixed32,6,opt,name=cost,proto3" json:"cost,omitempty"`
-	Metadata      *AssistantMessageMetadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	InputTokens   int32                  `protobuf:"varint,3,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
+	OutputTokens  int32                  `protobuf:"varint,4,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
+	CachedTokens  int32                  `protobuf:"varint,5,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
+	Cost          float32                `protobuf:"fixed32,6,opt,name=cost,proto3" json:"cost,omitempty"`
+	Metadata      *ChatMessageMetadata   `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2682,7 +2682,7 @@ func (x *ResponseSummary) GetCost() float32 {
 	return 0
 }
 
-func (x *ResponseSummary) GetMetadata() *AssistantMessageMetadata {
+func (x *ResponseSummary) GetMetadata() *ChatMessageMetadata {
 	if x != nil {
 		return x.Metadata
 	}
@@ -2786,19 +2786,19 @@ func (x *GetHistoryResponse) GetChatMetadata() *ChatInfo {
 }
 
 type ChatMessage struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Role          string                    `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
-	Content       string                    `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"` // Keep for text-only (backward compat)
-	MessageId     string                    `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
-	References    []*RAGDocumentReference   `protobuf:"bytes,4,rep,name=references,proto3" json:"references,omitempty"`
-	RagEnabled    bool                      `protobuf:"varint,5,opt,name=rag_enabled,json=ragEnabled,proto3" json:"rag_enabled,omitempty"`
-	Model         string                    `protobuf:"bytes,6,opt,name=model,proto3" json:"model,omitempty"`
-	InputTokens   int32                     `protobuf:"varint,7,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
-	OutputTokens  int32                     `protobuf:"varint,8,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
-	CachedTokens  int32                     `protobuf:"varint,9,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
-	Cost          float32                   `protobuf:"fixed32,10,opt,name=cost,proto3" json:"cost,omitempty"`
-	Contents      []*MessageContent         `protobuf:"bytes,11,rep,name=contents,proto3" json:"contents,omitempty"` // New: multi-modal content
-	Metadata      *AssistantMessageMetadata `protobuf:"bytes,12,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Role          string                  `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	Content       string                  `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"` // Keep for text-only (backward compat)
+	MessageId     string                  `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	References    []*RAGDocumentReference `protobuf:"bytes,4,rep,name=references,proto3" json:"references,omitempty"`
+	RagEnabled    bool                    `protobuf:"varint,5,opt,name=rag_enabled,json=ragEnabled,proto3" json:"rag_enabled,omitempty"`
+	Model         string                  `protobuf:"bytes,6,opt,name=model,proto3" json:"model,omitempty"`
+	InputTokens   int32                   `protobuf:"varint,7,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
+	OutputTokens  int32                   `protobuf:"varint,8,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
+	CachedTokens  int32                   `protobuf:"varint,9,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
+	Cost          float32                 `protobuf:"fixed32,10,opt,name=cost,proto3" json:"cost,omitempty"`
+	Contents      []*MessageContent       `protobuf:"bytes,11,rep,name=contents,proto3" json:"contents,omitempty"` // New: multi-modal content
+	Metadata      *ChatMessageMetadata    `protobuf:"bytes,12,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2910,7 +2910,7 @@ func (x *ChatMessage) GetContents() []*MessageContent {
 	return nil
 }
 
-func (x *ChatMessage) GetMetadata() *AssistantMessageMetadata {
+func (x *ChatMessage) GetMetadata() *ChatMessageMetadata {
 	if x != nil {
 		return x.Metadata
 	}
@@ -3015,14 +3015,14 @@ func (x *GetChatListResponse) GetChats() []*ChatInfo {
 
 // total chat cost/token
 type ChatInfo struct {
-	state            protoimpl.MessageState    `protogen:"open.v1"`
-	ChatId           string                    `protobuf:"bytes,1,opt,name=chatId,proto3" json:"chatId,omitempty"`
-	Name             string                    `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Cost             float32                   `protobuf:"fixed32,3,opt,name=cost,proto3" json:"cost,omitempty"`
-	InputTokenCount  int32                     `protobuf:"varint,4,opt,name=input_token_count,json=inputTokenCount,proto3" json:"input_token_count,omitempty"`
-	OutputTokenCount int32                     `protobuf:"varint,5,opt,name=output_token_count,json=outputTokenCount,proto3" json:"output_token_count,omitempty"`
-	CachedTokenCount int32                     `protobuf:"varint,6,opt,name=cached_token_count,json=cachedTokenCount,proto3" json:"cached_token_count,omitempty"`
-	Metadata         *AssistantMessageMetadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ChatId           string                 `protobuf:"bytes,1,opt,name=chatId,proto3" json:"chatId,omitempty"`
+	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Cost             float32                `protobuf:"fixed32,3,opt,name=cost,proto3" json:"cost,omitempty"`
+	InputTokenCount  int32                  `protobuf:"varint,4,opt,name=input_token_count,json=inputTokenCount,proto3" json:"input_token_count,omitempty"`
+	OutputTokenCount int32                  `protobuf:"varint,5,opt,name=output_token_count,json=outputTokenCount,proto3" json:"output_token_count,omitempty"`
+	CachedTokenCount int32                  `protobuf:"varint,6,opt,name=cached_token_count,json=cachedTokenCount,proto3" json:"cached_token_count,omitempty"`
+	Metadata         *ChatMessageMetadata   `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -3099,35 +3099,35 @@ func (x *ChatInfo) GetCachedTokenCount() int32 {
 	return 0
 }
 
-func (x *ChatInfo) GetMetadata() *AssistantMessageMetadata {
+func (x *ChatInfo) GetMetadata() *ChatMessageMetadata {
 	if x != nil {
 		return x.Metadata
 	}
 	return nil
 }
 
-type AssistantMessageMetadata struct {
-	state         protoimpl.MessageState                `protogen:"open.v1"`
-	Websearches   []*AssistantMessageMetadata_WebSearch `protobuf:"bytes,1,rep,name=websearches,proto3" json:"websearches,omitempty"`
-	Sources       []*AssistantMessageMetadata_Source    `protobuf:"bytes,2,rep,name=sources,proto3" json:"sources,omitempty"`
+type ChatMessageMetadata struct {
+	state         protoimpl.MessageState           `protogen:"open.v1"`
+	Websearches   []*ChatMessageMetadata_WebSearch `protobuf:"bytes,1,rep,name=websearches,proto3" json:"websearches,omitempty"`
+	Sources       []*ChatMessageMetadata_Source    `protobuf:"bytes,2,rep,name=sources,proto3" json:"sources,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AssistantMessageMetadata) Reset() {
-	*x = AssistantMessageMetadata{}
+func (x *ChatMessageMetadata) Reset() {
+	*x = ChatMessageMetadata{}
 	mi := &file_chatservice_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AssistantMessageMetadata) String() string {
+func (x *ChatMessageMetadata) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AssistantMessageMetadata) ProtoMessage() {}
+func (*ChatMessageMetadata) ProtoMessage() {}
 
-func (x *AssistantMessageMetadata) ProtoReflect() protoreflect.Message {
+func (x *ChatMessageMetadata) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -3139,19 +3139,19 @@ func (x *AssistantMessageMetadata) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AssistantMessageMetadata.ProtoReflect.Descriptor instead.
-func (*AssistantMessageMetadata) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChatMessageMetadata.ProtoReflect.Descriptor instead.
+func (*ChatMessageMetadata) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{48}
 }
 
-func (x *AssistantMessageMetadata) GetWebsearches() []*AssistantMessageMetadata_WebSearch {
+func (x *ChatMessageMetadata) GetWebsearches() []*ChatMessageMetadata_WebSearch {
 	if x != nil {
 		return x.Websearches
 	}
 	return nil
 }
 
-func (x *AssistantMessageMetadata) GetSources() []*AssistantMessageMetadata_Source {
+func (x *ChatMessageMetadata) GetSources() []*ChatMessageMetadata_Source {
 	if x != nil {
 		return x.Sources
 	}
@@ -6418,27 +6418,27 @@ func (x *RAGDocumentReference_Chunk) GetSimillarity() float32 {
 	return 0
 }
 
-type AssistantMessageMetadata_WebSearch struct {
+type ChatMessageMetadata_WebSearch struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AssistantMessageMetadata_WebSearch) Reset() {
-	*x = AssistantMessageMetadata_WebSearch{}
+func (x *ChatMessageMetadata_WebSearch) Reset() {
+	*x = ChatMessageMetadata_WebSearch{}
 	mi := &file_chatservice_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AssistantMessageMetadata_WebSearch) String() string {
+func (x *ChatMessageMetadata_WebSearch) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AssistantMessageMetadata_WebSearch) ProtoMessage() {}
+func (*ChatMessageMetadata_WebSearch) ProtoMessage() {}
 
-func (x *AssistantMessageMetadata_WebSearch) ProtoReflect() protoreflect.Message {
+func (x *ChatMessageMetadata_WebSearch) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -6450,39 +6450,39 @@ func (x *AssistantMessageMetadata_WebSearch) ProtoReflect() protoreflect.Message
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AssistantMessageMetadata_WebSearch.ProtoReflect.Descriptor instead.
-func (*AssistantMessageMetadata_WebSearch) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChatMessageMetadata_WebSearch.ProtoReflect.Descriptor instead.
+func (*ChatMessageMetadata_WebSearch) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{48, 0}
 }
 
-func (x *AssistantMessageMetadata_WebSearch) GetQuery() string {
+func (x *ChatMessageMetadata_WebSearch) GetQuery() string {
 	if x != nil {
 		return x.Query
 	}
 	return ""
 }
 
-type AssistantMessageMetadata_Source struct {
+type ChatMessageMetadata_Source struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AssistantMessageMetadata_Source) Reset() {
-	*x = AssistantMessageMetadata_Source{}
+func (x *ChatMessageMetadata_Source) Reset() {
+	*x = ChatMessageMetadata_Source{}
 	mi := &file_chatservice_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AssistantMessageMetadata_Source) String() string {
+func (x *ChatMessageMetadata_Source) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AssistantMessageMetadata_Source) ProtoMessage() {}
+func (*ChatMessageMetadata_Source) ProtoMessage() {}
 
-func (x *AssistantMessageMetadata_Source) ProtoReflect() protoreflect.Message {
+func (x *ChatMessageMetadata_Source) ProtoReflect() protoreflect.Message {
 	mi := &file_chatservice_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -6494,12 +6494,12 @@ func (x *AssistantMessageMetadata_Source) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AssistantMessageMetadata_Source.ProtoReflect.Descriptor instead.
-func (*AssistantMessageMetadata_Source) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChatMessageMetadata_Source.ProtoReflect.Descriptor instead.
+func (*ChatMessageMetadata_Source) Descriptor() ([]byte, []int) {
 	return file_chatservice_proto_rawDescGZIP(), []int{48, 1}
 }
 
-func (x *AssistantMessageMetadata_Source) GetUrl() string {
+func (x *ChatMessageMetadata_Source) GetUrl() string {
 	if x != nil {
 		return x.Url
 	}
@@ -6683,7 +6683,7 @@ const file_chatservice_proto_rawDesc = "" +
 	"\n" +
 	"start_byte\x18\x04 \x01(\x05R\tstartByte\x12\x19\n" +
 	"\bend_byte\x18\x05 \x01(\x05R\aendByte\x12 \n" +
-	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"\x89\x02\n" +
+	"\vsimillarity\x18\x06 \x01(\x02R\vsimillarity\"\x84\x02\n" +
 	"\x0fResponseSummary\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x14\n" +
@@ -6691,13 +6691,13 @@ const file_chatservice_proto_rawDesc = "" +
 	"\finput_tokens\x18\x03 \x01(\x05R\vinputTokens\x12#\n" +
 	"\routput_tokens\x18\x04 \x01(\x05R\foutputTokens\x12#\n" +
 	"\rcached_tokens\x18\x05 \x01(\x05R\fcachedTokens\x12\x12\n" +
-	"\x04cost\x18\x06 \x01(\x02R\x04cost\x12@\n" +
-	"\bmetadata\x18\a \x01(\v2$.sortedchat.AssistantMessageMetadataR\bmetadata\"+\n" +
+	"\x04cost\x18\x06 \x01(\x02R\x04cost\x12;\n" +
+	"\bmetadata\x18\a \x01(\v2\x1f.sortedchat.ChatMessageMetadataR\bmetadata\"+\n" +
 	"\x11GetHistoryRequest\x12\x16\n" +
 	"\x06chatId\x18\x01 \x01(\tR\x06chatId\"\x82\x01\n" +
 	"\x12GetHistoryResponse\x121\n" +
 	"\ahistory\x18\x01 \x03(\v2\x17.sortedchat.ChatMessageR\ahistory\x129\n" +
-	"\rchat_metadata\x18\x02 \x01(\v2\x14.sortedchat.ChatInfoR\fchatMetadata\"\xce\x03\n" +
+	"\rchat_metadata\x18\x02 \x01(\v2\x14.sortedchat.ChatInfoR\fchatMetadata\"\xc9\x03\n" +
 	"\vChatMessage\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1d\n" +
@@ -6714,25 +6714,25 @@ const file_chatservice_proto_rawDesc = "" +
 	"\rcached_tokens\x18\t \x01(\x05R\fcachedTokens\x12\x12\n" +
 	"\x04cost\x18\n" +
 	" \x01(\x02R\x04cost\x126\n" +
-	"\bcontents\x18\v \x03(\v2\x1a.sortedchat.MessageContentR\bcontents\x12@\n" +
-	"\bmetadata\x18\f \x01(\v2$.sortedchat.AssistantMessageMetadataR\bmetadata\"V\n" +
+	"\bcontents\x18\v \x03(\v2\x1a.sortedchat.MessageContentR\bcontents\x12;\n" +
+	"\bmetadata\x18\f \x01(\v2\x1f.sortedchat.ChatMessageMetadataR\bmetadata\"V\n" +
 	"\x12GetChatListRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12!\n" +
 	"\fsoft_deleted\x18\x02 \x01(\bR\vsoftDeleted\"A\n" +
 	"\x13GetChatListResponse\x12*\n" +
-	"\x05chats\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x05chats\"\x94\x02\n" +
+	"\x05chats\x18\x01 \x03(\v2\x14.sortedchat.ChatInfoR\x05chats\"\x8f\x02\n" +
 	"\bChatInfo\x12\x16\n" +
 	"\x06chatId\x18\x01 \x01(\tR\x06chatId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
 	"\x04cost\x18\x03 \x01(\x02R\x04cost\x12*\n" +
 	"\x11input_token_count\x18\x04 \x01(\x05R\x0finputTokenCount\x12,\n" +
 	"\x12output_token_count\x18\x05 \x01(\x05R\x10outputTokenCount\x12,\n" +
-	"\x12cached_token_count\x18\x06 \x01(\x05R\x10cachedTokenCount\x12@\n" +
-	"\bmetadata\x18\a \x01(\v2$.sortedchat.AssistantMessageMetadataR\bmetadata\"\xf2\x01\n" +
-	"\x18AssistantMessageMetadata\x12P\n" +
-	"\vwebsearches\x18\x01 \x03(\v2..sortedchat.AssistantMessageMetadata.WebSearchR\vwebsearches\x12E\n" +
-	"\asources\x18\x02 \x03(\v2+.sortedchat.AssistantMessageMetadata.SourceR\asources\x1a!\n" +
+	"\x12cached_token_count\x18\x06 \x01(\x05R\x10cachedTokenCount\x12;\n" +
+	"\bmetadata\x18\a \x01(\v2\x1f.sortedchat.ChatMessageMetadataR\bmetadata\"\xe3\x01\n" +
+	"\x13ChatMessageMetadata\x12K\n" +
+	"\vwebsearches\x18\x01 \x03(\v2).sortedchat.ChatMessageMetadata.WebSearchR\vwebsearches\x12@\n" +
+	"\asources\x18\x02 \x03(\v2&.sortedchat.ChatMessageMetadata.SourceR\asources\x1a!\n" +
 	"\tWebSearch\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x1a\x1a\n" +
 	"\x06Source\x12\x10\n" +
@@ -7109,7 +7109,7 @@ var file_chatservice_proto_goTypes = []any{
 	(*GetChatListRequest)(nil),                      // 52: sortedchat.GetChatListRequest
 	(*GetChatListResponse)(nil),                     // 53: sortedchat.GetChatListResponse
 	(*ChatInfo)(nil),                                // 54: sortedchat.ChatInfo
-	(*AssistantMessageMetadata)(nil),                // 55: sortedchat.AssistantMessageMetadata
+	(*ChatMessageMetadata)(nil),                     // 55: sortedchat.ChatMessageMetadata
 	(*ChatSearchRequest)(nil),                       // 56: sortedchat.ChatSearchRequest
 	(*SearchResult)(nil),                            // 57: sortedchat.SearchResult
 	(*ChatSearchResponse)(nil),                      // 58: sortedchat.ChatSearchResponse
@@ -7166,8 +7166,8 @@ var file_chatservice_proto_goTypes = []any{
 	nil,                                             // 109: sortedchat.SetAllProviderSettingsRequest.SettingsEntry
 	(*RAGDocumentReferenceSummaryList_Summary)(nil), // 110: sortedchat.RAGDocumentReferenceSummaryList.Summary
 	(*RAGDocumentReference_Chunk)(nil),              // 111: sortedchat.RAGDocumentReference.Chunk
-	(*AssistantMessageMetadata_WebSearch)(nil),      // 112: sortedchat.AssistantMessageMetadata.WebSearch
-	(*AssistantMessageMetadata_Source)(nil),         // 113: sortedchat.AssistantMessageMetadata.Source
+	(*ChatMessageMetadata_WebSearch)(nil),           // 112: sortedchat.ChatMessageMetadata.WebSearch
+	(*ChatMessageMetadata_Source)(nil),              // 113: sortedchat.ChatMessageMetadata.Source
 	nil,                                             // 114: sortedchat.MCPStdio.EnvironmentVariablesEntry
 	nil,                                             // 115: sortedchat.MCPHttp.HeadersEntry
 	(*structpb.Struct)(nil),                         // 116: google.protobuf.Struct
@@ -7195,16 +7195,16 @@ var file_chatservice_proto_depIdxs = []int32{
 	5,   // 19: sortedchat.ChatProgress.state:type_name -> sortedchat.ChatProgress.State
 	110, // 20: sortedchat.RAGDocumentReferenceSummaryList.summary:type_name -> sortedchat.RAGDocumentReferenceSummaryList.Summary
 	111, // 21: sortedchat.RAGDocumentReference.Chunks:type_name -> sortedchat.RAGDocumentReference.Chunk
-	55,  // 22: sortedchat.ResponseSummary.metadata:type_name -> sortedchat.AssistantMessageMetadata
+	55,  // 22: sortedchat.ResponseSummary.metadata:type_name -> sortedchat.ChatMessageMetadata
 	51,  // 23: sortedchat.GetHistoryResponse.history:type_name -> sortedchat.ChatMessage
 	54,  // 24: sortedchat.GetHistoryResponse.chat_metadata:type_name -> sortedchat.ChatInfo
 	47,  // 25: sortedchat.ChatMessage.references:type_name -> sortedchat.RAGDocumentReference
 	40,  // 26: sortedchat.ChatMessage.contents:type_name -> sortedchat.MessageContent
-	55,  // 27: sortedchat.ChatMessage.metadata:type_name -> sortedchat.AssistantMessageMetadata
+	55,  // 27: sortedchat.ChatMessage.metadata:type_name -> sortedchat.ChatMessageMetadata
 	54,  // 28: sortedchat.GetChatListResponse.chats:type_name -> sortedchat.ChatInfo
-	55,  // 29: sortedchat.ChatInfo.metadata:type_name -> sortedchat.AssistantMessageMetadata
-	112, // 30: sortedchat.AssistantMessageMetadata.websearches:type_name -> sortedchat.AssistantMessageMetadata.WebSearch
-	113, // 31: sortedchat.AssistantMessageMetadata.sources:type_name -> sortedchat.AssistantMessageMetadata.Source
+	55,  // 29: sortedchat.ChatInfo.metadata:type_name -> sortedchat.ChatMessageMetadata
+	112, // 30: sortedchat.ChatMessageMetadata.websearches:type_name -> sortedchat.ChatMessageMetadata.WebSearch
+	113, // 31: sortedchat.ChatMessageMetadata.sources:type_name -> sortedchat.ChatMessageMetadata.Source
 	57,  // 32: sortedchat.ChatSearchResponse.results:type_name -> sortedchat.SearchResult
 	63,  // 33: sortedchat.GetProjectsResponse.projects:type_name -> sortedchat.Project
 	66,  // 34: sortedchat.ListDocumentsResponse.documents:type_name -> sortedchat.Document

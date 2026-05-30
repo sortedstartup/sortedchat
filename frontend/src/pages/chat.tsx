@@ -58,7 +58,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type {
-  AssistantMessageMetadata,
+  ChatMessageMetadata,
   ChatMessage,
   RAGDocumentReference,
   RAGDocumentReferenceChunk,
@@ -68,7 +68,7 @@ import type {
 
 type ChatMessageWithUI = ChatMessage & {
   isProgress?: boolean;
-  metadata?: AssistantMessageMetadata;
+  metadata?: ChatMessageMetadata;
 };
 
 

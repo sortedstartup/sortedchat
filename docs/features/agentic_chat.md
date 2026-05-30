@@ -128,7 +128,7 @@ This means:
 
 - `NewChatMessageMetadata(webSearchQueries, sourceURLs)` builds a `ChatMessageMetadata`.
 - `ChatMessageMetadata.ToJSON()` serializes it for DB storage in `chat_messages.metadata`.
-- `ChatMessageMetadata.ToProto()` converts it into `AssistantMessageMetadata` for gRPC responses.
+- `ChatMessageMetadata.ToProto()` converts it into `ChatMessageMetadata` for gRPC responses.
 
 
 ### How metadata is returned

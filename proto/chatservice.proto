@@ -308,7 +308,7 @@ message ResponseSummary {
   int32 output_tokens = 4;
   int32 cached_tokens = 5;
   float cost = 6;
-  AssistantMessageMetadata metadata = 7;
+  ChatMessageMetadata metadata = 7;
 }
 
 message GetHistoryRequest {
@@ -332,7 +332,7 @@ message ChatMessage {
   int32 cached_tokens = 9;
   float cost = 10;
   repeated MessageContent contents = 11;  // New: multi-modal content
-  AssistantMessageMetadata metadata = 12;
+  ChatMessageMetadata metadata = 12;
 }
 
 message GetChatListRequest {
@@ -353,10 +353,10 @@ message ChatInfo {
   int32 input_token_count = 4;
   int32 output_token_count = 5;
   int32 cached_token_count = 6;
-  AssistantMessageMetadata metadata = 7;
+  ChatMessageMetadata metadata = 7;
 }
 
-message AssistantMessageMetadata {
+message ChatMessageMetadata {
   repeated WebSearch websearches = 1;
   repeated Source sources = 2;
 

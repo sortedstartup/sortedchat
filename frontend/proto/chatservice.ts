@@ -4179,7 +4179,7 @@ export class ResponseSummary extends pb_1.Message {
         output_tokens?: number;
         cached_tokens?: number;
         cost?: number;
-        metadata?: AssistantMessageMetadata;
+        metadata?: ChatMessageMetadata;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -4244,9 +4244,9 @@ export class ResponseSummary extends pb_1.Message {
         pb_1.Message.setField(this, 6, value);
     }
     get metadata() {
-        return pb_1.Message.getWrapperField(this, AssistantMessageMetadata, 7) as AssistantMessageMetadata;
+        return pb_1.Message.getWrapperField(this, ChatMessageMetadata, 7) as ChatMessageMetadata;
     }
-    set metadata(value: AssistantMessageMetadata) {
+    set metadata(value: ChatMessageMetadata) {
         pb_1.Message.setWrapperField(this, 7, value);
     }
     get has_metadata() {
@@ -4259,7 +4259,7 @@ export class ResponseSummary extends pb_1.Message {
         output_tokens?: number;
         cached_tokens?: number;
         cost?: number;
-        metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
+        metadata?: ReturnType<typeof ChatMessageMetadata.prototype.toObject>;
     }): ResponseSummary {
         const message = new ResponseSummary({});
         if (data.message_id != null) {
@@ -4281,7 +4281,7 @@ export class ResponseSummary extends pb_1.Message {
             message.cost = data.cost;
         }
         if (data.metadata != null) {
-            message.metadata = AssistantMessageMetadata.fromObject(data.metadata);
+            message.metadata = ChatMessageMetadata.fromObject(data.metadata);
         }
         return message;
     }
@@ -4293,7 +4293,7 @@ export class ResponseSummary extends pb_1.Message {
             output_tokens?: number;
             cached_tokens?: number;
             cost?: number;
-            metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
+            metadata?: ReturnType<typeof ChatMessageMetadata.prototype.toObject>;
         } = {};
         if (this.message_id != null) {
             data.message_id = this.message_id;
@@ -4364,7 +4364,7 @@ export class ResponseSummary extends pb_1.Message {
                     message.cost = reader.readFloat();
                     break;
                 case 7:
-                    reader.readMessage(message.metadata, () => message.metadata = AssistantMessageMetadata.deserialize(reader));
+                    reader.readMessage(message.metadata, () => message.metadata = ChatMessageMetadata.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -4552,7 +4552,7 @@ export class ChatMessage extends pb_1.Message {
         cached_tokens?: number;
         cost?: number;
         contents?: MessageContent[];
-        metadata?: AssistantMessageMetadata;
+        metadata?: ChatMessageMetadata;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [4, 11], this.#one_of_decls);
@@ -4662,9 +4662,9 @@ export class ChatMessage extends pb_1.Message {
         pb_1.Message.setRepeatedWrapperField(this, 11, value);
     }
     get metadata() {
-        return pb_1.Message.getWrapperField(this, AssistantMessageMetadata, 12) as AssistantMessageMetadata;
+        return pb_1.Message.getWrapperField(this, ChatMessageMetadata, 12) as ChatMessageMetadata;
     }
-    set metadata(value: AssistantMessageMetadata) {
+    set metadata(value: ChatMessageMetadata) {
         pb_1.Message.setWrapperField(this, 12, value);
     }
     get has_metadata() {
@@ -4682,7 +4682,7 @@ export class ChatMessage extends pb_1.Message {
         cached_tokens?: number;
         cost?: number;
         contents?: ReturnType<typeof MessageContent.prototype.toObject>[];
-        metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
+        metadata?: ReturnType<typeof ChatMessageMetadata.prototype.toObject>;
     }): ChatMessage {
         const message = new ChatMessage({});
         if (data.role != null) {
@@ -4719,7 +4719,7 @@ export class ChatMessage extends pb_1.Message {
             message.contents = data.contents.map(item => MessageContent.fromObject(item));
         }
         if (data.metadata != null) {
-            message.metadata = AssistantMessageMetadata.fromObject(data.metadata);
+            message.metadata = ChatMessageMetadata.fromObject(data.metadata);
         }
         return message;
     }
@@ -4736,7 +4736,7 @@ export class ChatMessage extends pb_1.Message {
             cached_tokens?: number;
             cost?: number;
             contents?: ReturnType<typeof MessageContent.prototype.toObject>[];
-            metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
+            metadata?: ReturnType<typeof ChatMessageMetadata.prototype.toObject>;
         } = {};
         if (this.role != null) {
             data.role = this.role;
@@ -4847,7 +4847,7 @@ export class ChatMessage extends pb_1.Message {
                     reader.readMessage(message.contents, () => pb_1.Message.addToRepeatedWrapperField(message, 11, MessageContent.deserialize(reader), MessageContent));
                     break;
                 case 12:
-                    reader.readMessage(message.metadata, () => message.metadata = AssistantMessageMetadata.deserialize(reader));
+                    reader.readMessage(message.metadata, () => message.metadata = ChatMessageMetadata.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -5027,7 +5027,7 @@ export class ChatInfo extends pb_1.Message {
         input_token_count?: number;
         output_token_count?: number;
         cached_token_count?: number;
-        metadata?: AssistantMessageMetadata;
+        metadata?: ChatMessageMetadata;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -5092,9 +5092,9 @@ export class ChatInfo extends pb_1.Message {
         pb_1.Message.setField(this, 6, value);
     }
     get metadata() {
-        return pb_1.Message.getWrapperField(this, AssistantMessageMetadata, 7) as AssistantMessageMetadata;
+        return pb_1.Message.getWrapperField(this, ChatMessageMetadata, 7) as ChatMessageMetadata;
     }
-    set metadata(value: AssistantMessageMetadata) {
+    set metadata(value: ChatMessageMetadata) {
         pb_1.Message.setWrapperField(this, 7, value);
     }
     get has_metadata() {
@@ -5107,7 +5107,7 @@ export class ChatInfo extends pb_1.Message {
         input_token_count?: number;
         output_token_count?: number;
         cached_token_count?: number;
-        metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
+        metadata?: ReturnType<typeof ChatMessageMetadata.prototype.toObject>;
     }): ChatInfo {
         const message = new ChatInfo({});
         if (data.chatId != null) {
@@ -5129,7 +5129,7 @@ export class ChatInfo extends pb_1.Message {
             message.cached_token_count = data.cached_token_count;
         }
         if (data.metadata != null) {
-            message.metadata = AssistantMessageMetadata.fromObject(data.metadata);
+            message.metadata = ChatMessageMetadata.fromObject(data.metadata);
         }
         return message;
     }
@@ -5141,7 +5141,7 @@ export class ChatInfo extends pb_1.Message {
             input_token_count?: number;
             output_token_count?: number;
             cached_token_count?: number;
-            metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
+            metadata?: ReturnType<typeof ChatMessageMetadata.prototype.toObject>;
         } = {};
         if (this.chatId != null) {
             data.chatId = this.chatId;
@@ -5212,7 +5212,7 @@ export class ChatInfo extends pb_1.Message {
                     message.cached_token_count = reader.readInt32();
                     break;
                 case 7:
-                    reader.readMessage(message.metadata, () => message.metadata = AssistantMessageMetadata.deserialize(reader));
+                    reader.readMessage(message.metadata, () => message.metadata = ChatMessageMetadata.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -5226,11 +5226,11 @@ export class ChatInfo extends pb_1.Message {
         return ChatInfo.deserialize(bytes);
     }
 }
-export class AssistantMessageMetadata extends pb_1.Message {
+export class ChatMessageMetadata extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
-        websearches?: AssistantMessageMetadataWebSearch[];
-        sources?: AssistantMessageMetadataSource[];
+        websearches?: ChatMessageMetadataWebSearch[];
+        sources?: ChatMessageMetadataSource[];
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1, 2], this.#one_of_decls);
@@ -5244,40 +5244,40 @@ export class AssistantMessageMetadata extends pb_1.Message {
         }
     }
     get websearches() {
-        return pb_1.Message.getRepeatedWrapperField(this, AssistantMessageMetadataWebSearch, 1) as AssistantMessageMetadataWebSearch[];
+        return pb_1.Message.getRepeatedWrapperField(this, ChatMessageMetadataWebSearch, 1) as ChatMessageMetadataWebSearch[];
     }
-    set websearches(value: AssistantMessageMetadataWebSearch[]) {
+    set websearches(value: ChatMessageMetadataWebSearch[]) {
         pb_1.Message.setRepeatedWrapperField(this, 1, value);
     }
     get sources() {
-        return pb_1.Message.getRepeatedWrapperField(this, AssistantMessageMetadataSource, 2) as AssistantMessageMetadataSource[];
+        return pb_1.Message.getRepeatedWrapperField(this, ChatMessageMetadataSource, 2) as ChatMessageMetadataSource[];
     }
-    set sources(value: AssistantMessageMetadataSource[]) {
+    set sources(value: ChatMessageMetadataSource[]) {
         pb_1.Message.setRepeatedWrapperField(this, 2, value);
     }
     static fromObject(data: {
-        websearches?: ReturnType<typeof AssistantMessageMetadataWebSearch.prototype.toObject>[];
-        sources?: ReturnType<typeof AssistantMessageMetadataSource.prototype.toObject>[];
-    }): AssistantMessageMetadata {
-        const message = new AssistantMessageMetadata({});
+        websearches?: ReturnType<typeof ChatMessageMetadataWebSearch.prototype.toObject>[];
+        sources?: ReturnType<typeof ChatMessageMetadataSource.prototype.toObject>[];
+    }): ChatMessageMetadata {
+        const message = new ChatMessageMetadata({});
         if (data.websearches != null) {
-            message.websearches = data.websearches.map(item => AssistantMessageMetadataWebSearch.fromObject(item));
+            message.websearches = data.websearches.map(item => ChatMessageMetadataWebSearch.fromObject(item));
         }
         if (data.sources != null) {
-            message.sources = data.sources.map(item => AssistantMessageMetadataSource.fromObject(item));
+            message.sources = data.sources.map(item => ChatMessageMetadataSource.fromObject(item));
         }
         return message;
     }
     toObject() {
         const data: {
-            websearches?: ReturnType<typeof AssistantMessageMetadataWebSearch.prototype.toObject>[];
-            sources?: ReturnType<typeof AssistantMessageMetadataSource.prototype.toObject>[];
+            websearches?: ReturnType<typeof ChatMessageMetadataWebSearch.prototype.toObject>[];
+            sources?: ReturnType<typeof ChatMessageMetadataSource.prototype.toObject>[];
         } = {};
         if (this.websearches != null) {
-            data.websearches = this.websearches.map((item: AssistantMessageMetadataWebSearch) => item.toObject());
+            data.websearches = this.websearches.map((item: ChatMessageMetadataWebSearch) => item.toObject());
         }
         if (this.sources != null) {
-            data.sources = this.sources.map((item: AssistantMessageMetadataSource) => item.toObject());
+            data.sources = this.sources.map((item: ChatMessageMetadataSource) => item.toObject());
         }
         return data;
     }
@@ -5286,23 +5286,23 @@ export class AssistantMessageMetadata extends pb_1.Message {
     serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
         const writer = w || new pb_1.BinaryWriter();
         if (this.websearches.length)
-            writer.writeRepeatedMessage(1, this.websearches, (item: AssistantMessageMetadataWebSearch) => item.serialize(writer));
+            writer.writeRepeatedMessage(1, this.websearches, (item: ChatMessageMetadataWebSearch) => item.serialize(writer));
         if (this.sources.length)
-            writer.writeRepeatedMessage(2, this.sources, (item: AssistantMessageMetadataSource) => item.serialize(writer));
+            writer.writeRepeatedMessage(2, this.sources, (item: ChatMessageMetadataSource) => item.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): AssistantMessageMetadata {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new AssistantMessageMetadata();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ChatMessageMetadata {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ChatMessageMetadata();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
             switch (reader.getFieldNumber()) {
                 case 1:
-                    reader.readMessage(message.websearches, () => pb_1.Message.addToRepeatedWrapperField(message, 1, AssistantMessageMetadataWebSearch.deserialize(reader), AssistantMessageMetadataWebSearch));
+                    reader.readMessage(message.websearches, () => pb_1.Message.addToRepeatedWrapperField(message, 1, ChatMessageMetadataWebSearch.deserialize(reader), ChatMessageMetadataWebSearch));
                     break;
                 case 2:
-                    reader.readMessage(message.sources, () => pb_1.Message.addToRepeatedWrapperField(message, 2, AssistantMessageMetadataSource.deserialize(reader), AssistantMessageMetadataSource));
+                    reader.readMessage(message.sources, () => pb_1.Message.addToRepeatedWrapperField(message, 2, ChatMessageMetadataSource.deserialize(reader), ChatMessageMetadataSource));
                     break;
                 default: reader.skipField();
             }
@@ -5312,11 +5312,11 @@ export class AssistantMessageMetadata extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): AssistantMessageMetadata {
-        return AssistantMessageMetadata.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ChatMessageMetadata {
+        return ChatMessageMetadata.deserialize(bytes);
     }
 }
-export class AssistantMessageMetadataWebSearch extends pb_1.Message {
+export class ChatMessageMetadataWebSearch extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         query?: string;
@@ -5337,8 +5337,8 @@ export class AssistantMessageMetadataWebSearch extends pb_1.Message {
     }
     static fromObject(data: {
         query?: string;
-    }): AssistantMessageMetadataWebSearch {
-        const message = new AssistantMessageMetadataWebSearch({});
+    }): ChatMessageMetadataWebSearch {
+        const message = new ChatMessageMetadataWebSearch({});
         if (data.query != null) {
             message.query = data.query;
         }
@@ -5362,8 +5362,8 @@ export class AssistantMessageMetadataWebSearch extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): AssistantMessageMetadataWebSearch {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new AssistantMessageMetadataWebSearch();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ChatMessageMetadataWebSearch {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ChatMessageMetadataWebSearch();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -5379,11 +5379,11 @@ export class AssistantMessageMetadataWebSearch extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): AssistantMessageMetadataWebSearch {
-        return AssistantMessageMetadataWebSearch.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ChatMessageMetadataWebSearch {
+        return ChatMessageMetadataWebSearch.deserialize(bytes);
     }
 }
-export class AssistantMessageMetadataSource extends pb_1.Message {
+export class ChatMessageMetadataSource extends pb_1.Message {
     #one_of_decls: number[][] = [];
     constructor(data?: any[] | {
         url?: string;
@@ -5404,8 +5404,8 @@ export class AssistantMessageMetadataSource extends pb_1.Message {
     }
     static fromObject(data: {
         url?: string;
-    }): AssistantMessageMetadataSource {
-        const message = new AssistantMessageMetadataSource({});
+    }): ChatMessageMetadataSource {
+        const message = new ChatMessageMetadataSource({});
         if (data.url != null) {
             message.url = data.url;
         }
@@ -5429,8 +5429,8 @@ export class AssistantMessageMetadataSource extends pb_1.Message {
         if (!w)
             return writer.getResultBuffer();
     }
-    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): AssistantMessageMetadataSource {
-        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new AssistantMessageMetadataSource();
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): ChatMessageMetadataSource {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new ChatMessageMetadataSource();
         while (reader.nextField()) {
             if (reader.isEndGroup())
                 break;
@@ -5446,8 +5446,8 @@ export class AssistantMessageMetadataSource extends pb_1.Message {
     serializeBinary(): Uint8Array {
         return this.serialize();
     }
-    static deserializeBinary(bytes: Uint8Array): AssistantMessageMetadataSource {
-        return AssistantMessageMetadataSource.deserialize(bytes);
+    static deserializeBinary(bytes: Uint8Array): ChatMessageMetadataSource {
+        return ChatMessageMetadataSource.deserialize(bytes);
     }
 }
 export class ChatSearchRequest extends pb_1.Message {

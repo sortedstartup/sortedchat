@@ -414,15 +414,6 @@ func (s *ChatService) runAgenticChat(
 		case *sortedagents.ToolCallEndEvent:
 			if e.ToolName == WEBSEARCH_TOOL_NAME && e.Error == nil {
 				successfulWebSearchCalls++
-				if resultMap, ok := e.Result.(map[string]any); ok {
-					if results, ok := resultMap["results"].([]map[string]string); ok {
-						for _, result := range results {
-							if url := strings.TrimSpace(result["url"]); url != "" {
-								sourceURLs = append(sourceURLs, url)
-							}
-						}
-					}
-				}
 			}
 
 		case *sortedagents.CompleteEvent:

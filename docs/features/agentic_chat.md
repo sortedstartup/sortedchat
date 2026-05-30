@@ -119,10 +119,10 @@ type ImageURL struct {
 - On `ToolCallStartEvent`:
   - if tool name is `web_search`, we read `args["query"]` and append it to `webSearchQueries`
   - if tool name is `browser_scrape`, we read `args["url"]` and append it to `sourceURLs`
-- On `ToolCallEndEvent` for successful `web_search`:
-  - we inspect the tool result payload
-  - for each returned search result, we extract its `url`
-  - those URLs are appended to `sourceURLs`
+
+This means:
+- `websearches` stores web search queries
+- `sources` stores only URLs that were actually scraped through `browser_scrape`
 
 ### How metadata is converted and saved
 

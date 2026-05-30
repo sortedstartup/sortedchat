@@ -39,6 +39,23 @@ func buildSortedAgentsMessage(role string, content any) sortedagents.Message {
 			parts = append(parts, converted)
 		}
 		messageContent = parts
+	case []*pb.MessageContent:
+		parts := make(sortedagents.ContentParts, 0, len(value))
+		for _, part := range value {
+			if part == nil {
+				continue
+			}
+
+			converted := sortedagents.ContentPart{
+				Type: part.Type,
+				Text: part.Text,
+			}
+			if part.ImageUrl != nil {
+				converted.ImageURL = &sortedagents.ImageURLPart{URL: part.ImageUrl.Url}
+			}
+			parts = append(parts, converted)
+		}
+		messageContent = parts
 	}
 
 	return sortedagents.Message{

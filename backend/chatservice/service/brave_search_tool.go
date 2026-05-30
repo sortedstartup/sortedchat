@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/sortedagents"
@@ -142,5 +144,134 @@ func (t *BraveSearchTool) Execute(ctx context.Context, args map[string]any) (any
 	return map[string]any{
 		"query":   query,
 		"results": results,
+	}, nil
+}
+
+// BrowserScrapeTool scrapes web pages using Cloudflare Browser Rendering API
+type BrowserScrapeTool struct {
+	httpClient *http.Client
+	apiURL     string
+	apiKey     string
+}
+
+func NewBrowserScrapeToolWithConfig(apiURL, apiKey string) *BrowserScrapeTool {
+	return &BrowserScrapeTool{
+		httpClient: http.DefaultClient,
+		apiURL:     strings.TrimSpace(apiURL),
+		apiKey:     strings.TrimSpace(apiKey),
+	}
+}
+
+func (t *BrowserScrapeTool) Name() string {
+	return "browser_scrape"
+}
+
+func (t *BrowserScrapeTool) Description() string {
+	return "Scrape a web page and convert it to markdown using Cloudflare Browser Rendering API"
+}
+
+func (t *BrowserScrapeTool) Parameters() *sortedagents.JSONSchema {
+	return &sortedagents.JSONSchema{
+		Type: "object",
+		Properties: map[string]sortedagents.JSONSchema{
+			"url": {
+				Type:        "string",
+				Description: "The URL to scrape",
+			},
+		},
+		Required: []string{"url"},
+	}
+}
+
+type BrowserScrapeResult struct {
+	Success bool   `json:"success"`
+	Result  string `json:"result"`
+}
+
+func (t *BrowserScrapeTool) Execute(ctx context.Context, args map[string]any) (any, error) {
+	slog.Info("executing browser scrape tool")
+
+	urlStr, ok := args["url"].(string)
+	if !ok || urlStr == "" {
+		slog.Error("BrowserScrapeTool:Execute", "message", "url parameter is required")
+		return nil, fmt.Errorf("url parameter is required")
+	}
+
+	if t.apiURL == "" || t.apiKey == "" {
+		slog.Error("BrowserScrapeTool:Execute", "message", "cloudflare scrape api url and api key must be configured")
+		return nil, fmt.Errorf("cloudflare scrape api url and api key must be configured")
+	}
+
+	// Create JSON body
+	requestBody := map[string]string{"url": urlStr}
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		slog.Error("BrowserScrapeTool:Execute", "message", "failed to marshal request body", "error", err)
+		return nil, fmt.Errorf("failed to marshal request body: %v", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", t.apiURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		slog.Error("BrowserScrapeTool:Execute", "message", "failed to create request", "error", err)
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", t.apiKey))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := t.httpClient.Do(req)
+	if err != nil {
+		slog.Error("BrowserScrapeTool:Execute", "message", "scrape request failed", "error", err)
+		return nil, fmt.Errorf("scrape request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle rate limiting (429)
+	if resp.StatusCode == 429 {
+		retryAfter := resp.Header.Get("Retry-After")
+		if retryAfter != "" {
+			slog.Info("Rate limited. Waiting before retry", "retry_after_seconds", retryAfter)
+			// Parse retry-after as seconds
+			var waitSeconds int
+			fmt.Sscanf(retryAfter, "%d", &waitSeconds)
+			if waitSeconds > 0 && waitSeconds <= 60 { // Max 60 seconds wait
+				time.Sleep(time.Duration(waitSeconds) * time.Second)
+
+				// Retry the request
+				retryReq, err := http.NewRequestWithContext(ctx, "POST", t.apiURL, bytes.NewBuffer(jsonBody))
+				if err != nil {
+					return nil, fmt.Errorf("failed to create retry request: %v", err)
+				}
+				retryReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", t.apiKey))
+				retryReq.Header.Set("Content-Type", "application/json")
+
+				resp, err = t.httpClient.Do(retryReq)
+				if err != nil {
+					return nil, fmt.Errorf("retry request failed: %v", err)
+				}
+				defer resp.Body.Close()
+			}
+		}
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		slog.Error("BrowserScrapeTool:Execute", "message", "failed to read response body", "error", err)
+		return nil, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	slog.Debug("Cloudflare API response", "status", resp.StatusCode)
+
+	// Parse the response
+	var result BrowserScrapeResult
+	if err := json.Unmarshal(body, &result); err != nil {
+		slog.Error("BrowserScrapeTool:Execute", "message", "failed to parse response", "error", err, "response_body", string(body))
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+
+	slog.Info("Parsed result", "success", result.Success, "result_length", len(result.Result))
+
+	return map[string]interface{}{
+		"url":      urlStr,
+		"markdown": result.Result,
 	}, nil
 }

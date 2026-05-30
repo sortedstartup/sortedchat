@@ -15,8 +15,6 @@ import (
 	"sortedstartup/chatservice/sortedagents"
 )
 
-const MAX_TURNS = 4
-
 func extractTextOnlyChatMessage(msg dao.ChatMessageRow) (string, bool) {
 	slog.Debug("service:Chat", "message", "extracting text from chat message", "messageId", msg)
 	if msg.ContentImage != "" {
@@ -102,11 +100,33 @@ func (s *ChatService) runAgenticChat(
 		return fmt.Errorf("failed to load web search settings")
 	}
 
+	scrapeSettings, err := s.getCloudflareScrapeSettings()
+	if err != nil {
+		slog.Error("service:Chat", "message", "failed to load cloudflare scrape settings", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+		return fmt.Errorf("failed to load scrape settings")
+	}
+
+	maxTurns, err := s.getAgenticMaxTurns()
+	if err != nil {
+		slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+		return fmt.Errorf("failed to load agentic max turns setting")
+	}
+
+	tools := []sortedagents.Tool{
+		NewBraveSearchToolWithConfig(webSearchSettings.APIURL, webSearchSettings.APIKey),
+	}
+	if strings.TrimSpace(scrapeSettings.APIURL) != "" && strings.TrimSpace(scrapeSettings.APIKey) != "" {
+		slog.Info("Cloudflare scrape tool configured, adding to agent tools", "chatId", chatID, "userID", userID, "projectID", projectID)
+		tools = append(tools, NewBrowserScrapeToolWithConfig(scrapeSettings.APIURL, scrapeSettings.APIKey))
+	} else {
+		slog.Info("Cloudflare scrape tool not configured, skipping", "chatId", chatID, "userID", userID, "projectID", projectID)
+	}
+
 	agent := sortedagents.NewAgent(
 		"chat-agent",
 		agentPrompt,
 		model,
-		[]sortedagents.Tool{NewBraveSearchToolWithConfig(webSearchSettings.APIURL, webSearchSettings.APIKey)},
+		tools,
 	)
 	apiKey := providerSettings.ApiKey
 	apiURL := providerSettings.ApiUrl
@@ -124,7 +144,17 @@ func (s *ChatService) runAgenticChat(
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
-	events := runner.RunStream(ctx, agent, prompt, MAX_TURNS, session)
+	// maxTurnsValue, err := s.getSettingValue(AGENTIC_MAX_TURNS_KEY, defaultAgenticMaxTurns)
+	// if err != nil {
+	// 	slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+	// 	maxTurnsValue = defaultAgenticMaxTurns
+	// }
+	// maxTurns, err := strconv.Atoi(maxTurnsValue)
+	// if err != nil || maxTurns <= 0 {
+	// 	maxTurns, _ = strconv.Atoi(defaultAgenticMaxTurns)
+	// }
+
+	events := runner.RunStream(ctx, agent, prompt, maxTurns, session)
 
 	if err := stream(&pb.ChatResponse{
 		Response: &pb.ChatResponse_Progress{
@@ -212,19 +242,31 @@ func (s *ChatService) runAgenticChat(
 			}
 
 		case *sortedagents.ToolCallStartEvent:
-			if e.ToolName != "web_search" {
-				continue
-			}
-			if err := stream(&pb.ChatResponse{
-				Response: &pb.ChatResponse_Progress{
-					Progress: &pb.ChatProgress{
-						State:   pb.ChatProgress_REQUEST_SENT_TO_LLM,
-						Message: "Searching the web",
+			switch e.ToolName {
+			case "web_search":
+				if err := stream(&pb.ChatResponse{
+					Response: &pb.ChatResponse_Progress{
+						Progress: &pb.ChatProgress{
+							State:   pb.ChatProgress_REQUEST_SENT_TO_LLM,
+							Message: "Searching the web",
+						},
 					},
-				},
-			}); err != nil {
-				savePartialResponse()
-				return fmt.Errorf("error while processing request, please try again")
+				}); err != nil {
+					savePartialResponse()
+					return fmt.Errorf("error while processing request, please try again")
+				}
+			case "browser_scrape":
+				if err := stream(&pb.ChatResponse{
+					Response: &pb.ChatResponse_Progress{
+						Progress: &pb.ChatProgress{
+							State:   pb.ChatProgress_REQUEST_SENT_TO_LLM,
+							Message: "Scraping web page",
+						},
+					},
+				}); err != nil {
+					savePartialResponse()
+					return fmt.Errorf("error while processing request, please try again")
+				}
 			}
 
 		case *sortedagents.UsageEvent:

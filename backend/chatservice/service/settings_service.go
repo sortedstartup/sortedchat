@@ -96,6 +96,17 @@ func (s *SettingService) Init() {
 	} else {
 		s.ensureDefaultSetting(settings.WEBSEARCH_SETTINGS_KEY, string(webSearchDefaults))
 	}
+
+	scrapeDefaults, err := json.Marshal(CloudflareScrapeSettings{
+		APIURL: "",
+		APIKey: "",
+	})
+	if err != nil {
+		slog.Error("settings_service:Init", "step", "failed to marshal default scrape settings", "error", err)
+	} else {
+		s.ensureDefaultSetting(settings.CLOUDFLARE_SCRAPE_SETTINGS_KEY, string(scrapeDefaults))
+	}
+
 	defaultPromptStruct, err := structpb.NewStruct(map[string]interface{}{"value": settings.DEFAULT_CHAT_PROMPT})
 	if err != nil {
 		slog.Error("settings_service:Init", "step", "failed to create default chat prompt struct", "error", err)
@@ -105,6 +116,18 @@ func (s *SettingService) Init() {
 			slog.Error("settings_service:Init", "step", "failed to marshal default chat prompt", "error", marshalErr)
 		} else {
 			s.ensureDefaultSetting(settings.CHAT_DEFAULT_PROMPT_KEY, string(bytes))
+		}
+	}
+
+	defaultMaxTurnsStruct, err := structpb.NewStruct(map[string]interface{}{"value": settings.DEFAULT_AGENCIC_MAX_TURNS})
+	if err != nil {
+		slog.Error("settings_service:Init", "step", "failed to create default max turns struct", "error", err)
+	} else {
+		bytes, marshalErr := json.Marshal(defaultMaxTurnsStruct.AsMap())
+		if marshalErr != nil {
+			slog.Error("settings_service:Init", "step", "failed to marshal default max turns", "error", marshalErr)
+		} else {
+			s.ensureDefaultSetting(settings.DEFAULT_AGENCIC_MAX_TURNS_KEY, string(bytes))
 		}
 	}
 
@@ -147,6 +170,16 @@ func (s *SettingService) GetSetting(ctx context.Context, name string) (*structpb
 	case settings.CHAT_DEFAULT_PROMPT_KEY:
 		return structpb.NewStruct(map[string]interface{}{
 			"value": s.settingsManager.GetChatDefaultPrompt(),
+		})
+	case settings.DEFAULT_AGENCIC_MAX_TURNS_KEY:
+		return structpb.NewStruct(map[string]interface{}{
+			"value": s.settingsManager.GetAgenticMaxTurns(),
+		})
+	case settings.CLOUDFLARE_SCRAPE_SETTINGS_KEY:
+		scrapeSettings := s.settingsManager.GetCloudflareScrapeSettings()
+		return structpb.NewStruct(map[string]interface{}{
+			"apiUrl": scrapeSettings.APIURL,
+			"apiKey": scrapeSettings.APIKey,
 		})
 	}
 
@@ -229,6 +262,14 @@ func (s *SettingService) saveSettings(name string, settingsStruct *structpb.Stru
 		}
 	case settings.CHAT_DEFAULT_PROMPT_KEY:
 		if err := s.settingsManager.LoadChatDefaultPromptFromDB(); err != nil {
+			return err
+		}
+	case settings.CLOUDFLARE_SCRAPE_SETTINGS_KEY:
+		if err := s.settingsManager.LoadScrapeSettingsFromDB(); err != nil {
+			return err
+		}
+	case settings.DEFAULT_AGENCIC_MAX_TURNS_KEY:
+		if err := s.settingsManager.LoadAgenticMaxTurnsFromDB(); err != nil {
 			return err
 		}
 	}
@@ -459,3 +500,34 @@ func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
 func (s *ChatService) getChatDefaultPrompt() (string, error) {
 	return s.settingsManager.GetChatDefaultPrompt(), nil
 }
+
+type CloudflareScrapeSettings struct {
+	APIURL string `json:"apiUrl"`
+	APIKey string `json:"apiKey"`
+}
+
+func (s *ChatService) getCloudflareScrapeSettings() (*CloudflareScrapeSettings, error) {
+	settings := s.settingsManager.GetCloudflareScrapeSettings()
+	return &CloudflareScrapeSettings{
+		APIURL: settings.APIURL,
+		APIKey: settings.APIKey,
+	}, nil
+}
+
+func (s *ChatService) getAgenticMaxTurns() (int, error) {
+	settings := s.settingsManager.GetAgenticMaxTurns()
+	return settings, nil
+}
+
+// func (s *ChatService) getJSONSetting(name string, out any) error {
+// 	value, err := s.getSettingValue(name, "")
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	if value == "" {
+// 		return nil
+// 	}
+
+// 	return json.Unmarshal([]byte(value), out)
+// }

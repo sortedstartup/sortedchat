@@ -458,8 +458,8 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 	// We are not allowing images in agentic chat for now because sortedagents does
 	// not support multi-modal input yet.
 	if !hasImages && capabilities.GetSupportToolCalling() && providerSettings != nil && strings.TrimSpace(providerSettings.ApiUrl) != "" {
-		webSearchSettings := webSearchSettings{APIURL: defaultBraveSearchAPIURL, Cost: defaultBraveSearchCost}
-		if err := s.getJSONSetting(WEBSEARCH_SETTINGS_KEY, &webSearchSettings); err != nil {
+		webSearchSettings, err := s.getWebSearchSettings()
+		if err != nil {
 			slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err)
 		} else if strings.TrimSpace(webSearchSettings.APIKey) != "" {
 			err := s.runAgenticChat(

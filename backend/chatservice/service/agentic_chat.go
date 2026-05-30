@@ -82,7 +82,7 @@ func (s *ChatService) runAgenticChat(
 	stream func(*pb.ChatResponse) error,
 ) error {
 	slog.Debug("service:Chat", "message", "running agentic chat", "chatId", chatID, "userID", userID, "projectID", projectID)
-	agentPrompt, err := s.getSettingValue(CHAT_DEFAULT_PROMPT_KEY, defaultChatPrompt)
+	agentPrompt, err := s.getChatDefaultPrompt()
 	if err != nil {
 		slog.Error("service:Chat", "message", "failed to load chat default prompt", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to load chat prompt")
@@ -94,25 +94,22 @@ func (s *ChatService) runAgenticChat(
 		return fmt.Errorf("failed to prepare chat context")
 	}
 
-	webSearchSettings := webSearchSettings{
-		APIURL: defaultBraveSearchAPIURL,
-		Cost:   defaultBraveSearchCost,
-	}
-	if err := s.getJSONSetting(WEBSEARCH_SETTINGS_KEY, &webSearchSettings); err != nil {
+	webSearchSettings, err := s.getWebSearchSettings()
+	if err != nil {
 		slog.Error("service:Chat", "message", "failed to load websearch settings", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to load web search settings")
 	}
-	if strings.TrimSpace(webSearchSettings.APIURL) == "" {
-		webSearchSettings.APIURL = defaultBraveSearchAPIURL
-	}
-	if strings.TrimSpace(webSearchSettings.Cost) == "" {
-		webSearchSettings.Cost = defaultBraveSearchCost
-	}
 
-	scrapeSettings := cloudflareScrapeSettings{}
-	if err := s.getJSONSetting(SCRAPE_CLOUDFLARE_SETTINGS_KEY, &scrapeSettings); err != nil {
+	scrapeSettings, err := s.getCloudflareScrapeSettings()
+	if err != nil {
 		slog.Error("service:Chat", "message", "failed to load cloudflare scrape settings", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
 		return fmt.Errorf("failed to load scrape settings")
+	}
+
+	maxTurns, err := s.getAgenticMaxTurns()
+	if err != nil {
+		slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+		return fmt.Errorf("failed to load agentic max turns setting")
 	}
 
 	tools := []sortedagents.Tool{
@@ -147,15 +144,15 @@ func (s *ChatService) runAgenticChat(
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
-	maxTurnsValue, err := s.getSettingValue(AGENTIC_MAX_TURNS_KEY, defaultAgenticMaxTurns)
-	if err != nil {
-		slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
-		maxTurnsValue = defaultAgenticMaxTurns
-	}
-	maxTurns, err := strconv.Atoi(maxTurnsValue)
-	if err != nil || maxTurns <= 0 {
-		maxTurns, _ = strconv.Atoi(defaultAgenticMaxTurns)
-	}
+	// maxTurnsValue, err := s.getSettingValue(AGENTIC_MAX_TURNS_KEY, defaultAgenticMaxTurns)
+	// if err != nil {
+	// 	slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
+	// 	maxTurnsValue = defaultAgenticMaxTurns
+	// }
+	// maxTurns, err := strconv.Atoi(maxTurnsValue)
+	// if err != nil || maxTurns <= 0 {
+	// 	maxTurns, _ = strconv.Atoi(defaultAgenticMaxTurns)
+	// }
 
 	events := runner.RunStream(ctx, agent, prompt, maxTurns, session)
 

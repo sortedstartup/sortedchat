@@ -169,7 +169,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req *pb.ChatReque
 
 	provider := req.GetProvider()
 	providerSettings, err := s.settingsManager.GetProviderSetting(provider)
-	if err != nil {
+	if err != nil && provider != LOCAL_PROVIDER {
 		slog.Error("service:Chat", "error", "failed to get provider settings", "error", err, "provider", provider)
 		return fmt.Errorf("failed to get provider settings")
 	}

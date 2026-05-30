@@ -58,12 +58,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type {
+  ChatMessageMetadata,
   ChatMessage,
   RAGDocumentReference,
   RAGDocumentReferenceChunk,
   ResponseSummary,
   ChatProgress,
 } from "proto/chatservice";
+
+type ChatMessageWithUI = ChatMessage & {
+  isProgress?: boolean;
+  metadata?: ChatMessageMetadata;
+};
+
 
 function getProgressText(state: number): string {
   switch (state) {
@@ -149,7 +156,7 @@ function ChunksDisplay({ chunks }: { chunks: RAGDocumentReferenceChunk[] | undef
 }
 
 interface MessageProps {
-  message: ChatMessage & { isProgress?: boolean };
+  message: ChatMessageWithUI;
   onCopyMessage: (content: string, messageId: string) => void;
   onViewRAGDetails: (messageId: string, docId: string, fileName: string) => void;
   onBranchChat: (messageId: string) => void;
@@ -189,9 +196,15 @@ const Message = React.memo(function Message({
   chatProgress,
 }: MessageProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [showMetadataDialog, setShowMetadataDialog] = useState(false);
 
   const isUser = message.role === "user";
   const isProgress = message.isProgress;
+  const parsedMetadata = messageSummary?.metadata ?? message.metadata;
+  const hasMetadata = Boolean(
+    (parsedMetadata?.websearches && parsedMetadata.websearches.length > 0) ||
+      (parsedMetadata?.sources && parsedMetadata.sources.length > 0)
+  );
 
   const { costDisplay, cachedTokensDisplay } = useMemo(
     () => formatCostAndTokens(
@@ -203,174 +216,230 @@ const Message = React.memo(function Message({
   );
 
   return (
-    <div
-      className={`w-full ${isUser
-        ? "bg-muted border-b border-border"
-        : "bg-card border-b border-border"
-        } py-6 px-4`}
-    >
+    <>
       <div
-        className={`w-full max-w-none px-4 flex items-start space-x-4 ${isUser ? "justify-end" : "justify-start"}`}
+        className={`w-full ${isUser
+          ? "bg-muted border-b border-border"
+          : "bg-card border-b border-border"
+          } py-6 px-4`}
       >
-        {!isUser && (
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium">
-            AI
-          </div>
-        )}
-
-        <div className={`flex-1 min-w-0 text-left`}>
-          {isProgress ? (
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>{chatProgress?.message || getProgressText(chatProgress?.state || 0)}</span>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Render multi-modal content if available */}
-              {message.contents && message.contents.length > 0 ? (
-                message.contents.map((content, idx) => {
-                  if (content.type === "text" && content.text) {
-                    return <EnhancedMarkdown key={idx}>{content.text}</EnhancedMarkdown>;
-                  } else if (content.type === "image_url" && content.image_url) {
-                    return (
-                      <div key={idx} className="my-2">
-                        <img
-                          src={content.image_url.url}
-                          alt="Message image"
-                          className="max-w-md rounded-lg shadow-md border border-border"
-                          loading="lazy"
-                          style={{ maxHeight: '400px', objectFit: 'contain' }}
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })
-              ) : (
-                /* Fallback to old text-only format */
-                <>
-                  <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
-                </>
-              )}
+        <div
+          className={`w-full max-w-none px-4 flex items-start space-x-4 ${isUser ? "justify-end" : "justify-start"}`}
+        >
+          {!isUser && (
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium">
+              AI
             </div>
           )}
 
-          {!isUser && !isProgress && projectId && message.rag_enabled == false && (
-            <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-destructive/10 text-destructive">
-              <FileX className="h-3 w-3 mr-1" />
-              RAG not enabled
-            </div>
-          )}
-
-          {!isUser && !isProgress && message.references && message?.references.length > 0 && (
-            <div className="mt-3">
-              <div className="text-xs text-muted-foreground mb-2">Sources:</div>
-              <div className="flex flex-wrap gap-2">
-                {message.references.map((docRef: RAGDocumentReference, idx: number) => (
-                  <Button
-                    key={`${docRef.doc_id}-${idx}`}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-6 px-2 bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
-                    onClick={() =>
-                      onViewRAGDetails(message.message_id, docRef.doc_id, docRef.file_name)
+          <div className={`flex-1 min-w-0 text-left`}>
+            {isProgress ? (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{chatProgress?.message || getProgressText(chatProgress?.state || 0)}</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {/* Render multi-modal content if available */}
+                {message.contents && message.contents.length > 0 ? (
+                  message.contents.map((content, idx) => {
+                    if (content.type === "text" && content.text) {
+                      return <EnhancedMarkdown key={idx}>{content.text}</EnhancedMarkdown>;
+                    } else if (content.type === "image_url" && content.image_url) {
+                      return (
+                        <div key={idx} className="my-2">
+                          <img
+                            src={content.image_url.url}
+                            alt="Message image"
+                            className="max-w-md rounded-lg shadow-md border border-border"
+                            loading="lazy"
+                            style={{ maxHeight: '400px', objectFit: 'contain' }}
+                          />
+                        </div>
+                      );
                     }
-                  >
-                    <FileText className="h-3 w-3 mr-1" />
-                    {docRef.file_name}
-                    {docRef.Chunks?.length > 0 && (
-                      <span className="ml-1 bg-primary/20 text-primary px-1 rounded text-xs">
-                        {docRef.Chunks.length}
-                      </span>
-                    )}
-                    <Eye className="h-3 w-3 ml-1" />
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!isUser && !isProgress && (
-            <div className="flex justify-between mt-3">
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onCopyMessage(message.content, message.message_id)}
-                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {isCopied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onToggleExpand}
-                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {isExpanded ? (
-                    <Minimize2 className="h-4 w-4" />
-                  ) : (
-                    <Maximize2 className="h-4 w-4" />
-                  )}
-                </Button>
-
-                {/* Temporarily hiding it for this release only */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onBranchChat(message.message_id)}
-                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Branch Chat
-                </Button>
-              </div>
-
-              <div
-                className="flex items-center space-x-2 text-xs text-muted-foreground"
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-              >
-                {isHovered ? (
-                  <>
-                    <div className="flex items-center space-x-1">
-                      <ArrowUp className="size-3" />
-                      <span>
-                        {messageSummary?.input_tokens ?? message.input_tokens}
-                        {cachedTokensDisplay ? `/${cachedTokensDisplay}` : ""}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <ArrowDown className="size-3" />
-                      <span>{messageSummary?.output_tokens ?? message.output_tokens}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <DollarSign className="size-3" />
-                      <span>{costDisplay}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <span>{messageSummary?.model ?? message.model}</span>
-                    </div>
-                  </>
+                    return null;
+                  })
                 ) : (
-                  <Info className="h-4 w-4 hover:text-foreground" />
+                  /* Fallback to old text-only format */
+                  <>
+                    <EnhancedMarkdown>{message.content}</EnhancedMarkdown>
+                  </>
                 )}
               </div>
+            )}
+
+            {!isUser && !isProgress && projectId && message.rag_enabled == false && (
+              <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-destructive/10 text-destructive">
+                <FileX className="h-3 w-3 mr-1" />
+                RAG not enabled
+              </div>
+            )}
+
+            {!isUser && !isProgress && message.references && message?.references.length > 0 && (
+              <div className="mt-3">
+                <div className="text-xs text-muted-foreground mb-2">Sources:</div>
+                <div className="flex flex-wrap gap-2">
+                  {message.references.map((docRef: RAGDocumentReference, idx: number) => (
+                    <Button
+                      key={`${docRef.doc_id}-${idx}`}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-6 px-2 bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+                      onClick={() =>
+                        onViewRAGDetails(message.message_id, docRef.doc_id, docRef.file_name)
+                      }
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      {docRef.file_name}
+                      {docRef.Chunks?.length > 0 && (
+                        <span className="ml-1 bg-primary/20 text-primary px-1 rounded text-xs">
+                          {docRef.Chunks.length}
+                        </span>
+                      )}
+                      <Eye className="h-3 w-3 ml-1" />
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!isUser && !isProgress && (
+              <div className="flex justify-between mt-3">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onCopyMessage(message.content, message.message_id)}
+                    className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {isCopied ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onToggleExpand}
+                    className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {isExpanded ? (
+                      <Minimize2 className="h-4 w-4" />
+                    ) : (
+                      <Maximize2 className="h-4 w-4" />
+                    )}
+                  </Button>
+
+                  {hasMetadata && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowMetadataDialog(true)}
+                      className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Sources
+                    </Button>
+                  )}
+
+                  {/* Temporarily hiding it for this release only */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onBranchChat(message.message_id)}
+                    className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Branch Chat
+                  </Button>
+                </div>
+
+                <div
+                  className="flex items-center space-x-2 text-xs text-muted-foreground"
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  {isHovered ? (
+                    <>
+                      <div className="flex items-center space-x-1">
+                        <ArrowUp className="size-3" />
+                        <span>
+                          {messageSummary?.input_tokens ?? message.input_tokens}
+                          {cachedTokensDisplay ? `/${cachedTokensDisplay}` : ""}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <ArrowDown className="size-3" />
+                        <span>{messageSummary?.output_tokens ?? message.output_tokens}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <DollarSign className="size-3" />
+                        <span>{costDisplay}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span>{messageSummary?.model ?? message.model}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <Info className="h-4 w-4 hover:text-foreground" />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {isUser && (
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+              U
             </div>
           )}
         </div>
-
-        {isUser && (
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-            U
-          </div>
-        )}
       </div>
-    </div>
+
+      <Dialog open={showMetadataDialog} onOpenChange={setShowMetadataDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Sources</DialogTitle>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto space-y-6">
+            {parsedMetadata?.websearches && parsedMetadata.websearches.length > 0 && (
+              <div className="space-y-3">
+                <div className="text-sm font-medium">Web searches</div>
+                <div className="space-y-2">
+                  {parsedMetadata.websearches.map((search, index) => (
+                    <div key={`${search.query || "query"}-${index}`} className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+                      {search.query || "Unknown query"}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {parsedMetadata?.sources && parsedMetadata.sources.length > 0 && (
+              <div className="space-y-3">
+                <div className="text-sm font-medium">Sources</div>
+                <div className="space-y-2">
+                  {parsedMetadata.sources.map((source, index) => (
+                    <a
+                      key={`${source.url || "source"}-${index}`}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-primary hover:underline break-all"
+                    >
+                      {source.url || "Unknown source"}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 });
 

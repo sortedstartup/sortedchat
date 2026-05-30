@@ -93,7 +93,7 @@ func (s *SQLiteDAO) SaveChatName(userID string, chatId string, name string) erro
 }
 
 // AddChatMessage adds a message to a chat
-func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, contentImage string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
+func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, content string, contentImage string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, metadata string, ragEnabled bool) (string, error) {
 
 	// Handle contentImage - use NULL if empty
 	var contentImageValue interface{}
@@ -103,7 +103,7 @@ func (s *SQLiteDAO) AddChatMessage(userID string, chatId string, role string, co
 		contentImageValue = contentImage
 	}
 
-	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, content_image, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", chatId, role, content, contentImageValue, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references)
+	result, err := s.db.Exec("INSERT INTO chat_messages (chat_id, role, content, content_image, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", chatId, role, content, contentImageValue, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, references, metadata)
 	if err != nil {
 		slog.Error("dao_sqlite:AddChatMessage", "message", "failed to add chat message", "error", err, "chatId", chatId, "userID", userID)
 		return "", err
@@ -131,7 +131,7 @@ func (s *SQLiteDAO) GetModelByID(modelID string) (*Models, error) {
 
 func (s *SQLiteDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	var messages []ChatMessageRow
-	err := s.db.Select(&messages, "SELECT role, content, COALESCE(content_image, '') as content_image, id, COALESCE(document_references, '') as document_references, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
+	err := s.db.Select(&messages, "SELECT role, content, COALESCE(content_image, '') as content_image, id, COALESCE(document_references, '') as document_references, COALESCE(metadata, '') as metadata, (rag_enabled = 1) as rag_enabled,COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cached_token_count, 0) as cached_token_count, COALESCE(cost, 0) as cost FROM chat_messages WHERE chat_id = ? AND user_id = ? ORDER BY id", chatId, userID)
 	if err != nil {
 		slog.Error("dao_sqlite:GetChatMessages", "message", "failed to get chat messages", "error", err, "chatId", chatId, "userID", userID)
 		return nil, fmt.Errorf("failed to get chat messages")
@@ -184,6 +184,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokenCount(
 	cachedTokens int,
 	searchCost float64,
 	references string,
+	metadata string,
 	ragEnabled bool,
 ) (MessageSummary, error) {
 	// Handle contentImage - use NULL if empty
@@ -199,11 +200,11 @@ func (s *SQLiteDAO) AddChatMessageWithTokenCount(
         INSERT INTO chat_messages (
             chat_id, role, content, content_image, model,
             input_token_count, output_token_count, cached_token_count,
-            user_id, document_references, rag_enabled
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            user_id, document_references, metadata, rag_enabled
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		chatId, role, content, contentImageValue, model,
 		inputTokens, outputTokens, cachedTokens,
-		userID, references, ragEnabled)
+		userID, references, metadata, ragEnabled)
 	if err != nil {
 		slog.Error("dao_sqlite:AddChatMessageWithTokenCount", "message", "failed to add chat message with tokens", "error", err, "chatId", chatId, "userID", userID)
 		return MessageSummary{}, fmt.Errorf("failed to add chat message with tokens")
@@ -263,6 +264,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokenCount(
 		OutputTokenCount: outputTokens,
 		CachedTokenCount: cachedTokens,
 		Cost:             cost,
+		Metadata:         metadata,
 	}
 
 	return summary, nil
@@ -487,8 +489,8 @@ func (s *SQLiteDAO) BranchChat(userID string, source_chat_id string, parent_mess
 	}
 
 	//copy messages up to branch point
-	_, err = s.db.Exec(`INSERT INTO chat_messages (chat_id, role, content, model, error, input_token_count, output_token_count, created_at, user_id)
-						SELECT ?, role, content, model, error, input_token_count, output_token_count, created_at, ?
+	_, err = s.db.Exec(`INSERT INTO chat_messages (chat_id, role, content, model, error, input_token_count, output_token_count, created_at, user_id, metadata)
+						SELECT ?, role, content, model, error, input_token_count, output_token_count, created_at, ?, metadata
 						FROM chat_messages 
 						WHERE chat_id = ? AND id <= ? AND user_id = ?
 						ORDER BY id;`, new_chat_id, userID, source_chat_id, parent_message_id, userID)
@@ -868,7 +870,7 @@ func (s *SQLiteSettingsDAO) GetSettingsByPrefix(prefix string) (map[string]strin
 func (s *SQLiteDAO) GetChatMessageByID(userID string, messageID string) (*ChatMessageRow, error) {
 	var message ChatMessageRow
 	err := s.db.Get(&message, `
-		SELECT role, content, id, COALESCE(document_references, '') as document_references 
+		SELECT role, content, id, COALESCE(document_references, '') as document_references, COALESCE(metadata, '') as metadata
 		FROM chat_messages 
 		WHERE id = ? AND user_id = ?`, messageID, userID)
 	if err != nil {

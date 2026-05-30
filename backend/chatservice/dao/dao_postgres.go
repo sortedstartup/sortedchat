@@ -106,7 +106,7 @@ func (p *PostgresDAO) SaveChatName(userID string, chatId string, name string) er
 }
 
 // AddChatMessage adds a message to a chat
-func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, contentImage string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, ragEnabled bool) (string, error) {
+func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, content string, contentImage string, model string, inputTokens int, outputTokens int, cachedTokens int, references string, metadata string, ragEnabled bool) (string, error) {
 	slog.Info("dao_postgres:AddChatMessage", "userID", userID, "chatId", chatId, "role", role, "model", model)
 	var messageId string
 
@@ -133,10 +133,10 @@ func (p *PostgresDAO) AddChatMessage(userID string, chatId string, role string, 
 
 	err := p.db.Get(&messageId,
 		`INSERT INTO chat_messages
-        (chat_id, role, content, content_image, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+        (chat_id, role, content, content_image, user_id, rag_enabled, model, input_token_count, output_token_count, cached_token_count, document_references, metadata)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12)
         RETURNING id`,
-		chatId, role, content, contentImageValue, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, trimmedRef)
+		chatId, role, content, contentImageValue, userID, ragEnabled, model, inputTokens, outputTokens, cachedTokens, trimmedRef, metadata)
 	if err != nil {
 		slog.Error("dao_postgres:AddChatMessage", "message", "failed to add chat message", "error", err, "userID", userID, "chatId", chatId, "role", role, "model", model)
 		return "", fmt.Errorf("failed to add chat message")
@@ -161,7 +161,7 @@ func (p *PostgresDAO) GetModelByID(modelID string) (*Models, error) {
 func (p *PostgresDAO) GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error) {
 	slog.Info("dao_postgres:GetChatMessages", "userID", userID, "chatId", chatId)
 	var messages []ChatMessageRow
-	err := p.db.Select(&messages, "SELECT role, content, COALESCE(content_image, '') as content_image, id, COALESCE(document_references::text, '') as document_references, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cost, 0) as cost, COALESCE(cached_token_count, 0) as cached_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
+	err := p.db.Select(&messages, "SELECT role, content, COALESCE(content_image, '') as content_image, id, COALESCE(document_references::text, '') as document_references, COALESCE(metadata, '') as metadata, rag_enabled, COALESCE(model, '') as model, COALESCE(input_token_count, 0) as input_token_count, COALESCE(output_token_count, 0) as output_token_count, COALESCE(cost, 0) as cost, COALESCE(cached_token_count, 0) as cached_token_count FROM chat_messages WHERE chat_id = $1 AND user_id = $2 ORDER BY id", chatId, userID)
 	if err != nil {
 		slog.Error("dao_postgres:GetChatMessages", "message", "failed to get chat messages", "error", err, "userID", userID, "chatId", chatId)
 		return nil, fmt.Errorf("failed to get chat messages")
@@ -216,6 +216,7 @@ func (p *PostgresDAO) AddChatMessageWithTokenCount(
 	cachedTokens int,
 	searchCost float64,
 	references string,
+	metadata string,
 	ragEnabled bool,
 ) (MessageSummary, error) {
 	slog.Info("dao_postgres:AddChatMessageWithTokenCount", "userID", userID, "chatId", chatId, "role", role, "model", model)
@@ -242,9 +243,9 @@ func (p *PostgresDAO) AddChatMessageWithTokenCount(
 			INSERT INTO chat_messages (
 				chat_id, role, content, content_image, model,
 				input_token_count, output_token_count, cached_token_count,
-				user_id, document_references, rag_enabled
+				user_id, document_references, metadata, rag_enabled
 			)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
 			RETURNING id
 		),
 		prices AS (
@@ -254,7 +255,7 @@ func (p *PostgresDAO) AddChatMessageWithTokenCount(
 		calc AS (
 			SELECT (p.input_token_cost * $6
 				+ p.output_token_cost * $7
-				+ p.cached_token_cost * $8) / 1000000.0 + $12 AS cost
+				+ p.cached_token_cost * $8) / 1000000.0 + $13 AS cost
 			FROM prices p
 		),
 		upd_msg AS (
@@ -279,7 +280,7 @@ func (p *PostgresDAO) AddChatMessageWithTokenCount(
 	err := p.db.QueryRow(sqlQuery,
 		chatId, role, content, contentImageValue, model,
 		inputTokens, outputTokens, cachedTokens,
-		userID, referencesValue, ragEnabled, searchCost,
+		userID, referencesValue, metadata, ragEnabled, searchCost,
 	).Scan(&messageId, &cost)
 
 	if err != nil {
@@ -298,6 +299,7 @@ func (p *PostgresDAO) AddChatMessageWithTokenCount(
 		OutputTokenCount: outputTokens,
 		CachedTokenCount: cachedTokens,
 		Cost:             cost,
+		Metadata:         metadata,
 	}, nil
 }
 
@@ -600,8 +602,8 @@ func (p *PostgresDAO) BranchChat(userID string, source_chat_id string, parent_me
 	}
 
 	// Copy messages up to branch point
-	_, err = tx.Exec(`INSERT INTO chat_messages (chat_id, role, content, model, error, input_token_count, output_token_count, created_at, user_id)
-					  SELECT $1, role, content, model, error, input_token_count, output_token_count, created_at, $2
+	_, err = tx.Exec(`INSERT INTO chat_messages (chat_id, role, content, model, error, input_token_count, output_token_count, created_at, user_id, metadata)
+					  SELECT $1, role, content, model, error, input_token_count, output_token_count, created_at, $2, metadata
 					  FROM chat_messages 
 					  WHERE chat_id = $3 AND id <= $4 AND user_id = $5
 					  ORDER BY id`, new_chat_id, userID, source_chat_id, parent_message_id, userID)
@@ -1068,7 +1070,7 @@ func (p *PostgresDAO) GetChatMessageByID(userID string, messageID string) (*Chat
 	slog.Info("dao_postgres:GetChatMessageByID", "userID", userID, "messageID", messageID)
 	var message ChatMessageRow
 	err := p.db.Get(&message, `
-		SELECT role, content, id, COALESCE(document_references::text, '') as document_references 
+		SELECT role, content, id, COALESCE(document_references::text, '') as document_references, COALESCE(metadata, '') as metadata
 		FROM chat_messages 
 		WHERE id = $1 AND user_id = $2`, messageID, userID)
 	if err != nil {

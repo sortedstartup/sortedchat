@@ -13,6 +13,7 @@ type ChatMessageRow struct {
 	ContentImage       string  `db:"content_image" json:"content_image"`
 	Id                 string  `db:"id" json:"id"`
 	DocumentReferences string  `db:"document_references" json:"document_references"`
+	Metadata           string  `db:"metadata" json:"metadata"`
 	RagEnabled         bool    `db:"rag_enabled" json:"rag_enabled"`
 	Model              string  `db:"model" json:"model"`
 	InputTokenCount    int     `db:"input_token_count" json:"input_token_count"`
@@ -28,6 +29,7 @@ type MessageSummary struct {
 	OutputTokenCount int     `db:"output_token_count" json:"output_token_count"`
 	CachedTokenCount int     `db:"cached_token_count" json:"cached_token_count"`
 	Cost             float64 `db:"cost" json:"cost"`
+	Metadata         string  `db:"metadata" json:"metadata"`
 }
 
 type ProjectRow struct {

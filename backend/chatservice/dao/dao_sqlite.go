@@ -182,6 +182,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokenCount(
 	inputTokens int,
 	outputTokens int,
 	cachedTokens int,
+	searchCost float64,
 	references string,
 	ragEnabled bool,
 ) (MessageSummary, error) {
@@ -227,6 +228,7 @@ func (s *SQLiteDAO) AddChatMessageWithTokenCount(
 
 	// Calculate the cost
 	cost := (float64(inputTokens)*inputCost + float64(outputTokens)*outputCost + float64(cachedTokens)*cachedCost) / 1000000.0
+	cost += searchCost
 
 	// Update the message with the calculated cost
 	_, err = s.db.Exec(`

@@ -66,7 +66,7 @@ func (t *BraveSearchTool) Parameters() *sortedagents.JSONSchema {
 }
 
 func (t *BraveSearchTool) Execute(ctx context.Context, args map[string]any) (any, error) {
-	slog.Info("BraveSearchTool:Execute", "message", "executing brave search tool", "args", args)
+	slog.Info("BraveSearchTool:Execute", "message", "executing brave search tool")
 	if strings.TrimSpace(t.apiKey) == "" {
 		slog.Error("BraveSearchTool:Execute", "message", "brave search api key is not configured")
 		return nil, fmt.Errorf("brave search api key is not configured")
@@ -79,7 +79,17 @@ func (t *BraveSearchTool) Execute(ctx context.Context, args map[string]any) (any
 		return nil, fmt.Errorf("query parameter is required")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, t.apiURL+"?q="+url.QueryEscape(query), nil)
+	searchURL, err := url.Parse(t.apiURL)
+	if err != nil {
+		slog.Error("BraveSearchTool:Execute", "message", "failed to parse brave search api url", "error", err, "apiURL", t.apiURL)
+		return nil, fmt.Errorf("failed to parse brave search api url: %w", err)
+	}
+
+	queryValues := searchURL.Query()
+	queryValues.Set("q", query)
+	searchURL.RawQuery = queryValues.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL.String(), nil)
 	if err != nil {
 		slog.Error("BraveSearchTool:Execute", "message", "failed to create brave search request", "error", err)
 		return nil, fmt.Errorf("failed to create brave search request: %w", err)

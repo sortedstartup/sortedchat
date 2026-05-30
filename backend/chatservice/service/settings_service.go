@@ -89,6 +89,7 @@ func (s *SettingService) Init() {
 	webSearchDefaults, err := json.Marshal(webSearchSettings{
 		APIURL: settings.DEFAULT_BRAVE_SEARCH_API_URL,
 		APIKey: "",
+		Cost:   settings.DEFAULT_BRAVE_SEARCH_COST,
 	})
 	if err != nil {
 		slog.Error("settings_service:Init", "step", "failed to marshal default web search settings", "error", err)
@@ -141,6 +142,7 @@ func (s *SettingService) GetSetting(ctx context.Context, name string) (*structpb
 		return structpb.NewStruct(map[string]interface{}{
 			"apiUrl": webSearchSettings.APIURL,
 			"apiKey": webSearchSettings.APIKey,
+			"cost":   webSearchSettings.Cost,
 		})
 	case settings.CHAT_DEFAULT_PROMPT_KEY:
 		return structpb.NewStruct(map[string]interface{}{
@@ -442,6 +444,7 @@ func (s *SettingService) TestConnection(ctx context.Context, req *pb.TestConnect
 type webSearchSettings struct {
 	APIURL string `json:"apiUrl"`
 	APIKey string `json:"apiKey"`
+	Cost   string `json:"cost"`
 }
 
 func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
@@ -449,6 +452,7 @@ func (s *ChatService) getWebSearchSettings() (*webSearchSettings, error) {
 	return &webSearchSettings{
 		APIURL: settings.APIURL,
 		APIKey: settings.APIKey,
+		Cost:   settings.Cost,
 	}, nil
 }
 

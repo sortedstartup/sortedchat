@@ -136,20 +136,24 @@ func normalizeInputMessage(input Message) Message {
 	return msg
 }
 
-func contentToText(content MessageContent) string {
+// TODO: to be reviewed again if we really need it
+func contentToFlatString(content MessageContent) string {
 	switch value := content.(type) {
 	case nil:
 		return ""
 	case TextContent:
 		return string(value)
 	case ContentParts:
-		return contentPartsToText(value)
+		return contentPartsToFlatString(value)
 	default:
 		return ""
 	}
 }
 
-func contentPartsToText(content []ContentPart) string {
+// contentPartsToFlatString reduces multipart content to the plain-text response
+// used by runner return values and completion events, so non-text parts such as
+// images are intentionally ignored here.
+func contentPartsToFlatString(content []ContentPart) string {
 	var builder strings.Builder
 	for _, part := range content {
 		if part.Type != "text" || part.Text == "" {
@@ -255,7 +259,7 @@ func (r *BasicRunner) Run(ctx context.Context, agent Agent, input Message, maxTu
 
 		// If no tool calls, we're done
 		if len(assistantMessage.ToolCalls) == 0 {
-			return contentToText(assistantMessage.Content), nil
+			return contentToFlatString(assistantMessage.Content), nil
 		}
 
 		// Log what the LLM wants to execute
@@ -492,7 +496,7 @@ func (r *BasicRunner) RunStream(ctx context.Context, agent Agent, input Message,
 
 			// If no tool calls, we're done
 			if len(assistantMessage.ToolCalls) == 0 {
-				eventChan <- &CompleteEvent{FinalMessage: contentToText(assistantMessage.Content)}
+				eventChan <- &CompleteEvent{FinalMessage: contentToFlatString(assistantMessage.Content)}
 				return
 			}
 

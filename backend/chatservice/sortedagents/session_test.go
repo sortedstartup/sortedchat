@@ -36,8 +36,8 @@ func TestSessionAddMessage(t *testing.T) {
 	if len(messages) != 1 {
 		t.Errorf("Expected 1 message in GetMessages(), got %d", len(messages))
 	}
-	if contentToText(messages[0].Content) != "Hello" {
-		t.Errorf("Expected message content 'Hello', got '%s'", contentToText(messages[0].Content))
+	if contentToFlatString(messages[0].Content) != "Hello" {
+		t.Errorf("Expected message content 'Hello', got '%s'", contentToFlatString(messages[0].Content))
 	}
 }
 

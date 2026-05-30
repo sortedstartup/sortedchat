@@ -134,7 +134,10 @@ func buildSortedAgentsMessage(role string, content any) sortedagents.Message {
 func (s *ChatService) buildAgenticSession(chatID string, prompt string, history []dao.ChatMessageRow) (sortedagents.Session, error) {
 	slog.Debug("service:Chat", "message", "building agentic session from chat history", "chatId", chatID)
 	messages := []sortedagents.Message{
-		buildSortedAgentsMessage("system", prompt),
+		{
+			Role:    "system",
+			Content: sortedagents.TextContent(prompt),
+		},
 	}
 
 	for _, msg := range history {
@@ -144,9 +147,13 @@ func (s *ChatService) buildAgenticSession(chatID string, prompt string, history 
 		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
 			var textContents []*pb.MessageContent
 			if err := json.Unmarshal([]byte(msg.Content), &textContents); err != nil {
-				return nil, fmt.Errorf("failed to parse text content: %w", err)
+				contents = append(contents, &pb.MessageContent{
+					Type: "text",
+					Text: msg.Content,
+				})
+			} else {
+				contents = append(contents, textContents...)
 			}
-			contents = append(contents, textContents...)
 		} else if msg.Content != "" {
 			contents = append(contents, &pb.MessageContent{
 				Type: "text",

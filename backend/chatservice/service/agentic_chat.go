@@ -16,6 +16,9 @@ import (
 	"sortedstartup/chatservice/types"
 )
 
+const WEBSEARCH_TOOL_NAME = "web_search"
+const BROWSER_SCRAPE_TOOL_NAME = "browser_scrape"
+
 type ChatMessageMetadata struct {
 	WebSearches []ChatWebSearch `json:"websearches,omitempty"`
 	Sources     []ChatSource    `json:"sources,omitempty"`
@@ -370,18 +373,18 @@ func (s *ChatService) runAgenticChat(
 
 		case *sortedagents.ToolCallStartEvent:
 			switch e.ToolName {
-			case "web_search":
+			case WEBSEARCH_TOOL_NAME:
 				if query, ok := e.Args["query"].(string); ok {
 					webSearchQueries = append(webSearchQueries, query)
 				}
-			case "browser_scrape":
+			case BROWSER_SCRAPE_TOOL_NAME:
 				if url, ok := e.Args["url"].(string); ok {
 					sourceURLs = append(sourceURLs, url)
 				}
 			}
 
 			switch e.ToolName {
-			case "web_search":
+			case WEBSEARCH_TOOL_NAME:
 				if err := stream(&pb.ChatResponse{
 					Response: &pb.ChatResponse_Progress{
 						Progress: &pb.ChatProgress{
@@ -393,7 +396,7 @@ func (s *ChatService) runAgenticChat(
 					savePartialResponse()
 					return fmt.Errorf("error while processing request, please try again")
 				}
-			case "browser_scrape":
+			case BROWSER_SCRAPE_TOOL_NAME:
 				if err := stream(&pb.ChatResponse{
 					Response: &pb.ChatResponse_Progress{
 						Progress: &pb.ChatProgress{
@@ -413,7 +416,7 @@ func (s *ChatService) runAgenticChat(
 			cachedTokens = e.CachedTokens
 
 		case *sortedagents.ToolCallEndEvent:
-			if e.ToolName == "web_search" && e.Error == nil {
+			if e.ToolName == WEBSEARCH_TOOL_NAME && e.Error == nil {
 				successfulWebSearchCalls++
 				if resultMap, ok := e.Result.(map[string]any); ok {
 					if results, ok := resultMap["results"].([]map[string]string); ok {

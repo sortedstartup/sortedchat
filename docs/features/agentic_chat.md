@@ -71,6 +71,26 @@ We store Brave Search configuration and the default chat agent prompt in the `se
 - `SettingsManager` subscribes to that event and reloads the cached settings from DB.
 
 
+## Sortedagents Image Support
+- from sortedagents.Message struct we changed content from type string to `MessageContent`
+- llm api content either to be plain text message or Content parts array 
+- Example :
+```
+type ContentPart struct {
+	Type     string    `json:"type"`                // "text" or "image_url"
+	Text     string    `json:"text,omitempty"`      // Populated if Type is "text"
+	ImageURL *ImageURL `json:"image_url,omitempty"` // Populated if Type is "image_url"
+}
+
+type ImageURL struct {
+	URL string `json:"url"`
+}
+```
+- That's why we keep `MessageContent` as interface
+- which is implemented by `TextContent string` and `ContentParts`.
+- so if image is present then we send ContentParts or else we send TextContent
+
+
 ## Current Limitations
 
 - `sortedagents` does not yet support image input.

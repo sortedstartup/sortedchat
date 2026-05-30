@@ -364,34 +364,40 @@ func (s *ChatService) runAgenticChat(
 		case *sortedagents.ToolCallStartEvent:
 			switch e.ToolName {
 			case WEBSEARCH_TOOL_NAME:
-				if query, ok := e.Args["query"].(string); ok {
+				query, ok := e.Args["query"].(string)
+				if !ok {
+					query = strings.TrimSpace(fmt.Sprint(e.Args["query"]))
+				}
+				query = strings.TrimSpace(query)
+				if query != "" {
 					webSearchQueries = append(webSearchQueries, query)
 				}
-			case BROWSER_SCRAPE_TOOL_NAME:
-				if url, ok := e.Args["url"].(string); ok {
-					sourceURLs = append(sourceURLs, url)
-				}
-			}
-
-			switch e.ToolName {
-			case WEBSEARCH_TOOL_NAME:
 				if err := stream(&pb.ChatResponse{
 					Response: &pb.ChatResponse_Progress{
 						Progress: &pb.ChatProgress{
 							State:   pb.ChatProgress_REQUEST_SENT_TO_LLM,
-							Message: "Searching the web",
+							Message: "Searching the web: " + query,
 						},
 					},
 				}); err != nil {
 					savePartialResponse()
 					return fmt.Errorf("error while processing request, please try again")
 				}
+
 			case BROWSER_SCRAPE_TOOL_NAME:
+				url, ok := e.Args["url"].(string)
+				if !ok {
+					url = strings.TrimSpace(fmt.Sprint(e.Args["url"]))
+				}
+				url = strings.TrimSpace(url)
+				if url != "" {
+					sourceURLs = append(sourceURLs, url)
+				}
 				if err := stream(&pb.ChatResponse{
 					Response: &pb.ChatResponse_Progress{
 						Progress: &pb.ChatProgress{
 							State:   pb.ChatProgress_REQUEST_SENT_TO_LLM,
-							Message: "Scraping web page",
+							Message: "Scraping web page: " + url,
 						},
 					},
 				}); err != nil {

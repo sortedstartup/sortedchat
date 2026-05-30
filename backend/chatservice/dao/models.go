@@ -3,6 +3,7 @@ package dao
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sortedstartup/chatservice/proto"
 	"strings"
 )
@@ -13,6 +14,7 @@ type ChatMessageRow struct {
 	ContentImage       string  `db:"content_image" json:"content_image"`
 	Id                 string  `db:"id" json:"id"`
 	DocumentReferences string  `db:"document_references" json:"document_references"`
+	Metadata           string  `db:"metadata" json:"metadata"`
 	RagEnabled         bool    `db:"rag_enabled" json:"rag_enabled"`
 	Model              string  `db:"model" json:"model"`
 	InputTokenCount    int     `db:"input_token_count" json:"input_token_count"`
@@ -28,6 +30,7 @@ type MessageSummary struct {
 	OutputTokenCount int     `db:"output_token_count" json:"output_token_count"`
 	CachedTokenCount int     `db:"cached_token_count" json:"cached_token_count"`
 	Cost             float64 `db:"cost" json:"cost"`
+	Metadata         string  `db:"metadata" json:"metadata"`
 }
 
 type ProjectRow struct {
@@ -102,6 +105,55 @@ type CapabilityJSON struct {
 type dbSettings struct {
 	Name     string `db:"name"`
 	Settings string `db:"settings"`
+}
+
+type assistantMessageMetadata struct {
+	WebSearches []assistantMetadataWebSearch `json:"websearches,omitempty"`
+	Sources     []assistantMetadataSource    `json:"sources,omitempty"`
+}
+
+type assistantMetadataWebSearch struct {
+	Query string `json:"query"`
+}
+
+type assistantMetadataSource struct {
+	URL string `json:"url"`
+}
+
+func ParseAssistantMessageMetadataJSON(raw string) *proto.AssistantMessageMetadata {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+
+	var metadata assistantMessageMetadata
+	if err := json.Unmarshal([]byte(raw), &metadata); err != nil {
+		slog.Error("dao:ParseAssistantMessageMetadataJSON", "message", "failed to unmarshal assistant metadata", "error", err)
+		return nil
+	}
+
+	protoMetadata := &proto.AssistantMessageMetadata{}
+	for _, search := range metadata.WebSearches {
+		if strings.TrimSpace(search.Query) == "" {
+			continue
+		}
+		protoMetadata.Websearches = append(protoMetadata.Websearches, &proto.AssistantMessageMetadata_WebSearch{
+			Query: search.Query,
+		})
+	}
+	for _, source := range metadata.Sources {
+		if strings.TrimSpace(source.URL) == "" {
+			continue
+		}
+		protoMetadata.Sources = append(protoMetadata.Sources, &proto.AssistantMessageMetadata_Source{
+			Url: source.URL,
+		})
+	}
+
+	if len(protoMetadata.Websearches) == 0 && len(protoMetadata.Sources) == 0 {
+		return nil
+	}
+
+	return protoMetadata
 }
 
 func ParseCapabilities(capabilitiesJSON string) (*proto.ModelCapabilities, error) {

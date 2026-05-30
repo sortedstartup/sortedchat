@@ -4179,6 +4179,7 @@ export class ResponseSummary extends pb_1.Message {
         output_tokens?: number;
         cached_tokens?: number;
         cost?: number;
+        metadata?: AssistantMessageMetadata;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -4200,6 +4201,9 @@ export class ResponseSummary extends pb_1.Message {
             }
             if ("cost" in data && data.cost != undefined) {
                 this.cost = data.cost;
+            }
+            if ("metadata" in data && data.metadata != undefined) {
+                this.metadata = data.metadata;
             }
         }
     }
@@ -4239,6 +4243,15 @@ export class ResponseSummary extends pb_1.Message {
     set cost(value: number) {
         pb_1.Message.setField(this, 6, value);
     }
+    get metadata() {
+        return pb_1.Message.getWrapperField(this, AssistantMessageMetadata, 7) as AssistantMessageMetadata;
+    }
+    set metadata(value: AssistantMessageMetadata) {
+        pb_1.Message.setWrapperField(this, 7, value);
+    }
+    get has_metadata() {
+        return pb_1.Message.getField(this, 7) != null;
+    }
     static fromObject(data: {
         message_id?: string;
         model?: string;
@@ -4246,6 +4259,7 @@ export class ResponseSummary extends pb_1.Message {
         output_tokens?: number;
         cached_tokens?: number;
         cost?: number;
+        metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
     }): ResponseSummary {
         const message = new ResponseSummary({});
         if (data.message_id != null) {
@@ -4266,6 +4280,9 @@ export class ResponseSummary extends pb_1.Message {
         if (data.cost != null) {
             message.cost = data.cost;
         }
+        if (data.metadata != null) {
+            message.metadata = AssistantMessageMetadata.fromObject(data.metadata);
+        }
         return message;
     }
     toObject() {
@@ -4276,6 +4293,7 @@ export class ResponseSummary extends pb_1.Message {
             output_tokens?: number;
             cached_tokens?: number;
             cost?: number;
+            metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
         } = {};
         if (this.message_id != null) {
             data.message_id = this.message_id;
@@ -4295,6 +4313,9 @@ export class ResponseSummary extends pb_1.Message {
         if (this.cost != null) {
             data.cost = this.cost;
         }
+        if (this.metadata != null) {
+            data.metadata = this.metadata.toObject();
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -4313,6 +4334,8 @@ export class ResponseSummary extends pb_1.Message {
             writer.writeInt32(5, this.cached_tokens);
         if (this.cost != 0)
             writer.writeFloat(6, this.cost);
+        if (this.has_metadata)
+            writer.writeMessage(7, this.metadata, () => this.metadata.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -4339,6 +4362,9 @@ export class ResponseSummary extends pb_1.Message {
                     break;
                 case 6:
                     message.cost = reader.readFloat();
+                    break;
+                case 7:
+                    reader.readMessage(message.metadata, () => message.metadata = AssistantMessageMetadata.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -4526,6 +4552,7 @@ export class ChatMessage extends pb_1.Message {
         cached_tokens?: number;
         cost?: number;
         contents?: MessageContent[];
+        metadata?: AssistantMessageMetadata;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [4, 11], this.#one_of_decls);
@@ -4562,6 +4589,9 @@ export class ChatMessage extends pb_1.Message {
             }
             if ("contents" in data && data.contents != undefined) {
                 this.contents = data.contents;
+            }
+            if ("metadata" in data && data.metadata != undefined) {
+                this.metadata = data.metadata;
             }
         }
     }
@@ -4631,6 +4661,15 @@ export class ChatMessage extends pb_1.Message {
     set contents(value: MessageContent[]) {
         pb_1.Message.setRepeatedWrapperField(this, 11, value);
     }
+    get metadata() {
+        return pb_1.Message.getWrapperField(this, AssistantMessageMetadata, 12) as AssistantMessageMetadata;
+    }
+    set metadata(value: AssistantMessageMetadata) {
+        pb_1.Message.setWrapperField(this, 12, value);
+    }
+    get has_metadata() {
+        return pb_1.Message.getField(this, 12) != null;
+    }
     static fromObject(data: {
         role?: string;
         content?: string;
@@ -4643,6 +4682,7 @@ export class ChatMessage extends pb_1.Message {
         cached_tokens?: number;
         cost?: number;
         contents?: ReturnType<typeof MessageContent.prototype.toObject>[];
+        metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
     }): ChatMessage {
         const message = new ChatMessage({});
         if (data.role != null) {
@@ -4678,6 +4718,9 @@ export class ChatMessage extends pb_1.Message {
         if (data.contents != null) {
             message.contents = data.contents.map(item => MessageContent.fromObject(item));
         }
+        if (data.metadata != null) {
+            message.metadata = AssistantMessageMetadata.fromObject(data.metadata);
+        }
         return message;
     }
     toObject() {
@@ -4693,6 +4736,7 @@ export class ChatMessage extends pb_1.Message {
             cached_tokens?: number;
             cost?: number;
             contents?: ReturnType<typeof MessageContent.prototype.toObject>[];
+            metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
         } = {};
         if (this.role != null) {
             data.role = this.role;
@@ -4727,6 +4771,9 @@ export class ChatMessage extends pb_1.Message {
         if (this.contents != null) {
             data.contents = this.contents.map((item: MessageContent) => item.toObject());
         }
+        if (this.metadata != null) {
+            data.metadata = this.metadata.toObject();
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -4755,6 +4802,8 @@ export class ChatMessage extends pb_1.Message {
             writer.writeFloat(10, this.cost);
         if (this.contents.length)
             writer.writeRepeatedMessage(11, this.contents, (item: MessageContent) => item.serialize(writer));
+        if (this.has_metadata)
+            writer.writeMessage(12, this.metadata, () => this.metadata.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -4796,6 +4845,9 @@ export class ChatMessage extends pb_1.Message {
                     break;
                 case 11:
                     reader.readMessage(message.contents, () => pb_1.Message.addToRepeatedWrapperField(message, 11, MessageContent.deserialize(reader), MessageContent));
+                    break;
+                case 12:
+                    reader.readMessage(message.metadata, () => message.metadata = AssistantMessageMetadata.deserialize(reader));
                     break;
                 default: reader.skipField();
             }
@@ -4975,6 +5027,7 @@ export class ChatInfo extends pb_1.Message {
         input_token_count?: number;
         output_token_count?: number;
         cached_token_count?: number;
+        metadata?: AssistantMessageMetadata;
     }) {
         super();
         pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
@@ -4996,6 +5049,9 @@ export class ChatInfo extends pb_1.Message {
             }
             if ("cached_token_count" in data && data.cached_token_count != undefined) {
                 this.cached_token_count = data.cached_token_count;
+            }
+            if ("metadata" in data && data.metadata != undefined) {
+                this.metadata = data.metadata;
             }
         }
     }
@@ -5035,6 +5091,15 @@ export class ChatInfo extends pb_1.Message {
     set cached_token_count(value: number) {
         pb_1.Message.setField(this, 6, value);
     }
+    get metadata() {
+        return pb_1.Message.getWrapperField(this, AssistantMessageMetadata, 7) as AssistantMessageMetadata;
+    }
+    set metadata(value: AssistantMessageMetadata) {
+        pb_1.Message.setWrapperField(this, 7, value);
+    }
+    get has_metadata() {
+        return pb_1.Message.getField(this, 7) != null;
+    }
     static fromObject(data: {
         chatId?: string;
         name?: string;
@@ -5042,6 +5107,7 @@ export class ChatInfo extends pb_1.Message {
         input_token_count?: number;
         output_token_count?: number;
         cached_token_count?: number;
+        metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
     }): ChatInfo {
         const message = new ChatInfo({});
         if (data.chatId != null) {
@@ -5062,6 +5128,9 @@ export class ChatInfo extends pb_1.Message {
         if (data.cached_token_count != null) {
             message.cached_token_count = data.cached_token_count;
         }
+        if (data.metadata != null) {
+            message.metadata = AssistantMessageMetadata.fromObject(data.metadata);
+        }
         return message;
     }
     toObject() {
@@ -5072,6 +5141,7 @@ export class ChatInfo extends pb_1.Message {
             input_token_count?: number;
             output_token_count?: number;
             cached_token_count?: number;
+            metadata?: ReturnType<typeof AssistantMessageMetadata.prototype.toObject>;
         } = {};
         if (this.chatId != null) {
             data.chatId = this.chatId;
@@ -5091,6 +5161,9 @@ export class ChatInfo extends pb_1.Message {
         if (this.cached_token_count != null) {
             data.cached_token_count = this.cached_token_count;
         }
+        if (this.metadata != null) {
+            data.metadata = this.metadata.toObject();
+        }
         return data;
     }
     serialize(): Uint8Array;
@@ -5109,6 +5182,8 @@ export class ChatInfo extends pb_1.Message {
             writer.writeInt32(5, this.output_token_count);
         if (this.cached_token_count != 0)
             writer.writeInt32(6, this.cached_token_count);
+        if (this.has_metadata)
+            writer.writeMessage(7, this.metadata, () => this.metadata.serialize(writer));
         if (!w)
             return writer.getResultBuffer();
     }
@@ -5136,6 +5211,9 @@ export class ChatInfo extends pb_1.Message {
                 case 6:
                     message.cached_token_count = reader.readInt32();
                     break;
+                case 7:
+                    reader.readMessage(message.metadata, () => message.metadata = AssistantMessageMetadata.deserialize(reader));
+                    break;
                 default: reader.skipField();
             }
         }
@@ -5146,6 +5224,230 @@ export class ChatInfo extends pb_1.Message {
     }
     static deserializeBinary(bytes: Uint8Array): ChatInfo {
         return ChatInfo.deserialize(bytes);
+    }
+}
+export class AssistantMessageMetadata extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        websearches?: AssistantMessageMetadataWebSearch[];
+        sources?: AssistantMessageMetadataSource[];
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [1, 2], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("websearches" in data && data.websearches != undefined) {
+                this.websearches = data.websearches;
+            }
+            if ("sources" in data && data.sources != undefined) {
+                this.sources = data.sources;
+            }
+        }
+    }
+    get websearches() {
+        return pb_1.Message.getRepeatedWrapperField(this, AssistantMessageMetadataWebSearch, 1) as AssistantMessageMetadataWebSearch[];
+    }
+    set websearches(value: AssistantMessageMetadataWebSearch[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 1, value);
+    }
+    get sources() {
+        return pb_1.Message.getRepeatedWrapperField(this, AssistantMessageMetadataSource, 2) as AssistantMessageMetadataSource[];
+    }
+    set sources(value: AssistantMessageMetadataSource[]) {
+        pb_1.Message.setRepeatedWrapperField(this, 2, value);
+    }
+    static fromObject(data: {
+        websearches?: ReturnType<typeof AssistantMessageMetadataWebSearch.prototype.toObject>[];
+        sources?: ReturnType<typeof AssistantMessageMetadataSource.prototype.toObject>[];
+    }): AssistantMessageMetadata {
+        const message = new AssistantMessageMetadata({});
+        if (data.websearches != null) {
+            message.websearches = data.websearches.map(item => AssistantMessageMetadataWebSearch.fromObject(item));
+        }
+        if (data.sources != null) {
+            message.sources = data.sources.map(item => AssistantMessageMetadataSource.fromObject(item));
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            websearches?: ReturnType<typeof AssistantMessageMetadataWebSearch.prototype.toObject>[];
+            sources?: ReturnType<typeof AssistantMessageMetadataSource.prototype.toObject>[];
+        } = {};
+        if (this.websearches != null) {
+            data.websearches = this.websearches.map((item: AssistantMessageMetadataWebSearch) => item.toObject());
+        }
+        if (this.sources != null) {
+            data.sources = this.sources.map((item: AssistantMessageMetadataSource) => item.toObject());
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.websearches.length)
+            writer.writeRepeatedMessage(1, this.websearches, (item: AssistantMessageMetadataWebSearch) => item.serialize(writer));
+        if (this.sources.length)
+            writer.writeRepeatedMessage(2, this.sources, (item: AssistantMessageMetadataSource) => item.serialize(writer));
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): AssistantMessageMetadata {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new AssistantMessageMetadata();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    reader.readMessage(message.websearches, () => pb_1.Message.addToRepeatedWrapperField(message, 1, AssistantMessageMetadataWebSearch.deserialize(reader), AssistantMessageMetadataWebSearch));
+                    break;
+                case 2:
+                    reader.readMessage(message.sources, () => pb_1.Message.addToRepeatedWrapperField(message, 2, AssistantMessageMetadataSource.deserialize(reader), AssistantMessageMetadataSource));
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): AssistantMessageMetadata {
+        return AssistantMessageMetadata.deserialize(bytes);
+    }
+}
+export class AssistantMessageMetadataWebSearch extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        query?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("query" in data && data.query != undefined) {
+                this.query = data.query;
+            }
+        }
+    }
+    get query() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set query(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        query?: string;
+    }): AssistantMessageMetadataWebSearch {
+        const message = new AssistantMessageMetadataWebSearch({});
+        if (data.query != null) {
+            message.query = data.query;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            query?: string;
+        } = {};
+        if (this.query != null) {
+            data.query = this.query;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.query.length)
+            writer.writeString(1, this.query);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): AssistantMessageMetadataWebSearch {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new AssistantMessageMetadataWebSearch();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.query = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): AssistantMessageMetadataWebSearch {
+        return AssistantMessageMetadataWebSearch.deserialize(bytes);
+    }
+}
+export class AssistantMessageMetadataSource extends pb_1.Message {
+    #one_of_decls: number[][] = [];
+    constructor(data?: any[] | {
+        url?: string;
+    }) {
+        super();
+        pb_1.Message.initialize(this, Array.isArray(data) ? data : [], 0, -1, [], this.#one_of_decls);
+        if (!Array.isArray(data) && typeof data == "object") {
+            if ("url" in data && data.url != undefined) {
+                this.url = data.url;
+            }
+        }
+    }
+    get url() {
+        return pb_1.Message.getFieldWithDefault(this, 1, "") as string;
+    }
+    set url(value: string) {
+        pb_1.Message.setField(this, 1, value);
+    }
+    static fromObject(data: {
+        url?: string;
+    }): AssistantMessageMetadataSource {
+        const message = new AssistantMessageMetadataSource({});
+        if (data.url != null) {
+            message.url = data.url;
+        }
+        return message;
+    }
+    toObject() {
+        const data: {
+            url?: string;
+        } = {};
+        if (this.url != null) {
+            data.url = this.url;
+        }
+        return data;
+    }
+    serialize(): Uint8Array;
+    serialize(w: pb_1.BinaryWriter): void;
+    serialize(w?: pb_1.BinaryWriter): Uint8Array | void {
+        const writer = w || new pb_1.BinaryWriter();
+        if (this.url.length)
+            writer.writeString(1, this.url);
+        if (!w)
+            return writer.getResultBuffer();
+    }
+    static deserialize(bytes: Uint8Array | pb_1.BinaryReader): AssistantMessageMetadataSource {
+        const reader = bytes instanceof pb_1.BinaryReader ? bytes : new pb_1.BinaryReader(bytes), message = new AssistantMessageMetadataSource();
+        while (reader.nextField()) {
+            if (reader.isEndGroup())
+                break;
+            switch (reader.getFieldNumber()) {
+                case 1:
+                    message.url = reader.readString();
+                    break;
+                default: reader.skipField();
+            }
+        }
+        return message;
+    }
+    serializeBinary(): Uint8Array {
+        return this.serialize();
+    }
+    static deserializeBinary(bytes: Uint8Array): AssistantMessageMetadataSource {
+        return AssistantMessageMetadataSource.deserialize(bytes);
     }
 }
 export class ChatSearchRequest extends pb_1.Message {

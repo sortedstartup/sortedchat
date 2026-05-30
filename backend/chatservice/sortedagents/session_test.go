@@ -25,7 +25,7 @@ func TestNewSessionWithID(t *testing.T) {
 
 func TestSessionAddMessage(t *testing.T) {
 	session := NewSession()
-	msg := Message{Role: "user", Content: "Hello"}
+	msg := Message{Role: "user", Content: TextContent("Hello")}
 	session.AddMessage(msg)
 
 	if session.MessageCount() != 1 {
@@ -36,14 +36,14 @@ func TestSessionAddMessage(t *testing.T) {
 	if len(messages) != 1 {
 		t.Errorf("Expected 1 message in GetMessages(), got %d", len(messages))
 	}
-	if messages[0].Content != "Hello" {
-		t.Errorf("Expected message content 'Hello', got '%s'", messages[0].Content)
+	if contentToFlatString(messages[0].Content) != "Hello" {
+		t.Errorf("Expected message content 'Hello', got '%s'", contentToFlatString(messages[0].Content))
 	}
 }
 
 func TestSessionClone(t *testing.T) {
 	original := NewSession()
-	original.AddMessage(Message{Role: "user", Content: "Test"})
+	original.AddMessage(Message{Role: "user", Content: TextContent("Test")})
 
 	clone := original.Clone()
 
@@ -58,7 +58,7 @@ func TestSessionClone(t *testing.T) {
 	}
 
 	// Modifying clone shouldn't affect original
-	clone.AddMessage(Message{Role: "assistant", Content: "Response"})
+	clone.AddMessage(Message{Role: "assistant", Content: TextContent("Response")})
 	if original.MessageCount() == clone.MessageCount() {
 		t.Error("Modifying clone affected original")
 	}
@@ -66,7 +66,7 @@ func TestSessionClone(t *testing.T) {
 
 func TestSessionClear(t *testing.T) {
 	session := NewSession()
-	session.AddMessage(Message{Role: "user", Content: "Test"})
+	session.AddMessage(Message{Role: "user", Content: TextContent("Test")})
 	session.Clear()
 
 	if session.MessageCount() != 0 {
@@ -76,8 +76,8 @@ func TestSessionClear(t *testing.T) {
 
 func TestNewSessionFromMessages(t *testing.T) {
 	messages := []Message{
-		{Role: "user", Content: "Hello"},
-		{Role: "assistant", Content: "Hi there"},
+		{Role: "user", Content: TextContent("Hello")},
+		{Role: "assistant", Content: TextContent("Hi there")},
 	}
 	id := "restored-session"
 	session := NewSessionFromMessages(id, messages)

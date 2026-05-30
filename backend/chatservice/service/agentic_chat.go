@@ -13,56 +13,101 @@ import (
 	"sortedstartup/chatservice/rag"
 	settings "sortedstartup/chatservice/settings"
 	"sortedstartup/chatservice/sortedagents"
+	"sortedstartup/chatservice/types"
 )
 
-func extractTextOnlyChatMessage(msg dao.ChatMessageRow) (string, bool) {
-	slog.Debug("service:Chat", "message", "extracting text from chat message", "messageId", msg)
-	if msg.ContentImage != "" {
-		return "", false
-	}
+// this function convert normal text to sortedagents message struct type
+// we have to check that if message is in string format or in content part format and then convert it accordingly to sortedagents message struct type
+func buildSortedAgentsMessage(role string, content any) sortedagents.Message {
+	var messageContent sortedagents.MessageContent
 
-	if strings.TrimSpace(msg.Content) == "" {
-		return "", true
-	}
-
-	if !(strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]")) {
-		return msg.Content, true
-	}
-
-	var contents []*pb.MessageContent
-	if err := json.Unmarshal([]byte(msg.Content), &contents); err != nil {
-		return "", false
-	}
-
-	var textParts []string
-	for _, content := range contents {
-		if content.Type != "text" {
-			return "", false
+	switch value := content.(type) {
+	case nil:
+		messageContent = sortedagents.TextContent("")
+	case string:
+		messageContent = sortedagents.TextContent(value)
+	case []types.ContentPart:
+		parts := make(sortedagents.ContentParts, 0, len(value))
+		for _, part := range value {
+			converted := sortedagents.ContentPart{
+				Type: part.Type,
+				Text: part.Text,
+			}
+			if part.ImageURL != nil {
+				converted.ImageURL = &sortedagents.ImageURLPart{URL: part.ImageURL.URL}
+			}
+			parts = append(parts, converted)
 		}
-		if strings.TrimSpace(content.Text) != "" {
-			textParts = append(textParts, content.Text)
+		messageContent = parts
+	case []*pb.MessageContent:
+		parts := make(sortedagents.ContentParts, 0, len(value))
+		for _, part := range value {
+			if part == nil {
+				continue
+			}
+
+			converted := sortedagents.ContentPart{
+				Type: part.Type,
+				Text: part.Text,
+			}
+			if part.ImageUrl != nil {
+				converted.ImageURL = &sortedagents.ImageURLPart{URL: part.ImageUrl.Url}
+			}
+			parts = append(parts, converted)
 		}
+		messageContent = parts
 	}
 
-	return strings.TrimSpace(strings.Join(textParts, "\n")), true
+	return sortedagents.Message{
+		Role:    role,
+		Content: messageContent,
+	}
 }
 
 func (s *ChatService) buildAgenticSession(chatID string, prompt string, history []dao.ChatMessageRow) (sortedagents.Session, error) {
 	slog.Debug("service:Chat", "message", "building agentic session from chat history", "chatId", chatID)
 	messages := []sortedagents.Message{
-		{Role: "system", Content: prompt},
+		{
+			Role:    "system",
+			Content: sortedagents.TextContent(prompt),
+		},
 	}
 
 	for _, msg := range history {
-		text, ok := extractTextOnlyChatMessage(msg)
-		if !ok {
-			return nil, fmt.Errorf("chat history contains non-text content")
+		slog.Debug("service:Chat", "message", "building sortedagents content from chat message", "messageId", msg.Id)
+
+		var contents []*pb.MessageContent
+		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
+			var textContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.Content), &textContents); err != nil {
+				contents = append(contents, &pb.MessageContent{
+					Type: "text",
+					Text: msg.Content,
+				})
+			} else {
+				contents = append(contents, textContents...)
+			}
+		} else if msg.Content != "" {
+			contents = append(contents, &pb.MessageContent{
+				Type: "text",
+				Text: msg.Content,
+			})
 		}
 
-		messages = append(messages, sortedagents.Message{
-			Role:    msg.Role,
-			Content: text,
-		})
+		if msg.ContentImage != "" {
+			var imageContents []*pb.MessageContent
+			if err := json.Unmarshal([]byte(msg.ContentImage), &imageContents); err != nil {
+				return nil, fmt.Errorf("failed to parse image content: %w", err)
+			}
+			contents = append(contents, imageContents...)
+		}
+
+		if len(contents) > 0 {
+			messages = append(messages, buildSortedAgentsMessage(msg.Role, contents))
+			continue
+		}
+
+		messages = append(messages, buildSortedAgentsMessage(msg.Role, msg.Content))
 	}
 
 	return sortedagents.NewSessionFromMessages(chatID, messages), nil
@@ -74,7 +119,7 @@ func (s *ChatService) runAgenticChat(
 	userID string,
 	projectID string,
 	model string,
-	prompt string,
+	userContent any,
 	history []dao.ChatMessageRow,
 	ragChunks []rag.Result,
 	ragEnabled bool,
@@ -144,17 +189,9 @@ func (s *ChatService) runAgenticChat(
 		return fmt.Errorf("error while processing request, please try again")
 	}
 
-	// maxTurnsValue, err := s.getSettingValue(AGENTIC_MAX_TURNS_KEY, defaultAgenticMaxTurns)
-	// if err != nil {
-	// 	slog.Warn("service:Chat", "message", "failed to load agentic max turns, using default", "error", err, "chatId", chatID, "userID", userID, "projectID", projectID)
-	// 	maxTurnsValue = defaultAgenticMaxTurns
-	// }
-	// maxTurns, err := strconv.Atoi(maxTurnsValue)
-	// if err != nil || maxTurns <= 0 {
-	// 	maxTurns, _ = strconv.Atoi(defaultAgenticMaxTurns)
-	// }
+	userMessage := buildSortedAgentsMessage("user", userContent)
 
-	events := runner.RunStream(ctx, agent, prompt, maxTurns, session)
+	events := runner.RunStream(ctx, agent, userMessage, maxTurns, session)
 
 	if err := stream(&pb.ChatResponse{
 		Response: &pb.ChatResponse_Progress{

@@ -395,7 +395,7 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 	session := sortedagents.NewSessionWithID(sessionID)
 	session.AddMessage(sortedagents.Message{
 		Role:    "system",
-		Content: agentRow.SystemPrompt,
+		Content: sortedagents.TextContent(agentRow.SystemPrompt),
 	})
 	if len(messageHistory) > 0 {
 		for _, msg := range messageHistory {
@@ -406,7 +406,10 @@ func (s *AgentServiceAPI) runAgentWithCallbacks(
 
 	// Execute agent with streaming
 	maxTurns := 15
-	eventChan := runtime.runner.RunStream(ctx, runtime.agent, userMessage, maxTurns, session)
+	eventChan := runtime.runner.RunStream(ctx, runtime.agent, sortedagents.Message{
+		Role:    "user",
+		Content: sortedagents.TextContent(userMessage),
+	}, maxTurns, session)
 
 	// Track tool call IDs and accumulated text
 	idCounter := newToolCallIDCounter()
@@ -992,7 +995,7 @@ func convertDBMessageToSortedAgentsMessage(msg db.AgentMessageRow) sortedagents.
 	case "text":
 		return sortedagents.Message{
 			Role:    msg.Role,
-			Content: msg.Content,
+			Content: sortedagents.TextContent(msg.Content),
 		}
 	case "tool_call":
 		sig := getStringValue(msg.ThoughtSignature)
@@ -1021,13 +1024,13 @@ func convertDBMessageToSortedAgentsMessage(msg db.AgentMessageRow) sortedagents.
 	case "tool_result":
 		return sortedagents.Message{
 			Role:       "tool",
-			Content:    msg.Content,
+			Content:    sortedagents.TextContent(msg.Content),
 			ToolCallID: getStringValue(msg.ToolCallID),
 		}
 	default:
 		return sortedagents.Message{
 			Role:    msg.Role,
-			Content: msg.Content,
+			Content: sortedagents.TextContent(msg.Content),
 		}
 	}
 }

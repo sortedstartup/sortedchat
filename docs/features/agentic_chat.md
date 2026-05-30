@@ -8,8 +8,7 @@ The flow works as follows:
 
 - In `service.go`, the `Chat` function checks the selected model's capabilities.
 - For now, model capabilities are seeded in `shared_models_metadata`.
-- If the current message does not contain images, model supports tool calling and websearch api key is present, we route the request through the agentic chat flow.
-- We do not currently support images in `sortedagents`, so image-based chat requests continue to use the normal LLM path.
+- If the current message supports tool calling, websearch api key is present, and provider settings are set, we route the request through the agentic chat flow.
 
 ## Chat Agent Behavior
 
@@ -71,15 +70,33 @@ We store Brave Search configuration and the default chat agent prompt in the `se
 - `SettingsManager` subscribes to that event and reloads the cached settings from DB.
 
 
+## Sortedagents Image Support
+- In `sortedagents.Message`, `Content` was changed from `string` to `MessageContent`.
+- This matches the LLM API contract, where message content can be either a plain text string or an array of structured content parts.
+- Example :
+```
+type ContentPart struct {
+	Type     string    `json:"type"`                // "text" or "image_url"
+	Text     string    `json:"text,omitempty"`      // Populated if Type is "text"
+	ImageURL *ImageURL `json:"image_url,omitempty"` // Populated if Type is "image_url"
+}
+
+type ImageURL struct {
+	URL string `json:"url"`
+}
+```
+- `MessageContent` is kept as an interface so both supported representations can be handled through the same field.
+- The interface is implemented by `TextContent` and `ContentParts`.
+- If a message contains only text, we send `TextContent`. If it includes an image, we send `ContentParts`.
+
+
 ## Current Limitations
 
-- `sortedagents` does not yet support image input.
 - In normal `chat_messages`, we do not currently persist web search tool-call history or tool-call failure details.
 - Brave Search API usage cost is not yet tracked.
 
 ## Future Improvements
 
-- Add image support in `sortedagents`.
 - Persist tool-call activity and failures for normal chat flows.
 - Add Brave Search cost tracking and reporting.
 - We could add RAG as a Tool

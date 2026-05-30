@@ -80,9 +80,13 @@ func (s *ChatService) buildAgenticSession(chatID string, prompt string, history 
 		if strings.HasPrefix(msg.Content, "[") && strings.HasSuffix(msg.Content, "]") {
 			var textContents []*pb.MessageContent
 			if err := json.Unmarshal([]byte(msg.Content), &textContents); err != nil {
-				return nil, fmt.Errorf("failed to parse text content: %w", err)
+				contents = append(contents, &pb.MessageContent{
+					Type: "text",
+					Text: msg.Content,
+				})
+			} else {
+				contents = append(contents, textContents...)
 			}
-			contents = append(contents, textContents...)
 		} else if msg.Content != "" {
 			contents = append(contents, &pb.MessageContent{
 				Type: "text",

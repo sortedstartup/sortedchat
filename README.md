@@ -95,9 +95,16 @@ You have to pass your own `ui-config.json` using a volume mount.
 ```bash
 docker run -d \
   --name sortedchat \
+  -e GOOGLE_CLIENT_ID=<your-google-client-id> \
   -e GOOGLE_CLIENT_SECRET=<your-google-client-secret> \
+  -e GOOGLE_REDIRECT_URL=http://localhost:8080/callback \
+  -e OAUTH_ISSUER_URL=https://accounts.google.com \
+  -e OAUTH_PROVIDER_URL_FOR_FRONTEND=https://accounts.google.com/o/oauth2/v2/auth \
+  -e APP_JWT_SECRET=<your-long-random-app-jwt-secret> \
+  -e APP_ISSUER=sortedchat \
   -v $(pwd)/ui-config.json:/config/ui-config.json \
   -p 8080:8080 \
+  --entrypoint /usr/local/bin/sortedchat \
   ghcr.io/sortedstartup/sortedchat:latest \
   --ui-config-path /config/ui-config.json
 ```

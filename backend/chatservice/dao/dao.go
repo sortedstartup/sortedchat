@@ -13,6 +13,8 @@ type DAO interface {
 	AddChatMessageWithTokenCount(userID string, chatId string, role string, content string, contentImage string, model string, inputTokens int, outputTokens int, cachedTokens int, searchCost float64, references string, metadata string, ragEnabled bool) (MessageSummary, error)
 	GetModelByID(modelID string) (*Models, error)
 	GetChatMessages(userID string, chatId string) ([]ChatMessageRow, error)
+	ChatExists(userID string, chatId string) (bool, error)
+	MessageExistsInChatHierarchy(userID string, chatId string, messageId string) (bool, error)
 	IsChatDeleted(chatId string, userID string) (bool, error)
 	GetChatMetadata(userID string, chatId string) (ChatInfoRow, error)
 

@@ -1243,13 +1243,14 @@ func (s *ChatService) BranchAChat(ctx context.Context, userID string, sourceChat
 	}
 
 	newChatId := uuid.New().String()
+	fmt.Println("newChatId", newChatId)
 
 	err = s.dao.BranchChat(userID, sourceChatId, branchFromMessageId, newChatId, branchName)
 	if err != nil {
 		slog.Error("service:BranchAChat", "message", "failed to create branch", "error", err, "userID", userID, "sourceChatId", sourceChatId, "branchFromMessageId", branchFromMessageId, "branchName", branchName)
 		return "", fmt.Errorf("failed to create branch, please try again")
 	}
-
+	fmt.Println("newChatId", newChatId)
 	return newChatId, nil
 }
 

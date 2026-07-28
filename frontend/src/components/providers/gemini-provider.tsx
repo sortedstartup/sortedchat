@@ -3,9 +3,10 @@ import { ProviderView } from './provider-view';
 interface GeminiProviderProps {
     onApiKeyChange?: (key: string) => void;
     onApiUrlChange?: (url: string) => void;
+    onSaveSuccess?: () => void;
 }
 
-export const GeminiProvider = ({ onApiKeyChange, onApiUrlChange }: GeminiProviderProps) => {
+export const GeminiProvider = ({ onApiKeyChange, onApiUrlChange, onSaveSuccess }: GeminiProviderProps) => {
     return (
         <ProviderView
             providerName="gemini"
@@ -13,6 +14,7 @@ export const GeminiProvider = ({ onApiKeyChange, onApiUrlChange }: GeminiProvide
             defaultApiUrl="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
             onApiKeyChange={onApiKeyChange}
             onApiUrlChange={onApiUrlChange}
+            onSaveSuccess={onSaveSuccess}
         />
     );
 };

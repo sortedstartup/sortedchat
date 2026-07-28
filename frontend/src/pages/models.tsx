@@ -1,6 +1,7 @@
 
 import { useStore } from '@nanostores/react';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   $llmModels,
   ListLLMModels,
@@ -30,6 +31,11 @@ const Models = () => {
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [isAddProviderModalOpen, setIsAddProviderModalOpen] = useState(false);
   const providerSettingsMap = useStore($providerSettings);
+
+  // Handler for successful API key save
+  const handleApiKeySaveSuccess = () => {
+    toast.success('API key has been successfully saved');
+  };
 
   // Load data on mount
   useEffect(() => {
@@ -70,15 +76,15 @@ const Models = () => {
 
     switch (selectedProvider) {
       case 'openai':
-        return <OpenaiProvider />;
+        return <OpenaiProvider onSaveSuccess={handleApiKeySaveSuccess} />;
       case 'claude':
-        return <ClaudeProvider />;
+        return <ClaudeProvider onSaveSuccess={handleApiKeySaveSuccess} />;
       case 'gemini':
-        return <GeminiProvider />;
+        return <GeminiProvider onSaveSuccess={handleApiKeySaveSuccess} />;
       case 'local':
         return <LocalProvider />;
       default:
-        return <ProviderView providerName={selectedProvider} />;
+        return <ProviderView providerName={selectedProvider} onSaveSuccess={handleApiKeySaveSuccess} />;
     }
   };
 
